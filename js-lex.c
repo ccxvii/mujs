@@ -89,6 +89,14 @@ const char *js_tokentostring(js_Token t)
 	return tokenstrings[t];
 }
 
+#define UNGET() (*sp)--
+
+#define GET() *(*sp)++
+#define PEEK() (**sp)
+#define NEXT() ((*sp)++)
+#define NEXTPEEK() (NEXT(), PEEK())
+#define LOOK(x) (PEEK() == x ? (NEXT(), 1) : 0)
+
 static inline js_Token findkeyword(const char *s)
 {
 	int m, l, r;
@@ -121,25 +129,21 @@ static inline int isnewline(c)
 	return c == 0xa || c == 0xd || c == 0x2028 || c == 0x2029;
 }
 
-#define GETC() *(*sp)++
-#define UNGETC() (*sp)--
-#define LOOK(x) (**sp == x ? *(*sp)++ : 0)
-
 static inline void lexlinecomment(const char **sp)
 {
-	int c = GETC();
-	while (!isnewline(c))
-		c = GETC();
-	UNGETC();
+	int c = PEEK();
+	while (c && !isnewline(c)) {
+		c = NEXTPEEK();
+	}
 }
 
 static inline int lexcomment(const char **sp)
 {
 	while (1) {
-		int c = GETC();
+		int c = GET();
 		if (c == '*') {
 			while (c == '*')
-				c = GETC();
+				c = GET();
 			if (c == '/')
 				return 0;
 		} else if (c == 0) {
@@ -179,103 +183,97 @@ static inline int tohex(int c)
 	return 0;
 }
 
-static inline js_Token lexhex(const char **sp, double *yynumber)
+static inline double lexhex(const char **sp)
 {
-	int c = GETC();
 	double n = 0;
-
-	if (!ishex(c))
-		return JS_ERROR;
-
-	do {
+	int c = PEEK();
+	while (ishex(c)) {
 		n = n * 16 + tohex(c);
-		c = GETC();
-	} while (ishex(c));
-
-	UNGETC();
-	*yynumber = n;
-
-	return JS_NUMBER;
+		c = NEXTPEEK();
+	}
+	return n;
 }
 
 static inline double lexinteger(const char **sp)
 {
-	int c = GETC();
 	double n = 0;
-
+	int c = PEEK();
 	while (isdec(c)) {
 		n = n * 10 + (c - '0');
-		c = GETC();
+		c = NEXTPEEK();
 	}
-
-	UNGETC();
-
 	return n;
 }
 
 static inline double lexfraction(const char **sp)
 {
-	int c = GETC();
 	double n = 0;
 	double d = 1;
-
+	int c = PEEK();
 	while (isdec(c)) {
 		n = n * 10 + (c - '0');
 		d = d * 10;
-		c = GETC();
+		c = NEXTPEEK();
 	}
-
-	UNGETC();
-
 	return n / d;
 }
 
-static inline js_Token lexnumber(int c, const char **sp, double *yynumber)
+static inline double lexexponent(const char **sp)
 {
-	double i, f, e;
-
-	if (c == '0' && (LOOK('x') || LOOK('X')))
-		return lexhex(sp, yynumber);
-
-	UNGETC();
-
-	i = lexinteger(sp);
-
-	f = 0;
-	if (LOOK('.'))
-		f = lexfraction(sp);
-
-	e = 0;
 	if (LOOK('e') || LOOK('E')) {
 		if (LOOK('-'))
-			e = -lexinteger(sp);
+			return -lexinteger(sp);
 		else if (LOOK('+'))
-			e = lexinteger(sp);
+			return lexinteger(sp);
 		else
-			e = lexinteger(sp);
+			return lexinteger(sp);
+	}
+	return 0;
+}
+
+static inline js_Token lexnumber(const char **sp, double *yynumber)
+{
+	double n;
+
+	if ((*sp)[0] == '0' && ((*sp)[1] == 'x' || (*sp)[1] == 'X')) {
+		*sp += 2;
+		if (!ishex(PEEK()))
+			return JS_ERROR;
+		*yynumber = lexhex(sp);
+		return JS_NUMBER;
 	}
 
-	*yynumber = (i + f) * pow(10, e);
+	if ((*sp)[0] == '0' && (*sp)[1] == '0')
+		return JS_ERROR;
 
+	n = lexinteger(sp);
+	if (LOOK('.'))
+		n += lexfraction(sp);
+	n *= pow(10, lexexponent(sp));
+
+	if (isidentifierstart(PEEK()))
+		return JS_ERROR;
+
+	*yynumber = n;
 	return JS_NUMBER;
 }
 
 static inline int lexescape(const char **sp)
 {
-	int c = GETC();
+	int c = GET();
 	int x, y, z, w;
 
 	switch (c) {
 	case '0': return 0;
 	case 'u':
-		x = tohex(GETC());
-		y = tohex(GETC());
-		z = tohex(GETC());
-		w = tohex(GETC());
+		x = tohex(GET());
+		y = tohex(GET());
+		z = tohex(GET());
+		w = tohex(GET());
 		return (x << 12) | (y << 8) | (z << 4) | w;
 	case 'x':
-		x = tohex(GETC());
-		y = tohex(GETC());
+		x = tohex(GET());
+		y = tohex(GET());
 		return (x << 4) | y;
 	case '\'': return '\'';
 	case '"': return '"';
@@ -293,7 +291,7 @@ static inline int lexescape(const char **sp)
 static inline js_Token lexstring(int q, const char **sp, char *yytext, size_t yylen)
 {
 	char *p = yytext;
-	int c = GETC();
+	int c = GET();
 
 	while (c != q) {
 		if (c == 0 || isnewline(c))
@@ -305,7 +303,7 @@ static inline js_Token lexstring(int q, const char **sp, char *yytext, size_t yy
 		if (p - yytext >= yylen)
 			return JS_ERROR;
 		*p++ = c;
-		c = GETC();
+		c = GET();
 	}
 
 	*p = 0;
@@ -315,26 +313,23 @@ static inline js_Token lexstring(int q, const char **sp, char *yytext, size_t yy
 
 js_Token js_lex(js_State *J, const char **sp, char *yytext, size_t yylen, double *yynumber)
 {
-	int c = GETC();
-
+	int c = GET();
 	while (c) {
 		while (iswhite(c))
-			c = GETC();
+			c = GET();
 
 		if (isnewline(c))
 			return JS_NEWLINE;
 
 		if (c == '/') {
-			c = GETC();
-			if (c == '/') {
+			if (LOOK('/')) {
 				lexlinecomment(sp);
-			} else if (c == '*') {
+			} else if (LOOK('*')) {
 				if (lexcomment(sp))
 					return JS_ERROR;
-			} else if (c == '=') {
+			} else if (LOOK('=')) {
 				return JS_SLASH_EQ;
 			} else {
-				UNGETC();
 				return JS_SLASH;
 			}
 		}
@@ -342,21 +337,33 @@ js_Token js_lex(js_State *J, const char **sp, char *yytext, size_t yylen, double
 		if (isidentifierstart(c)) {
 			char *p = yytext;
 
-			do {
+			*p++ = c;
+
+			c = PEEK();
+			while (isidentifierpart(c)) {
 				if (p - yytext >= yylen)
 					return JS_ERROR;
 				*p++ = c;
-				c = GETC();
-			} while (isidentifierpart(c));
+				c = NEXTPEEK();
+			}
 
-			UNGETC();
 			*p = 0;
 
 			return findkeyword(yytext);
 		}
 
-		if ((c >= '0' && c <= '9') || c == '.')
-			return lexnumber(c, sp, yynumber);
+		if (c == '.') {
+			if (isdec(PEEK())) {
+				UNGET();
+				return lexnumber(sp, yynumber);
+			}
+			return JS_PERIOD;
+		}
+
+		if (c >= '0' && c <= '9') {
+			UNGET();
+			return lexnumber(sp, yynumber);
+		}
 
 		if (c == '\'' || c == '"')
 			return lexstring(c, sp, yytext, yylen);
@@ -461,7 +468,7 @@ js_Token js_lex(js_State *J, const char **sp, char *yytext, size_t yylen, double
 		case ':': return JS_COLON;
 		}
 
-		c = GETC();
+		c = GET();
 	}
 
 	return JS_EOF;
