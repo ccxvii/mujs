@@ -2,19 +2,17 @@
 
 int js_loadstring(js_State *J, const char *source)
 {
-	char yytext[512];
-	double yynumber;
 	js_Token t;
 
 	do {
-		t = js_lex(J, &source, yytext, sizeof yytext, &yynumber);
+		t = js_lex(J, &source);
 
 		if (t == JS_NUMBER)
-			printf("%g\n", yynumber);
+			printf("%g\n", J->yynumber);
 		else if (t == JS_IDENTIFIER)
-			printf("id:%s\n", yytext);
+			printf("id:%s\n", J->yytext);
 		else if (t == JS_STRING)
-			printf("'%s'\n", yytext);
+			printf("'%s'\n", J->yytext);
 		else
 			printf("%s\n", js_tokentostring(t));
 	} while (t != JS_EOF && t != JS_ERROR);

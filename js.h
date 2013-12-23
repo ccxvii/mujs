@@ -152,11 +152,12 @@ enum js_Token
 
 struct js_State
 {
-	char yytext[512];
-	int top;
+	char *yytext;
+	size_t yylen, yycap;
+	double yynumber;
 };
 
-js_Token js_lex(js_State *J, const char **sp, char *yytext, size_t yylen, double *yynumber);
+js_Token js_lex(js_State *J, const char **sp);
 const char *js_tokentostring(js_Token t);
 
 #endif

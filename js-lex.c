@@ -67,36 +67,6 @@ struct {
 	{"with", JS_WITH},
 };
 
-const char *tokenstrings[] = {
-	"ERROR", "EOF", "(identifier)", "null", "true", "false", "(number)",
-	"(string)", "(regexp)", "\\n", "{", "}", "(", ")", "[", "]", ".", ";",
-	",", "<", ">", "<=", ">=", "==", "!=", "===", "!==", "+", "-", "*",
-	"%", "++", "--", "<<", ">>", ">>>", "&", "|", "^", "!", "~", "&&",
-	"||", "?", ":", "=", "+=", "-=", "*=", "%=", "<<=", ">>=", ">>>=",
-	"&=", "|=", "^=", "/", "/=", "break", "case", "catch", "continue",
-	"default", "delete", "do", "else", "finally", "for", "function", "if",
-	"in", "instanceof", "new", "return", "switch", "this", "throw", "try",
-	"typeof", "var", "void", "while", "with", "abstract", "boolean",
-	"byte", "char", "class", "const", "debugger", "double", "enum",
-	"export", "extends", "final", "float", "goto", "implements", "import",
-	"int", "interface", "long", "native", "package", "private",
-	"protected", "public", "short", "static", "super", "synchronized",
-	"throws", "transient", "volatile",
-};
-
-const char *js_tokentostring(js_Token t)
-{
-	return tokenstrings[t];
-}
-
-#define UNGET() (*sp)--
-
-#define GET() *(*sp)++
-#define PEEK() (**sp)
-#define NEXT() ((*sp)++)
-#define NEXTPEEK() (NEXT(), PEEK())
-#define LOOK(x) (PEEK() == x ? (NEXT(), 1) : 0)
-
 static inline js_Token findkeyword(const char *s)
 {
 	int m, l, r;
@@ -119,6 +89,58 @@ static inline js_Token findkeyword(const char *s)
 	return JS_IDENTIFIER;
 }
 
+const char *tokenstrings[] = {
+	"ERROR", "EOF", "(identifier)", "null", "true", "false", "(number)",
+	"(string)", "(regexp)", "\\n", "{", "}", "(", ")", "[", "]", ".", ";",
+	",", "<", ">", "<=", ">=", "==", "!=", "===", "!==", "+", "-", "*",
+	"%", "++", "--", "<<", ">>", ">>>", "&", "|", "^", "!", "~", "&&",
+	"||", "?", ":", "=", "+=", "-=", "*=", "%=", "<<=", ">>=", ">>>=",
+	"&=", "|=", "^=", "/", "/=", "break", "case", "catch", "continue",
+	"default", "delete", "do", "else", "finally", "for", "function", "if",
+	"in", "instanceof", "new", "return", "switch", "this", "throw", "try",
+	"typeof", "var", "void", "while", "with", "abstract", "boolean",
+	"byte", "char", "class", "const", "debugger", "double", "enum",
+	"export", "extends", "final", "float", "goto", "implements", "import",
+	"int", "interface", "long", "native", "package", "private",
+	"protected", "public", "short", "static", "super", "synchronized",
+	"throws", "transient", "volatile",
+};
+
+const char *js_tokentostring(js_Token t)
+{
+	return tokenstrings[t];
+}
+
+#define GET() (*(*sp)++)
+#define UNGET() ((*sp)--)
+#define PEEK() (**sp)
+#define NEXT() ((*sp)++)
+#define NEXTPEEK() (NEXT(), PEEK())
+#define LOOK(x) (PEEK() == x ? (NEXT(), 1) : 0)
+
+static void textinit(js_State *J)
+{
+	if (!J->yytext) {
+		J->yycap = 4096;
+		J->yytext = malloc(J->yycap);
+	}
+	J->yylen = 0;
+}
+
+static inline void textpush(js_State *J, int c)
+{
+	if (J->yylen >= J->yycap) {
+		J->yycap = J->yycap * 2;
+		J->yytext = realloc(J->yytext, J->yycap);
+	}
+	J->yytext[J->yylen++] = c;
+}
+
+static inline void textend(js_State *J)
+{
+	textpush(J, 0);
+}
+
 static inline int iswhite(int c)
 {
 	return c == 0x9 || c == 0xb || c == 0xc || c == 0x20 || c == 0xa0;
@@ -127,29 +149,6 @@ static inline int iswhite(int c)
 static inline int isnewline(c)
 {
 	return c == 0xa || c == 0xd || c == 0x2028 || c == 0x2029;
-}
-
-static inline void lexlinecomment(const char **sp)
-{
-	int c = PEEK();
-	while (c && !isnewline(c)) {
-		c = NEXTPEEK();
-	}
-}
-
-static inline int lexcomment(const char **sp)
-{
-	while (1) {
-		int c = GET();
-		if (c == '*') {
-			while (c == '*')
-				c = GET();
-			if (c == '/')
-				return 0;
-		} else if (c == 0) {
-			return -1;
-		}
-	}
 }
 
 static inline int isidentifierstart(int c)
@@ -181,6 +180,29 @@ static inline int tohex(int c)
 	if (c >= 'A' && c <= 'F')
 		return c - 'A' + 0xa;
 	return 0;
+}
+
+static inline void lexlinecomment(const char **sp)
+{
+	int c = PEEK();
+	while (c && !isnewline(c)) {
+		c = NEXTPEEK();
+	}
+}
+
+static inline int lexcomment(const char **sp)
+{
+	while (1) {
+		int c = GET();
+		if (c == '*') {
+			while (c == '*')
+				c = GET();
+			if (c == '/')
+				return 0;
+		} else if (c == 0) {
+			return -1;
+		}
+	}
 }
 
 static inline double lexhex(const char **sp)
@@ -231,7 +253,7 @@ static inline double lexexponent(const char **sp)
 	return 0;
 }
 
-static inline js_Token lexnumber(const char **sp, double *yynumber)
+static inline js_Token lexnumber(js_State *J, const char **sp)
 {
 	double n;
 
@@ -239,7 +261,7 @@ static inline js_Token lexnumber(const char **sp, double *yynumber)
 		*sp += 2;
 		if (!ishex(PEEK()))
 			return JS_ERROR;
-		*yynumber = lexhex(sp);
+		J->yynumber = lexhex(sp);
 		return JS_NUMBER;
 	}
 
@@ -254,7 +276,7 @@ static inline js_Token lexnumber(const char **sp, double *yynumber)
 	if (isidentifierstart(PEEK()))
 		return JS_ERROR;
 
-	*yynumber = n;
+	J->yynumber = n;
 	return JS_NUMBER;
 }
 
@@ -288,10 +310,11 @@ static inline int lexescape(const char **sp)
 	}
 }
 
-static inline js_Token lexstring(int q, const char **sp, char *yytext, size_t yylen)
+static inline js_Token lexstring(js_State *J, const char **sp, int q)
 {
-	char *p = yytext;
 	int c = GET();
+
+	textinit(J);
 
 	while (c != q) {
 		if (c == 0 || isnewline(c))
@@ -300,18 +323,17 @@ static inline js_Token lexstring(int q, const char **sp, char *yytext, size_t yy
 		if (c == '\\')
 			c = lexescape(sp);
 
-		if (p - yytext >= yylen)
-			return JS_ERROR;
-		*p++ = c;
+		textpush(J, c);
+
 		c = GET();
 	}
 
-	*p = 0;
+	textend(J);
 
 	return JS_STRING;
 }
 
-js_Token js_lex(js_State *J, const char **sp, char *yytext, size_t yylen, double *yynumber)
+js_Token js_lex(js_State *J, const char **sp)
 {
 	int c = GET();
 	while (c) {
@@ -335,38 +357,35 @@ js_Token js_lex(js_State *J, const char **sp, char *yytext, size_t yylen, double
 		}
 
 		if (isidentifierstart(c)) {
-			char *p = yytext;
-
-			*p++ = c;
+			textinit(J);
+			textpush(J, c);
 
 			c = PEEK();
 			while (isidentifierpart(c)) {
-				if (p - yytext >= yylen)
-					return JS_ERROR;
-				*p++ = c;
+				textpush(J, c);
 				c = NEXTPEEK();
 			}
 
-			*p = 0;
+			textend(J);
 
-			return findkeyword(yytext);
+			return findkeyword(J->yytext);
 		}
 
 		if (c == '.') {
 			if (isdec(PEEK())) {
 				UNGET();
-				return lexnumber(sp, yynumber);
+				return lexnumber(J, sp);
 			}
 			return JS_PERIOD;
 		}
 
 		if (c >= '0' && c <= '9') {
 			UNGET();
-			return lexnumber(sp, yynumber);
+			return lexnumber(J, sp);
 		}
 
 		if (c == '\'' || c == '"')
-			return lexstring(c, sp, yytext, yylen);
+			return lexstring(J, sp, c);
 
 		switch (c) {
 		case '{': return JS_LCURLY;
