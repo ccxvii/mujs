@@ -333,7 +333,71 @@ static inline js_Token lexstring(js_State *J, const char **sp, int q)
 	return JS_STRING;
 }
 
-js_Token js_lex(js_State *J, const char **sp)
+/* the ugliest language wart ever... */
+static int isregexpcontext(js_Token last)
+{
+	switch (last)
+	{
+	case JS_IDENTIFIER:
+	case JS_NULL:
+	case JS_TRUE:
+	case JS_FALSE:
+	case JS_THIS:
+	case JS_NUMBER:
+	case JS_STRING:
+	case JS_RSQUARE:
+	case JS_RPAREN:
+		return 0;
+	default:
+		return 1;
+	}
+}
+
+static js_Token lexregexp(js_State *J, const char **sp)
+{
+	int c;
+
+	textinit(J);
+
+	/* regexp body */
+	c = GET();
+	while (c != '/') {
+		if (c == 0 || isnewline(c)) {
+			return JS_ERROR;
+		} else if (c == '\\') {
+			textpush(J, c);
+			c = GET();
+			if (c == 0 || isnewline(c))
+				return JS_ERROR;
+			textpush(J, c);
+			c = GET();
+		} else {
+			textpush(J, c);
+			c = GET();
+		}
+	}
+
+	textend(J);
+
+	/* regexp flags */
+	J->yyflags.g = J->yyflags.i = J->yyflags.m = 0;
+
+	c = PEEK();
+	while (isidentifierpart(c)) {
+		if (c == 'g') J->yyflags.g ++;
+		else if (c == 'i') J->yyflags.i ++;
+		else if (c == 'm') J->yyflags.m ++;
+		else return JS_ERROR;
+		c = NEXTPEEK();
+	}
+
+	if (J->yyflags.g > 1 || J->yyflags.i > 1 || J->yyflags.m > 1)
+		return JS_ERROR;
+
+	return JS_REGEXP;
+}
+
+static js_Token js_leximp(js_State *J, const char **sp)
 {
 	int c = GET();
 	while (c) {
@@ -349,6 +413,8 @@ js_Token js_lex(js_State *J, const char **sp)
 			} else if (LOOK('*')) {
 				if (lexcomment(sp))
 					return JS_ERROR;
+			} else if (isregexpcontext(J->lasttoken)) {
+				return lexregexp(J, sp);
 			} else if (LOOK('=')) {
 				return JS_SLASH_EQ;
 			} else {
@@ -491,4 +557,11 @@ js_Token js_lex(js_State *J, const char **sp)
 	}
 
 	return JS_EOF;
+}
+
+js_Token js_lex(js_State *J, const char **sp)
+{
+	js_Token t = js_leximp(J, sp);
+	J->lasttoken = t;
+	return t;
 }

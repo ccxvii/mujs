@@ -13,6 +13,8 @@ int js_loadstring(js_State *J, const char *source)
 			printf("id:%s\n", J->yytext);
 		else if (t == JS_STRING)
 			printf("'%s'\n", J->yytext);
+		else if (t == JS_REGEXP)
+			printf("/%s/\n", J->yytext);
 		else
 			printf("%s\n", js_tokentostring(t));
 	} while (t != JS_EOF && t != JS_ERROR);

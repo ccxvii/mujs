@@ -155,6 +155,8 @@ struct js_State
 	char *yytext;
 	size_t yylen, yycap;
 	double yynumber;
+	struct { int g, i, m; } yyflags;
+	js_Token lasttoken;
 };
 
 js_Token js_lex(js_State *J, const char **sp);
