@@ -9,6 +9,7 @@ js_State *js_newstate(void)
 
 void js_close(js_State *J)
 {
+	free(J->yytext);
 	free(J);
 }
 
