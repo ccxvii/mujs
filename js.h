@@ -22,115 +22,20 @@ int js_loadfile(js_State *J, const char *filename);
 
 /* private */
 
-typedef enum js_Token js_Token;
-
-enum js_Token
-{
-	JS_ERROR,
-	JS_EOF,
-
-	JS_IDENTIFIER,
-	JS_NULL,
-	JS_TRUE,
-	JS_FALSE,
-	JS_NUMBER,
-	JS_STRING,
-	JS_REGEXP,
-	JS_NEWLINE,
-
-	/* punctuators */
-	JS_LCURLY,
-	JS_RCURLY,
-	JS_LPAREN,
-	JS_RPAREN,
-	JS_LSQUARE,
-	JS_RSQUARE,
-	JS_PERIOD,
-	JS_SEMICOLON,
-	JS_COMMA,
-	JS_LT,
-	JS_GT,
-	JS_LT_EQ,
-	JS_GT_EQ,
-	JS_EQ_EQ,
-	JS_EXCL_EQ,
-	JS_EQ_EQ_EQ,
-	JS_EXCL_EQ_EQ,
-	JS_PLUS,
-	JS_MINUS,
-	JS_STAR,
-	JS_PERCENT,
-	JS_PLUS_PLUS,
-	JS_MINUS_MINUS,
-	JS_LT_LT,
-	JS_GT_GT,
-	JS_GT_GT_GT,
-	JS_AND,
-	JS_BAR,
-	JS_HAT,
-	JS_EXCL,
-	JS_TILDE,
-	JS_AND_AND,
-	JS_BAR_BAR,
-	JS_QUESTION,
-	JS_COLON,
-	JS_EQ,
-	JS_PLUS_EQ,
-	JS_MINUS_EQ,
-	JS_STAR_EQ,
-	JS_PERCENT_EQ,
-	JS_LT_LT_EQ,
-	JS_GT_GT_EQ,
-	JS_GT_GT_GT_EQ,
-	JS_AND_EQ,
-	JS_BAR_EQ,
-	JS_HAT_EQ,
-	JS_SLASH,
-	JS_SLASH_EQ,
-
-	/* keywords */
-	JS_BREAK,
-	JS_CASE,
-	JS_CATCH,
-	JS_CONTINUE,
-	JS_DEBUGGER,
-	JS_DEFAULT,
-	JS_DELETE,
-	JS_DO,
-	JS_ELSE,
-	JS_FINALLY,
-	JS_FOR,
-	JS_FUNCTION,
-	JS_IF,
-	JS_IN,
-	JS_INSTANCEOF,
-	JS_NEW,
-	JS_RETURN,
-	JS_SWITCH,
-	JS_THIS,
-	JS_THROW,
-	JS_TRY,
-	JS_TYPEOF,
-	JS_VAR,
-	JS_VOID,
-	JS_WHILE,
-	JS_WITH,
-};
+void jsP_initlex(js_State *J, const char *source);
+int jsP_lex(js_State *J);
+int jsP_parse(js_State *J);
 
 struct js_State
 {
+	const char *yysource;
 	char *yytext;
 	size_t yylen, yycap;
 	double yynumber;
 	struct { int g, i, m; } yyflags;
 	int yyline;
-	js_Token lasttoken;
+	int lasttoken;
 	int strict;
 };
-
-void js_initlex(js_State *J);
-js_Token js_lex(js_State *J, const char **sp);
-js_Token js_syntaxerror(js_State *J, const char *fmt, ...);
-const char *js_tokentostring(js_Token t);
 
 #endif

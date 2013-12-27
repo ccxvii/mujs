@@ -1,4 +1,16 @@
 #include "js.h"
+#include "js-parse.h"
+
+static int syntaxerror(js_State *J, const char *fmt, ...)
+{
+	va_list ap;
+	fprintf(stderr, "syntax error: line %d: ", J->yyline);
+	va_start(ap, fmt);
+	vfprintf(stderr, fmt, ap);
+	va_end(ap);
+	fprintf(stderr, "\n");
+	return TK_ERROR;
+}
 
 #define nelem(a) (sizeof (a) / sizeof (a)[0])
 
@@ -35,38 +47,18 @@ static inline int findword(const char *s, const char **list, int num)
 	return -1;
 }
 
-static inline js_Token findkeyword(js_State *J, const char *s)
+static inline int findkeyword(js_State *J, const char *s)
 {
 	int i = findword(s, keywords, nelem(keywords));
 	if (i >= 0)
-		return JS_BREAK + i;
+		return TK_BREAK + i; /* first keyword + i */
 
 	if (findword(s, futurewords, nelem(futurewords)) >= 0)
-		return js_syntaxerror(J, "'%s' is a future reserved word", s);
+		return syntaxerror(J, "'%s' is a future reserved word", s);
 	if (J->strict && findword(s, strictfuturewords, nelem(strictfuturewords)) >= 0)
-		return js_syntaxerror(J, "'%s' is a strict mode future reserved word", s);
+		return syntaxerror(J, "'%s' is a strict mode future reserved word", s);
 
-	return JS_IDENTIFIER;
-}
-
-const char *tokenstrings[] = {
-	"(error)", "(eof)", "(identifier)", "null", "true", "false",
-	"(number)", "(string)", "(regexp)", "(newline)",
-	"{", "}", "(", ")", "[", "]", ".", ";", ",",
-	"<", ">", "<=", ">=", "==", "!=", "===", "!==",
-	"+", "-", "*", "%", "++", "--", "<<", ">>", ">>>", "&", "|",
-	"^", "!", "~", "&&", "||", "?", ":",
-	"=", "+=", "-=", "*=", "%=", "<<=", ">>=", ">>>=", "&=", "|=", "^=",
-	"/", "/=",
-	"break", "case", "catch", "continue", "debugger", "default", "delete",
-	"do", "else", "finally", "for", "function", "if", "in", "instanceof",
-	"new", "return", "switch", "this", "throw", "try", "typeof", "var",
-	"void", "while", "with",
-};
-
-const char *js_tokentostring(js_Token t)
-{
-	return tokenstrings[t];
+	return TK_IDENTIFIER;
 }
 
 #define GET() (*(*sp)++)
@@ -75,17 +67,6 @@ const char *js_tokentostring(js_Token t)
 #define NEXT() ((*sp)++)
 #define NEXTPEEK() (NEXT(), PEEK())
 #define LOOK(x) (PEEK() == x ? (NEXT(), 1) : 0)
-
-js_Token js_syntaxerror(js_State *J, const char *fmt, ...)
-{
-	va_list ap;
-	fprintf(stderr, "syntax error: line %d: ", J->yyline);
-	va_start(ap, fmt);
-	vfprintf(stderr, fmt, ap);
-	va_end(ap);
-	fprintf(stderr, "\n");
-	return JS_ERROR;
-}
 
 static void textinit(js_State *J)
 {
@@ -112,12 +93,12 @@ static inline void textend(js_State *J)
 
 static inline int iswhite(int c)
 {
-	return c == 0x9 || c == 0xb || c == 0xc || c == 0x20 || c == 0xa0;
+	return c == 0x9 || c == 0xB || c == 0xC || c == 0x20 || c == 0xA0;
 }
 
 static inline int isnewline(c)
 {
-	return c == 0xa || c == 0xd || c == 0x2028 || c == 0x2029;
+	return c == 0xA || c == 0xD || c == 0x2028 || c == 0x2029;
 }
 
 static inline int isidentifierstart(int c)
@@ -145,9 +126,9 @@ static inline int tohex(int c)
 	if (c >= '0' && c <= '9')
 		return c - '0';
 	if (c >= 'a' && c <= 'f')
-		return c - 'a' + 0xa;
+		return c - 'a' + 0xA;
 	if (c >= 'A' && c <= 'F')
-		return c - 'A' + 0xa;
+		return c - 'A' + 0xA;
 	return 0;
 }
 
@@ -222,20 +203,20 @@ static inline double lexexponent(const char **sp)
 	return 0;
 }
 
-static inline js_Token lexnumber(js_State *J, const char **sp)
+static inline int lexnumber(js_State *J, const char **sp)
 {
 	double n;
 
 	if ((*sp)[0] == '0' && ((*sp)[1] == 'x' || (*sp)[1] == 'X')) {
 		*sp += 2;
 		if (!ishex(PEEK()))
-			return js_syntaxerror(J, "0x not followed by hexademical digit");
+			return syntaxerror(J, "0x not followed by hexademical digit");
 		J->yynumber = lexhex(sp);
-		return JS_NUMBER;
+		return TK_NUMBER;
 	}
 
 	if ((*sp)[0] == '0' && isdec((*sp)[1]))
-		return js_syntaxerror(J, "number with leading zero");
+		return syntaxerror(J, "number with leading zero");
 
 	n = lexinteger(sp);
 	if (LOOK('.'))
@@ -243,10 +224,10 @@ static inline js_Token lexnumber(js_State *J, const char **sp)
 	n *= pow(10, lexexponent(sp));
 
 	if (isidentifierstart(PEEK()))
-		return js_syntaxerror(J, "number with letter suffix");
+		return syntaxerror(J, "number with letter suffix");
 
 	J->yynumber = n;
-	return JS_NUMBER;
+	return TK_NUMBER;
 }
 
 static inline int lexescape(const char **sp)
@@ -279,7 +260,7 @@ static inline int lexescape(const char **sp)
 	}
 }
 
-static inline js_Token lexstring(js_State *J, const char **sp, int q)
+static inline int lexstring(js_State *J, const char **sp, int q)
 {
 	int c = GET();
 
@@ -287,7 +268,7 @@ static inline js_Token lexstring(js_State *J, const char **sp, int q)
 
 	while (c != q) {
 		if (c == 0 || isnewline(c))
-			return js_syntaxerror(J, "string not terminated");
+			return syntaxerror(J, "string not terminated");
 
 		if (c == '\\')
 			c = lexescape(sp);
@@ -299,30 +280,30 @@ static inline js_Token lexstring(js_State *J, const char **sp, int q)
 
 	textend(J);
 
-	return JS_STRING;
+	return TK_STRING;
 }
 
 /* the ugliest language wart ever... */
-static int isregexpcontext(js_Token last)
+static int isregexpcontext(int last)
 {
 	switch (last)
 	{
-	case JS_IDENTIFIER:
-	case JS_NULL:
-	case JS_TRUE:
-	case JS_FALSE:
-	case JS_THIS:
-	case JS_NUMBER:
-	case JS_STRING:
-	case JS_RSQUARE:
-	case JS_RPAREN:
+	case ']':
+	case ')':
+	case TK_IDENTIFIER:
+	case TK_NUMBER:
+	case TK_STRING:
+	case TK_FALSE:
+	case TK_NULL:
+	case TK_THIS:
+	case TK_TRUE:
 		return 0;
 	default:
 		return 1;
 	}
 }
 
-static js_Token lexregexp(js_State *J, const char **sp)
+static int lexregexp(js_State *J, const char **sp)
 {
 	int c;
 
@@ -332,12 +313,12 @@ static js_Token lexregexp(js_State *J, const char **sp)
 	c = GET();
 	while (c != '/') {
 		if (c == 0 || isnewline(c)) {
-			return js_syntaxerror(J, "regular expression not terminated");
+			return syntaxerror(J, "regular expression not terminated");
 		} else if (c == '\\') {
 			textpush(J, c);
 			c = GET();
 			if (c == 0 || isnewline(c))
-				return js_syntaxerror(J, "regular expression not terminated");
+				return syntaxerror(J, "regular expression not terminated");
 			textpush(J, c);
 			c = GET();
 		} else {
@@ -356,20 +337,21 @@ static js_Token lexregexp(js_State *J, const char **sp)
 		if (c == 'g') J->yyflags.g ++;
 		else if (c == 'i') J->yyflags.i ++;
 		else if (c == 'm') J->yyflags.m ++;
-		else return js_syntaxerror(J, "illegal flag in regular expression: %c", c);
+		else return syntaxerror(J, "illegal flag in regular expression: %c", c);
 		c = NEXTPEEK();
 	}
 
 	if (J->yyflags.g > 1 || J->yyflags.i > 1 || J->yyflags.m > 1)
-		return js_syntaxerror(J, "duplicated flag in regular expression");
+		return syntaxerror(J, "duplicated flag in regular expression");
 
-	return JS_REGEXP;
+	return TK_REGEXP;
 }
 
-static js_Token js_leximp(js_State *J, const char **sp)
+static int lex(js_State *J, const char **sp)
 {
-	int c = GET();
-	while (c) {
+	while (1) {
+		int c = GET();
+
 		while (iswhite(c))
 			c = GET();
 
@@ -378,21 +360,23 @@ static js_Token js_leximp(js_State *J, const char **sp)
 			if (c == '\r' && PEEK() == '\n')
 				NEXT();
 			J->yyline++;
-			return JS_NEWLINE;
+			return TK_NEWLINE;
 		}
 
 		if (c == '/') {
 			if (LOOK('/')) {
 				lexlinecomment(sp);
+				continue;
 			} else if (LOOK('*')) {
 				if (lexcomment(sp))
-					return js_syntaxerror(J, "multi-line comment not terminated");
+					return syntaxerror(J, "multi-line comment not terminated");
+				continue;
 			} else if (isregexpcontext(J->lasttoken)) {
 				return lexregexp(J, sp);
 			} else if (LOOK('=')) {
-				return JS_SLASH_EQ;
+				return TK_DIV_ASS;
 			} else {
-				return JS_SLASH;
+				return '/';
 			}
 		}
 
@@ -411,137 +395,141 @@ static js_Token js_leximp(js_State *J, const char **sp)
 			return findkeyword(J, J->yytext);
 		}
 
-		if (c == '.') {
-			if (isdec(PEEK())) {
-				UNGET();
-				return lexnumber(J, sp);
-			}
-			return JS_PERIOD;
-		}
-
 		if (c >= '0' && c <= '9') {
 			UNGET();
 			return lexnumber(J, sp);
 		}
 
-		if (c == '\'' || c == '"')
+		switch (c) {
+		case '(':
+		case ')':
+		case ',':
+		case ':':
+		case ';':
+		case '?':
+		case '[':
+		case ']':
+		case '{':
+		case '}':
+		case '~':
+			return c;
+
+		case '\'':
+			return lexstring(J, sp, c);
+		case '"':
 			return lexstring(J, sp, c);
 
-		switch (c) {
-		case '{': return JS_LCURLY;
-		case '}': return JS_RCURLY;
-		case '(': return JS_LPAREN;
-		case ')': return JS_RPAREN;
-		case '[': return JS_LSQUARE;
-		case ']': return JS_RSQUARE;
-		case '.': return JS_PERIOD;
-		case ';': return JS_SEMICOLON;
-		case ',': return JS_COMMA;
+		case '.':
+			if (isdec(PEEK())) {
+				UNGET();
+				return lexnumber(J, sp);
+			}
+			return '.';
 
 		case '<':
 			if (LOOK('<')) {
 				if (LOOK('='))
-					return JS_LT_LT_EQ;
-				return JS_LT_LT;
+					return TK_SHL_ASS;
+				return TK_SHL;
 			}
 			if (LOOK('='))
-				return JS_LT_EQ;
-			return JS_LT;
+				return TK_LE;
+			return '<';
 
 		case '>':
 			if (LOOK('>')) {
 				if (LOOK('>')) {
 					if (LOOK('='))
-						return JS_GT_GT_GT_EQ;
-					return JS_GT_GT_GT;
+						return TK_USHR_ASS;
+					return TK_USHR;
 				}
 				if (LOOK('='))
-					return JS_GT_GT_EQ;
-				return JS_GT_GT;
+					return TK_SHR_ASS;
+				return TK_SHR;
 			}
 			if (LOOK('='))
-				return JS_GT_EQ;
-			return JS_GT;
+				return TK_GE;
+			return '>';
 
 		case '=':
 			if (LOOK('=')) {
 				if (LOOK('='))
-					return JS_EQ_EQ_EQ;
-				return JS_EQ_EQ;
+					return TK_EQ3;
+				return TK_EQ;
 			}
-			return JS_EQ;
+			return '=';
 
 		case '!':
 			if (LOOK('=')) {
 				if (LOOK('='))
-					return JS_EXCL_EQ_EQ;
-				return JS_EXCL_EQ;
+					return TK_NE3;
+				return TK_NE;
 			}
-			return JS_EXCL;
+			return '!';
 
 		case '+':
 			if (LOOK('+'))
-				return JS_PLUS_PLUS;
+				return TK_INC;
 			if (LOOK('='))
-				return JS_PLUS_EQ;
-			return JS_PLUS;
+				return TK_ADD_ASS;
+			return '+';
 
 		case '-':
 			if (LOOK('-'))
-				return JS_MINUS_MINUS;
+				return TK_DEC;
 			if (LOOK('='))
-				return JS_MINUS_EQ;
-			return JS_MINUS;
+				return TK_SUB_ASS;
+			return '-';
 
 		case '*':
 			if (LOOK('='))
-				return JS_STAR_EQ;
-			return JS_STAR;
+				return TK_MUL_ASS;
+			return '*';
 
 		case '%':
 			if (LOOK('='))
-				return JS_PERCENT_EQ;
-			return JS_PERCENT;
+				return TK_MOD_ASS;
+			return '%';
 
 		case '&':
 			if (LOOK('&'))
-				return JS_AND_AND;
+				return TK_AND;
 			if (LOOK('='))
-				return JS_AND_EQ;
-			return JS_AND;
+				return TK_AND_ASS;
+			return '&';
 
 		case '|':
 			if (LOOK('|'))
-				return JS_BAR_BAR;
+				return TK_OR;
 			if (LOOK('='))
-				return JS_BAR_EQ;
-			return JS_BAR;
+				return TK_OR_ASS;
+			return '|';
 
 		case '^':
 			if (LOOK('='))
-				return JS_HAT_EQ;
-			return JS_HAT;
+				return TK_XOR_ASS;
+			return '^';
 
-		case '~': return JS_TILDE;
-		case '?': return JS_QUESTION;
-		case ':': return JS_COLON;
+		case 0:
+			return 0; /* EOF */
 		}
 
-		c = GET();
+		if (c >= 0x20 && c <= 0x7E)
+			return syntaxerror(J, "unexpected character: '%c'", c);
+		return syntaxerror(J, "unexpected character: \\u%04X", c);
 	}
-
-	return JS_EOF;
 }
 
-js_Token js_lex(js_State *J, const char **sp)
+void jsP_initlex(js_State *J, const char *source)
 {
-	js_Token t = js_leximp(J, sp);
+	J->yysource = source;
+	J->yyline = 1;
+	J->lasttoken = 0;
+}
+
+int jsP_lex(js_State *J)
+{
+	int t = lex(J, &J->yysource);
 	J->lasttoken = t;
 	return t;
-}
-
-void js_initlex(js_State *J)
-{
-	J->yyline = 1;
-	J->lasttoken = JS_ERROR;
 }

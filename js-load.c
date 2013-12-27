@@ -1,25 +1,13 @@
 #include "js.h"
+#include "js-parse.h"
 
 int js_loadstring(js_State *J, const char *source)
 {
-	js_Token t;
+	int t;
 
-	js_initlex(J);
-
-	do {
-		t = js_lex(J, &source);
-
-		if (t == JS_NUMBER)
-			printf("%g\n", J->yynumber);
-		else if (t == JS_IDENTIFIER)
-			printf("id:%s\n", J->yytext);
-		else if (t == JS_STRING)
-			printf("'%s'\n", J->yytext);
-		else if (t == JS_REGEXP)
-			printf("/%s/\n", J->yytext);
-		else
-			printf("%s\n", js_tokentostring(t));
-	} while (t != JS_EOF && t != JS_ERROR);
+	jsP_initlex(J, source);
+	t = jsP_parse(J);
+	printf("parse result = %d\n", t);
 
 	return 0;
 }
