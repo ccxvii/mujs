@@ -2,108 +2,66 @@
 
 #define nelem(a) (sizeof (a) / sizeof (a)[0])
 
-struct {
-	const char *string;
-	js_Token token;
-} keywords[] = {
-	{"abstract", JS_ABSTRACT},
-	{"boolean", JS_BOOLEAN},
-	{"break", JS_BREAK},
-	{"byte", JS_BYTE},
-	{"case", JS_CASE},
-	{"catch", JS_CATCH},
-	{"char", JS_CHAR},
-	{"class", JS_CLASS},
-	{"const", JS_CONST},
-	{"continue", JS_CONTINUE},
-	{"debugger", JS_DEBUGGER},
-	{"default", JS_DEFAULT},
-	{"delete", JS_DELETE},
-	{"do", JS_DO},
-	{"double", JS_DOUBLE},
-	{"else", JS_ELSE},
-	{"enum", JS_ENUM},
-	{"export", JS_EXPORT},
-	{"extends", JS_EXTENDS},
-	{"false", JS_FALSE},
-	{"final", JS_FINAL},
-	{"finally", JS_FINALLY},
-	{"float", JS_FLOAT},
-	{"for", JS_FOR},
-	{"function", JS_FUNCTION},
-	{"goto", JS_GOTO},
-	{"if", JS_IF},
-	{"implements", JS_IMPLEMENTS},
-	{"import", JS_IMPORT},
-	{"in", JS_IN},
-	{"instanceof", JS_INSTANCEOF},
-	{"int", JS_INT},
-	{"interface", JS_INTERFACE},
-	{"long", JS_LONG},
-	{"native", JS_NATIVE},
-	{"new", JS_NEW},
-	{"null", JS_NULL},
-	{"package", JS_PACKAGE},
-	{"private", JS_PRIVATE},
-	{"protected", JS_PROTECTED},
-	{"public", JS_PUBLIC},
-	{"return", JS_RETURN},
-	{"short", JS_SHORT},
-	{"static", JS_STATIC},
-	{"super", JS_SUPER},
-	{"switch", JS_SWITCH},
-	{"synchronized", JS_SYNCHRONIZED},
-	{"this", JS_THIS},
-	{"throw", JS_THROW},
-	{"throws", JS_THROWS},
-	{"transient", JS_TRANSIENT},
-	{"true", JS_TRUE},
-	{"try", JS_TRY},
-	{"typeof", JS_TYPEOF},
-	{"var", JS_VAR},
-	{"void", JS_VOID},
-	{"volatile", JS_VOLATILE},
-	{"while", JS_WHILE},
-	{"with", JS_WITH},
+static const char *keywords[] = {
+	"break", "case", "catch", "continue", "debugger", "default", "delete",
+	"do", "else", "false", "finally", "for", "function", "if", "in",
+	"instanceof", "new", "null", "return", "switch", "this", "throw",
+	"true", "try", "typeof", "var", "void", "while", "with",
 };
 
-static inline js_Token findkeyword(const char *s)
+static const char *futurewords[] = {
+	"class", "const", "enum", "export", "extends", "import", "super",
+};
+
+static const char *strictfuturewords[] = {
+	"implements", "interface", "let", "package", "private", "protected",
+	"public", "static", "yield",
+};
+
+static inline int findword(const char *s, const char **list, int num)
 {
-	int m, l, r;
-	int c;
-
-	l = 0;
-	r = nelem(keywords) - 1;
-
+	int l = 0;
+	int r = num - 1;
 	while (l <= r) {
-		m = (l + r) >> 1;
-		c = strcmp(s, keywords[m].string);
+		int m = (l + r) >> 1;
+		int c = strcmp(s, list[m]);
 		if (c < 0)
 			r = m - 1;
 		else if (c > 0)
 			l = m + 1;
 		else
-			return keywords[m].token;
+			return m;
 	}
+	return -1;
+}
+
+static inline js_Token findkeyword(js_State *J, const char *s)
+{
+	int i = findword(s, keywords, nelem(keywords));
+	if (i >= 0)
+		return JS_BREAK + i;
+
+	if (findword(s, futurewords, nelem(futurewords)) >= 0)
+		return js_syntaxerror(J, "'%s' is a future reserved word", s);
+	if (J->strict && findword(s, strictfuturewords, nelem(strictfuturewords)) >= 0)
+		return js_syntaxerror(J, "'%s' is a strict mode future reserved word", s);
 
 	return JS_IDENTIFIER;
 }
 
 const char *tokenstrings[] = {
-	"ERROR", "EOF", "(identifier)", "null", "true", "false", "(number)",
-	"(string)", "(regexp)", "\\n", "{", "}", "(", ")", "[", "]", ".", ";",
-	",", "<", ">", "<=", ">=", "==", "!=", "===", "!==", "+", "-", "*",
-	"%", "++", "--", "<<", ">>", ">>>", "&", "|", "^", "!", "~", "&&",
-	"||", "?", ":", "=", "+=", "-=", "*=", "%=", "<<=", ">>=", ">>>=",
-	"&=", "|=", "^=", "/", "/=", "break", "case", "catch", "continue",
-	"default", "delete", "do", "else", "finally", "for", "function", "if",
-	"in", "instanceof", "new", "return", "switch", "this", "throw", "try",
-	"typeof", "var", "void", "while", "with", "abstract", "boolean",
-	"byte", "char", "class", "const", "debugger", "double", "enum",
-	"export", "extends", "final", "float", "goto", "implements", "import",
-	"int", "interface", "long", "native", "package", "private",
-	"protected", "public", "short", "static", "super", "synchronized",
-	"throws", "transient", "volatile",
+	"(error)", "(eof)", "(identifier)", "null", "true", "false",
+	"(number)", "(string)", "(regexp)", "(newline)",
+	"{", "}", "(", ")", "[", "]", ".", ";", ",",
+	"<", ">", "<=", ">=", "==", "!=", "===", "!==",
+	"+", "-", "*", "%", "++", "--", "<<", ">>", ">>>", "&", "|",
+	"^", "!", "~", "&&", "||", "?", ":",
+	"=", "+=", "-=", "*=", "%=", "<<=", ">>=", ">>>=", "&=", "|=", "^=",
+	"/", "/=",
+	"break", "case", "catch", "continue", "debugger", "default", "delete",
+	"do", "else", "finally", "for", "function", "if", "in", "instanceof",
+	"new", "return", "switch", "this", "throw", "try", "typeof", "var",
+	"void", "while", "with",
 };
 
 const char *js_tokentostring(js_Token t)
@@ -450,7 +408,7 @@ static js_Token js_leximp(js_State *J, const char **sp)
 
 			textend(J);
 
-			return findkeyword(J->yytext);
+			return findkeyword(J, J->yytext);
 		}
 
 		if (c == '.') {

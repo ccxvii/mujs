@@ -93,6 +93,7 @@ enum js_Token
 	JS_CASE,
 	JS_CATCH,
 	JS_CONTINUE,
+	JS_DEBUGGER,
 	JS_DEFAULT,
 	JS_DELETE,
 	JS_DO,
@@ -114,40 +115,6 @@ enum js_Token
 	JS_VOID,
 	JS_WHILE,
 	JS_WITH,
-
-	/* future reserved words */
-	JS_ABSTRACT,
-	JS_BOOLEAN,
-	JS_BYTE,
-	JS_CHAR,
-	JS_CLASS,
-	JS_CONST,
-	JS_DEBUGGER,
-	JS_DOUBLE,
-	JS_ENUM,
-	JS_EXPORT,
-	JS_EXTENDS,
-	JS_FINAL,
-	JS_FLOAT,
-	JS_GOTO,
-	JS_IMPLEMENTS,
-	JS_IMPORT,
-	JS_INT,
-	JS_INTERFACE,
-	JS_LONG,
-	JS_NATIVE,
-	JS_PACKAGE,
-	JS_PRIVATE,
-	JS_PROTECTED,
-	JS_PUBLIC,
-	JS_SHORT,
-	JS_STATIC,
-	JS_SUPER,
-	JS_SYNCHRONIZED,
-	JS_THROWS,
-	JS_TRANSIENT,
-	JS_VOLATILE,
-
 };
 
 struct js_State
@@ -158,6 +125,7 @@ struct js_State
 	struct { int g, i, m; } yyflags;
 	int yyline;
 	js_Token lasttoken;
+	int strict;
 };
 
 void js_initlex(js_State *J);
