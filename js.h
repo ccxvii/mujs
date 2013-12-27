@@ -156,10 +156,13 @@ struct js_State
 	size_t yylen, yycap;
 	double yynumber;
 	struct { int g, i, m; } yyflags;
+	int yyline;
 	js_Token lasttoken;
 };
 
+void js_initlex(js_State *J);
 js_Token js_lex(js_State *J, const char **sp);
+js_Token js_syntaxerror(js_State *J, const char *fmt, ...);
 const char *js_tokentostring(js_Token t);
 
 #endif

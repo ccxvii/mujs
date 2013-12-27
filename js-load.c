@@ -4,6 +4,8 @@ int js_loadstring(js_State *J, const char *source)
 {
 	js_Token t;
 
+	js_initlex(J);
+
 	do {
 		t = js_lex(J, &source);
 

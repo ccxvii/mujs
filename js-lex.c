@@ -118,6 +118,17 @@ const char *js_tokentostring(js_Token t)
 #define NEXTPEEK() (NEXT(), PEEK())
 #define LOOK(x) (PEEK() == x ? (NEXT(), 1) : 0)
 
+js_Token js_syntaxerror(js_State *J, const char *fmt, ...)
+{
+	va_list ap;
+	fprintf(stderr, "syntax error: line %d: ", J->yyline);
+	va_start(ap, fmt);
+	vfprintf(stderr, fmt, ap);
+	va_end(ap);
+	fprintf(stderr, "\n");
+	return JS_ERROR;
+}
+
 static void textinit(js_State *J)
 {
 	if (!J->yytext) {
@@ -260,13 +271,13 @@ static inline js_Token lexnumber(js_State *J, const char **sp)
 	if ((*sp)[0] == '0' && ((*sp)[1] == 'x' || (*sp)[1] == 'X')) {
 		*sp += 2;
 		if (!ishex(PEEK()))
-			return JS_ERROR;
+			return js_syntaxerror(J, "0x not followed by hexademical digit");
 		J->yynumber = lexhex(sp);
 		return JS_NUMBER;
 	}
 
-	if ((*sp)[0] == '0' && (*sp)[1] == '0')
-		return JS_ERROR;
+	if ((*sp)[0] == '0' && isdec((*sp)[1]))
+		return js_syntaxerror(J, "number with leading zero");
 
 	n = lexinteger(sp);
 	if (LOOK('.'))
@@ -274,7 +285,7 @@ static inline js_Token lexnumber(js_State *J, const char **sp)
 	n *= pow(10, lexexponent(sp));
 
 	if (isidentifierstart(PEEK()))
-		return JS_ERROR;
+		return js_syntaxerror(J, "number with letter suffix");
 
 	J->yynumber = n;
 	return JS_NUMBER;
@@ -318,7 +329,7 @@ static inline js_Token lexstring(js_State *J, const char **sp, int q)
 
 	while (c != q) {
 		if (c == 0 || isnewline(c))
-			return JS_ERROR;
+			return js_syntaxerror(J, "string not terminated");
 
 		if (c == '\\')
 			c = lexescape(sp);
@@ -363,12 +374,12 @@ static js_Token lexregexp(js_State *J, const char **sp)
 	c = GET();
 	while (c != '/') {
 		if (c == 0 || isnewline(c)) {
-			return JS_ERROR;
+			return js_syntaxerror(J, "regular expression not terminated");
 		} else if (c == '\\') {
 			textpush(J, c);
 			c = GET();
 			if (c == 0 || isnewline(c))
-				return JS_ERROR;
+				return js_syntaxerror(J, "regular expression not terminated");
 			textpush(J, c);
 			c = GET();
 		} else {
@@ -387,12 +398,12 @@ static js_Token lexregexp(js_State *J, const char **sp)
 		if (c == 'g') J->yyflags.g ++;
 		else if (c == 'i') J->yyflags.i ++;
 		else if (c == 'm') J->yyflags.m ++;
-		else return JS_ERROR;
+		else return js_syntaxerror(J, "illegal flag in regular expression: %c", c);
 		c = NEXTPEEK();
 	}
 
 	if (J->yyflags.g > 1 || J->yyflags.i > 1 || J->yyflags.m > 1)
-		return JS_ERROR;
+		return js_syntaxerror(J, "duplicated flag in regular expression");
 
 	return JS_REGEXP;
 }
@@ -404,15 +415,20 @@ static js_Token js_leximp(js_State *J, const char **sp)
 		while (iswhite(c))
 			c = GET();
 
-		if (isnewline(c))
+		if (isnewline(c)) {
+			/* consume CR LF as one unit */
+			if (c == '\r' && PEEK() == '\n')
+				NEXT();
+			J->yyline++;
 			return JS_NEWLINE;
+		}
 
 		if (c == '/') {
 			if (LOOK('/')) {
 				lexlinecomment(sp);
 			} else if (LOOK('*')) {
 				if (lexcomment(sp))
-					return JS_ERROR;
+					return js_syntaxerror(J, "multi-line comment not terminated");
 			} else if (isregexpcontext(J->lasttoken)) {
 				return lexregexp(J, sp);
 			} else if (LOOK('=')) {
@@ -564,4 +580,10 @@ js_Token js_lex(js_State *J, const char **sp)
 	js_Token t = js_leximp(J, sp);
 	J->lasttoken = t;
 	return t;
+}
+
+void js_initlex(js_State *J)
+{
+	J->yyline = 1;
+	J->lasttoken = JS_ERROR;
 }
