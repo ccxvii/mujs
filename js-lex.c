@@ -294,20 +294,20 @@ static inline js_Token lexnumber(js_State *J, const char **sp)
 static inline int lexescape(const char **sp)
 {
 	int c = GET();
-	int x, y, z, w;
+	int x = 0;
 
 	switch (c) {
 	case '0': return 0;
 	case 'u':
-		x = tohex(GET());
-		y = tohex(GET());
-		z = tohex(GET());
-		w = tohex(GET());
-		return (x << 12) | (y << 8) | (z << 4) | w;
+		if (!ishex(PEEK())) return x; else x |= NEXTPEEK() << 12;
+		if (!ishex(PEEK())) return x; else x |= NEXTPEEK() << 8;
+		if (!ishex(PEEK())) return x; else x |= NEXTPEEK() << 4;
+		if (!ishex(PEEK())) return x; else x |= NEXTPEEK();
+		return x;
 	case 'x':
-		x = tohex(GET());
-		y = tohex(GET());
-		return (x << 4) | y;
+		if (!ishex(PEEK())) return x; else x |= NEXTPEEK() << 4;
+		if (!ishex(PEEK())) return x; else x |= NEXTPEEK();
+		return x;
 	case '\'': return '\'';
 	case '"': return '"';
 	case '\\': return '\\';
