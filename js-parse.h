@@ -33,7 +33,9 @@ enum {
 	TK_OR_ASS,
 	TK_XOR_ASS,
 	TK_INC,
+	TK_NLTH_INC,
 	TK_DEC,
+	TK_NLTH_DEC,
 
 	/* keywords */
 	TK_BREAK,

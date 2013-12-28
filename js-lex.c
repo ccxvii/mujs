@@ -283,8 +283,7 @@ static inline int lexstring(js_State *J, const char **sp, int q)
 /* the ugliest language wart ever... */
 static int isregexpcontext(int last)
 {
-	switch (last)
-	{
+	switch (last) {
 	case ']':
 	case ')':
 	case TK_IDENTIFIER:
@@ -344,6 +343,20 @@ static int lexregexp(js_State *J, const char **sp)
 	return TK_REGEXP;
 }
 
+/* simple "return [no Line Terminator here] ..." contexts */
+static inline int isnlthcontext(int last)
+{
+	switch (last) {
+	case TK_BREAK:
+	case TK_CONTINUE:
+	case TK_RETURN:
+	case TK_THROW:
+		return 1;
+	default:
+		return 0;
+	}
+}
+
 static int lex(js_State *J, const char **sp)
 {
 	J->newline = 0;
@@ -360,6 +373,8 @@ static int lex(js_State *J, const char **sp)
 				NEXT();
 			J->yyline++;
 			J->newline = 1;
+			if (isnlthcontext(J->lasttoken))
+				return ';';
 			continue;
 		}
 
@@ -468,14 +483,14 @@ static int lex(js_State *J, const char **sp)
 
 		case '+':
 			if (LOOK('+'))
-				return TK_INC;
+				return J->newline ? TK_INC : TK_NLTH_INC;
 			if (LOOK('='))
 				return TK_ADD_ASS;
 			return '+';
 
 		case '-':
 			if (LOOK('-'))
-				return TK_DEC;
+				return J->newline ? TK_DEC : TK_NLTH_DEC;
 			if (LOOK('='))
 				return TK_SUB_ASS;
 			return '-';
@@ -529,6 +544,7 @@ void jsP_initlex(js_State *J, const char *source)
 int jsP_lex(js_State *J)
 {
 	int t = lex(J, &J->yysource);
+	// TODO: move yytext/yynumber into jsP_lval
 	J->lasttoken = t;
 	return t;
 }
