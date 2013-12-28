@@ -35,6 +35,7 @@ struct js_State
 	struct { int g, i, m; } yyflags;
 	int yyline;
 	int lasttoken;
+	int newline;
 	int strict;
 };
 

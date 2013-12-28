@@ -3,7 +3,7 @@
 
 enum {
 	TK_ERROR = 257,
-	TK_NEWLINE,
+
 	TK_IDENTIFIER,
 	TK_NUMBER,
 	TK_STRING,

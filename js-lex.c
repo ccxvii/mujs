@@ -346,6 +346,8 @@ static int lexregexp(js_State *J, const char **sp)
 
 static int lex(js_State *J, const char **sp)
 {
+	J->newline = 0;
+
 	while (1) {
 		int c = GET();
 
@@ -357,7 +359,8 @@ static int lex(js_State *J, const char **sp)
 			if (c == '\r' && PEEK() == '\n')
 				NEXT();
 			J->yyline++;
-			return TK_NEWLINE;
+			J->newline = 1;
+			continue;
 		}
 
 		if (c == '/') {
