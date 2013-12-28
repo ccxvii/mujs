@@ -269,12 +269,9 @@ static inline int lexstring(js_State *J, const char **sp, int q)
 	while (c != q) {
 		if (c == 0 || isnewline(c))
 			return syntaxerror(J, "string not terminated");
-
 		if (c == '\\')
 			c = lexescape(sp);
-
 		textpush(J, c);
-
 		c = GET();
 	}
 
@@ -415,7 +412,6 @@ static int lex(js_State *J, const char **sp)
 			return c;
 
 		case '\'':
-			return lexstring(J, sp, c);
 		case '"':
 			return lexstring(J, sp, c);
 
