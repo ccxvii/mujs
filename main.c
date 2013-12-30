@@ -9,7 +9,7 @@ main(int argc, char **argv)
 	J = js_newstate();
 
 	for (i = 1; i < argc; i++) {
-		js_loadfile(J, argv[1]);
+		js_loadfile(J, argv[i]);
 		// js_run(J);
 	}
 
