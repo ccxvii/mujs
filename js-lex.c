@@ -93,7 +93,7 @@ static inline void textend(js_State *J)
 
 static inline int iswhite(int c)
 {
-	return c == 0x9 || c == 0xB || c == 0xC || c == 0x20 || c == 0xA0;
+	return c == 0x9 || c == 0xB || c == 0xC || c == 0x20 || c == 0xA0 || c == 0xFEFF;
 }
 
 static inline int isnewline(c)
