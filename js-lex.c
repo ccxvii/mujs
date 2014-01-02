@@ -230,34 +230,43 @@ static inline int lexnumber(js_State *J, const char **sp)
 	return TK_NUMBER;
 }
 
-static inline int lexescape(const char **sp)
+static inline int lexescape(js_State *J, const char **sp)
 {
 	int c = GET();
 	int x = 0;
 
-	switch (c) {
-	case '0': return 0;
-	case 'u':
-		if (!ishex(PEEK())) return x; else x |= NEXTPEEK() << 12;
-		if (!ishex(PEEK())) return x; else x |= NEXTPEEK() << 8;
-		if (!ishex(PEEK())) return x; else x |= NEXTPEEK() << 4;
-		if (!ishex(PEEK())) return x; else x |= NEXTPEEK();
-		return x;
-	case 'x':
-		if (!ishex(PEEK())) return x; else x |= NEXTPEEK() << 4;
-		if (!ishex(PEEK())) return x; else x |= NEXTPEEK();
-		return x;
-	case '\'': return '\'';
-	case '"': return '"';
-	case '\\': return '\\';
-	case 'b': return '\b';
-	case 'f': return '\f';
-	case 'n': return '\n';
-	case 'r': return '\r';
-	case 't': return '\t';
-	case 'v': return '\v';
-	default: return c;
+	if (isnewline(c)) {
+		if (c == '\r' && PEEK() == '\n')
+			NEXT();
+		return 0;
 	}
+
+	switch (c) {
+	case 'u':
+		if (!ishex(PEEK())) return 1; else x |= NEXTPEEK() << 12;
+		if (!ishex(PEEK())) return 1; else x |= NEXTPEEK() << 8;
+		if (!ishex(PEEK())) return 1; else x |= NEXTPEEK() << 4;
+		if (!ishex(PEEK())) return 1; else x |= NEXTPEEK();
+		textpush(J, x);
+		break;
+	case 'x':
+		if (!ishex(PEEK())) return 1; else x |= NEXTPEEK() << 4;
+		if (!ishex(PEEK())) return 1; else x |= NEXTPEEK();
+		textpush(J, x);
+		break;
+	case '0': textpush(J, 0); break;
+	case '\\': textpush(J, '\\'); break;
+	case '\'': textpush(J, '\''); break;
+	case '"': textpush(J, '"'); break;
+	case 'b': textpush(J, '\b'); break;
+	case 'f': textpush(J, '\f'); break;
+	case 'n': textpush(J, '\n'); break;
+	case 'r': textpush(J, '\r'); break;
+	case 't': textpush(J, '\t'); break;
+	case 'v': textpush(J, '\v'); break;
+	default: textpush(J, c); break;
+	}
+	return 0;
 }
 
 static inline int lexstring(js_State *J, const char **sp, int q)
@@ -269,9 +278,12 @@ static inline int lexstring(js_State *J, const char **sp, int q)
 	while (c != q) {
 		if (c == 0 || isnewline(c))
 			return syntaxerror(J, "string not terminated");
-		if (c == '\\')
-			c = lexescape(sp);
-		textpush(J, c);
+		if (c == '\\') {
+			if (lexescape(J, sp))
+				return syntaxerror(J, "malformed escape sequence");
+		} else {
+			textpush(J, c);
+		}
 		c = GET();
 	}
 
