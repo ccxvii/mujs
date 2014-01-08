@@ -1,4 +1,4 @@
-SRCS := js-state.c js-string.c js-load.c js-lex.c js-parse.c
+SRCS := js-state.c js-string.c js-load.c js-lex.c js-parse.c js-ast.c
 HDRS := js.h js-parse.h
 OBJS := $(SRCS:%.c=build/%.o)
 
