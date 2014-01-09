@@ -43,6 +43,8 @@ struct js_State
 	int newline;
 	int strict;
 
+	int lookahead;
+
 	js_StringNode *strings;
 };
 
