@@ -41,24 +41,22 @@ static int accept(js_State *J, int t)
 	return 0;
 }
 
-static int expect(js_State *J, int t)
+static void expect(js_State *J, int t)
 {
 	if (accept(J, t))
-		return 1;
-	fprintf(stderr, "syntax error: unexpected token %d (expected %d)\n", J->lookahead, t);
-	return 0;
+		return;
+	jsP_error(J, "unexpected token %d (expected %d)", J->lookahead, t);
 }
 
-static int semicolon(js_State *J)
+static void semicolon(js_State *J)
 {
 	if (J->lookahead == ';') {
 		next(J);
-		return 1;
+		return;
 	}
 	if (J->newline || J->lookahead == '}' || J->lookahead == 0)
-		return 1;
-	fprintf(stderr, "syntax error: expected semicolon\n");
-	return 0;
+		return;
+	jsP_error(J, "unexpected token %d (expected semicolon)", J->lookahead);
 }
 
 static js_Ast *identifier(js_State *J)
@@ -68,50 +66,19 @@ static js_Ast *identifier(js_State *J)
 		next(J);
 		return a;
 	}
-	fprintf(stderr, "syntax error: expected identifier\n");
+	jsP_error(J, "unexpected token %d (expected identifier)", J->lookahead);
 	return NULL;
 }
 
 static js_Ast *identifiername(js_State *J)
 {
-	js_Ast *a = NULL;
-	switch (J->lookahead) {
-	case TK_IDENTIFIER: a = ID(J->yytext); break;
-	case TK_BREAK: a = ID("break"); break;
-	case TK_CASE: a = ID("case"); break;
-	case TK_CATCH: a = ID("catch"); break;
-	case TK_CONTINUE: a = ID("continue"); break;
-	case TK_DEBUGGER: a = ID("debugger"); break;
-	case TK_DEFAULT: a = ID("default"); break;
-	case TK_DELETE: a = ID("delete"); break;
-	case TK_DO: a = ID("do"); break;
-	case TK_ELSE: a = ID("else"); break;
-	case TK_FALSE: a = ID("false"); break;
-	case TK_FINALLY: a = ID("finally"); break;
-	case TK_FOR: a = ID("for"); break;
-	case TK_FUNCTION: a = ID("function"); break;
-	case TK_IF: a = ID("if"); break;
-	case TK_IN: a = ID("in"); break;
-	case TK_INSTANCEOF: a = ID("instanceof"); break;
-	case TK_NEW: a = ID("new"); break;
-	case TK_NULL: a = ID("null"); break;
-	case TK_RETURN: a = ID("a ="); break;
-	case TK_SWITCH: a = ID("switch"); break;
-	case TK_THIS: a = ID("this"); break;
-	case TK_THROW: a = ID("throw"); break;
-	case TK_TRUE: a = ID("true"); break;
-	case TK_TRY: a = ID("try"); break;
-	case TK_TYPEOF: a = ID("typeof"); break;
-	case TK_VAR: a = ID("var"); break;
-	case TK_VOID: a = ID("void"); break;
-	case TK_WHILE: a = ID("while"); break;
-	case TK_WITH: a = ID("with"); break;
-	default:
-		fprintf(stderr, "syntax error: expected identifier name\n");
-		return NULL;
+	if (J->lookahead == TK_IDENTIFIER || J->lookahead >= TK_BREAK) {
+		js_Ast *a = ID(J->yytext);
+		next(J);
+		return a;
 	}
-	next(J);
-	return a;
+	jsP_error(J, "unexpected token %d (expected identifier or keyword)", J->lookahead);
+	return NULL;
 }
 
 static js_Ast *arguments(js_State *J)
@@ -240,7 +207,7 @@ static js_Ast *primary(js_State *J)
 	if (accept(J, '{')) { a = EXP1(OBJECT, objectliteral(J)); expect(J, '}'); return a; }
 	if (accept(J, '[')) { a = EXP1(ARRAY, arrayliteral(J)); expect(J, ']'); return a; }
 	if (accept(J, '(')) { a = expression(J, 0); expect(J, ')'); return a; }
-	fprintf(stderr, "syntax error\n");
+	jsP_error(J, "unexpected token in primary expression: %d", J->lookahead);
 	return NULL;
 }
 
@@ -451,12 +418,37 @@ static js_Ast *block(js_State *J)
 void program(js_State *J)
 {
 	next(J);
-	while (J->lookahead != 0 && J->lookahead != TK_ERROR)
+	while (J->lookahead != 0)
 		statement(J);
+}
+
+int jsP_error(js_State *J, const char *fmt, ...)
+{
+	va_list ap;
+
+	fprintf(stderr, "syntax error: %s:%d: ", J->yyfilename, J->yyline);
+
+	va_start(ap, fmt);
+	vfprintf(stderr, fmt, ap);
+	va_end(ap);
+
+	fprintf(stderr, "\n");
+
+	longjmp(J->jb, 1);
+	return 0;
 }
 
 int jsP_parse(js_State *J)
 {
+	if (setjmp(J->jb)) {
+		jsP_freeast(J);
+		return 1;
+	}
+
 	program(J);
+
+	// TODO: compile to bytecode
+
+	jsP_freeast(J);
 	return 0;
 }

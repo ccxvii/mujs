@@ -2,9 +2,7 @@
 #define js_parse_h
 
 enum {
-	TK_ERROR = 257,
-
-	TK_IDENTIFIER,
+	TK_IDENTIFIER = 257,
 	TK_NUMBER,
 	TK_STRING,
 	TK_REGEXP,

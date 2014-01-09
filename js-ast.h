@@ -1,15 +1,14 @@
 #ifndef js_ast_h
 #define js_ast_h
 
-typedef struct js_Ast js_Ast;
-
 struct js_Ast
 {
 	int type;
-	int op;
+	int line;
 	js_Ast *a, *b, *c, *d;
 	double n;
 	const char *s;
+	js_Ast *next; /* next in alloc list */
 };
 
 enum
@@ -118,5 +117,6 @@ enum
 js_Ast *jsP_newnode(js_State *J, int type, js_Ast *a, js_Ast *b, js_Ast *c, js_Ast *d);
 js_Ast *jsP_newsnode(js_State *J, int type, const char *s);
 js_Ast *jsP_newnnode(js_State *J, int type, double n);
+void jsP_freeast(js_State *J);
 
 #endif

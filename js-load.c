@@ -1,7 +1,7 @@
 #include "js.h"
 #include "js-parse.h"
 
-int js_loadstring(js_State *J, const char *source)
+static int jsP_loadstring(js_State *J, const char *source)
 {
 	int t;
 
@@ -10,6 +10,13 @@ int js_loadstring(js_State *J, const char *source)
 	printf("parse result = %d\n", t);
 
 	return 0;
+}
+
+
+int js_loadstring(js_State *J, const char *source)
+{
+	J->yyfilename = "(string)";
+	return jsP_loadstring(J, source);
 }
 
 int js_loadfile(js_State *J, const char *filename)
@@ -41,7 +48,8 @@ int js_loadfile(js_State *J, const char *filename)
 
 	s[n] = 0; /* zero-terminate string containing file data */
 
-	t = js_loadstring(J, s);
+	J->yyfilename = filename;
+	t = jsP_loadstring(J, s);
 
 	free(s);
 	fclose(f);

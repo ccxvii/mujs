@@ -1,17 +1,6 @@
 #include "js.h"
 #include "js-parse.h"
 
-static int syntaxerror(js_State *J, const char *fmt, ...)
-{
-	va_list ap;
-	fprintf(stderr, "syntax error: line %d: ", J->yyline);
-	va_start(ap, fmt);
-	vfprintf(stderr, fmt, ap);
-	va_end(ap);
-	fprintf(stderr, "\n");
-	return TK_ERROR;
-}
-
 #define nelem(a) (sizeof (a) / sizeof (a)[0])
 
 static const char *keywords[] = {
@@ -54,9 +43,9 @@ static inline int findkeyword(js_State *J, const char *s)
 		return TK_BREAK + i; /* first keyword + i */
 
 	if (findword(s, futurewords, nelem(futurewords)) >= 0)
-		return syntaxerror(J, "'%s' is a future reserved word", s);
+		return jsP_error(J, "'%s' is a future reserved word", s);
 	if (J->strict && findword(s, strictfuturewords, nelem(strictfuturewords)) >= 0)
-		return syntaxerror(J, "'%s' is a strict mode future reserved word", s);
+		return jsP_error(J, "'%s' is a strict mode future reserved word", s);
 
 	return TK_IDENTIFIER;
 }
@@ -210,13 +199,13 @@ static inline int lexnumber(js_State *J, const char **sp)
 	if ((*sp)[0] == '0' && ((*sp)[1] == 'x' || (*sp)[1] == 'X')) {
 		*sp += 2;
 		if (!ishex(PEEK()))
-			return syntaxerror(J, "0x not followed by hexademical digit");
+			return jsP_error(J, "0x not followed by hexademical digit");
 		J->yynumber = lexhex(sp);
 		return TK_NUMBER;
 	}
 
 	if ((*sp)[0] == '0' && isdec((*sp)[1]))
-		return syntaxerror(J, "number with leading zero");
+		return jsP_error(J, "number with leading zero");
 
 	n = lexinteger(sp);
 	if (LOOK('.'))
@@ -224,7 +213,7 @@ static inline int lexnumber(js_State *J, const char **sp)
 	n *= pow(10, lexexponent(sp));
 
 	if (isidentifierstart(PEEK()))
-		return syntaxerror(J, "number with letter suffix");
+		return jsP_error(J, "number with letter suffix");
 
 	J->yynumber = n;
 	return TK_NUMBER;
@@ -277,10 +266,10 @@ static inline int lexstring(js_State *J, const char **sp, int q)
 
 	while (c != q) {
 		if (c == 0 || isnewline(c))
-			return syntaxerror(J, "string not terminated");
+			return jsP_error(J, "string not terminated");
 		if (c == '\\') {
 			if (lexescape(J, sp))
-				return syntaxerror(J, "malformed escape sequence");
+				return jsP_error(J, "malformed escape sequence");
 		} else {
 			textpush(J, c);
 		}
@@ -321,12 +310,12 @@ static int lexregexp(js_State *J, const char **sp)
 	c = GET();
 	while (c != '/') {
 		if (c == 0 || isnewline(c)) {
-			return syntaxerror(J, "regular expression not terminated");
+			return jsP_error(J, "regular expression not terminated");
 		} else if (c == '\\') {
 			textpush(J, c);
 			c = GET();
 			if (c == 0 || isnewline(c))
-				return syntaxerror(J, "regular expression not terminated");
+				return jsP_error(J, "regular expression not terminated");
 			textpush(J, c);
 			c = GET();
 		} else {
@@ -345,12 +334,12 @@ static int lexregexp(js_State *J, const char **sp)
 		if (c == 'g') J->yyflags.g ++;
 		else if (c == 'i') J->yyflags.i ++;
 		else if (c == 'm') J->yyflags.m ++;
-		else return syntaxerror(J, "illegal flag in regular expression: %c", c);
+		else return jsP_error(J, "illegal flag in regular expression: %c", c);
 		c = NEXTPEEK();
 	}
 
 	if (J->yyflags.g > 1 || J->yyflags.i > 1 || J->yyflags.m > 1)
-		return syntaxerror(J, "duplicated flag in regular expression");
+		return jsP_error(J, "duplicated flag in regular expression");
 
 	return TK_REGEXP;
 }
@@ -396,7 +385,7 @@ static int lex(js_State *J, const char **sp)
 				continue;
 			} else if (LOOK('*')) {
 				if (lexcomment(sp))
-					return syntaxerror(J, "multi-line comment not terminated");
+					return jsP_error(J, "multi-line comment not terminated");
 				continue;
 			} else if (isregexpcontext(J->lasttoken)) {
 				return lexregexp(J, sp);
@@ -541,8 +530,8 @@ static int lex(js_State *J, const char **sp)
 		}
 
 		if (c >= 0x20 && c <= 0x7E)
-			return syntaxerror(J, "unexpected character: '%c'", c);
-		return syntaxerror(J, "unexpected character: \\u%04X", c);
+			return jsP_error(J, "unexpected character: '%c'", c);
+		return jsP_error(J, "unexpected character: \\u%04X", c);
 	}
 }
 

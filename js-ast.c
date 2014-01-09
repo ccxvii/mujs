@@ -6,12 +6,16 @@ js_Ast *jsP_newnode(js_State *J, int type, js_Ast *a, js_Ast *b, js_Ast *c, js_A
 	js_Ast *node = malloc(sizeof(js_Ast));
 
 	node->type = type;
+	node->line = J->yyline;
 	node->a = a;
 	node->b = b;
 	node->c = c;
 	node->d = d;
 	node->n = 0;
 	node->s = NULL;
+
+	node->next = J->ast;
+	J->ast = node;
 
 	return node;
 }
@@ -28,6 +32,17 @@ js_Ast *jsP_newnnode(js_State *J, int type, double n)
 	js_Ast *node = jsP_newnode(J, type, 0, 0, 0, 0);
 	node->n = n;
 	return node;
+}
+
+void jsP_freeast(js_State *J)
+{
+	js_Ast *node = J->ast;
+	while (node) {
+		js_Ast *next = node->next;
+		free(node);
+		node = next;
+	}
+	J->ast = NULL;
 }
 
 static const char *strast(int type)
