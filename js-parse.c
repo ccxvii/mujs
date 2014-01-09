@@ -281,8 +281,8 @@ loop:
 static js_Ast *postfix(js_State *J)
 {
 	js_Ast *a = callexp(J);
-	if (accept(J, TK_NLTH_INC)) return EXP1(POSTINC, a);
-	if (accept(J, TK_NLTH_DEC)) return EXP1(POSTDEC, a);
+	if (!J->newline && accept(J, TK_INC)) return EXP1(POSTINC, a);
+	if (!J->newline && accept(J, TK_DEC)) return EXP1(POSTDEC, a);
 	return a;
 }
 
@@ -291,8 +291,8 @@ static js_Ast *unary(js_State *J)
 	if (accept(J, TK_DELETE)) return EXP1(DELETE, unary(J));
 	if (accept(J, TK_VOID)) return EXP1(VOID, unary(J));
 	if (accept(J, TK_TYPEOF)) return EXP1(TYPEOF, unary(J));
-	if (accept(J, TK_INC) || accept(J, TK_NLTH_INC)) return EXP1(PREINC, unary(J));
-	if (accept(J, TK_DEC) || accept(J, TK_NLTH_DEC)) return EXP1(PREDEC, unary(J));
+	if (accept(J, TK_INC)) return EXP1(PREINC, unary(J));
+	if (accept(J, TK_DEC)) return EXP1(PREDEC, unary(J));
 	if (accept(J, '+')) return EXP1(POS, unary(J));
 	if (accept(J, '-')) return EXP1(NEG, unary(J));
 	if (accept(J, '~')) return EXP1(BITNOT, unary(J));

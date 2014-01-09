@@ -495,14 +495,14 @@ static int lex(js_State *J, const char **sp)
 
 		case '+':
 			if (LOOK('+'))
-				return J->newline ? TK_INC : TK_NLTH_INC;
+				return TK_INC;
 			if (LOOK('='))
 				return TK_ADD_ASS;
 			return '+';
 
 		case '-':
 			if (LOOK('-'))
-				return J->newline ? TK_DEC : TK_NLTH_DEC;
+				return TK_DEC;
 			if (LOOK('='))
 				return TK_SUB_ASS;
 			return '-';
