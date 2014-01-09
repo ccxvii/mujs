@@ -27,6 +27,49 @@ static js_Ast *assignment(js_State *J, int notin);
 static js_Ast *memberexp(js_State *J);
 static js_Ast *block(js_State *J);
 
+static const char *tokenstring[] = {
+	"(end-of-file)",
+	"'\\x01'", "'\\x02'", "'\\x03'", "'\\x04'", "'\\x05'", "'\\x06'", "'\\x07'",
+	"'\\x08'", "'\\x09'", "'\\x0A'", "'\\x0B'", "'\\x0C'", "'\\x0D'", "'\\x0E'", "'\\x0F'",
+	"'\\x10'", "'\\x11'", "'\\x12'", "'\\x13'", "'\\x14'", "'\\x15'", "'\\x16'", "'\\x17'",
+	"'\\x18'", "'\\x19'", "'\\x1A'", "'\\x1B'", "'\\x1C'", "'\\x1D'", "'\\x1E'", "'\\x1F'",
+	"' '", "'!'", "'\"'", "'#'", "'$'", "'%'", "'&'", "'\\''",
+	"'('", "')'", "'*'", "'+'", "','", "'-'", "'.'", "'/'",
+	"'0'", "'1'", "'2'", "'3'", "'4'", "'5'", "'6'", "'7'",
+	"'8'", "'9'", "':'", "';'", "'<'", "'='", "'>'", "'?'",
+	"'@'", "'A'", "'B'", "'C'", "'D'", "'E'", "'F'", "'G'",
+	"'H'", "'I'", "'J'", "'K'", "'L'", "'M'", "'N'", "'O'",
+	"'P'", "'Q'", "'R'", "'S'", "'T'", "'U'", "'V'", "'W'",
+	"'X'", "'Y'", "'Z'", "'['", "'\'", "']'", "'^'", "'_'",
+	"'`'", "'a'", "'b'", "'c'", "'d'", "'e'", "'f'", "'g'",
+	"'h'", "'i'", "'j'", "'k'", "'l'", "'m'", "'n'", "'o'",
+	"'p'", "'q'", "'r'", "'s'", "'t'", "'u'", "'v'", "'w'",
+	"'x'", "'y'", "'z'", "'{'", "'|'", "'}'", "'~'", "'\\x7F'",
+
+	0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
+	0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
+	0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
+	0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
+	0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
+	0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
+	0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
+	0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
+
+	"(identifier)", "(number)", "(string)", "(regexp)",
+
+	"'<='", "'>='", "'=='", "'!='", "'==='", "'!=='",
+	"'<<'", "'>>'", "'>>>'", "'&&'", "'||'",
+	"'+='", "'-='", "'*='", "'/='", "'%='",
+	"'<<='", "'>>='", "'>>>='", "'&='", "'|='", "'^='",
+	"'++'", "'--'",
+
+	"'break'", "'case'", "'catch'", "'continue'", "'debugger'",
+	"'default'", "'delete'", "'do'", "'else'", "'false'", "'finally'", "'for'",
+	"'function'", "'if'", "'in'", "'instanceof'", "'new'", "'null'", "'return'",
+	"'switch'", "'this'", "'throw'", "'true'", "'try'", "'typeof'", "'var'",
+	"'void'", "'while'", "'with'",
+};
+
 static void next(js_State *J)
 {
 	J->lookahead = jsP_lex(J);
@@ -45,7 +88,7 @@ static void expect(js_State *J, int t)
 {
 	if (accept(J, t))
 		return;
-	jsP_error(J, "unexpected token %d (expected %d)", J->lookahead, t);
+	jsP_error(J, "unexpected token: %s (expected %s)", tokenstring[J->lookahead], tokenstring[t]);
 }
 
 static void semicolon(js_State *J)
@@ -56,7 +99,7 @@ static void semicolon(js_State *J)
 	}
 	if (J->newline || J->lookahead == '}' || J->lookahead == 0)
 		return;
-	jsP_error(J, "unexpected token %d (expected semicolon)", J->lookahead);
+	jsP_error(J, "unexpected token: %s (expected ';')", tokenstring[J->lookahead]);
 }
 
 static js_Ast *identifier(js_State *J)
@@ -66,7 +109,7 @@ static js_Ast *identifier(js_State *J)
 		next(J);
 		return a;
 	}
-	jsP_error(J, "unexpected token %d (expected identifier)", J->lookahead);
+	jsP_error(J, "unexpected token: %s (expected identifier)", tokenstring[J->lookahead]);
 	return NULL;
 }
 
@@ -77,7 +120,7 @@ static js_Ast *identifiername(js_State *J)
 		next(J);
 		return a;
 	}
-	jsP_error(J, "unexpected token %d (expected identifier or keyword)", J->lookahead);
+	jsP_error(J, "unexpected token: %s (expected identifier or keyword)", tokenstring[J->lookahead]);
 	return NULL;
 }
 
@@ -207,7 +250,7 @@ static js_Ast *primary(js_State *J)
 	if (accept(J, '{')) { a = EXP1(OBJECT, objectliteral(J)); expect(J, '}'); return a; }
 	if (accept(J, '[')) { a = EXP1(ARRAY, arrayliteral(J)); expect(J, ']'); return a; }
 	if (accept(J, '(')) { a = expression(J, 0); expect(J, ')'); return a; }
-	jsP_error(J, "unexpected token in primary expression: %d", J->lookahead);
+	jsP_error(J, "unexpected token in expression: %s", tokenstring[J->lookahead]);
 	return NULL;
 }
 
