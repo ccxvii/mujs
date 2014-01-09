@@ -6,15 +6,14 @@
 #define A2(x,a,b)	jsP_newnode(J, x, a, b, 0, 0)
 #define A3(x,a,b,c)	jsP_newnode(J, x, a, b, c, 0)
 
-#define LIST(h,t)	jsP_newnode(J, AST_LIST, h, t, 0, 0);
-#define HEAD(h)		jsP_newnode(J, AST_LIST, h, 0, 0, 0);
-#define TAIL(t)		jsP_newnode(J, AST_LIST, 0, t, 0, 0);
+#define LIST(h)		jsP_newnode(J, AST_LIST, h, 0, 0, 0);
 
 #define EXP0(x)		jsP_newnode(J, EXP_ ## x, 0, 0, 0, 0)
 #define EXP1(x,a)	jsP_newnode(J, EXP_ ## x, a, 0, 0, 0)
 #define EXP2(x,a,b)	jsP_newnode(J, EXP_ ## x, a, b, 0, 0)
 #define EXP3(x,a,b,c)	jsP_newnode(J, EXP_ ## x, a, b, c, 0)
 
+#define STM0(x)		jsP_newnode(J, STM_ ## x, 0, 0, 0, 0)
 #define STM1(x,a)	jsP_newnode(J, STM_ ## x, a, 0, 0, 0)
 #define STM2(x,a,b)	jsP_newnode(J, STM_ ## x, a, b, 0, 0)
 #define STM3(x,a,b,c)	jsP_newnode(J, STM_ ## x, a, b, c, 0)
@@ -23,7 +22,8 @@
 static js_Ast *expression(js_State *J, int notin);
 static js_Ast *assignment(js_State *J, int notin);
 static js_Ast *memberexp(js_State *J);
-static js_Ast *block(js_State *J);
+static js_Ast *statement(js_State *J);
+static js_Ast *functionbody(js_State *J);
 
 static const char *tokenstring[] = {
 	"(end-of-file)",
@@ -111,6 +111,13 @@ static js_Ast *identifier(js_State *J)
 	return NULL;
 }
 
+static js_Ast *identifieropt(js_State *J)
+{
+	if (J->lookahead == TK_IDENTIFIER)
+		return identifier(J);
+	return NULL;
+}
+
 static js_Ast *identifiername(js_State *J)
 {
 	if (J->lookahead == TK_IDENTIFIER || J->lookahead >= TK_BREAK) {
@@ -124,23 +131,23 @@ static js_Ast *identifiername(js_State *J)
 
 static js_Ast *arguments(js_State *J)
 {
-	js_Ast *head, *node;
+	js_Ast *head, *tail, *node;
 
 	if (J->lookahead == ')')
 		return NULL;
 
 	node = assignment(J, 0);
-	head = HEAD(node);
+	head = tail = LIST(node);
 	while (accept(J, ',')) {
 		node = assignment(J, 0);
-		head = LIST(head, node);
+		tail = tail->b = LIST(node);
 	}
 	return head;
 }
 
 static js_Ast *arrayliteral(js_State *J)
 {
-	js_Ast *head, *node;
+	js_Ast *head, *tail, *node;
 
 	while (J->lookahead == ',')
 		next(J);
@@ -149,14 +156,14 @@ static js_Ast *arrayliteral(js_State *J)
 		return NULL;
 
 	node = assignment(J, 0);
-	head = HEAD(node);
+	head = tail = LIST(node);
 	while (accept(J, ',')) {
 		while (J->lookahead == ',')
 			next(J);
 		if (J->lookahead == ']')
 			break;
 		node = assignment(J, 0);
-		head = LIST(head, node);
+		tail = tail->b = LIST(node);
 	}
 	return head;
 }
@@ -185,7 +192,7 @@ static js_Ast *propassign(js_State *J)
 		name = propname(J);
 		expect(J, '(');
 		expect(J, ')');
-		body = block(J);
+		body = functionbody(J);
 		return EXP2(PROP_GET, name, body);
 	}
 
@@ -195,7 +202,7 @@ static js_Ast *propassign(js_State *J)
 		expect(J, '(');
 		arg = identifier(J);
 		expect(J, ')');
-		body = block(J);
+		body = functionbody(J);
 		return EXP3(PROP_SET, name, arg, body);
 	}
 
@@ -207,18 +214,18 @@ static js_Ast *propassign(js_State *J)
 
 static js_Ast *objectliteral(js_State *J)
 {
-	js_Ast *head, *node;
+	js_Ast *head, *tail, *node;
 
 	if (J->lookahead == '}')
 		return NULL;
 
 	node = propassign(J);
-	head = HEAD(node);
+	head = tail = LIST(node);
 	while (accept(J, ',')) {
 		if (J->lookahead == '}')
 			break;
 		node = propassign(J);
-		head = LIST(head, node);
+		tail = tail->b = LIST(node);
 	}
 	return head;
 }
@@ -252,9 +259,25 @@ static js_Ast *primary(js_State *J)
 	return NULL;
 }
 
+static js_Ast *paramlist(js_State *J)
+{
+	js_Ast *head, *tail, *node;
+
+	if (J->lookahead == ')')
+		return NULL;
+
+	node = identifier(J);
+	head = tail = LIST(node);
+	while (accept(J, ',')) {
+		node = identifier(J);
+		tail = tail->b = LIST(node);
+	}
+	return head;
+}
+
 static js_Ast *newexp(js_State *J)
 {
-	js_Ast *a, *b;
+	js_Ast *a, *b, *c;
 	if (accept(J, TK_NEW)) {
 		a = memberexp(J);
 		if (accept(J, '(')) {
@@ -263,6 +286,14 @@ static js_Ast *newexp(js_State *J)
 			return EXP2(NEW, a, b);
 		}
 		return EXP1(NEW, a);
+	}
+	if (accept(J, TK_FUNCTION)) {
+		a = identifieropt(J);
+		expect(J, '(');
+		b = paramlist(J);
+		expect(J, ')');
+		c = functionbody(J);
+		return EXP3(FUNC, a, b, c);
 	}
 	return primary(J);
 }
@@ -440,27 +471,324 @@ static js_Ast *expression(js_State *J, int notin)
 	return a;
 }
 
-void statement(js_State *J)
+static js_Ast *vardec(js_State *J, int notin)
 {
-	js_Ast *exp = expression(J, 1);
-	semicolon(J);
-	printast(exp);
-	putchar(';');
-	putchar('\n');
+	js_Ast *a, *b;
+
+	a = identifier(J);
+	if (accept(J, '='))
+		b = assignment(J, notin);
+	else
+		b = NULL;
+
+	return A2(AST_INIT, a, b);
+
+}
+
+static js_Ast *vardeclist(js_State *J, int notin)
+{
+	js_Ast *head, *tail, *node;
+
+	node = vardec(J, notin);
+	head = tail = LIST(node);
+	while (accept(J, ',')) {
+		node = vardec(J, notin);
+		tail = tail->b = LIST(node);
+	}
+	return head;
+}
+
+static js_Ast *expopt(js_State *J, int end)
+{
+	js_Ast *a = NULL;
+	if (J->lookahead != end)
+		a = expression(J, 0);
+	expect(J, end);
+	return a;
+}
+
+static js_Ast *casestatementlist(js_State *J)
+{
+	js_Ast *head, *tail, *node;
+
+	if (J->lookahead == '}' || J->lookahead == TK_CASE || J->lookahead == TK_DEFAULT)
+		return NULL;
+
+	node = statement(J);
+	head = tail = LIST(node);
+	while (J->lookahead != '}' && J->lookahead != TK_CASE && J->lookahead != TK_DEFAULT) {
+		node = statement(J);
+		tail = tail->b = LIST(node);
+	}
+
+	return head;
+}
+
+static js_Ast *caseclause(js_State *J)
+{
+	js_Ast *a, *b;
+
+	if (accept(J, TK_CASE)) {
+		a = expression(J, 0);
+		expect(J, ':');
+		b = casestatementlist(J);
+		return STM2(CASE, a, b);
+	}
+
+	if (accept(J, TK_DEFAULT)) {
+		expect(J, ':');
+		a = casestatementlist(J);
+		return STM1(DEFAULT, a);
+	}
+
+	jsP_error(J, "unexpected token in switch: %s", tokenstring[J->lookahead]);
+	return NULL;
+}
+
+static js_Ast *caseblock(js_State *J)
+{
+	js_Ast *head, *tail, *node;
+
+	expect(J, '{');
+	if (accept(J, '}'))
+		return NULL;
+
+	node = caseclause(J);
+	head = tail = LIST(node);
+	while (J->lookahead != '}') {
+		node = caseclause(J);
+		tail = tail->b = LIST(node);
+	}
+
+	expect(J, '}');
+	return STM1(BLOCK, head);
 }
 
 static js_Ast *block(js_State *J)
 {
+	js_Ast *head, *tail, *node;
+
 	expect(J, '{');
+	if (accept(J, '}'))
+		return NULL;
+
+	node = statement(J);
+	head = tail = LIST(node);
+	while (J->lookahead != '}') {
+		node = statement(J);
+		tail = tail->b = LIST(node);
+	}
+
 	expect(J, '}');
+	return STM1(BLOCK, head);
+}
+
+static js_Ast *statement(js_State *J)
+{
+	js_Ast *a, *b, *c, *d;
+
+	if (J->lookahead == '{') {
+		return block(J);
+	}
+
+	if (accept(J, ';')) {
+		return STM0(NOP);
+	}
+
+	if (accept(J, TK_CONTINUE)) {
+		a = identifieropt(J);
+		semicolon(J);
+		return STM1(CONTINUE, a);
+	}
+
+	if (accept(J, TK_BREAK)) {
+		a = identifieropt(J);
+		semicolon(J);
+		return STM1(BREAK, a);
+	}
+
+	if (accept(J, TK_RETURN)) {
+		if (J->lookahead != ';' && J->lookahead != '}' && J->lookahead != 0)
+			a = expression(J, 0);
+		else
+			a = NULL;
+		semicolon(J);
+		return STM1(RETURN, a);
+	}
+
+	if (accept(J, TK_WITH)) {
+		expect(J, '(');
+		a = expression(J, 0);
+		expect(J, ')');
+		b = statement(J);
+		return STM2(WITH, a, b);
+	}
+
+	if (accept(J, TK_THROW)) {
+		a = expression(J, 0);
+		semicolon(J);
+		return STM1(THROW, a);
+	}
+
+	if (accept(J, TK_TRY)) {
+		a = block(J);
+		b = c = d = NULL;
+		if (accept(J, TK_CATCH)) {
+			expect(J, '(');
+			b = identifier(J);
+			expect(J, ')');
+			c = block(J);
+		}
+		if (accept(J, TK_FINALLY)) {
+			d = block(J);
+		}
+		if (!b && !d)
+			jsP_error(J, "unexpected token: %s (expected 'catch' or 'finally')", tokenstring[J->lookahead]);
+		return STM4(TRY, a, b, c, d);
+	}
+
+	if (accept(J, TK_DEBUGGER)) {
+		semicolon(J);
+		return STM0(DEBUGGER);
+	}
+
+	if (accept(J, TK_IF)) {
+		expect(J, '(');
+		a = expression(J, 0);
+		expect(J, ')');
+		b = statement(J);
+		if (accept(J, TK_ELSE))
+			c = statement(J);
+		else
+			c = NULL;
+		return STM3(IF, a, b, c);
+	}
+
+	if (accept(J, TK_DO)) {
+		a = statement(J);
+		expect(J, TK_WHILE);
+		expect(J, '(');
+		b = expression(J, 0);
+		expect(J, ')');
+		semicolon(J);
+		return STM2(DO, a, b);
+	}
+
+	if (accept(J, TK_WHILE)) {
+		expect(J, '(');
+		a = expression(J, 0);
+		expect(J, ')');
+		b = statement(J);
+		return STM2(WHILE, a, b);
+	}
+
+	if (accept(J, TK_VAR)) {
+		a = vardeclist(J, 0);
+		semicolon(J);
+		return STM1(VAR, a);
+	}
+
+	if (accept(J, TK_FOR)) {
+		expect(J, '(');
+		if (accept(J, TK_VAR)) {
+			a = vardeclist(J, 1);
+			if (accept(J, ';')) {
+				b = expopt(J, ';');
+				c = expopt(J, ')');
+				d = statement(J);
+				return STM4(FOR_VAR, a, b, c, d);
+			}
+			if (accept(J, TK_IN)) {
+				b = expression(J, 0);
+				expect(J, ')');
+				c = statement(J);
+				return STM3(FOR_IN_VAR, a, b, c);
+			}
+			jsP_error(J, "unexpected token in for-var-statement: %s", tokenstring[J->lookahead]);
+			return NULL;
+		}
+
+		if (J->lookahead != ';') {
+			a = expression(J, 1);
+		}
+		if (accept(J, ';')) {
+			b = expopt(J, ';');
+			c = expopt(J, ')');
+			d = statement(J);
+			return STM4(FOR, a, b, c, d);
+		}
+		if (accept(J, TK_IN)) {
+			b = expression(J, 0);
+			expect(J, ')');
+			c = statement(J);
+			return STM3(FOR_IN, a, b, c);
+		}
+		jsP_error(J, "unexpected token in for-statement: %s", tokenstring[J->lookahead]);
+		return NULL;
+	}
+
+	if (accept(J, TK_SWITCH)) {
+		expect(J, '(');
+		a = expression(J, 0);
+		expect(J, ')');
+		b = caseblock(J);
+		return STM2(SWITCH, a, b);
+	}
+
+	if (J->lookahead != TK_FUNCTION) {
+		a = expression(J, 0);
+		semicolon(J);
+		return a;
+	}
+
+	jsP_error(J, "unexpected token in statement: %s", tokenstring[J->lookahead]);
 	return NULL;
 }
 
-void program(js_State *J)
+static js_Ast *fundec(js_State *J)
 {
-	next(J);
-	while (J->lookahead != 0)
-		statement(J);
+	js_Ast *a, *b, *c;
+	a = identifier(J);
+	expect(J, '(');
+	b = paramlist(J);
+	expect(J, ')');
+	c = functionbody(J);
+	return STM3(FUNC, a, b, c);
+}
+
+static js_Ast *sourceelement(js_State *J)
+{
+	if (accept(J, TK_FUNCTION))
+		return fundec(J);
+	return statement(J);
+}
+
+static js_Ast *sourcelist(js_State *J)
+{
+	js_Ast *head, *tail, *node;
+
+	if (J->lookahead == '}' || J->lookahead == 0)
+		return NULL;
+
+	node = sourceelement(J);
+	head = tail = LIST(node);
+	while (J->lookahead != '}' && J->lookahead != 0) {
+		node = sourceelement(J);
+		tail = tail->b = LIST(node);
+	}
+
+	return STM1(BLOCK, head);
+}
+
+static js_Ast *functionbody(js_State *J)
+{
+	js_Ast *a;
+
+	expect(J, '{');
+	a = sourcelist(J);
+	expect(J, '}');
+
+	return a;
 }
 
 int jsP_error(js_State *J, const char *fmt, ...)
@@ -486,7 +814,9 @@ int jsP_parse(js_State *J)
 		return 1;
 	}
 
-	program(J);
+	next(J);
+	printast(sourcelist(J));
+	putchar('\n');
 
 	// TODO: compile to bytecode
 

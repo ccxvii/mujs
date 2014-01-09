@@ -53,6 +53,7 @@ static const char *strast(int type)
 	case AST_NUMBER: return "NUMBER";
 	case AST_STRING: return "STRING";
 	case AST_REGEXP: return "REGEXP";
+	case AST_INIT: return "INIT";
 	case EXP_NULL: return "NULL";
 	case EXP_TRUE: return "TRUE";
 	case EXP_FALSE: return "FALSE";
@@ -62,11 +63,11 @@ static const char *strast(int type)
 	case EXP_PROP_VAL: return "PROP_VAL";
 	case EXP_PROP_GET: return "PROP_GET";
 	case EXP_PROP_SET: return "PROP_SET";
-	case EXP_INDEX: return "EXP_INDEX";
-	case EXP_MEMBER: return "EXP_MEMBER";
+	case EXP_INDEX: return "INDEX";
+	case EXP_MEMBER: return "MEMBER";
 	case EXP_NEW: return "new";
-	case EXP_CALL: return "EXP_CALL";
-	case EXP_FUNC: return "EXP_FUNC";
+	case EXP_CALL: return "CALL";
+	case EXP_FUNC: return "function";
 	case EXP_COND: return "?:";
 	case EXP_COMMA: return ",";
 	case EXP_DELETE: return "delete";
@@ -115,16 +116,17 @@ static const char *strast(int type)
 	case EXP_ASS_BITAND: return "&=";
 	case EXP_ASS_BITXOR: return "^=";
 	case EXP_ASS_BITOR: return "|=";
-	case STM_NOP: return "STM_NOP";
-	case STM_EXP: return "STM_EXP";
-	case STM_VAR: return "STM_VAR";
+	case STM_BLOCK: return "BLOCK";
+	case STM_FUNC: return "function-decl";
+	case STM_NOP: return "NOP";
+	case STM_VAR: return "var";
 	case STM_IF: return "if";
 	case STM_DO: return "do-while";
 	case STM_WHILE: return "while";
-	case STM_FOR_EXP: return "for_3";
-	case STM_FOR_VAR_EXP: return "for_var_3";
+	case STM_FOR: return "for";
+	case STM_FOR_VAR: return "for_var";
 	case STM_FOR_IN: return "for_in";
-	case STM_FOR_VAR_IN: return "for_var_in";
+	case STM_FOR_IN_VAR: return "for_in_var";
 	case STM_CONTINUE: return "continue";
 	case STM_BREAK: return "break";
 	case STM_RETURN: return "return";
@@ -140,18 +142,35 @@ static const char *strast(int type)
 	}
 }
 
+void printlist(js_Ast *n)
+{
+	while (n) {
+		printast(n->a);
+		n = n->b;
+		if (n)
+			putchar(' ');
+	}
+}
+
 void printast(js_Ast *n)
 {
 	switch (n->type) {
-		case AST_IDENTIFIER: printf("%s", n->s); return;
-		case AST_NUMBER: printf("%g", n->n); return;
-		case AST_STRING: printf("'%s'", n->s); return;
-		case AST_REGEXP: printf("/%s/", n->s); return;
-		default: printf("(%s", strast(n->type));
+	case AST_IDENTIFIER: printf("%s", n->s); return;
+	case AST_NUMBER: printf("%g", n->n); return;
+	case AST_STRING: printf("'%s'", n->s); return;
+	case AST_REGEXP: printf("/%s/", n->s); return;
+	case AST_LIST:
+		putchar('[');
+		printlist(n);
+		putchar(']');
+		break;
+	default:
+		printf("(%s", strast(n->type));
+		if (n->a) { putchar(' '); printast(n->a); }
+		if (n->b) { putchar(' '); printast(n->b); }
+		if (n->c) { putchar(' '); printast(n->c); }
+		if (n->d) { putchar(' '); printast(n->d); }
+		putchar(')');
+		break;
 	}
-	if (n->a) { putchar(' '); printast(n->a); }
-	if (n->b) { putchar(' '); printast(n->b); }
-	if (n->c) { putchar(' '); printast(n->c); }
-	if (n->d) { putchar(' '); printast(n->d); }
-	putchar(')');
 }

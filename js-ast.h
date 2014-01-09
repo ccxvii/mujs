@@ -14,6 +14,7 @@ struct js_Ast
 enum
 {
 	AST_LIST,
+	AST_INIT,
 
 	AST_IDENTIFIER,
 	AST_NUMBER,
@@ -37,7 +38,7 @@ enum
 	EXP_MEMBER,
 	EXP_NEW,
 	EXP_CALL,
-	EXP_FUNC,
+	EXP_FUNC, /* function expression */
 	EXP_COND,
 	EXP_COMMA,
 
@@ -91,16 +92,17 @@ enum
 	EXP_ASS_BITOR,
 
 	/* statements */
+	STM_BLOCK,
+	STM_FUNC, /* function declaration */
 	STM_NOP,
-	STM_EXP,
 	STM_VAR,
 	STM_IF,
 	STM_DO,
 	STM_WHILE,
-	STM_FOR_EXP,
-	STM_FOR_VAR_EXP,
+	STM_FOR,
+	STM_FOR_VAR,
 	STM_FOR_IN,
-	STM_FOR_VAR_IN,
+	STM_FOR_IN_VAR,
 	STM_CONTINUE,
 	STM_BREAK,
 	STM_RETURN,
@@ -118,5 +120,7 @@ js_Ast *jsP_newnode(js_State *J, int type, js_Ast *a, js_Ast *b, js_Ast *c, js_A
 js_Ast *jsP_newsnode(js_State *J, int type, const char *s);
 js_Ast *jsP_newnnode(js_State *J, int type, double n);
 void jsP_freeast(js_State *J);
+
+void printast(js_Ast *n);
 
 #endif
