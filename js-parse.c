@@ -10,8 +10,6 @@
 #define HEAD(h)		jsP_newnode(J, AST_LIST, h, 0, 0, 0);
 #define TAIL(t)		jsP_newnode(J, AST_LIST, 0, t, 0, 0);
 
-#define ID(s)		jsP_newsnode(J, AST_IDENTIFIER, s)
-
 #define EXP0(x)		jsP_newnode(J, EXP_ ## x, 0, 0, 0, 0)
 #define EXP1(x,a)	jsP_newnode(J, EXP_ ## x, a, 0, 0, 0)
 #define EXP2(x,a,b)	jsP_newnode(J, EXP_ ## x, a, b, 0, 0)
@@ -105,7 +103,7 @@ static void semicolon(js_State *J)
 static js_Ast *identifier(js_State *J)
 {
 	if (J->lookahead == TK_IDENTIFIER) {
-		js_Ast *a = ID(J->yytext);
+		js_Ast *a = jsP_newsnode(J, AST_IDENTIFIER, J->yytext);
 		next(J);
 		return a;
 	}
@@ -116,7 +114,7 @@ static js_Ast *identifier(js_State *J)
 static js_Ast *identifiername(js_State *J)
 {
 	if (J->lookahead == TK_IDENTIFIER || J->lookahead >= TK_BREAK) {
-		js_Ast *a = ID(J->yytext);
+		js_Ast *a = jsP_newsnode(J, AST_IDENTIFIER, J->yytext);
 		next(J);
 		return a;
 	}
@@ -170,7 +168,7 @@ static js_Ast *propname(js_State *J)
 		name = jsP_newnnode(J, AST_NUMBER, J->yynumber);
 		next(J);
 	} else if (J->lookahead == TK_STRING) {
-		name = jsP_newsnode(J, AST_NUMBER, J->yytext);
+		name = jsP_newsnode(J, AST_STRING, J->yytext);
 		next(J);
 	} else {
 		name = identifiername(J);
