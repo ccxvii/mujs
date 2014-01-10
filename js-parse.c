@@ -2,10 +2,6 @@
 #include "js-parse.h"
 #include "js-ast.h"
 
-#define A1(x,a)		jsP_newnode(J, x, a, 0, 0, 0)
-#define A2(x,a,b)	jsP_newnode(J, x, a, b, 0, 0)
-#define A3(x,a,b,c)	jsP_newnode(J, x, a, b, c, 0)
-
 #define LIST(h)		jsP_newnode(J, AST_LIST, h, 0, 0, 0);
 
 #define EXP0(x)		jsP_newnode(J, EXP_ ## x, 0, 0, 0, 0)
@@ -19,54 +15,13 @@
 #define STM3(x,a,b,c)	jsP_newnode(J, STM_ ## x, a, b, c, 0)
 #define STM4(x,a,b,c,d)	jsP_newnode(J, STM_ ## x, a, b, c, d)
 
+#define TOKSTR		jsP_tokenstring(J->lookahead)
+
 static js_Ast *expression(js_State *J, int notin);
 static js_Ast *assignment(js_State *J, int notin);
 static js_Ast *memberexp(js_State *J);
 static js_Ast *statement(js_State *J);
 static js_Ast *funcbody(js_State *J);
-
-static const char *tokenstring[] = {
-	"(end-of-file)",
-	"'\\x01'", "'\\x02'", "'\\x03'", "'\\x04'", "'\\x05'", "'\\x06'", "'\\x07'",
-	"'\\x08'", "'\\x09'", "'\\x0A'", "'\\x0B'", "'\\x0C'", "'\\x0D'", "'\\x0E'", "'\\x0F'",
-	"'\\x10'", "'\\x11'", "'\\x12'", "'\\x13'", "'\\x14'", "'\\x15'", "'\\x16'", "'\\x17'",
-	"'\\x18'", "'\\x19'", "'\\x1A'", "'\\x1B'", "'\\x1C'", "'\\x1D'", "'\\x1E'", "'\\x1F'",
-	"' '", "'!'", "'\"'", "'#'", "'$'", "'%'", "'&'", "'\\''",
-	"'('", "')'", "'*'", "'+'", "','", "'-'", "'.'", "'/'",
-	"'0'", "'1'", "'2'", "'3'", "'4'", "'5'", "'6'", "'7'",
-	"'8'", "'9'", "':'", "';'", "'<'", "'='", "'>'", "'?'",
-	"'@'", "'A'", "'B'", "'C'", "'D'", "'E'", "'F'", "'G'",
-	"'H'", "'I'", "'J'", "'K'", "'L'", "'M'", "'N'", "'O'",
-	"'P'", "'Q'", "'R'", "'S'", "'T'", "'U'", "'V'", "'W'",
-	"'X'", "'Y'", "'Z'", "'['", "'\'", "']'", "'^'", "'_'",
-	"'`'", "'a'", "'b'", "'c'", "'d'", "'e'", "'f'", "'g'",
-	"'h'", "'i'", "'j'", "'k'", "'l'", "'m'", "'n'", "'o'",
-	"'p'", "'q'", "'r'", "'s'", "'t'", "'u'", "'v'", "'w'",
-	"'x'", "'y'", "'z'", "'{'", "'|'", "'}'", "'~'", "'\\x7F'",
-
-	0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
-	0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
-	0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
-	0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
-	0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
-	0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
-	0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
-	0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
-
-	"(identifier)", "(number)", "(string)", "(regexp)",
-
-	"'<='", "'>='", "'=='", "'!='", "'==='", "'!=='",
-	"'<<'", "'>>'", "'>>>'", "'&&'", "'||'",
-	"'+='", "'-='", "'*='", "'/='", "'%='",
-	"'<<='", "'>>='", "'>>>='", "'&='", "'|='", "'^='",
-	"'++'", "'--'",
-
-	"'break'", "'case'", "'catch'", "'continue'", "'debugger'",
-	"'default'", "'delete'", "'do'", "'else'", "'false'", "'finally'", "'for'",
-	"'function'", "'if'", "'in'", "'instanceof'", "'new'", "'null'", "'return'",
-	"'switch'", "'this'", "'throw'", "'true'", "'try'", "'typeof'", "'var'",
-	"'void'", "'while'", "'with'",
-};
 
 static inline void next(js_State *J)
 {
@@ -86,7 +41,7 @@ static inline void expect(js_State *J, int t)
 {
 	if (accept(J, t))
 		return;
-	jsP_error(J, "unexpected token: %s (expected %s)", tokenstring[J->lookahead], tokenstring[t]);
+	jsP_error(J, "unexpected token: %s (expected %s)", TOKSTR, jsP_tokenstring(t));
 }
 
 static void semicolon(js_State *J)
@@ -97,8 +52,10 @@ static void semicolon(js_State *J)
 	}
 	if (J->newline || J->lookahead == '}' || J->lookahead == 0)
 		return;
-	jsP_error(J, "unexpected token: %s (expected ';')", tokenstring[J->lookahead]);
+	jsP_error(J, "unexpected token: %s (expected ';')", TOKSTR);
 }
+
+/* Literals */
 
 static js_Ast *identifier(js_State *J)
 {
@@ -107,7 +64,7 @@ static js_Ast *identifier(js_State *J)
 		next(J);
 		return a;
 	}
-	jsP_error(J, "unexpected token: %s (expected identifier)", tokenstring[J->lookahead]);
+	jsP_error(J, "unexpected token: %s (expected identifier)", TOKSTR);
 	return NULL;
 }
 
@@ -125,29 +82,13 @@ static js_Ast *identifiername(js_State *J)
 		next(J);
 		return a;
 	}
-	jsP_error(J, "unexpected token: %s (expected identifier or keyword)", tokenstring[J->lookahead]);
+	jsP_error(J, "unexpected token: %s (expected identifier or keyword)", TOKSTR);
 	return NULL;
-}
-
-static js_Ast *arguments(js_State *J)
-{
-	js_Ast *head, *tail, *node;
-
-	if (J->lookahead == ')')
-		return NULL;
-
-	node = assignment(J, 0);
-	head = tail = LIST(node);
-	while (accept(J, ',')) {
-		node = assignment(J, 0);
-		tail = tail->b = LIST(node);
-	}
-	return head;
 }
 
 static js_Ast *arrayliteral(js_State *J)
 {
-	js_Ast *head, *tail, *node;
+	js_Ast *head, *tail;
 
 	while (J->lookahead == ',')
 		next(J);
@@ -155,15 +96,13 @@ static js_Ast *arrayliteral(js_State *J)
 	if (J->lookahead == ']')
 		return NULL;
 
-	node = assignment(J, 0);
-	head = tail = LIST(node);
+	head = tail = LIST(assignment(J, 0));
 	while (accept(J, ',')) {
 		while (J->lookahead == ',')
 			next(J);
 		if (J->lookahead == ']')
 			break;
-		node = assignment(J, 0);
-		tail = tail->b = LIST(node);
+		tail = tail->b = LIST(assignment(J, 0));
 	}
 	return head;
 }
@@ -214,25 +153,24 @@ static js_Ast *propassign(js_State *J)
 
 static js_Ast *objectliteral(js_State *J)
 {
-	js_Ast *head, *tail, *node;
-
+	js_Ast *head, *tail;
 	if (J->lookahead == '}')
 		return NULL;
-
-	node = propassign(J);
-	head = tail = LIST(node);
+	head = tail = LIST(propassign(J));
 	while (accept(J, ',')) {
 		if (J->lookahead == '}')
 			break;
-		node = propassign(J);
-		tail = tail->b = LIST(node);
+		tail = tail->b = LIST(propassign(J));
 	}
 	return head;
 }
 
+/* Expressions */
+
 static js_Ast *primary(js_State *J)
 {
 	js_Ast *a;
+
 	if (J->lookahead == TK_IDENTIFIER) {
 		a = jsP_newstrnode(J, AST_IDENTIFIER, J->text);
 		next(J);
@@ -254,6 +192,7 @@ static js_Ast *primary(js_State *J)
 		next(J);
 		return a;
 	}
+
 	if (accept(J, TK_THIS)) return EXP0(THIS);
 	if (accept(J, TK_NULL)) return EXP0(NULL);
 	if (accept(J, TK_TRUE)) return EXP0(TRUE);
@@ -261,22 +200,31 @@ static js_Ast *primary(js_State *J)
 	if (accept(J, '{')) { a = EXP1(OBJECT, objectliteral(J)); expect(J, '}'); return a; }
 	if (accept(J, '[')) { a = EXP1(ARRAY, arrayliteral(J)); expect(J, ']'); return a; }
 	if (accept(J, '(')) { a = expression(J, 0); expect(J, ')'); return a; }
-	jsP_error(J, "unexpected token in expression: %s", tokenstring[J->lookahead]);
+
+	jsP_error(J, "unexpected token in expression: %s", TOKSTR);
 	return NULL;
 }
 
-static js_Ast *paramlist(js_State *J)
+static js_Ast *arguments(js_State *J)
 {
-	js_Ast *head, *tail, *node;
-
+	js_Ast *head, *tail;
 	if (J->lookahead == ')')
 		return NULL;
-
-	node = identifier(J);
-	head = tail = LIST(node);
+	head = tail = LIST(assignment(J, 0));
 	while (accept(J, ',')) {
-		node = identifier(J);
-		tail = tail->b = LIST(node);
+		tail = tail->b = LIST(assignment(J, 0));
+	}
+	return head;
+}
+
+static js_Ast *parameters(js_State *J)
+{
+	js_Ast *head, *tail;
+	if (J->lookahead == ')')
+		return NULL;
+	head = tail = LIST(identifier(J));
+	while (accept(J, ',')) {
+		tail = tail->b = LIST(identifier(J));
 	}
 	return head;
 }
@@ -284,6 +232,7 @@ static js_Ast *paramlist(js_State *J)
 static js_Ast *newexp(js_State *J)
 {
 	js_Ast *a, *b, *c;
+
 	if (accept(J, TK_NEW)) {
 		a = memberexp(J);
 		if (accept(J, '(')) {
@@ -293,14 +242,16 @@ static js_Ast *newexp(js_State *J)
 		}
 		return EXP1(NEW, a);
 	}
+
 	if (accept(J, TK_FUNCTION)) {
 		a = identifieropt(J);
 		expect(J, '(');
-		b = paramlist(J);
+		b = parameters(J);
 		expect(J, ')');
 		c = funcbody(J);
 		return EXP3(FUNC, a, b, c);
 	}
+
 	return primary(J);
 }
 
@@ -477,56 +428,33 @@ static js_Ast *expression(js_State *J, int notin)
 	return a;
 }
 
+/* Statements */
+
 static js_Ast *vardec(js_State *J, int notin)
 {
-	js_Ast *a, *b;
-
-	a = identifier(J);
+	js_Ast *a = identifier(J);
 	if (accept(J, '='))
-		b = assignment(J, notin);
-	else
-		b = NULL;
-
-	return A2(AST_INIT, a, b);
-
+		return EXP2(VAR, a, assignment(J, notin));
+	return EXP1(VAR, a);
 }
 
 static js_Ast *vardeclist(js_State *J, int notin)
 {
-	js_Ast *head, *tail, *node;
-
-	node = vardec(J, notin);
-	head = tail = LIST(node);
-	while (accept(J, ',')) {
-		node = vardec(J, notin);
-		tail = tail->b = LIST(node);
-	}
+	js_Ast *head, *tail;
+	head = tail = LIST(vardec(J, notin));
+	while (accept(J, ','))
+		tail = tail->b = LIST(vardec(J, notin));
 	return head;
 }
 
-static js_Ast *expopt(js_State *J, int end)
+static js_Ast *statementlist(js_State *J)
 {
-	js_Ast *a = NULL;
-	if (J->lookahead != end)
-		a = expression(J, 0);
-	expect(J, end);
-	return a;
-}
-
-static js_Ast *casestatementlist(js_State *J)
-{
-	js_Ast *head, *tail, *node;
-
+	js_Ast *head, *tail;
 	if (J->lookahead == '}' || J->lookahead == TK_CASE || J->lookahead == TK_DEFAULT)
 		return NULL;
-
-	node = statement(J);
-	head = tail = LIST(node);
-	while (J->lookahead != '}' && J->lookahead != TK_CASE && J->lookahead != TK_DEFAULT) {
-		node = statement(J);
-		tail = tail->b = LIST(node);
-	}
-
+	head = tail = LIST(statement(J));
+	while (J->lookahead != '}' && J->lookahead != TK_CASE && J->lookahead != TK_DEFAULT)
+		tail = tail->b = LIST(statement(J));
 	return head;
 }
 
@@ -537,56 +465,88 @@ static js_Ast *caseclause(js_State *J)
 	if (accept(J, TK_CASE)) {
 		a = expression(J, 0);
 		expect(J, ':');
-		b = casestatementlist(J);
+		b = statementlist(J);
 		return STM2(CASE, a, b);
 	}
 
 	if (accept(J, TK_DEFAULT)) {
 		expect(J, ':');
-		a = casestatementlist(J);
+		a = statementlist(J);
 		return STM1(DEFAULT, a);
 	}
 
-	jsP_error(J, "unexpected token in switch: %s", tokenstring[J->lookahead]);
+	jsP_error(J, "unexpected token in switch: %s (expected 'case' or 'default')", TOKSTR);
 	return NULL;
 }
 
-static js_Ast *caseblock(js_State *J)
+static js_Ast *caselist(js_State *J)
 {
-	js_Ast *head, *tail, *node;
-
-	expect(J, '{');
-	if (accept(J, '}'))
+	js_Ast *head, *tail;
+	if (J->lookahead == '}')
 		return NULL;
-
-	node = caseclause(J);
-	head = tail = LIST(node);
-	while (J->lookahead != '}') {
-		node = caseclause(J);
-		tail = tail->b = LIST(node);
-	}
-
-	expect(J, '}');
+	head = tail = LIST(caseclause(J));
+	while (J->lookahead != '}')
+		tail = tail->b = LIST(caseclause(J));
 	return head;
 }
 
 static js_Ast *block(js_State *J)
 {
-	js_Ast *head, *tail, *node;
-
+	js_Ast *a;
 	expect(J, '{');
-	if (accept(J, '}'))
-		return STM1(BLOCK, NULL);
+	a = statementlist(J);
+	expect(J, '}');
+	return STM1(BLOCK, a);
+}
 
-	node = statement(J);
-	head = tail = LIST(node);
-	while (J->lookahead != '}') {
-		node = statement(J);
-		tail = tail->b = LIST(node);
+static js_Ast *forexpression(js_State *J, int end)
+{
+	js_Ast *a = NULL;
+	if (J->lookahead != end)
+		a = expression(J, 0);
+	expect(J, end);
+	return a;
+}
+
+static js_Ast *forstatement(js_State *J)
+{
+	js_Ast *a, *b, *c, *d;
+	expect(J, '(');
+	if (accept(J, TK_VAR)) {
+		a = vardeclist(J, 1);
+		if (accept(J, ';')) {
+			b = forexpression(J, ';');
+			c = forexpression(J, ')');
+			d = statement(J);
+			return STM4(FOR_VAR, a, b, c, d);
+		}
+		if (accept(J, TK_IN)) {
+			b = expression(J, 0);
+			expect(J, ')');
+			c = statement(J);
+			return STM3(FOR_IN_VAR, a, b, c);
+		}
+		jsP_error(J, "unexpected token in for-var-statement: %s", TOKSTR);
+		return NULL;
 	}
 
-	expect(J, '}');
-	return STM1(BLOCK, head);
+	if (J->lookahead != ';') {
+		a = expression(J, 1);
+	}
+	if (accept(J, ';')) {
+		b = forexpression(J, ';');
+		c = forexpression(J, ')');
+		d = statement(J);
+		return STM4(FOR, a, b, c, d);
+	}
+	if (accept(J, TK_IN)) {
+		b = expression(J, 0);
+		expect(J, ')');
+		c = statement(J);
+		return STM3(FOR_IN, a, b, c);
+	}
+	jsP_error(J, "unexpected token in for-statement: %s", TOKSTR);
+	return NULL;
 }
 
 static js_Ast *statement(js_State *J)
@@ -649,7 +609,7 @@ static js_Ast *statement(js_State *J)
 			d = block(J);
 		}
 		if (!b && !d)
-			jsP_error(J, "unexpected token: %s (expected 'catch' or 'finally')", tokenstring[J->lookahead]);
+			jsP_error(J, "unexpected token in try: %s (expected 'catch' or 'finally')", TOKSTR);
 		return STM4(TRY, a, b, c, d);
 	}
 
@@ -695,49 +655,16 @@ static js_Ast *statement(js_State *J)
 	}
 
 	if (accept(J, TK_FOR)) {
-		expect(J, '(');
-		if (accept(J, TK_VAR)) {
-			a = vardeclist(J, 1);
-			if (accept(J, ';')) {
-				b = expopt(J, ';');
-				c = expopt(J, ')');
-				d = statement(J);
-				return STM4(FOR_VAR, a, b, c, d);
-			}
-			if (accept(J, TK_IN)) {
-				b = expression(J, 0);
-				expect(J, ')');
-				c = statement(J);
-				return STM3(FOR_IN_VAR, a, b, c);
-			}
-			jsP_error(J, "unexpected token in for-var-statement: %s", tokenstring[J->lookahead]);
-			return NULL;
-		}
-
-		if (J->lookahead != ';') {
-			a = expression(J, 1);
-		}
-		if (accept(J, ';')) {
-			b = expopt(J, ';');
-			c = expopt(J, ')');
-			d = statement(J);
-			return STM4(FOR, a, b, c, d);
-		}
-		if (accept(J, TK_IN)) {
-			b = expression(J, 0);
-			expect(J, ')');
-			c = statement(J);
-			return STM3(FOR_IN, a, b, c);
-		}
-		jsP_error(J, "unexpected token in for-statement: %s", tokenstring[J->lookahead]);
-		return NULL;
+		return forstatement(J);
 	}
 
 	if (accept(J, TK_SWITCH)) {
 		expect(J, '(');
 		a = expression(J, 0);
 		expect(J, ')');
-		b = caseblock(J);
+		expect(J, '{');
+		b = caselist(J);
+		expect(J, '}');
 		return STM2(SWITCH, a, b);
 	}
 
@@ -760,17 +687,19 @@ static js_Ast *statement(js_State *J)
 		return a;
 	}
 
-	jsP_error(J, "unexpected token in statement: %s", tokenstring[J->lookahead]);
+	jsP_error(J, "unexpected token in statement: %s", TOKSTR);
 	return NULL;
 }
 
-static js_Ast *chunknode(js_State *J)
+/* Program */
+
+static js_Ast *chunkelement(js_State *J)
 {
 	js_Ast *a, *b, *c;
 	if (accept(J, TK_FUNCTION)) {
 		a = identifier(J);
 		expect(J, '(');
-		b = paramlist(J);
+		b = parameters(J);
 		expect(J, ')');
 		c = funcbody(J);
 		return STM3(FUNC, a, b, c);
@@ -778,20 +707,14 @@ static js_Ast *chunknode(js_State *J)
 	return statement(J);
 }
 
-static js_Ast *chunk(js_State *J)
+static js_Ast *chunklist(js_State *J)
 {
-	js_Ast *head, *tail, *node;
-
+	js_Ast *head, *tail;
 	if (J->lookahead == '}' || J->lookahead == 0)
 		return NULL;
-
-	node = chunknode(J);
-	head = tail = LIST(node);
-	while (J->lookahead != '}' && J->lookahead != 0) {
-		node = chunknode(J);
-		tail = tail->b = LIST(node);
-	}
-
+	head = tail = LIST(chunkelement(J));
+	while (J->lookahead != '}' && J->lookahead != 0)
+		tail = tail->b = LIST(chunkelement(J));
 	return head;
 }
 
@@ -799,7 +722,7 @@ static js_Ast *funcbody(js_State *J)
 {
 	js_Ast *a;
 	expect(J, '{');
-	a = chunk(J);
+	a = chunklist(J);
 	expect(J, '}');
 	return a;
 }
@@ -809,11 +732,9 @@ int jsP_error(js_State *J, const char *fmt, ...)
 	va_list ap;
 
 	fprintf(stderr, "syntax error: %s:%d: ", J->filename, J->line);
-
 	va_start(ap, fmt);
 	vfprintf(stderr, fmt, ap);
 	va_end(ap);
-
 	fprintf(stderr, "\n");
 
 	longjmp(J->jb, 1);
@@ -830,7 +751,7 @@ int jsP_parse(js_State *J, const char *filename, const char *source)
 	}
 
 	next(J);
-	printblock(chunk(J), 0);
+	printblock(chunklist(J), 0);
 	putchar('\n');
 
 	// TODO: compile to bytecode

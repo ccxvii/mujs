@@ -53,7 +53,7 @@ static const char *strast(int type)
 	case AST_NUMBER: return "NUMBER";
 	case AST_STRING: return "STRING";
 	case AST_REGEXP: return "REGEXP";
-	case AST_INIT: return "INIT";
+	case EXP_VAR: return "VAR";
 	case EXP_NULL: return "NULL";
 	case EXP_TRUE: return "TRUE";
 	case EXP_FALSE: return "FALSE";
@@ -263,6 +263,14 @@ void printast(js_Ast *n, int level)
 		putchar(';');
 		break;
 
+	case EXP_VAR:
+		printast(n->a, level);
+		if (n->b) {
+			printf(" = ");
+			printast(n->b, level);
+		}
+		break;
+
 	case STM_IF:
 		printf("if (");
 		printast(n->a, level);
@@ -391,14 +399,6 @@ void printast(js_Ast *n, int level)
 
 	case STM_DEBUGGER:
 		printf("debugger");
-		break;
-
-	case AST_INIT:
-		printast(n->a, level);
-		if (n->b) {
-			printf(" = ");
-			printast(n->b, level);
-		}
 		break;
 
 	case STM_FUNC:

@@ -14,7 +14,6 @@ struct js_Ast
 enum
 {
 	AST_LIST,
-	AST_INIT,
 
 	AST_IDENTIFIER,
 	AST_NUMBER,
@@ -36,11 +35,9 @@ enum
 	/* expressions */
 	EXP_INDEX,
 	EXP_MEMBER,
-	EXP_NEW,
 	EXP_CALL,
+	EXP_NEW,
 	EXP_FUNC, /* function expression */
-	EXP_COND,
-	EXP_COMMA,
 
 	EXP_DELETE,
 	EXP_VOID,
@@ -53,8 +50,8 @@ enum
 	EXP_NEG,
 	EXP_BITNOT,
 	EXP_LOGNOT,
-
 	EXP_LOGOR,
+
 	EXP_LOGAND,
 	EXP_BITOR,
 	EXP_BITXOR,
@@ -78,6 +75,8 @@ enum
 	EXP_DIV,
 	EXP_MOD,
 
+	EXP_COND,
+
 	EXP_ASS,
 	EXP_ASS_MUL,
 	EXP_ASS_DIV,
@@ -90,6 +89,10 @@ enum
 	EXP_ASS_BITAND,
 	EXP_ASS_BITXOR,
 	EXP_ASS_BITOR,
+
+	EXP_COMMA,
+
+	EXP_VAR, /* var initializer */
 
 	/* statements */
 	STM_BLOCK,
