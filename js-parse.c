@@ -23,7 +23,7 @@ static js_Ast *expression(js_State *J, int notin);
 static js_Ast *assignment(js_State *J, int notin);
 static js_Ast *memberexp(js_State *J);
 static js_Ast *statement(js_State *J);
-static js_Ast *functionbody(js_State *J);
+static js_Ast *funcbody(js_State *J);
 
 static const char *tokenstring[] = {
 	"(end-of-file)",
@@ -192,7 +192,7 @@ static js_Ast *propassign(js_State *J)
 		name = propname(J);
 		expect(J, '(');
 		expect(J, ')');
-		body = functionbody(J);
+		body = funcbody(J);
 		return EXP2(PROP_GET, name, body);
 	}
 
@@ -202,7 +202,7 @@ static js_Ast *propassign(js_State *J)
 		expect(J, '(');
 		arg = identifier(J);
 		expect(J, ')');
-		body = functionbody(J);
+		body = funcbody(J);
 		return EXP3(PROP_SET, name, arg, body);
 	}
 
@@ -298,7 +298,7 @@ static js_Ast *newexp(js_State *J)
 		expect(J, '(');
 		b = paramlist(J);
 		expect(J, ')');
-		c = functionbody(J);
+		c = funcbody(J);
 		return EXP3(FUNC, a, b, c);
 	}
 	return primary(J);
@@ -557,7 +557,7 @@ static js_Ast *caseblock(js_State *J)
 
 	expect(J, '{');
 	if (accept(J, '}'))
-		return STM1(BLOCK, NULL);
+		return NULL;
 
 	node = caseclause(J);
 	head = tail = LIST(node);
@@ -567,7 +567,7 @@ static js_Ast *caseblock(js_State *J)
 	}
 
 	expect(J, '}');
-	return STM1(BLOCK, head);
+	return head;
 }
 
 static js_Ast *block(js_State *J)
@@ -576,7 +576,7 @@ static js_Ast *block(js_State *J)
 
 	expect(J, '{');
 	if (accept(J, '}'))
-		return NULL;
+		return STM1(BLOCK, NULL);
 
 	node = statement(J);
 	head = tail = LIST(node);
@@ -764,49 +764,43 @@ static js_Ast *statement(js_State *J)
 	return NULL;
 }
 
-static js_Ast *fundec(js_State *J)
+static js_Ast *chunknode(js_State *J)
 {
 	js_Ast *a, *b, *c;
-	a = identifier(J);
-	expect(J, '(');
-	b = paramlist(J);
-	expect(J, ')');
-	c = functionbody(J);
-	return STM3(FUNC, a, b, c);
-}
-
-static js_Ast *sourceelement(js_State *J)
-{
-	if (accept(J, TK_FUNCTION))
-		return fundec(J);
+	if (accept(J, TK_FUNCTION)) {
+		a = identifier(J);
+		expect(J, '(');
+		b = paramlist(J);
+		expect(J, ')');
+		c = funcbody(J);
+		return STM3(FUNC, a, b, c);
+	}
 	return statement(J);
 }
 
-static js_Ast *sourcelist(js_State *J)
+static js_Ast *chunk(js_State *J)
 {
 	js_Ast *head, *tail, *node;
 
 	if (J->lookahead == '}' || J->lookahead == 0)
 		return NULL;
 
-	node = sourceelement(J);
+	node = chunknode(J);
 	head = tail = LIST(node);
 	while (J->lookahead != '}' && J->lookahead != 0) {
-		node = sourceelement(J);
+		node = chunknode(J);
 		tail = tail->b = LIST(node);
 	}
 
-	return STM1(BLOCK, head);
+	return head;
 }
 
-static js_Ast *functionbody(js_State *J)
+static js_Ast *funcbody(js_State *J)
 {
 	js_Ast *a;
-
 	expect(J, '{');
-	a = sourcelist(J);
+	a = chunk(J);
 	expect(J, '}');
-
 	return a;
 }
 
@@ -836,7 +830,7 @@ int jsP_parse(js_State *J, const char *filename, const char *source)
 	}
 
 	next(J);
-	printblock(sourcelist(J)->a, 0);
+	printblock(chunk(J), 0);
 	putchar('\n');
 
 	// TODO: compile to bytecode

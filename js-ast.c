@@ -336,8 +336,11 @@ void printast(js_Ast *n, int level)
 	case STM_SWITCH:
 		printf("switch (");
 		printast(n->a, level);
-		printf(")");
-		printstm(n->b, level);
+		printf(") {\n");
+		printblock(n->b, level);
+		putchar('\n');
+		indent(level);
+		printf("}");
 		break;
 
 	case STM_CASE:
@@ -403,8 +406,13 @@ void printast(js_Ast *n, int level)
 		printast(n->a, level);
 		printf("(");
 		printlist(n->b, level, ", ");
-		printf(")");
-		printstm(n->c, level);
+		printf(")\n");
+		indent(level);
+		printf("{\n");
+		printblock(n->c, level + 1);
+		printf("\n");
+		indent(level);
+		printf("}");
 		break;
 
 	case EXP_FUNC:
@@ -413,9 +421,11 @@ void printast(js_Ast *n, int level)
 			printast(n->a, level);
 		printf("(");
 		printlist(n->b, level, ", ");
-		printf(")");
-		printstm(n->c, level);
-		printf(")");
+		printf(") {\n");
+		printblock(n->c, level + 1);
+		printf("\n");
+		indent(level);
+		printf("})");
 		break;
 
 	case EXP_OBJECT:
