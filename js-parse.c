@@ -735,7 +735,20 @@ static js_Ast *statement(js_State *J)
 		return STM2(SWITCH, a, b);
 	}
 
-	if (J->lookahead != TK_FUNCTION) {
+	/* LabelledStatement : Identifier ':' Statement */
+	/* ExpressionStatement : Expression ';' */
+	if (J->lookahead == TK_IDENTIFIER) {
+		a = expression(J, 0);
+		if (a->type == AST_IDENTIFIER && accept(J, ':')) {
+			b = statement(J);
+			return STM2(LABEL, a, b);
+		}
+		semicolon(J);
+		return a;
+	}
+
+	/* ExpressionStatement : [lookahead not 'function' or '{'] Expression ';' */
+	if (J->lookahead != TK_FUNCTION && J->lookahead != '{') {
 		a = expression(J, 0);
 		semicolon(J);
 		return a;
