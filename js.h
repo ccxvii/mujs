@@ -28,33 +28,37 @@ const char *js_intern(js_State *J, const char *s);
 
 typedef struct js_Ast js_Ast;
 
-void jsP_initlex(js_State *J, const char *source);
+void jsP_initlex(js_State *J, const char *filename, const char *source);
 int jsP_lex(js_State *J);
-int jsP_parse(js_State *J);
+int jsP_parse(js_State *J, const char *filename, const char *source);
 int jsP_error(js_State *J, const char *fmt, ...);
 
 void js_printstringtree(js_State *J);
 
 struct js_State
 {
-	const char *yyfilename;
-	const char *yysource;
-	int yyline;
+	jmp_buf jb; /* setjmp buffer for error handling in parser */
 
-	char *yytext;
-	size_t yylen, yycap;
-	double yynumber;
-	struct { int g, i, m; } yyflags;
+	js_StringNode *strings;
+
+	/* input */
+	const char *filename;
+	const char *source;
+	int line;
+
+	/* lexer */
+	struct { char *text; size_t len, cap; } buf;
 	int lasttoken;
 	int newline;
 
-	int strict;
-
+	/* parser */
 	int lookahead;
-	jmp_buf jb; /* setjmp buffer for error handling in parser */
+	const char *text;
+	double number;
+	struct { char g, i, m; } flags;
 	js_Ast *ast; /* list of allocated nodes to free after parsing */
 
-	js_StringNode *strings;
+	int strict;
 };
 
 #endif

@@ -68,12 +68,12 @@ static const char *tokenstring[] = {
 	"'void'", "'while'", "'with'",
 };
 
-static void next(js_State *J)
+static inline void next(js_State *J)
 {
 	J->lookahead = jsP_lex(J);
 }
 
-static int accept(js_State *J, int t)
+static inline int accept(js_State *J, int t)
 {
 	if (J->lookahead == t) {
 		next(J);
@@ -82,7 +82,7 @@ static int accept(js_State *J, int t)
 	return 0;
 }
 
-static void expect(js_State *J, int t)
+static inline void expect(js_State *J, int t)
 {
 	if (accept(J, t))
 		return;
@@ -103,7 +103,7 @@ static void semicolon(js_State *J)
 static js_Ast *identifier(js_State *J)
 {
 	if (J->lookahead == TK_IDENTIFIER) {
-		js_Ast *a = jsP_newsnode(J, AST_IDENTIFIER, J->yytext);
+		js_Ast *a = jsP_newstrnode(J, AST_IDENTIFIER, J->text);
 		next(J);
 		return a;
 	}
@@ -121,7 +121,7 @@ static js_Ast *identifieropt(js_State *J)
 static js_Ast *identifiername(js_State *J)
 {
 	if (J->lookahead == TK_IDENTIFIER || J->lookahead >= TK_BREAK) {
-		js_Ast *a = jsP_newsnode(J, AST_IDENTIFIER, J->yytext);
+		js_Ast *a = jsP_newstrnode(J, AST_IDENTIFIER, J->text);
 		next(J);
 		return a;
 	}
@@ -172,10 +172,10 @@ static js_Ast *propname(js_State *J)
 {
 	js_Ast *name;
 	if (J->lookahead == TK_NUMBER) {
-		name = jsP_newnnode(J, AST_NUMBER, J->yynumber);
+		name = jsP_newnumnode(J, AST_NUMBER, J->number);
 		next(J);
 	} else if (J->lookahead == TK_STRING) {
-		name = jsP_newsnode(J, AST_STRING, J->yytext);
+		name = jsP_newstrnode(J, AST_STRING, J->text);
 		next(J);
 	} else {
 		name = identifiername(J);
@@ -187,7 +187,7 @@ static js_Ast *propassign(js_State *J)
 {
 	js_Ast *name, *value, *arg, *body;
 
-	if (J->lookahead == TK_IDENTIFIER && !strcmp(J->yytext, "get")) {
+	if (J->lookahead == TK_IDENTIFIER && !strcmp(J->text, "get")) {
 		next(J);
 		name = propname(J);
 		expect(J, '(');
@@ -196,7 +196,7 @@ static js_Ast *propassign(js_State *J)
 		return EXP2(PROP_GET, name, body);
 	}
 
-	if (J->lookahead == TK_IDENTIFIER && !strcmp(J->yytext, "set")) {
+	if (J->lookahead == TK_IDENTIFIER && !strcmp(J->text, "set")) {
 		next(J);
 		name = propname(J);
 		expect(J, '(');
@@ -234,17 +234,17 @@ static js_Ast *primary(js_State *J)
 {
 	js_Ast *a;
 	if (J->lookahead == TK_IDENTIFIER) {
-		a = jsP_newsnode(J, AST_IDENTIFIER, J->yytext);
+		a = jsP_newstrnode(J, AST_IDENTIFIER, J->text);
 		next(J);
 		return a;
 	}
 	if (J->lookahead == TK_STRING) {
-		a = jsP_newsnode(J, AST_STRING, J->yytext);
+		a = jsP_newstrnode(J, AST_STRING, J->text);
 		next(J);
 		return a;
 	}
 	if (J->lookahead == TK_NUMBER) {
-		a = jsP_newnnode(J, AST_NUMBER, J->yynumber);
+		a = jsP_newnumnode(J, AST_NUMBER, J->number);
 		next(J);
 		return a;
 	}
@@ -808,7 +808,7 @@ int jsP_error(js_State *J, const char *fmt, ...)
 {
 	va_list ap;
 
-	fprintf(stderr, "syntax error: %s:%d: ", J->yyfilename, J->yyline);
+	fprintf(stderr, "syntax error: %s:%d: ", J->filename, J->line);
 
 	va_start(ap, fmt);
 	vfprintf(stderr, fmt, ap);
@@ -820,8 +820,10 @@ int jsP_error(js_State *J, const char *fmt, ...)
 	return 0;
 }
 
-int jsP_parse(js_State *J)
+int jsP_parse(js_State *J, const char *filename, const char *source)
 {
+	jsP_initlex(J, filename, source);
+
 	if (setjmp(J->jb)) {
 		jsP_freeast(J);
 		return 1;

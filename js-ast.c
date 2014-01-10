@@ -6,7 +6,7 @@ js_Ast *jsP_newnode(js_State *J, int type, js_Ast *a, js_Ast *b, js_Ast *c, js_A
 	js_Ast *node = malloc(sizeof(js_Ast));
 
 	node->type = type;
-	node->line = J->yyline;
+	node->line = J->line;
 	node->a = a;
 	node->b = b;
 	node->c = c;
@@ -20,14 +20,14 @@ js_Ast *jsP_newnode(js_State *J, int type, js_Ast *a, js_Ast *b, js_Ast *c, js_A
 	return node;
 }
 
-js_Ast *jsP_newsnode(js_State *J, int type, const char *s)
+js_Ast *jsP_newstrnode(js_State *J, int type, const char *s)
 {
 	js_Ast *node = jsP_newnode(J, type, 0, 0, 0, 0);
-	node->s = js_intern(J, s);
+	node->s = s;
 	return node;
 }
 
-js_Ast *jsP_newnnode(js_State *J, int type, double n)
+js_Ast *jsP_newnumnode(js_State *J, int type, double n)
 {
 	js_Ast *node = jsP_newnode(J, type, 0, 0, 0, 0);
 	node->n = n;

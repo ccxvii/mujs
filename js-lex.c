@@ -39,14 +39,17 @@ static inline int findword(const char *s, const char **list, int num)
 static inline int findkeyword(js_State *J, const char *s)
 {
 	int i = findword(s, keywords, nelem(keywords));
-	if (i >= 0)
+	if (i >= 0) {
+		J->text = keywords[i];
 		return TK_BREAK + i; /* first keyword + i */
+	}
 
 	if (findword(s, futurewords, nelem(futurewords)) >= 0)
 		return jsP_error(J, "'%s' is a future reserved word", s);
 	if (J->strict && findword(s, strictfuturewords, nelem(strictfuturewords)) >= 0)
 		return jsP_error(J, "'%s' is a strict mode future reserved word", s);
 
+	J->text = js_intern(J, s);
 	return TK_IDENTIFIER;
 }
 
@@ -59,25 +62,26 @@ static inline int findkeyword(js_State *J, const char *s)
 
 static void textinit(js_State *J)
 {
-	if (!J->yytext) {
-		J->yycap = 4096;
-		J->yytext = malloc(J->yycap);
+	if (!J->buf.text) {
+		J->buf.cap = 4096;
+		J->buf.text = malloc(J->buf.cap);
 	}
-	J->yylen = 0;
+	J->buf.len = 0;
 }
 
 static inline void textpush(js_State *J, int c)
 {
-	if (J->yylen >= J->yycap) {
-		J->yycap = J->yycap * 2;
-		J->yytext = realloc(J->yytext, J->yycap);
+	if (J->buf.len >= J->buf.cap) {
+		J->buf.cap = J->buf.cap * 2;
+		J->buf.text = realloc(J->buf.text, J->buf.cap);
 	}
-	J->yytext[J->yylen++] = c;
+	J->buf.text[J->buf.len++] = c;
 }
 
-static inline void textend(js_State *J)
+static inline char *textend(js_State *J)
 {
 	textpush(J, 0);
+	return J->buf.text;
 }
 
 static inline int iswhite(int c)
@@ -200,7 +204,7 @@ static inline int lexnumber(js_State *J, const char **sp)
 		*sp += 2;
 		if (!ishex(PEEK()))
 			return jsP_error(J, "0x not followed by hexademical digit");
-		J->yynumber = lexhex(sp);
+		J->number = lexhex(sp);
 		return TK_NUMBER;
 	}
 
@@ -215,7 +219,7 @@ static inline int lexnumber(js_State *J, const char **sp)
 	if (isidentifierstart(PEEK()))
 		return jsP_error(J, "number with letter suffix");
 
-	J->yynumber = n;
+	J->number = n;
 	return TK_NUMBER;
 }
 
@@ -260,6 +264,7 @@ static inline int lexescape(js_State *J, const char **sp)
 
 static inline int lexstring(js_State *J, const char **sp, int q)
 {
+	const char *s;
 	int c = GET();
 
 	textinit(J);
@@ -276,8 +281,9 @@ static inline int lexstring(js_State *J, const char **sp, int q)
 		c = GET();
 	}
 
-	textend(J);
+	s = textend(J);
 
+	J->text = js_intern(J, s);
 	return TK_STRING;
 }
 
@@ -302,6 +308,7 @@ static int isregexpcontext(int last)
 
 static int lexregexp(js_State *J, const char **sp)
 {
+	const char *s;
 	int c;
 
 	textinit(J);
@@ -324,23 +331,24 @@ static int lexregexp(js_State *J, const char **sp)
 		}
 	}
 
-	textend(J);
+	s = textend(J);
 
 	/* regexp flags */
-	J->yyflags.g = J->yyflags.i = J->yyflags.m = 0;
+	J->flags.g = J->flags.i = J->flags.m = 0;
 
 	c = PEEK();
 	while (isidentifierpart(c)) {
-		if (c == 'g') J->yyflags.g ++;
-		else if (c == 'i') J->yyflags.i ++;
-		else if (c == 'm') J->yyflags.m ++;
+		if (c == 'g') J->flags.g ++;
+		else if (c == 'i') J->flags.i ++;
+		else if (c == 'm') J->flags.m ++;
 		else return jsP_error(J, "illegal flag in regular expression: %c", c);
 		c = NEXTPEEK();
 	}
 
-	if (J->yyflags.g > 1 || J->yyflags.i > 1 || J->yyflags.m > 1)
+	if (J->flags.g > 1 || J->flags.i > 1 || J->flags.m > 1)
 		return jsP_error(J, "duplicated flag in regular expression");
 
+	J->text = js_intern(J, s);
 	return TK_REGEXP;
 }
 
@@ -372,7 +380,7 @@ static int lex(js_State *J, const char **sp)
 			/* consume CR LF as one unit */
 			if (c == '\r' && PEEK() == '\n')
 				NEXT();
-			J->yyline++;
+			J->line++;
 			J->newline = 1;
 			if (isnlthcontext(J->lasttoken))
 				return ';';
@@ -408,7 +416,7 @@ static int lex(js_State *J, const char **sp)
 
 			textend(J);
 
-			return findkeyword(J, J->yytext);
+			return findkeyword(J, J->buf.text);
 		}
 
 		if (c >= '0' && c <= '9') {
@@ -535,17 +543,15 @@ static int lex(js_State *J, const char **sp)
 	}
 }
 
-void jsP_initlex(js_State *J, const char *source)
+void jsP_initlex(js_State *J, const char *filename, const char *source)
 {
-	J->yysource = source;
-	J->yyline = 1;
+	J->filename = filename;
+	J->source = source;
+	J->line = 1;
 	J->lasttoken = 0;
 }
 
 int jsP_lex(js_State *J)
 {
-	int t = lex(J, &J->yysource);
-	// TODO: move yytext/yynumber into jsP_lval
-	J->lasttoken = t;
-	return t;
+	return J->lasttoken = lex(J, &J->source);
 }
