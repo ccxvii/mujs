@@ -1,4 +1,5 @@
 #include "js.h"
+#include "jsstate.h"
 
 /* Use an AA-tree to quickly look up interned strings. */
 

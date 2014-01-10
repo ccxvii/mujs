@@ -1,5 +1,6 @@
 #include "js.h"
-#include "js-ast.h"
+#include "jsparse.h"
+#include "jsstate.h"
 
 js_Ast *jsP_newnode(js_State *J, int type, js_Ast *a, js_Ast *b, js_Ast *c, js_Ast *d)
 {

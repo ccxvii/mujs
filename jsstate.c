@@ -1,4 +1,5 @@
 #include "js.h"
+#include "jsstate.h"
 
 js_State *js_newstate(void)
 {

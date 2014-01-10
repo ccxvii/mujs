@@ -1,5 +1,7 @@
-#ifndef js_ast_h
-#define js_ast_h
+#ifndef js_parse_h
+#define js_parse_h
+
+typedef struct js_Ast js_Ast;
 
 struct js_Ast
 {
@@ -118,6 +120,8 @@ enum
 	STM_DEFAULT,
 	STM_DEBUGGER,
 };
+
+int jsP_parse(js_State *J, const char *filename, const char *source);
 
 js_Ast *jsP_newnode(js_State *J, int type, js_Ast *a, js_Ast *b, js_Ast *c, js_Ast *d);
 js_Ast *jsP_newstrnode(js_State *J, int type, const char *s);

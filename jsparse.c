@@ -1,6 +1,7 @@
 #include "js.h"
-#include "js-parse.h"
-#include "js-ast.h"
+#include "jsstate.h"
+#include "jslex.h"
+#include "jsparse.h"
 
 #define LIST(h)		jsP_newnode(J, AST_LIST, h, 0, 0, 0);
 

@@ -1,5 +1,5 @@
-#ifndef js_parse_h
-#define js_parse_h
+#ifndef js_lex_h
+#define js_lex_h
 
 enum {
 	TK_IDENTIFIER = 256,
@@ -64,5 +64,10 @@ enum {
 	TK_WHILE,
 	TK_WITH,
 };
+
+void jsP_initlex(js_State *J, const char *filename, const char *source);
+int jsP_lex(js_State *J);
+const char *jsP_tokenstring(int token);
+int jsP_error(js_State *J, const char *fmt, ...);
 
 #endif
