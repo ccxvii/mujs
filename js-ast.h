@@ -122,5 +122,6 @@ js_Ast *jsP_newnumnode(js_State *J, int type, double n);
 void jsP_freeast(js_State *J);
 
 void printast(js_Ast *n, int level);
+void printblock(js_Ast *n, int level);
 
 #endif

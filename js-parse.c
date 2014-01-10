@@ -836,7 +836,7 @@ int jsP_parse(js_State *J, const char *filename, const char *source)
 	}
 
 	next(J);
-	printast(sourcelist(J), 0);
+	printblock(sourcelist(J)->a, 0);
 	putchar('\n');
 
 	// TODO: compile to bytecode
