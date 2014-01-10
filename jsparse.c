@@ -24,6 +24,50 @@ static js_Ast *memberexp(js_State *J);
 static js_Ast *statement(js_State *J);
 static js_Ast *funcbody(js_State *J);
 
+js_Ast *jsP_newnode(js_State *J, int type, js_Ast *a, js_Ast *b, js_Ast *c, js_Ast *d)
+{
+	js_Ast *node = malloc(sizeof(js_Ast));
+
+	node->type = type;
+	node->line = J->line;
+	node->a = a;
+	node->b = b;
+	node->c = c;
+	node->d = d;
+	node->n = 0;
+	node->s = NULL;
+
+	node->next = J->ast;
+	J->ast = node;
+
+	return node;
+}
+
+js_Ast *jsP_newstrnode(js_State *J, int type, const char *s)
+{
+	js_Ast *node = jsP_newnode(J, type, 0, 0, 0, 0);
+	node->s = s;
+	return node;
+}
+
+js_Ast *jsP_newnumnode(js_State *J, int type, double n)
+{
+	js_Ast *node = jsP_newnode(J, type, 0, 0, 0, 0);
+	node->n = n;
+	return node;
+}
+
+void jsP_freeparse(js_State *J)
+{
+	js_Ast *node = J->ast;
+	while (node) {
+		js_Ast *next = node->next;
+		free(node);
+		node = next;
+	}
+	J->ast = NULL;
+}
+
 static inline void next(js_State *J)
 {
 	J->lookahead = jsP_lex(J);
@@ -741,21 +785,15 @@ int jsP_error(js_State *J, const char *fmt, ...)
 	return 0;
 }
 
-int jsP_parse(js_State *J, const char *filename, const char *source)
+js_Ast *jsP_parse(js_State *J, const char *filename, const char *source)
 {
 	jsP_initlex(J, filename, source);
 
 	if (setjmp(J->jb)) {
-		jsP_freeast(J);
-		return 1;
+		jsP_freeparse(J);
+		return NULL;
 	}
 
 	next(J);
-	printblock(chunklist(J), 0);
-	putchar('\n');
-
-	// TODO: compile to bytecode
-
-	jsP_freeast(J);
-	return 0;
+	return chunklist(J);
 }

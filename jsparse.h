@@ -121,14 +121,9 @@ enum
 	STM_DEBUGGER,
 };
 
-int jsP_parse(js_State *J, const char *filename, const char *source);
+js_Ast *jsP_parse(js_State *J, const char *filename, const char *source);
+void jsP_freeparse(js_State *J);
 
-js_Ast *jsP_newnode(js_State *J, int type, js_Ast *a, js_Ast *b, js_Ast *c, js_Ast *d);
-js_Ast *jsP_newstrnode(js_State *J, int type, const char *s);
-js_Ast *jsP_newnumnode(js_State *J, int type, double n);
-void jsP_freeast(js_State *J);
-
-void printast(js_Ast *n, int level);
-void printblock(js_Ast *n, int level);
+void jsP_pretty(js_State *J, js_Ast *prog);
 
 #endif

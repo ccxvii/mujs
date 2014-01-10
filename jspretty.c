@@ -1,50 +1,7 @@
 #include "js.h"
 #include "jsparse.h"
-#include "jsstate.h"
 
-js_Ast *jsP_newnode(js_State *J, int type, js_Ast *a, js_Ast *b, js_Ast *c, js_Ast *d)
-{
-	js_Ast *node = malloc(sizeof(js_Ast));
-
-	node->type = type;
-	node->line = J->line;
-	node->a = a;
-	node->b = b;
-	node->c = c;
-	node->d = d;
-	node->n = 0;
-	node->s = NULL;
-
-	node->next = J->ast;
-	J->ast = node;
-
-	return node;
-}
-
-js_Ast *jsP_newstrnode(js_State *J, int type, const char *s)
-{
-	js_Ast *node = jsP_newnode(J, type, 0, 0, 0, 0);
-	node->s = s;
-	return node;
-}
-
-js_Ast *jsP_newnumnode(js_State *J, int type, double n)
-{
-	js_Ast *node = jsP_newnode(J, type, 0, 0, 0, 0);
-	node->n = n;
-	return node;
-}
-
-void jsP_freeast(js_State *J)
-{
-	js_Ast *node = J->ast;
-	while (node) {
-		js_Ast *next = node->next;
-		free(node);
-		node = next;
-	}
-	J->ast = NULL;
-}
+static void printast(js_Ast *n, int level);
 
 static const char *strast(int type)
 {
@@ -159,7 +116,7 @@ static void printlist(js_Ast *n, int level, const char *sep)
 	}
 }
 
-void printblock(js_Ast *n, int level)
+static void printblock(js_Ast *n, int level)
 {
 	while (n) {
 		indent(level);
@@ -205,7 +162,7 @@ static void printbinary(int level, js_Ast *a, js_Ast *b, const char *op)
 	printf(")");
 }
 
-void printast(js_Ast *n, int level)
+static void printast(js_Ast *n, int level)
 {
 	switch (n->type) {
 	case AST_IDENTIFIER: printf("%s", n->s); return;
@@ -552,4 +509,10 @@ void printast(js_Ast *n, int level)
 		putchar(')');
 		break;
 	}
+}
+
+void jsP_pretty(js_State *J, js_Ast *prog)
+{
+	printblock(prog, 0);
+	putchar('\n');
 }
