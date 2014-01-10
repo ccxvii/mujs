@@ -165,10 +165,10 @@ static void printbinary(int level, js_Ast *a, js_Ast *b, const char *op)
 static void printast(js_Ast *n, int level)
 {
 	switch (n->type) {
-	case AST_IDENTIFIER: printf("%s", n->s); return;
-	case AST_NUMBER: printf("%g", n->n); return;
-	case AST_STRING: printf("'%s'", n->s); return;
-	case AST_REGEXP: printf("/%s/", n->s); return;
+	case AST_IDENTIFIER: printf("%s", n->string); return;
+	case AST_NUMBER: printf("%g", n->number); return;
+	case AST_STRING: printf("'%s'", n->string); return;
+	case AST_REGEXP: printf("/%s/", n->string); return;
 	case AST_LIST:
 		putchar('[');
 		printlist(n, level, " ");

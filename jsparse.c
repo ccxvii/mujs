@@ -34,8 +34,8 @@ js_Ast *jsP_newnode(js_State *J, int type, js_Ast *a, js_Ast *b, js_Ast *c, js_A
 	node->b = b;
 	node->c = c;
 	node->d = d;
-	node->n = 0;
-	node->s = NULL;
+	node->number = 0;
+	node->string = NULL;
 
 	node->next = J->ast;
 	J->ast = node;
@@ -46,14 +46,14 @@ js_Ast *jsP_newnode(js_State *J, int type, js_Ast *a, js_Ast *b, js_Ast *c, js_A
 js_Ast *jsP_newstrnode(js_State *J, int type, const char *s)
 {
 	js_Ast *node = jsP_newnode(J, type, 0, 0, 0, 0);
-	node->s = s;
+	node->string = s;
 	return node;
 }
 
 js_Ast *jsP_newnumnode(js_State *J, int type, double n)
 {
 	js_Ast *node = jsP_newnode(J, type, 0, 0, 0, 0);
-	node->n = n;
+	node->number = n;
 	return node;
 }
 

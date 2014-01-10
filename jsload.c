@@ -5,6 +5,7 @@ static int jsP_loadstring(js_State *J, const char *filename, const char *source)
 {
 	js_Ast *prog = jsP_parse(J, filename, source);
 	if (prog) {
+		jsP_foldconstants(J, prog);
 		jsP_pretty(J, prog);
 		jsP_freeparse(J);
 		return 0;
