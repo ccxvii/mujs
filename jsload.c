@@ -25,10 +25,14 @@ int js_loadfile(js_State *J, const char *filename)
 	int n, t;
 
 	f = fopen(filename, "r");
-	if (!f)
+	if (!f) {
 		return js_error(J, "cannot open file: '%s'", filename);
+	}
 
-	fseek(f, 0, SEEK_END);
+	if (fseek(f, 0, SEEK_END) < 0) {
+		fclose(f);
+		return js_error(J, "cannot seek in file: '%s'", filename);
+	}
 	n = ftell(f);
 	fseek(f, 0, SEEK_SET);
 
