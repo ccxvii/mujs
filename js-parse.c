@@ -243,6 +243,12 @@ static js_Ast *primary(js_State *J)
 		next(J);
 		return a;
 	}
+	if (J->lookahead == TK_REGEXP) {
+		a = jsP_newstrnode(J, AST_REGEXP, J->text);
+		// TODO: flags
+		next(J);
+		return a;
+	}
 	if (J->lookahead == TK_NUMBER) {
 		a = jsP_newnumnode(J, AST_NUMBER, J->number);
 		next(J);
@@ -551,7 +557,7 @@ static js_Ast *caseblock(js_State *J)
 
 	expect(J, '{');
 	if (accept(J, '}'))
-		return NULL;
+		return STM1(BLOCK, NULL);
 
 	node = caseclause(J);
 	head = tail = LIST(node);
