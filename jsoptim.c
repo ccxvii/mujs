@@ -79,7 +79,7 @@ static int foldnumber(js_Ast *node, double *r)
 	return 0;
 }
 
-void jsP_foldconstants(js_State *J, js_Ast *prog)
+void jsP_optimize(js_State *J, js_Ast *prog)
 {
 	double x;
 	foldnumber(prog, &x);

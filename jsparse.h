@@ -1,8 +1,6 @@
 #ifndef js_parse_h
 #define js_parse_h
 
-typedef struct js_Ast js_Ast;
-
 struct js_Ast
 {
 	int type;
@@ -124,7 +122,8 @@ enum
 js_Ast *jsP_parse(js_State *J, const char *filename, const char *source);
 void jsP_freeparse(js_State *J);
 
-void jsP_foldconstants(js_State *J, js_Ast *prog);
-void jsP_pretty(js_State *J, js_Ast *prog);
+void jsP_optimize(js_State *J, js_Ast *prog);
+void jsP_dumpsyntax(js_State *J, js_Ast *prog);
+void jsP_dumplist(js_State *J, js_Ast *prog);
 
 #endif

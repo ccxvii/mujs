@@ -1,8 +1,6 @@
 #ifndef js_state_h
 #define js_state_h
 
-typedef struct js_Ast js_Ast;
-
 struct js_State
 {
 	jmp_buf jb; /* setjmp buffer for error handling in parser */

@@ -11,6 +11,7 @@
 
 typedef struct js_State js_State;
 typedef struct js_StringNode js_StringNode;
+typedef struct js_Ast js_Ast;
 
 typedef int (*js_CFunction)(js_State *J);
 
