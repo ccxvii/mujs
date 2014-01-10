@@ -488,9 +488,9 @@ static const char *stype[] = {
 	"ass", "ass_mul", "ass_div", "ass_mod", "ass_add",
 	"ass_sub", "ass_shl", "ass_shr", "ass_ushr",
 	"ass_bitand", "ass_bitxor", "ass_bitor", "comma",
-	"var", "block", "fundec", "nop", "var", "if",
-	"do", "while", "for", "for_var", "for_in",
-	"for_in_var", "continue", "break", "return",
+	"var-init", "block", "fundec", "nop", "var", "if",
+	"do-while", "while", "for", "for-var", "for-in",
+	"for-in-var", "continue", "break", "return",
 	"with", "switch", "throw", "try", "label",
 	"case", "default", "debugger",
 };

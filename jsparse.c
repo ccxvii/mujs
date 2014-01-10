@@ -438,7 +438,7 @@ static js_Ast *conditional(js_State *J, int notin)
 	js_Ast *a, *b, *c;
 	a = logor(J, notin);
 	if (accept(J, '?')) {
-		b = assignment(J, notin);
+		b = assignment(J, 0);
 		expect(J, ':');
 		c = assignment(J, notin);
 		return EXP3(COND, a, b, c);
