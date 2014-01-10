@@ -557,65 +557,15 @@ static js_Ast *statement(js_State *J)
 		return block(J);
 	}
 
+	if (accept(J, TK_VAR)) {
+		a = vardeclist(J, 0);
+		semicolon(J);
+		return STM1(VAR, a);
+	}
+
+	/* empty statement */
 	if (accept(J, ';')) {
 		return STM0(NOP);
-	}
-
-	if (accept(J, TK_CONTINUE)) {
-		a = identifieropt(J);
-		semicolon(J);
-		return STM1(CONTINUE, a);
-	}
-
-	if (accept(J, TK_BREAK)) {
-		a = identifieropt(J);
-		semicolon(J);
-		return STM1(BREAK, a);
-	}
-
-	if (accept(J, TK_RETURN)) {
-		if (J->lookahead != ';' && J->lookahead != '}' && J->lookahead != 0)
-			a = expression(J, 0);
-		else
-			a = NULL;
-		semicolon(J);
-		return STM1(RETURN, a);
-	}
-
-	if (accept(J, TK_WITH)) {
-		expect(J, '(');
-		a = expression(J, 0);
-		expect(J, ')');
-		b = statement(J);
-		return STM2(WITH, a, b);
-	}
-
-	if (accept(J, TK_THROW)) {
-		a = expression(J, 0);
-		semicolon(J);
-		return STM1(THROW, a);
-	}
-
-	if (accept(J, TK_TRY)) {
-		a = block(J);
-		b = c = d = NULL;
-		if (accept(J, TK_CATCH)) {
-			expect(J, '(');
-			b = identifier(J);
-			expect(J, ')');
-			c = block(J);
-		}
-		if (accept(J, TK_FINALLY)) {
-			d = block(J);
-		}
-		if (!b && !d)
-			jsP_error(J, "unexpected token in try: %s (expected 'catch' or 'finally')", TOKSTR);
-		return STM4(TRY, a, b, c, d);
-	}
-
-	if (accept(J, TK_DEBUGGER)) {
-		semicolon(J);
-		return STM0(DEBUGGER);
 	}
 
 	if (accept(J, TK_IF)) {
@@ -648,14 +598,37 @@ static js_Ast *statement(js_State *J)
 		return STM2(WHILE, a, b);
 	}
 
-	if (accept(J, TK_VAR)) {
-		a = vardeclist(J, 0);
-		semicolon(J);
-		return STM1(VAR, a);
-	}
-
 	if (accept(J, TK_FOR)) {
 		return forstatement(J);
+	}
+
+	if (accept(J, TK_CONTINUE)) {
+		a = identifieropt(J);
+		semicolon(J);
+		return STM1(CONTINUE, a);
+	}
+
+	if (accept(J, TK_BREAK)) {
+		a = identifieropt(J);
+		semicolon(J);
+		return STM1(BREAK, a);
+	}
+
+	if (accept(J, TK_RETURN)) {
+		if (J->lookahead != ';' && J->lookahead != '}' && J->lookahead != 0)
+			a = expression(J, 0);
+		else
+			a = NULL;
+		semicolon(J);
+		return STM1(RETURN, a);
+	}
+
+	if (accept(J, TK_WITH)) {
+		expect(J, '(');
+		a = expression(J, 0);
+		expect(J, ')');
+		b = statement(J);
+		return STM2(WITH, a, b);
 	}
 
 	if (accept(J, TK_SWITCH)) {
@@ -668,8 +641,35 @@ static js_Ast *statement(js_State *J)
 		return STM2(SWITCH, a, b);
 	}
 
-	/* LabelledStatement : Identifier ':' Statement */
-	/* ExpressionStatement : Expression ';' */
+	if (accept(J, TK_THROW)) {
+		a = expression(J, 0);
+		semicolon(J);
+		return STM1(THROW, a);
+	}
+
+	if (accept(J, TK_TRY)) {
+		a = block(J);
+		b = c = d = NULL;
+		if (accept(J, TK_CATCH)) {
+			expect(J, '(');
+			b = identifier(J);
+			expect(J, ')');
+			c = block(J);
+		}
+		if (accept(J, TK_FINALLY)) {
+			d = block(J);
+		}
+		if (!b && !d)
+			jsP_error(J, "unexpected token in try: %s (expected 'catch' or 'finally')", TOKSTR);
+		return STM4(TRY, a, b, c, d);
+	}
+
+	if (accept(J, TK_DEBUGGER)) {
+		semicolon(J);
+		return STM0(DEBUGGER);
+	}
+
+	/* labelled statement or expression statement */
 	if (J->lookahead == TK_IDENTIFIER) {
 		a = expression(J, 0);
 		if (a->type == AST_IDENTIFIER && accept(J, ':')) {
@@ -680,8 +680,8 @@ static js_Ast *statement(js_State *J)
 		return a;
 	}
 
-	/* ExpressionStatement : [lookahead not 'function' or '{'] Expression ';' */
-	if (J->lookahead != TK_FUNCTION && J->lookahead != '{') {
+	/* expression statement */
+	if (J->lookahead != TK_FUNCTION) {
 		a = expression(J, 0);
 		semicolon(J);
 		return a;
