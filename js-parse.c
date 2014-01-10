@@ -86,23 +86,22 @@ static js_Ast *identifiername(js_State *J)
 	return NULL;
 }
 
+static js_Ast *arrayelement(js_State *J)
+{
+	if (J->lookahead == ',')
+		return EXP0(NULL); /* TODO: should be 'undefined' */
+	return assignment(J, 0);
+}
+
 static js_Ast *arrayliteral(js_State *J)
 {
 	js_Ast *head, *tail;
-
-	while (J->lookahead == ',')
-		next(J);
-
 	if (J->lookahead == ']')
 		return NULL;
-
-	head = tail = LIST(assignment(J, 0));
+	head = tail = LIST(arrayelement(J));
 	while (accept(J, ',')) {
-		while (J->lookahead == ',')
-			next(J);
-		if (J->lookahead == ']')
-			break;
-		tail = tail->b = LIST(assignment(J, 0));
+		if (J->lookahead != ']')
+			tail = tail->b = LIST(arrayelement(J));
 	}
 	return head;
 }
