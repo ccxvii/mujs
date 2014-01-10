@@ -121,6 +121,6 @@ js_Ast *jsP_newsnode(js_State *J, int type, const char *s);
 js_Ast *jsP_newnnode(js_State *J, int type, double n);
 void jsP_freeast(js_State *J);
 
-void printast(js_Ast *n);
+void printast(js_Ast *n, int level);
 
 #endif

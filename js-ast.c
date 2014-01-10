@@ -142,17 +142,33 @@ static const char *strast(int type)
 	}
 }
 
-void printlist(js_Ast *n)
+static void indent(int level)
+{
+	while (level--)
+		putchar('\t');
+}
+
+void printlist(js_Ast *n, int level, const char *sep)
 {
 	while (n) {
-		printast(n->a);
+		printast(n->a, level);
 		n = n->b;
 		if (n)
-			putchar(' ');
+			fputs(sep, stdout);
 	}
 }
 
-void printast(js_Ast *n)
+void printblock(js_Ast *n, int level)
+{
+	while (n) {
+		indent(level);
+		printast(n->a, level);
+		putchar('\n');
+		n = n->b;
+	}
+}
+
+void printast(js_Ast *n, int level)
 {
 	switch (n->type) {
 	case AST_IDENTIFIER: printf("%s", n->s); return;
@@ -161,15 +177,22 @@ void printast(js_Ast *n)
 	case AST_REGEXP: printf("/%s/", n->s); return;
 	case AST_LIST:
 		putchar('[');
-		printlist(n);
+		printlist(n, level, " ");
 		putchar(']');
+		break;
+	case STM_BLOCK:
+		putchar('{');
+		putchar('\n');
+		printblock(n->a, level + 1);
+		indent(level);
+		putchar('}');
 		break;
 	default:
 		printf("(%s", strast(n->type));
-		if (n->a) { putchar(' '); printast(n->a); }
-		if (n->b) { putchar(' '); printast(n->b); }
-		if (n->c) { putchar(' '); printast(n->c); }
-		if (n->d) { putchar(' '); printast(n->d); }
+		if (n->a) { putchar(' '); printast(n->a, level); }
+		if (n->b) { putchar(' '); printast(n->b, level); }
+		if (n->c) { putchar(' '); printast(n->c, level); }
+		if (n->d) { putchar(' '); printast(n->d, level); }
 		putchar(')');
 		break;
 	}
