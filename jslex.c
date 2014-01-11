@@ -170,10 +170,15 @@ static inline void lexlinecomment(const char **sp)
 	}
 }
 
-static inline int lexcomment(const char **sp)
+static inline int lexcomment(js_State *J, const char **sp)
 {
 	while (1) {
 		int c = GET();
+		if (isnewline(c)) {
+			if (c == '\r' && PEEK() == '\n')
+				NEXT();
+			J->line++;
+		}
 		if (c == '*') {
 			while (c == '*')
 				c = GET();
@@ -434,7 +439,7 @@ static int lex(js_State *J, const char **sp)
 				lexlinecomment(sp);
 				continue;
 			} else if (LOOK('*')) {
-				if (lexcomment(sp))
+				if (lexcomment(J, sp))
 					return jsP_error(J, "multi-line comment not terminated");
 				continue;
 			} else if (isregexpcontext(J->lasttoken)) {
