@@ -23,6 +23,9 @@ struct js_State
 	double number;
 	js_Ast *ast; /* list of allocated nodes to free after parsing */
 
+	/* compiler */
+	js_Function *fun; /* list of allocated functions to free on errors */
+
 	int strict;
 };
 

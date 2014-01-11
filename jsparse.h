@@ -114,10 +114,11 @@ enum
 	STM_SWITCH,
 	STM_THROW,
 	STM_TRY,
+	STM_DEBUGGER,
+
 	STM_LABEL,
 	STM_CASE,
 	STM_DEFAULT,
-	STM_DEBUGGER,
 };
 
 js_Ast *jsP_parse(js_State *J, const char *filename, const char *source);

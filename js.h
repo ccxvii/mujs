@@ -10,14 +10,20 @@
 #include <math.h>
 
 typedef struct js_State js_State;
+
 typedef struct js_StringNode js_StringNode;
 typedef struct js_Ast js_Ast;
+
+typedef enum js_ValueType js_ValueType;
+typedef struct js_Value js_Value;
+typedef struct js_RegExp js_RegExp;
+typedef struct js_Object js_Object;
+typedef struct js_Function js_Function;
+typedef int (*js_CFunction)(js_State *J);
 
 #define JS_REGEXP_G 1
 #define JS_REGEXP_I 2
 #define JS_REGEXP_M 4
-
-typedef int (*js_CFunction)(js_State *J);
 
 js_State *js_newstate(void);
 void js_close(js_State *J);

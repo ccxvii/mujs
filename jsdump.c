@@ -1,9 +1,11 @@
 #include "js.h"
 #include "jsparse.h"
+#include "jscompile.h"
+#include "jsrun.h"
 
 #include <assert.h>
 
-static const char *stype[] = {
+static const char *astname[] = {
 	"list", "ident", "number", "string", "regexp", "undef", "null", "true",
 	"false", "this", "array", "object", "prop_val", "prop_get", "prop_set",
 	"index", "member", "call", "new", "funexp", "delete", "void", "typeof",
@@ -15,8 +17,21 @@ static const char *stype[] = {
 	"ass_ushr", "ass_bitand", "ass_bitxor", "ass_bitor", "comma",
 	"var-init", "block", "fundec", "nop", "var", "if", "do-while", "while",
 	"for", "for-var", "for-in", "for-in-var", "continue", "break",
-	"return", "with", "switch", "throw", "try", "label", "case", "default",
-	"debugger",
+	"return", "with", "switch", "throw", "try", "debugger", "label",
+	"case", "default",
+};
+
+static const char *opname[] = {
+	"const", "undef", "null", "true", "false", "this",
+	"array", "arrayput",
+	"object", "objectput",
+	"defvar", "var", "index", "member", "load", "dupload", "store", "call", "new",
+	"closure", "delete", "void", "typeof", "preinc", "postinc", "predec",
+	"postdec", "pos", "neg", "bitnot", "lognot", "logor", "logand",
+	"bitor", "bitxor", "bitand", "eq", "ne", "eq3", "ne3", "lt", "gt",
+	"le", "ge", "instanceof", "in", "shl", "shr", "ushr", "add", "sub",
+	"mul", "div", "mod", "jump", "jtrue", "jfalse", "try", "throw",
+	"return", "pushwith", "popwith", "debugger", "pop",
 };
 
 static void pstmlist(int d, js_Ast *list);
@@ -499,7 +514,7 @@ void jsP_dumpsyntax(js_State *J, js_Ast *prog)
 		pstmlist(-1, prog);
 	else {
 		pstm(0, prog);
-		pc('\n');
+		nl();
 	}
 }
 
@@ -520,7 +535,7 @@ static void snode(int d, js_Ast *node)
 	}
 
 	pc('(');
-	ps(stype[node->type]);
+	ps(astname[node->type]);
 	switch (node->type) {
 	case AST_IDENTIFIER: pc(' '); ps(node->string); break;
 	case AST_STRING: pc(' '); pstr(node->string); break;
@@ -561,11 +576,11 @@ static void sblock(int d, js_Ast *list)
 		snode(d+1, list->a);
 		list = list->b;
 		if (list) {
-			pc('\n');
+			nl();
 			in(d+1);
 		}
 	}
-	pc('\n'); in(d); pc(']');
+	nl(); in(d); pc(']');
 }
 
 void jsP_dumplist(js_State *J, js_Ast *prog)
@@ -574,5 +589,65 @@ void jsP_dumplist(js_State *J, js_Ast *prog)
 		sblock(0, prog);
 	else
 		snode(0, prog);
-	pc('\n');
+	nl();
+}
+
+void jsC_dumpvalue(js_State *J, js_Value v)
+{
+	switch (v.type) {
+	case JS_TUNDEFINED: ps("undefined"); break;
+	case JS_TNULL: ps("null"); break;
+	case JS_TBOOLEAN: ps(v.u.boolean ? "true" : "false"); break;
+	case JS_TNUMBER: printf("%.9g", v.u.number); break;
+	case JS_TSTRING: pstr(v.u.string); break;
+	case JS_TREGEXP: printf("<regexp %p>", v.u.p); break;
+	case JS_TOBJECT: printf("<object %p>", v.u.p); break;
+
+	case JS_TFUNCTION: printf("<function %p>", v.u.p); break;
+	case JS_TCFUNCTION: printf("<cfunction %p>", v.u.p); break;
+	case JS_TCLOSURE: printf("<closure %p>", v.u.p); break;
+	case JS_TARGUMENTS: printf("<arguments %p>", v.u.p); break;
+
+	case JS_TOBJSLOT: printf("<objslot %p>", v.u.p); break;
+	}
+}
+
+void jsC_dumpfunction(js_State *J, js_Function *fun)
+{
+	unsigned char *p = fun->code;
+	unsigned char *end = fun->code + fun->len;
+	int dest;
+
+	printf("function with %d constants\n", fun->klen);
+
+	while (p < end) {
+		int c = *p++;
+
+		printf("%04d: ", (int)(p - fun->code) - 1);
+		ps(opname[c]);
+
+		switch (c) {
+		case OP_CONST:
+		case OP_OBJECTPUT:
+		case OP_DEFVAR:
+		case OP_VAR:
+		case OP_MEMBER:
+			pc(' ');
+			jsC_dumpvalue(J, fun->klist[*p++]);
+			break;
+		case OP_CALL:
+		case OP_NEW:
+			printf(" %d", *p++);
+			break;
+		case OP_JUMP:
+		case OP_JTRUE:
+		case OP_JFALSE:
+			dest = (*p++) << 8;
+			dest += (*p++);
+			printf(" %d", dest);
+			break;
+		}
+
+		nl();
+	}
 }

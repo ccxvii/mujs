@@ -1,13 +1,22 @@
 #include "js.h"
 #include "jsparse.h"
+#include "jscompile.h"
+#include "jsrun.h"
 
 static int jsP_loadstring(js_State *J, const char *filename, const char *source)
 {
 	js_Ast *prog = jsP_parse(J, filename, source);
 	if (prog) {
-		jsP_optimize(J, prog);
-//		jsP_dumpsyntax(J, prog);
+		js_Function *fun;
+		//jsP_optimize(J, prog);
+		//jsP_dumpsyntax(J, prog);
 		jsP_dumplist(J, prog);
+		fun = jsC_compile(J, prog);
+		if (fun) {
+			jsC_dumpfunction(J, fun);
+			jsR_runfunction(J, fun);
+		}
+		jsC_freecompile(J);
 		jsP_freeparse(J);
 		return 0;
 	}
