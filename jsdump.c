@@ -441,7 +441,7 @@ static void pstm(int d, js_Ast *stm)
 
 	case STM_WITH:
 		ps("with ("); pexp(d, stm->a); ps(")\n");
-		pblock(d, stm->b);
+		pstm(d, stm->b);
 		break;
 
 	case STM_SWITCH:

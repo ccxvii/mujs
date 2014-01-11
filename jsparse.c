@@ -170,26 +170,26 @@ static js_Ast *propassign(js_State *J)
 {
 	js_Ast *name, *value, *arg, *body;
 
-	if (J->lookahead == TK_IDENTIFIER && !strcmp(J->text, "get")) {
-		next(J);
-		name = propname(J);
-		expect(J, '(');
-		expect(J, ')');
-		body = funcbody(J);
-		return EXP2(PROP_GET, name, body);
-	}
-
-	if (J->lookahead == TK_IDENTIFIER && !strcmp(J->text, "set")) {
-		next(J);
-		name = propname(J);
-		expect(J, '(');
-		arg = identifier(J);
-		expect(J, ')');
-		body = funcbody(J);
-		return EXP3(PROP_SET, name, arg, body);
-	}
-
 	name = propname(J);
+
+	if (J->lookahead != ':' && name->type == AST_IDENTIFIER) {
+		if (!strcmp(name->string, "get")) {
+			name = propname(J);
+			expect(J, '(');
+			expect(J, ')');
+			body = funcbody(J);
+			return EXP2(PROP_GET, name, body);
+		}
+		if (!strcmp(name->string, "set")) {
+			name = propname(J);
+			expect(J, '(');
+			arg = identifier(J);
+			expect(J, ')');
+			body = funcbody(J);
+			return EXP3(PROP_SET, name, arg, body);
+		}
+	}
+
 	expect(J, ':');
 	value = assignment(J, 0);
 	return EXP2(PROP_VAL, name, value);
@@ -574,9 +574,10 @@ static js_Ast *forstatement(js_State *J)
 		return NULL;
 	}
 
-	if (J->lookahead != ';') {
+	if (J->lookahead != ';')
 		a = expression(J, 1);
-	}
+	else
+		a = NULL;
 	if (accept(J, ';')) {
 		b = forexpression(J, ';');
 		c = forexpression(J, ')');
