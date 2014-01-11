@@ -227,7 +227,7 @@ static js_Ast *primary(js_State *J)
 	}
 	if (J->lookahead == TK_REGEXP) {
 		a = jsP_newstrnode(J, AST_REGEXP, J->text);
-		// TODO: flags
+		a->number = J->number;
 		next(J);
 		return a;
 	}

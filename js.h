@@ -13,6 +13,10 @@ typedef struct js_State js_State;
 typedef struct js_StringNode js_StringNode;
 typedef struct js_Ast js_Ast;
 
+#define JS_REGEXP_G 1
+#define JS_REGEXP_I 2
+#define JS_REGEXP_M 4
+
 typedef int (*js_CFunction)(js_State *J);
 
 js_State *js_newstate(void);

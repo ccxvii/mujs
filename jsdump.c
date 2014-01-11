@@ -92,15 +92,27 @@ static void pobject(int d, js_Ast *list)
 
 static void pstr(const char *s)
 {
+	int c;
 	pc('"');
-	while (*s) {
-		if (*s == '"')
-			ps("\\\"");
-		else
-			pc(*s);
-		++s;
+	while ((c = *s++)) {
+		switch (c) {
+		case '"': ps("\\\""); break;
+		case '\\': ps("\\\\"); break;
+		case '\n': ps("\\n"); break;
+		default: pc(c); break;
+		}
 	}
 	pc('"');
+}
+
+static void pregexp(const char *prog, int flags)
+{
+	pc('/');
+	ps(prog);
+	pc('/');
+	if (flags & JS_REGEXP_G) pc('g');
+	if (flags & JS_REGEXP_I) pc('i');
+	if (flags & JS_REGEXP_M) pc('m');
 }
 
 static void pbin(int d, int i, js_Ast *exp, const char *op)
@@ -127,7 +139,7 @@ static void pexpi(int d, int i, js_Ast *exp)
 	case AST_IDENTIFIER: ps(exp->string); break;
 	case AST_NUMBER: printf("%.9g", exp->number); break;
 	case AST_STRING: pstr(exp->string); break;
-	case AST_REGEXP: pc('/'); ps(exp->string); pc('/'); break;
+	case AST_REGEXP: pregexp(exp->string, exp->number); break;
 
 	case EXP_NULL: ps("null"); break;
 	case EXP_TRUE: ps("true"); break;
@@ -516,7 +528,7 @@ static void snode(int d, js_Ast *node)
 	switch (node->type) {
 	case AST_IDENTIFIER: pc(' '); ps(node->string); break;
 	case AST_STRING: pc(' '); pstr(node->string); break;
-	case AST_REGEXP: printf(" /%s/", node->string); break;
+	case AST_REGEXP: pc(' '); pregexp(node->string, node->number); break;
 	case AST_NUMBER: printf(" %.9g", node->number); break;
 	case STM_BLOCK: afun = sblock; break;
 	case STM_FUNC: case EXP_FUNC: cfun = sblock; break;

@@ -361,6 +361,7 @@ static int isregexpcontext(int last)
 static int lexregexp(js_State *J, const char **sp)
 {
 	const char *s;
+	int g, m, i;
 	int c;
 
 	textinit(J);
@@ -386,21 +387,25 @@ static int lexregexp(js_State *J, const char **sp)
 	s = textend(J);
 
 	/* regexp flags */
-	J->flags.g = J->flags.i = J->flags.m = 0;
+	g = i = m = 0;
 
 	c = PEEK();
 	while (isidentifierpart(c)) {
-		if (c == 'g') J->flags.g ++;
-		else if (c == 'i') J->flags.i ++;
-		else if (c == 'm') J->flags.m ++;
+		if (c == 'g') ++g;
+		else if (c == 'i') ++i;
+		else if (c == 'm') ++m;
 		else return jsP_error(J, "illegal flag in regular expression: %c", c);
 		c = NEXTPEEK();
 	}
 
-	if (J->flags.g > 1 || J->flags.i > 1 || J->flags.m > 1)
+	if (g > 1 || i > 1 || m > 1)
 		return jsP_error(J, "duplicated flag in regular expression");
 
 	J->text = js_intern(J, s);
+	J->number = 0;
+	if (g) J->number += JS_REGEXP_G;
+	if (i) J->number += JS_REGEXP_I;
+	if (m) J->number += JS_REGEXP_M;
 	return TK_REGEXP;
 }
 
