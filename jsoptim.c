@@ -22,57 +22,50 @@ static inline unsigned int u32(double d)
 	return i32(d);
 }
 
-static int N(js_Ast *node, double *r, double x)
+static int N(js_Ast *node, double x)
 {
 	node->type = AST_NUMBER;
 	node->number = x;
 	node->a = node->b = node->c = node->d = NULL;
-	*r = x;
 	return 1;
 }
 
-static int foldnumber(js_Ast *node, double *r)
+static int foldnumber(js_Ast *node)
 {
-	double x, y, z, w;
+	double x, y;
 	int a, b;
 
-	a = node->a ? foldnumber(node->a, &x) : 0;
-	b = node->b ? foldnumber(node->b, &y) : 0;
-	if (node->c) foldnumber(node->c, &z);
-	if (node->d) foldnumber(node->d, &w);
-
-	if (node->type == AST_NUMBER) {
-		*r = node->number;
+	if (node->type == AST_NUMBER)
 		return 1;
-	}
 
-	/* not an expression */
-	if (node->c || node->d)
-		return 0;
+	a = node->a ? foldnumber(node->a) : 0;
+	b = node->b ? foldnumber(node->b) : 0;
+	if (node->c) foldnumber(node->c);
+	if (node->d) foldnumber(node->d);
 
-	/* binary */
-	if (a && b) {
+	if (a) {
+		x = node->a->number;
 		switch (node->type) {
-		case EXP_MUL: return N(node, r, x * y);
-		case EXP_DIV: return N(node, r, x / y);
-		case EXP_MOD: return N(node, r, fmod(x, y));
-		case EXP_ADD: return N(node, r, x + y);
-		case EXP_SUB: return N(node, r, x - y);
-		case EXP_SHL: return N(node, r, i32(x) << (u32(y) & 0x1F));
-		case EXP_SHR: return N(node, r, i32(x) >> (u32(y) & 0x1F));
-		case EXP_USHR: return N(node, r, u32(x) >> (u32(y) & 0x1F));
-		case EXP_BITAND: return N(node, r, i32(x) & i32(y));
-		case EXP_BITXOR: return N(node, r, i32(x) ^ i32(y));
-		case EXP_BITOR: return N(node, r, i32(x) | i32(y));
+		case EXP_NEG: return N(node, -x);
+		case EXP_POS: return N(node, x);
+		case EXP_BITNOT: return N(node, ~i32(x));
 		}
-	}
 
-	/* unary */
-	else if (a) {
-		switch (node->type) {
-		case EXP_NEG: return N(node, r, -x);
-		case EXP_POS: return N(node, r, x);
-		case EXP_BITNOT: return N(node, r, ~i32(x));
+		if (b) {
+			y = node->b->number;
+			switch (node->type) {
+			case EXP_MUL: return N(node, x * y);
+			case EXP_DIV: return N(node, x / y);
+			case EXP_MOD: return N(node, fmod(x, y));
+			case EXP_ADD: return N(node, x + y);
+			case EXP_SUB: return N(node, x - y);
+			case EXP_SHL: return N(node, i32(x) << (u32(y) & 0x1F));
+			case EXP_SHR: return N(node, i32(x) >> (u32(y) & 0x1F));
+			case EXP_USHR: return N(node, u32(x) >> (u32(y) & 0x1F));
+			case EXP_BITAND: return N(node, i32(x) & i32(y));
+			case EXP_BITXOR: return N(node, i32(x) ^ i32(y));
+			case EXP_BITOR: return N(node, i32(x) | i32(y));
+			}
 		}
 	}
 
@@ -81,6 +74,5 @@ static int foldnumber(js_Ast *node, double *r)
 
 void jsP_optimize(js_State *J, js_Ast *prog)
 {
-	double x;
-	foldnumber(prog, &x);
+	foldnumber(prog);
 }

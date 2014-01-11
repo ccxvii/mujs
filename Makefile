@@ -18,8 +18,8 @@ build/libjs.a: $(OBJS)
 js: build/main.o build/libjs.a
 	$(CC) -o $@ $^ -lm
 
-tags:
-	ctags *.c *.h
+tags: $(SRCS) $(HDRS)
+	ctags $^
 
 clean:
 	rm -f build/* js
