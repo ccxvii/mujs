@@ -814,7 +814,7 @@ int jsP_error(js_State *J, const char *fmt, ...)
 {
 	va_list ap;
 
-	fprintf(stderr, "syntax error: %s:%d: ", J->filename, J->line);
+	fprintf(stderr, "%s:%d: error: ", J->filename, J->line);
 	va_start(ap, fmt);
 	vfprintf(stderr, fmt, ap);
 	va_end(ap);

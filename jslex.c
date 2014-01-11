@@ -90,37 +90,6 @@ static inline int findkeyword(js_State *J, const char *s)
 	return TK_IDENTIFIER;
 }
 
-#define GET() (*(*sp)++)
-#define UNGET() ((*sp)--)
-#define PEEK() (**sp)
-#define NEXT() ((*sp)++)
-#define NEXTPEEK() (NEXT(), PEEK())
-#define LOOK(x) (PEEK() == x ? (NEXT(), 1) : 0)
-
-static void textinit(js_State *J)
-{
-	if (!J->buf.text) {
-		J->buf.cap = 4096;
-		J->buf.text = malloc(J->buf.cap);
-	}
-	J->buf.len = 0;
-}
-
-static inline void textpush(js_State *J, int c)
-{
-	if (J->buf.len >= J->buf.cap) {
-		J->buf.cap = J->buf.cap * 2;
-		J->buf.text = realloc(J->buf.text, J->buf.cap);
-	}
-	J->buf.text[J->buf.len++] = c;
-}
-
-static inline char *textend(js_State *J)
-{
-	textpush(J, 0);
-	return J->buf.text;
-}
-
 static inline int iswhite(int c)
 {
 	return c == 0x9 || c == 0xB || c == 0xC || c == 0x20 || c == 0xA0 || c == 0xFEFF;
@@ -162,7 +131,51 @@ static inline int tohex(int c)
 	return 0;
 }
 
-static inline void lexlinecomment(const char **sp)
+#define PEEK() (**sp)
+#define NEXT() get(J, sp)
+#define GET() get(J, sp)
+#define UNGET() ((*sp)--)
+#define NEXTPEEK() (NEXT(), PEEK())
+#define LOOK(x) (PEEK() == x ? (NEXT(), 1) : 0)
+
+static inline int get(js_State *J, const char **sp)
+{
+	int c = *(*sp)++;
+	/* consume CR LF as one unit */
+	if (c == '\r' && PEEK() == '\n')
+		(*sp)++;
+	if (isnewline(c)) {
+		J->line++;
+		J->newline = 1;
+	}
+	return c;
+}
+
+static void textinit(js_State *J)
+{
+	if (!J->buf.text) {
+		J->buf.cap = 4096;
+		J->buf.text = malloc(J->buf.cap);
+	}
+	J->buf.len = 0;
+}
+
+static inline void textpush(js_State *J, int c)
+{
+	if (J->buf.len >= J->buf.cap) {
+		J->buf.cap = J->buf.cap * 2;
+		J->buf.text = realloc(J->buf.text, J->buf.cap);
+	}
+	J->buf.text[J->buf.len++] = c;
+}
+
+static inline char *textend(js_State *J)
+{
+	textpush(J, 0);
+	return J->buf.text;
+}
+
+static inline void lexlinecomment(js_State *J, const char **sp)
 {
 	int c = PEEK();
 	while (c && !isnewline(c)) {
@@ -174,11 +187,6 @@ static inline int lexcomment(js_State *J, const char **sp)
 {
 	while (1) {
 		int c = GET();
-		if (isnewline(c)) {
-			if (c == '\r' && PEEK() == '\n')
-				NEXT();
-			J->line++;
-		}
 		if (c == '*') {
 			while (c == '*')
 				c = GET();
@@ -190,7 +198,7 @@ static inline int lexcomment(js_State *J, const char **sp)
 	}
 }
 
-static inline double lexhex(const char **sp)
+static inline double lexhex(js_State *J, const char **sp)
 {
 	double n = 0;
 	int c = PEEK();
@@ -201,7 +209,7 @@ static inline double lexhex(const char **sp)
 	return n;
 }
 
-static inline double lexinteger(const char **sp)
+static inline double lexinteger(js_State *J, const char **sp)
 {
 	double n = 0;
 	int c = PEEK();
@@ -212,7 +220,7 @@ static inline double lexinteger(const char **sp)
 	return n;
 }
 
-static inline double lexfraction(const char **sp)
+static inline double lexfraction(js_State *J, const char **sp)
 {
 	double n = 0;
 	double d = 1;
@@ -225,15 +233,15 @@ static inline double lexfraction(const char **sp)
 	return n / d;
 }
 
-static inline double lexexponent(const char **sp)
+static inline double lexexponent(js_State *J, const char **sp)
 {
 	if (LOOK('e') || LOOK('E')) {
 		if (LOOK('-'))
-			return -lexinteger(sp);
+			return -lexinteger(J, sp);
 		else if (LOOK('+'))
-			return lexinteger(sp);
+			return lexinteger(J, sp);
 		else
-			return lexinteger(sp);
+			return lexinteger(J, sp);
 	}
 	return 0;
 }
@@ -246,17 +254,17 @@ static inline int lexnumber(js_State *J, const char **sp)
 		*sp += 2;
 		if (!ishex(PEEK()))
 			return jsP_error(J, "0x not followed by hexademical digit");
-		J->number = lexhex(sp);
+		J->number = lexhex(J, sp);
 		return TK_NUMBER;
 	}
 
 	if ((*sp)[0] == '0' && isdec((*sp)[1]))
 		return jsP_error(J, "number with leading zero");
 
-	n = lexinteger(sp);
+	n = lexinteger(J, sp);
 	if (LOOK('.'))
-		n += lexfraction(sp);
-	n *= pow(10, lexexponent(sp));
+		n += lexfraction(J, sp);
+	n *= pow(10, lexexponent(J, sp));
 
 	if (isidentifierstart(PEEK()))
 		return jsP_error(J, "number with letter suffix");
@@ -270,11 +278,8 @@ static inline int lexescape(js_State *J, const char **sp)
 	int c = GET();
 	int x = 0;
 
-	if (isnewline(c)) {
-		if (c == '\r' && PEEK() == '\n')
-			NEXT();
+	if (isnewline(c))
 		return 0;
-	}
 
 	switch (c) {
 	case 'u':
@@ -425,11 +430,6 @@ static int lex(js_State *J, const char **sp)
 			c = GET();
 
 		if (isnewline(c)) {
-			/* consume CR LF as one unit */
-			if (c == '\r' && PEEK() == '\n')
-				NEXT();
-			J->line++;
-			J->newline = 1;
 			if (isnlthcontext(J->lasttoken))
 				return ';';
 			continue;
@@ -437,7 +437,7 @@ static int lex(js_State *J, const char **sp)
 
 		if (c == '/') {
 			if (LOOK('/')) {
-				lexlinecomment(sp);
+				lexlinecomment(J, sp);
 				continue;
 			} else if (LOOK('*')) {
 				if (lexcomment(J, sp))
@@ -452,6 +452,7 @@ static int lex(js_State *J, const char **sp)
 			}
 		}
 
+		// TODO: \uXXXX escapes
 		if (isidentifierstart(c)) {
 			textinit(J);
 			textpush(J, c);
