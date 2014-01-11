@@ -134,7 +134,7 @@ static js_Ast *identifiername(js_State *J)
 static js_Ast *arrayelement(js_State *J)
 {
 	if (J->lookahead == ',')
-		return EXP0(NULL); /* TODO: should be 'undefined' */
+		return EXP0(UNDEF);
 	return assignment(J, 0);
 }
 

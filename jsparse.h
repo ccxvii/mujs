@@ -21,6 +21,7 @@ enum
 	AST_REGEXP,
 
 	/* literals */
+	EXP_UNDEF, /* for array elisions */
 	EXP_NULL,
 	EXP_TRUE,
 	EXP_FALSE,

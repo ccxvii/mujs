@@ -3,6 +3,22 @@
 
 #include <assert.h>
 
+static const char *stype[] = {
+	"list", "ident", "number", "string", "regexp", "undef", "null", "true",
+	"false", "this", "array", "object", "prop_val", "prop_get", "prop_set",
+	"index", "member", "call", "new", "funexp", "delete", "void", "typeof",
+	"preinc", "predec", "postinc", "postdec", "pos", "neg", "bitnot",
+	"lognot", "logor", "logand", "bitor", "bitxor", "bitand", "eq", "ne",
+	"eq3", "ne3", "lt", "gt", "le", "ge", "instanceof", "in", "shl", "shr",
+	"ushr", "add", "sub", "mul", "div", "mod", "cond", "ass", "ass_mul",
+	"ass_div", "ass_mod", "ass_add", "ass_sub", "ass_shl", "ass_shr",
+	"ass_ushr", "ass_bitand", "ass_bitxor", "ass_bitor", "comma",
+	"var-init", "block", "fundec", "nop", "var", "if", "do-while", "while",
+	"for", "for-var", "for-in", "for-in-var", "continue", "break",
+	"return", "with", "switch", "throw", "try", "label", "case", "default",
+	"debugger",
+};
+
 static void pstmlist(int d, js_Ast *list);
 static void pexpi(int d, int i, js_Ast *exp);
 static void pstm(int d, js_Ast *stm);
@@ -141,6 +157,7 @@ static void pexpi(int d, int i, js_Ast *exp)
 	case AST_STRING: pstr(exp->string); break;
 	case AST_REGEXP: pregexp(exp->string, exp->number); break;
 
+	case EXP_UNDEF: break;
 	case EXP_NULL: ps("null"); break;
 	case EXP_TRUE: ps("true"); break;
 	case EXP_FALSE: ps("false"); break;
@@ -485,27 +502,6 @@ void jsP_dumpsyntax(js_State *J, js_Ast *prog)
 		pc('\n');
 	}
 }
-
-static const char *stype[] = {
-	"list", "ident", "number", "string", "regexp", "null",
-	"true", "false", "this", "array", "object",
-	"prop_val", "prop_get", "prop_set", "index",
-	"member", "call", "new", "funexp", "delete",
-	"void", "typeof", "preinc", "predec", "postinc",
-	"postdec", "pos", "neg", "bitnot", "lognot",
-	"logor", "logand", "bitor", "bitxor", "bitand",
-	"eq", "ne", "eq3", "ne3", "lt", "gt", "le",
-	"ge", "instanceof", "in", "shl", "shr", "ushr",
-	"add", "sub", "mul", "div", "mod", "cond",
-	"ass", "ass_mul", "ass_div", "ass_mod", "ass_add",
-	"ass_sub", "ass_shl", "ass_shr", "ass_ushr",
-	"ass_bitand", "ass_bitxor", "ass_bitor", "comma",
-	"var-init", "block", "fundec", "nop", "var", "if",
-	"do-while", "while", "for", "for-var", "for-in",
-	"for-in-var", "continue", "break", "return",
-	"with", "switch", "throw", "try", "label",
-	"case", "default", "debugger",
-};
 
 static void snode(int d, js_Ast *node)
 {
