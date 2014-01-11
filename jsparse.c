@@ -764,11 +764,12 @@ static js_Ast *statement(js_State *J)
 	}
 
 	/* expression statement */
-	if (J->lookahead != TK_FUNCTION) {
-		a = expression(J, 0);
-		semicolon(J);
-		return a;
-	}
+	if (J->lookahead == TK_FUNCTION)
+		jsP_warning(J, "naked function expression");
+
+	a = expression(J, 0);
+	semicolon(J);
+	return a;
 
 	jsP_error(J, "unexpected token in statement: %s", TOKSTR);
 	return NULL;
@@ -808,6 +809,17 @@ static js_Ast *funcbody(js_State *J)
 	a = chunklist(J);
 	expect(J, '}');
 	return a;
+}
+
+void jsP_warning(js_State *J, const char *fmt, ...)
+{
+	va_list ap;
+
+	fprintf(stderr, "%s:%d: warning:", J->filename, J->line);
+	va_start(ap, fmt);
+	vfprintf(stderr, fmt, ap);
+	va_end(ap);
+	fprintf(stderr, "\n");
 }
 
 int jsP_error(js_State *J, const char *fmt, ...)

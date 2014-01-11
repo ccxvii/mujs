@@ -69,5 +69,6 @@ void jsP_initlex(js_State *J, const char *filename, const char *source);
 int jsP_lex(js_State *J);
 const char *jsP_tokenstring(int token);
 int jsP_error(js_State *J, const char *fmt, ...);
+void jsP_warning(js_State *J, const char *fmt, ...);
 
 #endif
