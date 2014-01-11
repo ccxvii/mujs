@@ -3,6 +3,8 @@
 #include "jslex.h"
 #include "jsparse.h"
 
+#define nelem(a) (sizeof (a) / sizeof (a)[0])
+
 #define LIST(h)		jsP_newnode(J, AST_LIST, h, 0, 0, 0);
 
 #define EXP0(x)		jsP_newnode(J, EXP_ ## x, 0, 0, 0, 0)
@@ -102,10 +104,46 @@ static void semicolon(js_State *J)
 
 /* Literals */
 
+static inline int findword(const char *s, const char **list, int num)
+{
+	int l = 0;
+	int r = num - 1;
+	while (l <= r) {
+		int m = (l + r) >> 1;
+		int c = strcmp(s, list[m]);
+		if (c < 0)
+			r = m - 1;
+		else if (c > 0)
+			l = m + 1;
+		else
+			return m;
+	}
+	return -1;
+}
+
+static const char *futurewords[] = {
+	"class", "const", "enum", "export", "extends", "import", "super",
+};
+
+static const char *strictfuturewords[] = {
+	"implements", "interface", "let", "package", "private", "protected",
+	"public", "static", "yield",
+};
+
+static void checkfutureword(js_State *J, const char *s)
+{
+	if (findword(s, futurewords, nelem(futurewords)) >= 0)
+		jsP_error(J, "'%s' is a future reserved word", s);
+	if (J->strict && findword(s, strictfuturewords, nelem(strictfuturewords)) >= 0)
+		jsP_error(J, "'%s' is a strict mode future reserved word", s);
+}
+
 static js_Ast *identifier(js_State *J)
 {
+	js_Ast *a;
 	if (J->lookahead == TK_IDENTIFIER) {
-		js_Ast *a = jsP_newstrnode(J, AST_IDENTIFIER, J->text);
+		checkfutureword(J, J->text);
+		a = jsP_newstrnode(J, AST_IDENTIFIER, J->text);
 		next(J);
 		return a;
 	}

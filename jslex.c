@@ -62,15 +62,6 @@ static const char *keywords[] = {
 	"true", "try", "typeof", "var", "void", "while", "with",
 };
 
-static const char *futurewords[] = {
-	"class", "const", "enum", "export", "extends", "import", "super",
-};
-
-static const char *strictfuturewords[] = {
-	"implements", "interface", "let", "package", "private", "protected",
-	"public", "static", "yield",
-};
-
 static inline int findword(const char *s, const char **list, int num)
 {
 	int l = 0;
@@ -95,12 +86,6 @@ static inline int findkeyword(js_State *J, const char *s)
 		J->text = keywords[i];
 		return TK_BREAK + i; /* first keyword + i */
 	}
-
-	if (findword(s, futurewords, nelem(futurewords)) >= 0)
-		return jsP_error(J, "'%s' is a future reserved word", s);
-	if (J->strict && findword(s, strictfuturewords, nelem(strictfuturewords)) >= 0)
-		return jsP_error(J, "'%s' is a strict mode future reserved word", s);
-
 	J->text = js_intern(J, s);
 	return TK_IDENTIFIER;
 }
@@ -606,6 +591,9 @@ void jsP_initlex(js_State *J, const char *filename, const char *source)
 	J->source = source;
 	J->line = 1;
 	J->lasttoken = 0;
+	// FIXME: parse utf-8 proper instead of just skipping BOM
+	if (!strncmp(source, "\357\273\277", 3))
+		J->source += 3;
 }
 
 int jsP_lex(js_State *J)
