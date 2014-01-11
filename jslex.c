@@ -335,6 +335,7 @@ static int isregexpcontext(int last)
 	switch (last) {
 	case ']':
 	case ')':
+	case '}':
 	case TK_IDENTIFIER:
 	case TK_NUMBER:
 	case TK_STRING:
