@@ -132,13 +132,12 @@ static inline int tohex(int c)
 }
 
 #define PEEK() (**sp)
-#define NEXT() get(J, sp)
-#define GET() get(J, sp)
+#define NEXT() next(J, sp)
 #define UNGET() ((*sp)--)
 #define NEXTPEEK() (NEXT(), PEEK())
-#define LOOK(x) (PEEK() == x ? (NEXT(), 1) : 0)
+#define ACCEPT(x) (PEEK() == x ? (NEXT(), 1) : 0)
 
-static inline int get(js_State *J, const char **sp)
+static int next(js_State *J, const char **sp)
 {
 	int c = *(*sp)++;
 	/* consume CR LF as one unit */
@@ -186,10 +185,10 @@ static inline void lexlinecomment(js_State *J, const char **sp)
 static inline int lexcomment(js_State *J, const char **sp)
 {
 	while (1) {
-		int c = GET();
+		int c = NEXT();
 		if (c == '*') {
 			while (c == '*')
-				c = GET();
+				c = NEXT();
 			if (c == '/')
 				return 0;
 		} else if (c == 0) {
@@ -235,10 +234,10 @@ static inline double lexfraction(js_State *J, const char **sp)
 
 static inline double lexexponent(js_State *J, const char **sp)
 {
-	if (LOOK('e') || LOOK('E')) {
-		if (LOOK('-'))
+	if (ACCEPT('e') || ACCEPT('E')) {
+		if (ACCEPT('-'))
 			return -lexinteger(J, sp);
-		else if (LOOK('+'))
+		else if (ACCEPT('+'))
 			return lexinteger(J, sp);
 		else
 			return lexinteger(J, sp);
@@ -262,7 +261,7 @@ static inline int lexnumber(js_State *J, const char **sp)
 		return jsP_error(J, "number with leading zero");
 
 	n = lexinteger(J, sp);
-	if (LOOK('.'))
+	if (ACCEPT('.'))
 		n += lexfraction(J, sp);
 	n *= pow(10, lexexponent(J, sp));
 
@@ -275,7 +274,7 @@ static inline int lexnumber(js_State *J, const char **sp)
 
 static inline int lexescape(js_State *J, const char **sp)
 {
-	int c = GET();
+	int c = NEXT();
 	int x = 0;
 
 	if (isnewline(c))
@@ -312,7 +311,7 @@ static inline int lexescape(js_State *J, const char **sp)
 static inline int lexstring(js_State *J, const char **sp, int q)
 {
 	const char *s;
-	int c = GET();
+	int c = NEXT();
 
 	textinit(J);
 
@@ -325,7 +324,7 @@ static inline int lexstring(js_State *J, const char **sp, int q)
 		} else {
 			textpush(J, c);
 		}
-		c = GET();
+		c = NEXT();
 	}
 
 	s = textend(J);
@@ -363,20 +362,20 @@ static int lexregexp(js_State *J, const char **sp)
 	textinit(J);
 
 	/* regexp body */
-	c = GET();
+	c = NEXT();
 	while (c != '/') {
 		if (c == 0 || isnewline(c)) {
 			return jsP_error(J, "regular expression not terminated");
 		} else if (c == '\\') {
 			textpush(J, c);
-			c = GET();
+			c = NEXT();
 			if (c == 0 || isnewline(c))
 				return jsP_error(J, "regular expression not terminated");
 			textpush(J, c);
-			c = GET();
+			c = NEXT();
 		} else {
 			textpush(J, c);
-			c = GET();
+			c = NEXT();
 		}
 	}
 
@@ -424,10 +423,10 @@ static int lex(js_State *J, const char **sp)
 	J->newline = 0;
 
 	while (1) {
-		int c = GET();
+		int c = NEXT();
 
 		while (iswhite(c))
-			c = GET();
+			c = NEXT();
 
 		if (isnewline(c)) {
 			if (isnlthcontext(J->lasttoken))
@@ -436,16 +435,16 @@ static int lex(js_State *J, const char **sp)
 		}
 
 		if (c == '/') {
-			if (LOOK('/')) {
+			if (ACCEPT('/')) {
 				lexlinecomment(J, sp);
 				continue;
-			} else if (LOOK('*')) {
+			} else if (ACCEPT('*')) {
 				if (lexcomment(J, sp))
 					return jsP_error(J, "multi-line comment not terminated");
 				continue;
 			} else if (isregexpcontext(J->lasttoken)) {
 				return lexregexp(J, sp);
-			} else if (LOOK('=')) {
+			} else if (ACCEPT('=')) {
 				return TK_DIV_ASS;
 			} else {
 				return '/';
@@ -499,86 +498,86 @@ static int lex(js_State *J, const char **sp)
 			return '.';
 
 		case '<':
-			if (LOOK('<')) {
-				if (LOOK('='))
+			if (ACCEPT('<')) {
+				if (ACCEPT('='))
 					return TK_SHL_ASS;
 				return TK_SHL;
 			}
-			if (LOOK('='))
+			if (ACCEPT('='))
 				return TK_LE;
 			return '<';
 
 		case '>':
-			if (LOOK('>')) {
-				if (LOOK('>')) {
-					if (LOOK('='))
+			if (ACCEPT('>')) {
+				if (ACCEPT('>')) {
+					if (ACCEPT('='))
 						return TK_USHR_ASS;
 					return TK_USHR;
 				}
-				if (LOOK('='))
+				if (ACCEPT('='))
 					return TK_SHR_ASS;
 				return TK_SHR;
 			}
-			if (LOOK('='))
+			if (ACCEPT('='))
 				return TK_GE;
 			return '>';
 
 		case '=':
-			if (LOOK('=')) {
-				if (LOOK('='))
+			if (ACCEPT('=')) {
+				if (ACCEPT('='))
 					return TK_EQ3;
 				return TK_EQ;
 			}
 			return '=';
 
 		case '!':
-			if (LOOK('=')) {
-				if (LOOK('='))
+			if (ACCEPT('=')) {
+				if (ACCEPT('='))
 					return TK_NE3;
 				return TK_NE;
 			}
 			return '!';
 
 		case '+':
-			if (LOOK('+'))
+			if (ACCEPT('+'))
 				return TK_INC;
-			if (LOOK('='))
+			if (ACCEPT('='))
 				return TK_ADD_ASS;
 			return '+';
 
 		case '-':
-			if (LOOK('-'))
+			if (ACCEPT('-'))
 				return TK_DEC;
-			if (LOOK('='))
+			if (ACCEPT('='))
 				return TK_SUB_ASS;
 			return '-';
 
 		case '*':
-			if (LOOK('='))
+			if (ACCEPT('='))
 				return TK_MUL_ASS;
 			return '*';
 
 		case '%':
-			if (LOOK('='))
+			if (ACCEPT('='))
 				return TK_MOD_ASS;
 			return '%';
 
 		case '&':
-			if (LOOK('&'))
+			if (ACCEPT('&'))
 				return TK_AND;
-			if (LOOK('='))
+			if (ACCEPT('='))
 				return TK_AND_ASS;
 			return '&';
 
 		case '|':
-			if (LOOK('|'))
+			if (ACCEPT('|'))
 				return TK_OR;
-			if (LOOK('='))
+			if (ACCEPT('='))
 				return TK_OR_ASS;
 			return '|';
 
 		case '^':
-			if (LOOK('='))
+			if (ACCEPT('='))
 				return TK_XOR_ASS;
 			return '^';
 
