@@ -15,6 +15,11 @@ build/%.o : %.c $(HDRS)
 build/libjs.a: $(OBJS)
 	ar cru $@ $^
 
+opnames.h : jscompile.h
+	grep 'OP_' jscompile.h | sed 's/OP_/"/;s/,/",/' | tr A-Z a-z > opnames.h
+
+jsdump.c : opnames.h
+
 js: build/main.o build/libjs.a
 	$(CC) -o $@ $^ -lm
 

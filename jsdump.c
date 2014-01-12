@@ -22,16 +22,7 @@ static const char *astname[] = {
 };
 
 static const char *opname[] = {
-	"const", "undef", "null", "true", "false", "this",
-	"array", "arrayput",
-	"object", "objectput",
-	"defvar", "var", "index", "member", "load", "dupload", "store", "call", "new",
-	"closure", "delete", "void", "typeof", "preinc", "postinc", "predec",
-	"postdec", "pos", "neg", "bitnot", "lognot", "logor", "logand",
-	"bitor", "bitxor", "bitand", "eq", "ne", "eq3", "ne3", "lt", "gt",
-	"le", "ge", "instanceof", "in", "shl", "shr", "ushr", "add", "sub",
-	"mul", "div", "mod", "jump", "jtrue", "jfalse", "try", "throw",
-	"return", "pushwith", "popwith", "debugger", "pop",
+#include "opnames.h"
 };
 
 static void pstmlist(int d, js_Ast *list);
