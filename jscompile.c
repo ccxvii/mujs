@@ -68,6 +68,15 @@ static void emitstring(JF, int opcode, const char *s)
 	emit(J, F, addconst(J, F, v));
 }
 
+static void emitname(JF, int opcode, const char *s)
+{
+	js_Value v;
+	v.type = JS_TSTRING;
+	v.u.string = s;
+	emit(J, F, opcode);
+	emit(J, F, addconst(J, F, v));
+}
+
 static int jump(JF, int opcode)
 {
 	int addr = F->len + 1;
@@ -114,6 +123,8 @@ static void cobject(JF, js_Ast *list)
 			js_Ast *prop = kv->a;
 			cexp(J, F, kv->b);
 			if (prop->type == AST_IDENTIFIER || prop->type == AST_STRING)
+				emitname(J, F, OP_OBJECTPUT, prop->string);
+			else if (prop->type == AST_STRING)
 				emitstring(J, F, OP_OBJECTPUT, prop->string);
 			else if (prop->type == AST_NUMBER)
 				emitnumber(J, F, OP_OBJECTPUT, prop->number);
@@ -140,7 +151,7 @@ static void clval(JF, js_Ast *exp)
 {
 	switch (exp->type) {
 	case AST_IDENTIFIER:
-		emitstring(J, F, OP_AVAR, exp->string);
+		emitname(J, F, OP_AVAR, exp->string);
 		break;
 	case EXP_INDEX:
 		cexp(J, F, exp->a);
@@ -149,7 +160,7 @@ static void clval(JF, js_Ast *exp)
 		break;
 	case EXP_MEMBER:
 		cexp(J, F, exp->a);
-		emitstring(J, F, OP_AMEMBER, exp->b->string);
+		emitname(J, F, OP_AMEMBER, exp->b->string);
 		break;
 	default:
 		jsC_error(J, exp, "invalid l-value in assignment");
@@ -172,10 +183,7 @@ static void cexp(JF, js_Ast *exp)
 	int n;
 
 	switch (exp->type) {
-	case AST_IDENTIFIER:
-		emitstring(J, F, OP_LOADVAR, exp->string);
-		break;
-
+	case AST_IDENTIFIER: emitname(J, F, OP_LOADVAR, exp->string); break;
 	case AST_NUMBER: emitnumber(J, F, OP_CONST, exp->number); break;
 	case AST_STRING: emitstring(J, F, OP_CONST, exp->string); break;
 	case EXP_UNDEF: emit(J, F, OP_UNDEF); break;
@@ -202,14 +210,14 @@ static void cexp(JF, js_Ast *exp)
 
 	case EXP_MEMBER:
 		cexp(J, F, exp->a);
-		emitstring(J, F, OP_LOADMEMBER, exp->b->string);
+		emitname(J, F, OP_LOADMEMBER, exp->b->string);
 		break;
 
 	case EXP_CALL:
 		if (exp->a->type == EXP_MEMBER) {
 			cexp(J, F, exp->a->a);
 			emit(J, F, OP_DUP);
-			emitstring(J, F, OP_LOADMEMBER, exp->a->b->string);
+			emitname(J, F, OP_LOADMEMBER, exp->a->b->string);
 			n = cargs(J, F, exp->b);
 			emit(J, F, OP_TCALL);
 			emit(J, F, n);
@@ -337,7 +345,7 @@ static void cvardec(JF, js_Ast *vardec)
 		cexp(J, F, vardec->b);
 	else
 		emit(J, F, OP_UNDEF);
-	emitstring(J, F, OP_VARDEC, vardec->a->string);
+	emitname(J, F, OP_VARDEC, vardec->a->string);
 }
 
 static void cvardeclist(JF, js_Ast *list)
