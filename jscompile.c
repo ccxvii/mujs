@@ -96,20 +96,34 @@ static void emitname(JF, int opcode, const char *s)
 	emit(J, F, addconst(J, F, v));
 }
 
+static int here(JF)
+{
+	return F->len;
+}
+
+static void labelto(JF, int inst, int dest)
+{
+	F->code[inst+0] = (dest >> 8) & 0xFF;
+	F->code[inst+1] = (dest) & 0xFF;
+}
+
+static void label(JF, int inst)
+{
+	labelto(J, F, inst, here(J, F));
+}
+
 static int jump(JF, int opcode)
 {
-	int addr = F->len + 1;
+	int inst = F->len + 1;
 	emit(J, F, opcode);
 	emit(J, F, 0);
 	emit(J, F, 0);
-	return addr;
+	return inst;
 }
 
-static void label(JF, int addr)
+static void jumpto(JF, int opcode, int dest)
 {
-	int dest = F->len;
-	F->code[addr+0] = (dest >> 8) & 0xFF;
-	F->code[addr+1] = (dest) & 0xFF;
+	labelto(J, F, jump(J, F, opcode), dest);
 }
 
 static void unary(JF, js_Ast *exp, int opcode)
@@ -382,7 +396,7 @@ static void cvarinit(JF, js_Ast *list)
 
 static void cstm(JF, js_Ast *stm)
 {
-	int then, end;
+	int loop, then, end;
 
 	switch (stm->type) {
 	case STM_FUNC:
@@ -415,6 +429,25 @@ static void cstm(JF, js_Ast *stm)
 			label(J, F, end);
 		}
 		break;
+
+	case STM_WHILE:
+		loop = here(J, F);
+		cexp(J, F, stm->a);
+		end = jump(J, F, OP_JFALSE);
+		cstm(J, F, stm->b);
+		jumpto(J, F, OP_JUMP, loop);
+		label(J, F, end);
+		break;
+
+	case STM_DO:
+		loop = here(J, F);
+		cstm(J, F, stm->a);
+		cexp(J, F, stm->b);
+		jumpto(J, F, OP_JTRUE, loop);
+		break;
+
+	// for
+	// for-in
 
 	case STM_RETURN:
 		if (stm->a)
