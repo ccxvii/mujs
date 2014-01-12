@@ -124,16 +124,16 @@ static void clval(JF, js_Ast *exp)
 {
 	switch (exp->type) {
 	case AST_IDENTIFIER:
-		emitstring(J, F, OP_VAR, exp->string);
+		emitstring(J, F, OP_AVAR, exp->string);
 		break;
 	case EXP_INDEX:
 		cexp(J, F, exp->a);
 		cexp(J, F, exp->b);
-		emit(J, F, OP_INDEX);
+		emit(J, F, OP_AINDEX);
 		break;
 	case EXP_MEMBER:
 		cexp(J, F, exp->a);
-		emitstring(J, F, OP_MEMBER, exp->b->string);
+		emitstring(J, F, OP_AMEMBER, exp->b->string);
 		break;
 	default:
 		jsC_error(J, exp, "invalid l-value in assignment");
@@ -144,7 +144,7 @@ static void clval(JF, js_Ast *exp)
 static void assignop(JF, js_Ast *exp, int opcode)
 {
 	clval(J, F, exp->a);
-	emit(J, F, OP_DUPLOAD);
+	emit(J, F, OP_DUP_LOAD);
 	cexp(J, F, exp->b);
 	emit(J, F, opcode);
 	emit(J, F, OP_STORE);
@@ -156,8 +156,7 @@ static void cexp(JF, js_Ast *exp)
 
 	switch (exp->type) {
 	case AST_IDENTIFIER:
-		emitstring(J, F, OP_VAR, exp->string);
-		emit(J, F, OP_LOAD);
+		emitstring(J, F, OP_LOADVAR, exp->string);
 		break;
 
 	case AST_NUMBER: emitnumber(J, F, OP_CONST, exp->number); break;
@@ -181,14 +180,12 @@ static void cexp(JF, js_Ast *exp)
 	case EXP_INDEX:
 		cexp(J, F, exp->a);
 		cexp(J, F, exp->b);
-		emit(J, F, OP_INDEX);
-		emit(J, F, OP_LOAD);
+		emit(J, F, OP_LOADINDEX);
 		break;
 
 	case EXP_MEMBER:
 		cexp(J, F, exp->a);
-		emitstring(J, F, OP_MEMBER, exp->b->string);
-		emit(J, F, OP_LOAD);
+		emitstring(J, F, OP_LOADMEMBER, exp->b->string);
 		break;
 
 	case EXP_CALL:
@@ -281,7 +278,7 @@ static void cvardec(JF, js_Ast *vardec)
 		cexp(J, F, vardec->b);
 	else
 		emit(J, F, OP_UNDEF);
-	emitstring(J, F, OP_DEFVAR, vardec->a->string);
+	emitstring(J, F, OP_VARDEC, vardec->a->string);
 }
 
 static void cvardeclist(JF, js_Ast *list)
@@ -346,9 +343,9 @@ static void cstm(JF, js_Ast *stm)
 
 	case STM_WITH:
 		cexp(J, F, stm->a);
-		emit(J, F, OP_PUSHWITH);
+		emit(J, F, OP_WITH);
 		cstm(J, F, stm->b);
-		emit(J, F, OP_POPWITH);
+		emit(J, F, OP_ENDWITH);
 		break;
 
 	// switch

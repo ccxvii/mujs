@@ -620,13 +620,16 @@ void jsC_dumpfunction(js_State *J, js_Function *fun)
 		switch (c) {
 		case OP_CONST:
 		case OP_OBJECTPUT:
-		case OP_DEFVAR:
-		case OP_VAR:
-		case OP_MEMBER:
+		case OP_VARDEC:
+		case OP_LOADVAR:
+		case OP_LOADMEMBER:
+		case OP_AVAR:
+		case OP_AMEMBER:
 			pc(' ');
 			jsC_dumpvalue(J, fun->klist[*p++]);
 			break;
 		case OP_CALL:
+		case OP_TCALL:
 		case OP_NEW:
 			printf(" %d", *p++);
 			break;
