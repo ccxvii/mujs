@@ -96,8 +96,8 @@ enum
 	EXP_VAR, /* var initializer */
 
 	/* statements */
-	STM_BLOCK,
 	STM_FUNC, /* function declaration */
+	STM_BLOCK,
 	STM_NOP,
 	STM_VAR,
 	STM_IF,

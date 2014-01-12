@@ -24,6 +24,7 @@ struct js_Value
 		double number;
 		const char *string;
 		int boolean;
+		js_Function *function;
 		void *p;
 	} u;
 	int flag;

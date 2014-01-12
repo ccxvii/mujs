@@ -15,7 +15,7 @@ static const char *astname[] = {
 	"ushr", "add", "sub", "mul", "div", "mod", "cond", "ass", "ass_mul",
 	"ass_div", "ass_mod", "ass_add", "ass_sub", "ass_shl", "ass_shr",
 	"ass_ushr", "ass_bitand", "ass_bitxor", "ass_bitor", "comma",
-	"var-init", "block", "fundec", "nop", "var", "if", "do-while", "while",
+	"var-init", "fundec", "block", "nop", "var", "if", "do-while", "while",
 	"for", "for-var", "for-in", "for-in-var", "continue", "break",
 	"return", "with", "switch", "throw", "try", "debugger", "label",
 	"case", "default",
@@ -594,7 +594,7 @@ void jsC_dumpvalue(js_State *J, js_Value v)
 	case JS_TREGEXP: printf("<regexp %p>", v.u.p); break;
 	case JS_TOBJECT: printf("<object %p>", v.u.p); break;
 
-	case JS_TFUNCTION: printf("<function %p>", v.u.p); break;
+	case JS_TFUNCTION: printf("<function %p>", v.u.function); break;
 	case JS_TCFUNCTION: printf("<cfunction %p>", v.u.p); break;
 	case JS_TCLOSURE: printf("<closure %p>", v.u.p); break;
 	case JS_TARGUMENTS: printf("<arguments %p>", v.u.p); break;
@@ -607,9 +607,10 @@ void jsC_dumpfunction(js_State *J, js_Function *fun)
 {
 	unsigned char *p = fun->code;
 	unsigned char *end = fun->code + fun->len;
-	int dest;
+	int i, dest;
 
-	printf("function with %d constants\n", fun->klen);
+	printf("function %p, %s, %d parameters, %d constants\n",
+		fun, fun->name, fun->numparams, fun->klen);
 
 	while (p < end) {
 		int c = *p++;
@@ -625,6 +626,8 @@ void jsC_dumpfunction(js_State *J, js_Function *fun)
 		case OP_LOADMEMBER:
 		case OP_AVAR:
 		case OP_AMEMBER:
+		case OP_FUNDEC:
+		case OP_FUNEXP:
 			pc(' ');
 			jsC_dumpvalue(J, fun->klist[*p++]);
 			break;
@@ -643,5 +646,12 @@ void jsC_dumpfunction(js_State *J, js_Function *fun)
 		}
 
 		nl();
+	}
+
+	for (i = 0; i < fun->klen; i++) {
+		if (fun->klist[i].type == JS_TFUNCTION) {
+			nl();
+			jsC_dumpfunction(J, fun->klist[i].u.function);
+		}
 	}
 }

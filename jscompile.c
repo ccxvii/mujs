@@ -8,17 +8,27 @@
 
 #define JF js_State *J, js_Function *F
 
+static js_Function *newfun(js_State *J, js_Ast *name, js_Ast *params, js_Ast *body);
+
 static void cexp(JF, js_Ast *exp);
 static void cstmlist(JF, js_Ast *list);
 
+static int listlen(js_Ast *list)
+{
+	int n = 0;
+	while (list) {
+		n++;
+		list = list->b;
+	}
+	return n;
+}
+
 static int consteq(js_Value a, js_Value b)
 {
-	if (a.type != b.type)
-		return 0;
-	if (a.type == JS_TNUMBER)
-		return a.u.number == b.u.number;
-	else
-		return a.u.p == b.u.p;
+	if (a.type != b.type) return 0;
+	if (a.type == JS_TNUMBER) return a.u.number == b.u.number;
+	if (a.type == JS_TSTRING) return a.u.string == b.u.string;
+	return a.u.p == b.u.p;
 }
 
 static int addconst(JF, js_Value v)
@@ -48,6 +58,15 @@ static void emit(JF, int value)
 	}
 
 	F->code[F->len++] = value;
+}
+
+static void emitfunction(JF, int opcode, js_Function *fun)
+{
+	js_Value v;
+	v.type = JS_TFUNCTION;
+	v.u.function = fun;
+	emit(J, F, opcode);
+	emit(J, F, addconst(J, F, v));
 }
 
 static void emitnumber(JF, int opcode, double n)
@@ -236,6 +255,10 @@ static void cexp(JF, js_Ast *exp)
 		emit(J, F, n);
 		break;
 
+	case EXP_FUNC:
+		emitfunction(J, F, OP_FUNEXP, newfun(J, exp->a, exp->b, exp->c));
+		break;
+
 	case EXP_DELETE:
 		clval(J, F, exp->a);
 		emit(J, F, OP_DELETE);
@@ -361,6 +384,10 @@ static void cstm(JF, js_Ast *stm)
 	int then, end;
 
 	switch (stm->type) {
+	case STM_FUNC:
+		emitfunction(J, F, OP_FUNDEC, newfun(J, stm->a, stm->b, stm->c));
+		break;
+
 	case STM_BLOCK:
 		cstmlist(J, F, stm->a);
 		break;
@@ -432,9 +459,12 @@ static void cstmlist(JF, js_Ast *list)
 	}
 }
 
-static js_Function *newfun(js_State *J)
+static js_Function *newfun(js_State *J, js_Ast *name, js_Ast *params, js_Ast *body)
 {
 	js_Function *F = malloc(sizeof(js_Function));
+
+	F->name = name ? name->string : "<anonymous>";
+	F->numparams = listlen(params);
 
 	F->cap = 256;
 	F->len = 0;
@@ -446,6 +476,12 @@ static js_Function *newfun(js_State *J)
 
 	F->next = J->fun;
 	J->fun = F;
+
+	cstmlist(J, F, body);
+	if (F->len == 0 || F->code[F->len - 1] != OP_RETURN) {
+		emit(J, F, OP_UNDEF);
+		emit(J, F, OP_RETURN);
+	}
 
 	return F;
 }
@@ -491,13 +527,8 @@ js_Function *jsC_compile(js_State *J, js_Ast *prog)
 		return NULL;
 	}
 
-	F = newfun(J);
-	cstmlist(J, F, prog);
-
-	emit(J, F, OP_UNDEF);
-	emit(J, F, OP_RETURN);
+	F = newfun(J, NULL, NULL, prog);
 
 	J->fun = NULL;
 	return F;
 }
-

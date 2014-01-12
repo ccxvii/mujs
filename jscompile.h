@@ -87,6 +87,9 @@ enum
 
 struct js_Function
 {
+	const char *name;
+	int numparams;
+
 	unsigned char *code;
 	int cap, len;
 
@@ -99,6 +102,7 @@ struct js_Function
 js_Function *jsC_compile(js_State *J, js_Ast *prog);
 void jsC_freecompile(js_State *J);
 int jsC_error(js_State *J, js_Ast *node, const char *fmt, ...);
+
 void jsC_dumpvalue(js_State *J, js_Value v);
 void jsC_dumpfunction(js_State *J, js_Function *fun);
 
