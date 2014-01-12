@@ -68,6 +68,22 @@ static void emitstring(JF, int opcode, const char *s)
 	emit(J, F, addconst(J, F, v));
 }
 
+static int jump(JF, int opcode)
+{
+	int addr = F->len + 1;
+	emit(J, F, opcode);
+	emit(J, F, 0);
+	emit(J, F, 0);
+	return addr;
+}
+
+static void label(JF, int addr)
+{
+	int dest = F->len;
+	F->code[addr+0] = (dest >> 8) & 0xFF;
+	F->code[addr+1] = (dest) & 0xFF;
+}
+
 static void unary(JF, js_Ast *exp, int opcode)
 {
 	cexp(J, F, exp->a);
@@ -152,6 +168,7 @@ static void assignop(JF, js_Ast *exp, int opcode)
 
 static void cexp(JF, js_Ast *exp)
 {
+	int then, end;
 	int n;
 
 	switch (exp->type) {
@@ -233,8 +250,6 @@ static void cexp(JF, js_Ast *exp)
 	case EXP_POSTINC: clval(J, F, exp->a); emit(J, F, OP_POSTINC); break;
 	case EXP_POSTDEC: clval(J, F, exp->a); emit(J, F, OP_POSTDEC); break;
 
-	case EXP_LOGOR: binary(J, F, exp, OP_LOGOR); break;
-	case EXP_LOGAND: binary(J, F, exp, OP_LOGAND); break;
 	case EXP_BITOR: binary(J, F, exp, OP_BITOR); break;
 	case EXP_BITXOR: binary(J, F, exp, OP_BITXOR); break;
 	case EXP_BITAND: binary(J, F, exp, OP_BITAND); break;
@@ -281,6 +296,36 @@ static void cexp(JF, js_Ast *exp)
 		cexp(J, F, exp->b);
 		break;
 
+	case EXP_LOGOR:
+		/* if a == true then a else b */
+		cexp(J, F, exp->a);
+		emit(J, F, OP_DUP);
+		end = jump(J, F, OP_JTRUE);
+		emit(J, F, OP_POP);
+		cexp(J, F, exp->b);
+		label(J, F, end);
+		break;
+
+	case EXP_LOGAND:
+		/* if a == false then a else b */
+		cexp(J, F, exp->a);
+		emit(J, F, OP_DUP);
+		end = jump(J, F, OP_JFALSE);
+		emit(J, F, OP_POP);
+		cexp(J, F, exp->b);
+		label(J, F, end);
+		break;
+
+	case EXP_COND:
+		cexp(J, F, exp->a);
+		then = jump(J, F, OP_JTRUE);
+		cexp(J, F, exp->c);
+		end = jump(J, F, OP_JUMP);
+		label(J, F, then);
+		cexp(J, F, exp->b);
+		label(J, F, end);
+		break;
+
 	default:
 		jsC_error(J, exp, "unknown expression");
 	}
@@ -303,25 +348,9 @@ static void cvardeclist(JF, js_Ast *list)
 	}
 }
 
-static int emitjump(JF, int opcode)
-{
-	int addr = F->len + 1;
-	emit(J, F, opcode);
-	emit(J, F, 0);
-	emit(J, F, 0);
-	return addr;
-}
-
-static void emitlabel(JF, int addr)
-{
-	int dest = F->len;
-	F->code[addr+0] = (dest >> 8) & 0xFF;
-	F->code[addr+1] = (dest) & 0xFF;
-}
-
 static void cstm(JF, js_Ast *stm)
 {
-	int lelse, lend;
+	int then, end;
 
 	switch (stm->type) {
 	case STM_BLOCK:
@@ -336,14 +365,19 @@ static void cstm(JF, js_Ast *stm)
 		break;
 
 	case STM_IF:
-		cexp(J, F, stm->a);
-		lelse = emitjump(J, F, OP_JFALSE);
-		cstm(J, F, stm->b);
-		emitlabel(J, F, lelse);
 		if (stm->c) {
-			lend = emitjump(J, F, OP_JUMP);
+			cexp(J, F, stm->a);
+			then = jump(J, F, OP_JTRUE);
 			cstm(J, F, stm->c);
-			emitlabel(J, F, lend);
+			end = jump(J, F, OP_JUMP);
+			label(J, F, then);
+			cstm(J, F, stm->b);
+			label(J, F, end);
+		} else {
+			cexp(J, F, stm->a);
+			end = jump(J, F, OP_JFALSE);
+			cstm(J, F, stm->b);
+			label(J, F, end);
 		}
 		break;
 

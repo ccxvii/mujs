@@ -458,16 +458,16 @@ static js_Ast *bitor(js_State *J, int notin)
 static js_Ast *logand(js_State *J, int notin)
 {
 	js_Ast *a = bitor(J, notin);
-	while (accept(J, TK_AND))
-		a = EXP2(LOGAND, a, bitor(J, notin));
+	if (accept(J, TK_AND))
+		a = EXP2(LOGAND, a, logand(J, notin));
 	return a;
 }
 
 static js_Ast *logor(js_State *J, int notin)
 {
 	js_Ast *a = logand(J, notin);
-	while (accept(J, TK_OR))
-		a = EXP2(LOGOR, a, logand(J, notin));
+	if (accept(J, TK_OR))
+		a = EXP2(LOGOR, a, logor(J, notin));
 	return a;
 }
 
