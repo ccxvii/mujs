@@ -19,7 +19,8 @@ enum
 	OP_OBJECT,
 	OP_OBJECTPUT,
 
-	OP_VARDEC,
+	OP_FUNDEC,	/* <closure> -(name)- */
+	OP_VARDEC,	/* -(name)- */
 
 	OP_LOADVAR,	/* -(name)- <value> */
 	OP_LOADINDEX,	/* <obj> <idx> -- <value> */

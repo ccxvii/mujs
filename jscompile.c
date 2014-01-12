@@ -366,19 +366,16 @@ static void cexp(JF, js_Ast *exp)
 	}
 }
 
-static void cvardec(JF, js_Ast *vardec)
-{
-	if (vardec->b)
-		cexp(J, F, vardec->b);
-	else
-		emit(J, F, OP_UNDEF);
-	emitname(J, F, OP_VARDEC, vardec->a->string);
-}
-
-static void cvardeclist(JF, js_Ast *list)
+static void cvarinit(JF, js_Ast *list)
 {
 	while (list) {
-		cvardec(J, F, list->a);
+		js_Ast *var = list->a;
+		if (var->b) {
+			cexp(J, F, var->b);
+			emitname(J, F, OP_AVAR, var->a->string);
+			emit(J, F, OP_STORE);
+			emit(J, F, OP_POP);
+		}
 		list = list->b;
 	}
 }
@@ -399,7 +396,7 @@ static void cstm(JF, js_Ast *stm)
 		break;
 
 	case STM_VAR:
-		cvardeclist(J, F, stm->a);
+		cvarinit(J, F, stm->a);
 		break;
 
 	case STM_IF:
@@ -468,9 +465,21 @@ static void cfundecs(JF, js_Ast *list)
 		js_Ast *stm = list->a;
 		if (stm->type == STM_FUNC) {
 			emitfunction(J, F, OP_CLOSURE, newfun(J, stm->a, stm->b, stm->c));
-			emitname(J, F, OP_VARDEC, stm->a->string);
+			emitname(J, F, OP_FUNDEC, stm->a->string);
 		}
 		list = list->b;
+	}
+}
+
+static void cvardecs(JF, js_Ast *node)
+{
+	if (node->type == EXP_VAR) {
+		emitname(J, F, OP_VARDEC, node->a->string);
+	} else if (node->type != EXP_FUNC && node->type != STM_FUNC) {
+		if (node->a) cvardecs(J, F, node->a);
+		if (node->b) cvardecs(J, F, node->b);
+		if (node->c) cvardecs(J, F, node->c);
+		if (node->d) cvardecs(J, F, node->d);
 	}
 }
 
@@ -478,12 +487,15 @@ static void cfunbody(JF, js_Ast *name, js_Ast *params, js_Ast *body)
 {
 	if (name) {
 		emitfunction(J, F, OP_CLOSURE, F);
-		emitname(J, F, OP_VARDEC, name->string);
+		emitname(J, F, OP_FUNDEC, name->string);
 	}
 
-	cfundecs(J, F, body);
+	if (body) {
+		cfundecs(J, F, body);
+		cvardecs(J, F, body);
+		cstmlist(J, F, body);
+	}
 
-	cstmlist(J, F, body);
 	if (F->len == 0 || F->code[F->len - 1] != OP_RETURN) {
 		emit(J, F, OP_UNDEF);
 		emit(J, F, OP_RETURN);

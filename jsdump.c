@@ -622,6 +622,7 @@ void jsC_dumpfunction(js_State *J, js_Function *fun)
 		case OP_CONST:
 		case OP_OBJECTPUT:
 		case OP_VARDEC:
+		case OP_FUNDEC:
 		case OP_LOADVAR:
 		case OP_LOADMEMBER:
 		case OP_AVAR:
