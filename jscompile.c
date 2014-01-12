@@ -160,7 +160,7 @@ static void clval(JF, js_Ast *exp)
 static void assignop(JF, js_Ast *exp, int opcode)
 {
 	clval(J, F, exp->a);
-	emit(J, F, OP_DUP_LOAD);
+	emit(J, F, OP_LOAD);
 	cexp(J, F, exp->b);
 	emit(J, F, opcode);
 	emit(J, F, OP_STORE);

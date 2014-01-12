@@ -16,7 +16,7 @@ build/libjs.a: $(OBJS)
 	ar cru $@ $^
 
 opnames.h : jscompile.h
-	grep 'OP_' jscompile.h | sed 's/OP_/"/;s/,/",/' | tr A-Z a-z > opnames.h
+	grep 'OP_' jscompile.h | sed 's/OP_/"/;s/,.*/",/' | tr A-Z a-z > opnames.h
 
 jsdump.c : opnames.h
 

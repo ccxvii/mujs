@@ -22,28 +22,29 @@ enum
 	OP_FUNDEC,
 	OP_FUNEXP,
 
-	OP_LOADVAR,
-	OP_LOADINDEX,
-	OP_LOADMEMBER,
-	OP_AVAR,
-	OP_AINDEX,
-	OP_AMEMBER,
+	OP_LOADVAR,	/* -(name)- <value> */
+	OP_LOADINDEX,	/* <obj> <idx> -- <value> */
+	OP_LOADMEMBER,	/* <obj> -(name)- <value> */
 
-	OP_LOAD,
-	OP_DUP_LOAD,
-	OP_STORE,
+	OP_AVAR,	/* -(name)- <addr> */
+	OP_AINDEX,	/* <obj> <idx> -- <addr> */
+	OP_AMEMBER,	/* <obj> -(name)- <addr> */
 
-	OP_CALL,
-	OP_TCALL,
+	OP_LOAD,	/* <addr> -- <addr> <value> */
+	OP_STORE,	/* <addr> <value> -- <value> */
+
+	OP_CALL,	/* <fun> <args...> -(numargs)- <return value> */
+	OP_TCALL,	/* <obj> <fun> <args...> -(numargs)- <return value> */
 	OP_NEW,
 
-	OP_DELETE,
+	OP_DELETE,	/* <addr> -- <success> */
+	OP_PREINC,	/* <addr> -- <value+1> */
+	OP_PREDEC,	/* <addr> -- <value-1> */
+	OP_POSTINC,	/* <addr> -- <value> */
+	OP_POSTDEC,	/* <addr> -- <value> */
+
 	OP_VOID,
 	OP_TYPEOF,
-	OP_PREINC,
-	OP_POSTINC,
-	OP_PREDEC,
-	OP_POSTDEC,
 	OP_POS,
 	OP_NEG,
 	OP_BITNOT,
