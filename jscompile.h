@@ -6,6 +6,7 @@ enum
 	OP_POP,
 	OP_DUP,
 
+	OP_CLOSURE,
 	OP_CONST,
 	OP_UNDEF,
 	OP_NULL,
@@ -19,8 +20,6 @@ enum
 	OP_OBJECTPUT,
 
 	OP_VARDEC,
-	OP_FUNDEC,
-	OP_FUNEXP,
 
 	OP_LOADVAR,	/* -(name)- <value> */
 	OP_LOADINDEX,	/* <obj> <idx> -- <value> */

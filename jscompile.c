@@ -181,6 +181,10 @@ static void clval(JF, js_Ast *exp)
 		cexp(J, F, exp->a);
 		emitname(J, F, OP_AMEMBER, exp->b->string);
 		break;
+	case EXP_CALL:
+		/* host functions may return an assignable l-value */
+		cexp(J, F, exp);
+		break;
 	default:
 		jsC_error(J, exp, "invalid l-value in assignment");
 		break;
@@ -256,7 +260,7 @@ static void cexp(JF, js_Ast *exp)
 		break;
 
 	case EXP_FUNC:
-		emitfunction(J, F, OP_FUNEXP, newfun(J, exp->a, exp->b, exp->c));
+		emitfunction(J, F, OP_CLOSURE, newfun(J, exp->a, exp->b, exp->c));
 		break;
 
 	case EXP_DELETE:
@@ -385,7 +389,6 @@ static void cstm(JF, js_Ast *stm)
 
 	switch (stm->type) {
 	case STM_FUNC:
-		emitfunction(J, F, OP_FUNDEC, newfun(J, stm->a, stm->b, stm->c));
 		break;
 
 	case STM_BLOCK:
@@ -459,6 +462,34 @@ static void cstmlist(JF, js_Ast *list)
 	}
 }
 
+static void cfundecs(JF, js_Ast *list)
+{
+	while (list) {
+		js_Ast *stm = list->a;
+		if (stm->type == STM_FUNC) {
+			emitfunction(J, F, OP_CLOSURE, newfun(J, stm->a, stm->b, stm->c));
+			emitname(J, F, OP_VARDEC, stm->a->string);
+		}
+		list = list->b;
+	}
+}
+
+static void cfunbody(JF, js_Ast *name, js_Ast *params, js_Ast *body)
+{
+	if (name) {
+		emitfunction(J, F, OP_CLOSURE, F);
+		emitname(J, F, OP_VARDEC, name->string);
+	}
+
+	cfundecs(J, F, body);
+
+	cstmlist(J, F, body);
+	if (F->len == 0 || F->code[F->len - 1] != OP_RETURN) {
+		emit(J, F, OP_UNDEF);
+		emit(J, F, OP_RETURN);
+	}
+}
+
 static js_Function *newfun(js_State *J, js_Ast *name, js_Ast *params, js_Ast *body)
 {
 	js_Function *F = malloc(sizeof(js_Function));
@@ -477,11 +508,7 @@ static js_Function *newfun(js_State *J, js_Ast *name, js_Ast *params, js_Ast *bo
 	F->next = J->fun;
 	J->fun = F;
 
-	cstmlist(J, F, body);
-	if (F->len == 0 || F->code[F->len - 1] != OP_RETURN) {
-		emit(J, F, OP_UNDEF);
-		emit(J, F, OP_RETURN);
-	}
+	cfunbody(J, F, name, params, body);
 
 	return F;
 }

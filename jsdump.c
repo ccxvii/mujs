@@ -626,8 +626,7 @@ void jsC_dumpfunction(js_State *J, js_Function *fun)
 		case OP_LOADMEMBER:
 		case OP_AVAR:
 		case OP_AMEMBER:
-		case OP_FUNDEC:
-		case OP_FUNEXP:
+		case OP_CLOSURE:
 			pc(' ');
 			jsC_dumpvalue(J, fun->klist[*p++]);
 			break;
@@ -650,8 +649,10 @@ void jsC_dumpfunction(js_State *J, js_Function *fun)
 
 	for (i = 0; i < fun->klen; i++) {
 		if (fun->klist[i].type == JS_TFUNCTION) {
-			nl();
-			jsC_dumpfunction(J, fun->klist[i].u.function);
+			if (fun->klist[i].u.function != fun) {
+				nl();
+				jsC_dumpfunction(J, fun->klist[i].u.function);
+			}
 		}
 	}
 }
