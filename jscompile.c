@@ -189,10 +189,19 @@ static void cexp(JF, js_Ast *exp)
 		break;
 
 	case EXP_CALL:
-		cexp(J, F, exp->a);
-		n = cargs(J, F, exp->b);
-		emit(J, F, OP_CALL);
-		emit(J, F, n);
+		if (exp->a->type == EXP_MEMBER) {
+			cexp(J, F, exp->a->a);
+			emit(J, F, OP_DUP);
+			emitstring(J, F, OP_LOADMEMBER, exp->a->b->string);
+			n = cargs(J, F, exp->b);
+			emit(J, F, OP_TCALL);
+			emit(J, F, n);
+		} else {
+			cexp(J, F, exp->a);
+			n = cargs(J, F, exp->b);
+			emit(J, F, OP_CALL);
+			emit(J, F, n);
+		}
 		break;
 
 	case EXP_NEW:
@@ -200,6 +209,11 @@ static void cexp(JF, js_Ast *exp)
 		n = cargs(J, F, exp->b);
 		emit(J, F, OP_NEW);
 		emit(J, F, n);
+		break;
+
+	case EXP_DELETE:
+		clval(J, F, exp->a);
+		emit(J, F, OP_DELETE);
 		break;
 
 	case EXP_VOID:
