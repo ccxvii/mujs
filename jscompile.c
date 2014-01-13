@@ -214,6 +214,31 @@ static void assignop(JF, js_Ast *exp, int opcode)
 	emit(J, F, OP_STORE);
 }
 
+static void ccall(JF, js_Ast *fun, js_Ast *args)
+{
+	int n;
+	switch (fun->type) {
+	case EXP_INDEX:
+		cexp(J, F, fun->a);
+		emit(J, F, OP_DUP);
+		cexp(J, F, fun->b);
+		emit(J, F, OP_LOADINDEX);
+		break;
+	case EXP_MEMBER:
+		cexp(J, F, fun->a);
+		emit(J, F, OP_DUP);
+		emitname(J, F, OP_LOADMEMBER, fun->b->string);
+		break;
+	default:
+		emit(J, F, OP_THIS);
+		cexp(J, F, fun);
+		break;
+	}
+	n = cargs(J, F, args);
+	emit(J, F, OP_CALL);
+	emit(J, F, n);
+}
+
 static void cexp(JF, js_Ast *exp)
 {
 	int then, end;
@@ -230,12 +255,12 @@ static void cexp(JF, js_Ast *exp)
 	case EXP_THIS: emit(J, F, OP_THIS); break;
 
 	case EXP_OBJECT:
-		emit(J, F, OP_OBJECT);
+		emit(J, F, OP_NEWOBJECT);
 		cobject(J, F, exp->a);
 		break;
 
 	case EXP_ARRAY:
-		emit(J, F, OP_ARRAY);
+		emit(J, F, OP_NEWARRAY);
 		carray(J, F, exp->a);
 		break;
 
@@ -251,19 +276,7 @@ static void cexp(JF, js_Ast *exp)
 		break;
 
 	case EXP_CALL:
-		if (exp->a->type == EXP_MEMBER) {
-			cexp(J, F, exp->a->a);
-			emit(J, F, OP_DUP);
-			emitname(J, F, OP_LOADMEMBER, exp->a->b->string);
-			n = cargs(J, F, exp->b);
-			emit(J, F, OP_TCALL);
-			emit(J, F, n);
-		} else {
-			cexp(J, F, exp->a);
-			n = cargs(J, F, exp->b);
-			emit(J, F, OP_CALL);
-			emit(J, F, n);
-		}
+		ccall(J, F, exp->a, exp->b);
 		break;
 
 	case EXP_NEW:

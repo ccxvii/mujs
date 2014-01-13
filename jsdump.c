@@ -632,7 +632,6 @@ void jsC_dumpfunction(js_State *J, js_Function *fun)
 			jsC_dumpvalue(J, fun->klist[*p++]);
 			break;
 		case OP_CALL:
-		case OP_TCALL:
 		case OP_NEW:
 			printf(" %d", *p++);
 			break;

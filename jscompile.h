@@ -14,9 +14,9 @@ enum
 	OP_FALSE,
 	OP_THIS,
 
-	OP_ARRAY,
+	OP_NEWARRAY,
 	OP_ARRAYPUT,
-	OP_OBJECT,
+	OP_NEWOBJECT,
 	OP_OBJECTPUT,
 
 	OP_FUNDEC,	/* <closure> -(name)- */
@@ -33,9 +33,8 @@ enum
 	OP_LOAD,	/* <addr> -- <addr> <value> */
 	OP_STORE,	/* <addr> <value> -- <value> */
 
-	OP_CALL,	/* <fun> <args...> -(numargs)- <return value> */
-	OP_TCALL,	/* <obj> <fun> <args...> -(numargs)- <return value> */
-	OP_NEW,
+	OP_CALL,	/* <thisvalue> <closure> <args...> -(numargs)- <returnvalue> */
+	OP_NEW,		/* <closure> <args...> -(numargs)- <returnvalue> */
 
 	OP_DELETE,	/* <addr> -- <success> */
 	OP_PREINC,	/* <addr> -- <value+1> */
