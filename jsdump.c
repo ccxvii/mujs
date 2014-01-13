@@ -6,19 +6,19 @@
 #include <assert.h>
 
 static const char *astname[] = {
-	"list", "ident", "number", "string", "regexp", "undef", "null", "true",
-	"false", "this", "array", "object", "prop_val", "prop_get", "prop_set",
-	"index", "member", "call", "new", "funexp", "delete", "void", "typeof",
-	"preinc", "predec", "postinc", "postdec", "pos", "neg", "bitnot",
-	"lognot", "logor", "logand", "bitor", "bitxor", "bitand", "eq", "ne",
-	"eq3", "ne3", "lt", "gt", "le", "ge", "instanceof", "in", "shl", "shr",
-	"ushr", "add", "sub", "mul", "div", "mod", "cond", "ass", "ass_mul",
-	"ass_div", "ass_mod", "ass_add", "ass_sub", "ass_shl", "ass_shr",
-	"ass_ushr", "ass_bitand", "ass_bitxor", "ass_bitor", "comma",
-	"var-init", "fundec", "block", "nop", "var", "if", "do-while", "while",
-	"for", "for-var", "for-in", "for-in-var", "continue", "break",
-	"return", "with", "switch", "throw", "try", "debugger", "label",
-	"case", "default",
+	"list", "ident", "number", "string", "regexp", "fundec", "undef",
+	"null", "true", "false", "this", "fun", "array", "object", "prop_val",
+	"prop_get", "prop_set", "index", "member", "call", "new", "delete",
+	"void", "typeof", "preinc", "predec", "postinc", "postdec", "pos",
+	"neg", "bitnot", "lognot", "logor", "logand", "bitor", "bitxor",
+	"bitand", "eq", "ne", "eq3", "ne3", "lt", "gt", "le", "ge",
+	"instanceof", "in", "shl", "shr", "ushr", "add", "sub", "mul", "div",
+	"mod", "cond", "ass", "ass_mul", "ass_div", "ass_mod", "ass_add",
+	"ass_sub", "ass_shl", "ass_shr", "ass_ushr", "ass_bitand",
+	"ass_bitxor", "ass_bitor", "comma", "var_init", "block", "nop", "var",
+	"if", "do_while", "while", "for", "for_var", "for_in", "for_in_var",
+	"continue", "break", "return", "with", "switch", "throw", "try",
+	"debugger", "label", "case", "default",
 };
 
 static const char *opname[] = {
@@ -268,7 +268,7 @@ static void pexpi(int d, int i, js_Ast *exp)
 		if (i) pc(')');
 		break;
 
-	case EXP_FUNC:
+	case EXP_FUN:
 		ps("(function ");
 		if (exp->a) pexpi(d, 1, exp->a);
 		pc('(');
@@ -352,7 +352,7 @@ static void pstm(int d, js_Ast *stm)
 	in(d);
 
 	switch (stm->type) {
-	case STM_FUNC:
+	case AST_FUNDEC:
 		ps("function ");
 		pexpi(d, 1, stm->a);
 		pc('(');
@@ -533,7 +533,7 @@ static void snode(int d, js_Ast *node)
 	case AST_REGEXP: pc(' '); pregexp(node->string, node->number); break;
 	case AST_NUMBER: printf(" %.9g", node->number); break;
 	case STM_BLOCK: afun = sblock; break;
-	case STM_FUNC: case EXP_FUNC: cfun = sblock; break;
+	case AST_FUNDEC: case EXP_FUN: cfun = sblock; break;
 	case STM_SWITCH: bfun = sblock; break;
 	case STM_CASE: bfun = sblock; break;
 	case STM_DEFAULT: afun = sblock; break;

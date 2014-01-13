@@ -20,12 +20,16 @@ enum
 	AST_STRING,
 	AST_REGEXP,
 
+	AST_FUNDEC,
+
 	/* literals */
 	EXP_UNDEF, /* for array elisions */
 	EXP_NULL,
 	EXP_TRUE,
 	EXP_FALSE,
 	EXP_THIS,
+
+	EXP_FUN,
 
 	EXP_ARRAY,
 	EXP_OBJECT,
@@ -38,7 +42,6 @@ enum
 	EXP_MEMBER,
 	EXP_CALL,
 	EXP_NEW,
-	EXP_FUNC, /* function expression */
 
 	EXP_DELETE,
 	EXP_VOID,
@@ -96,7 +99,6 @@ enum
 	EXP_VAR, /* var initializer */
 
 	/* statements */
-	STM_FUNC, /* function declaration */
 	STM_BLOCK,
 	STM_NOP,
 	STM_VAR,

@@ -286,7 +286,7 @@ static void cexp(JF, js_Ast *exp)
 		emit(J, F, n);
 		break;
 
-	case EXP_FUNC:
+	case EXP_FUN:
 		emitfunction(J, F, OP_CLOSURE, newfun(J, exp->a, exp->b, exp->c));
 		break;
 
@@ -412,7 +412,7 @@ static void cstm(JF, js_Ast *stm)
 	int loop, then, end;
 
 	switch (stm->type) {
-	case STM_FUNC:
+	case AST_FUNDEC:
 		break;
 
 	case STM_BLOCK:
@@ -509,7 +509,7 @@ static void cfundecs(JF, js_Ast *list)
 {
 	while (list) {
 		js_Ast *stm = list->a;
-		if (stm->type == STM_FUNC) {
+		if (stm->type == AST_FUNDEC) {
 			emitfunction(J, F, OP_CLOSURE, newfun(J, stm->a, stm->b, stm->c));
 			emitname(J, F, OP_FUNDEC, stm->a->string);
 		}
@@ -521,7 +521,7 @@ static void cvardecs(JF, js_Ast *node)
 {
 	if (node->type == EXP_VAR) {
 		emitname(J, F, OP_VARDEC, node->a->string);
-	} else if (node->type != EXP_FUNC && node->type != STM_FUNC) {
+	} else if (node->type != EXP_FUN && node->type != AST_FUNDEC) {
 		if (node->a) cvardecs(J, F, node->a);
 		if (node->b) cvardecs(J, F, node->b);
 		if (node->c) cvardecs(J, F, node->c);

@@ -5,7 +5,7 @@
 
 #define nelem(a) (sizeof (a) / sizeof (a)[0])
 
-#define LIST(h)		jsP_newnode(J, AST_LIST, h, 0, 0, 0);
+#define LIST(h)		jsP_newnode(J, AST_LIST, h, 0, 0, 0)
 
 #define EXP0(x)		jsP_newnode(J, EXP_ ## x, 0, 0, 0, 0)
 #define EXP1(x,a)	jsP_newnode(J, EXP_ ## x, a, 0, 0, 0)
@@ -24,7 +24,7 @@ static js_Ast *expression(js_State *J, int notin);
 static js_Ast *assignment(js_State *J, int notin);
 static js_Ast *memberexp(js_State *J);
 static js_Ast *statement(js_State *J);
-static js_Ast *funcbody(js_State *J);
+static js_Ast *funbody(js_State *J);
 
 js_Ast *jsP_newnode(js_State *J, int type, js_Ast *a, js_Ast *b, js_Ast *c, js_Ast *d)
 {
@@ -69,6 +69,8 @@ void jsP_freeparse(js_State *J)
 	}
 	J->ast = NULL;
 }
+
+/* Lookahead */
 
 static inline void next(js_State *J)
 {
@@ -215,7 +217,7 @@ static js_Ast *propassign(js_State *J)
 			name = propname(J);
 			expect(J, '(');
 			expect(J, ')');
-			body = funcbody(J);
+			body = funbody(J);
 			return EXP2(PROP_GET, name, body);
 		}
 		if (!strcmp(name->string, "set")) {
@@ -223,7 +225,7 @@ static js_Ast *propassign(js_State *J)
 			expect(J, '(');
 			arg = identifier(J);
 			expect(J, ')');
-			body = funcbody(J);
+			body = funbody(J);
 			return EXP3(PROP_SET, name, arg, body);
 		}
 	}
@@ -245,6 +247,54 @@ static js_Ast *objectliteral(js_State *J)
 		tail = tail->b = LIST(propassign(J));
 	}
 	return head;
+}
+
+/* Functions */
+
+static js_Ast *parameters(js_State *J)
+{
+	js_Ast *head, *tail;
+	if (J->lookahead == ')')
+		return NULL;
+	head = tail = LIST(identifier(J));
+	while (accept(J, ',')) {
+		tail = tail->b = LIST(identifier(J));
+	}
+	return head;
+}
+
+static js_Ast *fundec(js_State *J)
+{
+	js_Ast *a, *b, *c;
+	a = identifier(J);
+	expect(J, '(');
+	b = parameters(J);
+	expect(J, ')');
+	c = funbody(J);
+	return jsP_newnode(J, AST_FUNDEC, a, b, c, 0);
+}
+
+static js_Ast *funstm(js_State *J)
+{
+	js_Ast *a, *b, *c;
+	a = identifier(J);
+	expect(J, '(');
+	b = parameters(J);
+	expect(J, ')');
+	c = funbody(J);
+	/* rewrite function statement as "var X = function X() {}" */
+	return STM1(VAR, LIST(EXP2(VAR, a, EXP3(FUN, a, b, c))));
+}
+
+static js_Ast *funexp(js_State *J)
+{
+	js_Ast *a, *b, *c;
+	a = identifieropt(J);
+	expect(J, '(');
+	b = parameters(J);
+	expect(J, ')');
+	c = funbody(J);
+	return EXP3(FUN, a, b, c);
 }
 
 /* Expressions */
@@ -299,21 +349,9 @@ static js_Ast *arguments(js_State *J)
 	return head;
 }
 
-static js_Ast *parameters(js_State *J)
-{
-	js_Ast *head, *tail;
-	if (J->lookahead == ')')
-		return NULL;
-	head = tail = LIST(identifier(J));
-	while (accept(J, ',')) {
-		tail = tail->b = LIST(identifier(J));
-	}
-	return head;
-}
-
 static js_Ast *newexp(js_State *J)
 {
-	js_Ast *a, *b, *c;
+	js_Ast *a, *b;
 
 	if (accept(J, TK_NEW)) {
 		a = memberexp(J);
@@ -325,14 +363,8 @@ static js_Ast *newexp(js_State *J)
 		return EXP1(NEW, a);
 	}
 
-	if (accept(J, TK_FUNCTION)) {
-		a = identifieropt(J);
-		expect(J, '(');
-		b = parameters(J);
-		expect(J, ')');
-		c = funcbody(J);
-		return EXP3(FUNC, a, b, c);
-	}
+	if (accept(J, TK_FUNCTION))
+		return funexp(J);
 
 	return primary(J);
 }
@@ -752,6 +784,11 @@ static js_Ast *statement(js_State *J)
 		return STM0(DEBUGGER);
 	}
 
+	if (accept(J, TK_FUNCTION)) {
+		jsP_warning(J, "function statements are not standard");
+		return funstm(J);
+	}
+
 	/* labelled statement or expression statement */
 	if (J->lookahead == TK_IDENTIFIER) {
 		a = expression(J, 0);
@@ -764,9 +801,6 @@ static js_Ast *statement(js_State *J)
 	}
 
 	/* expression statement */
-	if (J->lookahead == TK_FUNCTION)
-		jsP_warning(J, "naked function expression");
-
 	a = expression(J, 0);
 	semicolon(J);
 	return a;
@@ -777,36 +811,29 @@ static js_Ast *statement(js_State *J)
 
 /* Program */
 
-static js_Ast *chunkelement(js_State *J)
+static js_Ast *scriptelement(js_State *J)
 {
-	js_Ast *a, *b, *c;
-	if (accept(J, TK_FUNCTION)) {
-		a = identifier(J);
-		expect(J, '(');
-		b = parameters(J);
-		expect(J, ')');
-		c = funcbody(J);
-		return STM3(FUNC, a, b, c);
-	}
+	if (accept(J, TK_FUNCTION))
+		return fundec(J);
 	return statement(J);
 }
 
-static js_Ast *chunklist(js_State *J)
+static js_Ast *script(js_State *J)
 {
 	js_Ast *head, *tail;
 	if (J->lookahead == '}' || J->lookahead == 0)
 		return NULL;
-	head = tail = LIST(chunkelement(J));
+	head = tail = LIST(scriptelement(J));
 	while (J->lookahead != '}' && J->lookahead != 0)
-		tail = tail->b = LIST(chunkelement(J));
+		tail = tail->b = LIST(scriptelement(J));
 	return head;
 }
 
-static js_Ast *funcbody(js_State *J)
+static js_Ast *funbody(js_State *J)
 {
 	js_Ast *a;
 	expect(J, '{');
-	a = chunklist(J);
+	a = script(J);
 	expect(J, '}');
 	return a;
 }
@@ -815,7 +842,7 @@ void jsP_warning(js_State *J, const char *fmt, ...)
 {
 	va_list ap;
 
-	fprintf(stderr, "%s:%d: warning:", J->filename, J->line);
+	fprintf(stderr, "%s:%d: warning: ", J->filename, J->line);
 	va_start(ap, fmt);
 	vfprintf(stderr, fmt, ap);
 	va_end(ap);
@@ -846,5 +873,5 @@ js_Ast *jsP_parse(js_State *J, const char *filename, const char *source)
 	}
 
 	next(J);
-	return chunklist(J);
+	return script(J);
 }
