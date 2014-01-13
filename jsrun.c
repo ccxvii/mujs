@@ -1,4 +1,6 @@
 #include "js.h"
+#include "jsvalue.h"
+#include "jsobject.h"
 #include "jscompile.h"
 #include "jsrun.h"
 #include "jsstate.h"
@@ -35,6 +37,11 @@ static inline void push(js_State *J, js_Value v)
 static inline js_Value pop(js_State *J)
 {
 	return stack[--top];
+}
+
+static inline js_Value peek(js_State *J)
+{
+	return stack[top-1];
 }
 
 static inline void pushnumber(js_State *J, double number)
@@ -82,34 +89,83 @@ static inline int popboolean(js_State *J)
 	js_Value v = pop(J);
 	if (v.type == JS_TBOOLEAN)
 		return v.u.boolean;
+	if (v.type == JS_TNUMBER)
+		return v.u.number != 0;
 	return 0;
 }
 
-static void dumpstack(js_State *J)
+static inline void pushreference(js_State *J, js_Property *reference)
 {
-	int i;
-	for (i = 0; i < top; i++) {
-		printf("stack %d: ", i);
-		jsC_dumpvalue(J, stack[i]);
-		putchar('\n');
-	}
+	js_Value v;
+	v.type = JS_TREFERENCE;
+	v.u.reference = reference;
+	push(J, v);
+}
+
+static inline js_Property *popreference(js_State *J)
+{
+	js_Value v = pop(J);
+	if (v.type == JS_TREFERENCE)
+		return v.u.reference;
+	return 0;
+}
+
+static inline js_Property *peekreference(js_State *J)
+{
+	js_Value v = peek(J);
+	if (v.type == JS_TREFERENCE)
+		return v.u.reference;
+	return 0;
 }
 
 #define UNARY(X) a = popnumber(J); pushnumber(J, X)
 #define BINARY(X) b = popnumber(J); a = popnumber(J); pushnumber(J, X)
 
-static void runfun(js_State *J, js_Function *F)
+static void runfun(js_State *J, js_Function *F, js_Object *E)
 {
-	unsigned char *pc = F->code;
-	int opcode, i;
+	short *pc = F->code;
+	int opcode, addr;
+	js_Property *p;
+	js_Value v;
 	double a, b;
+	const char *s;
 
 	while (1) {
 		opcode = *pc++;
 		switch (opcode) {
-		case OP_CONST:
-			i = *pc++;
-			push(J, F->klist[i]);
+		case OP_NUMBER:
+			pushnumber(J, F->numlist[*pc++]);
+			break;
+
+		case OP_LOADVAR:
+			s = F->strlist[*pc++];
+			p = js_getproperty(J, E, s);
+			if (p)
+				push(J, p->value);
+			else
+				pushundefined(J);
+			break;
+
+		case OP_AVAR:
+			s = F->strlist[*pc++];
+			p = js_setproperty(J, E, s);
+			pushreference(J, p);
+			break;
+
+		case OP_LOAD:
+			p = peekreference(J);
+			if (p)
+				push(J, p->value);
+			else
+				pushundefined(J);
+			break;
+
+		case OP_STORE:
+			v = pop(J);
+			p = popreference(J);
+			if (p)
+				p->value = v;
+			push(J, v);
 			break;
 
 		case OP_UNDEF: pushundefined(J); break;
@@ -120,6 +176,7 @@ static void runfun(js_State *J, js_Function *F)
 		case OP_POS: UNARY(a); break;
 		case OP_NEG: UNARY(-a); break;
 		case OP_BITNOT: UNARY(~i32(a)); break;
+		case OP_LOGNOT: UNARY(!a); break;
 
 		case OP_ADD: BINARY(a + b); break;
 		case OP_SUB: BINARY(a - b); break;
@@ -133,10 +190,34 @@ static void runfun(js_State *J, js_Function *F)
 		case OP_BITXOR: BINARY(i32(a) ^ i32(b)); break;
 		case OP_BITOR: BINARY(i32(a) | i32(b)); break;
 
+		case OP_LT: BINARY(a < b); break;
+		case OP_GT: BINARY(a > b); break;
+		case OP_LE: BINARY(a <= b); break;
+		case OP_GE: BINARY(a >= b); break;
+		case OP_EQ: BINARY(a == b); break;
+		case OP_NE: BINARY(a != b); break;
+
+		case OP_JFALSE:
+			addr = *pc++;
+			if (!popboolean(J))
+				pc = F->code + addr;
+			break;
+
+		case OP_JTRUE:
+			addr = *pc++;
+			if (popboolean(J))
+				pc = F->code + addr;
+			break;
+
+		case OP_JUMP:
+			pc = F->code + *pc;
+			break;
+
+		case OP_POP: pop(J); break;
 		case OP_RETURN: return;
 
 		default:
-			fprintf(stderr, "illegal instruction: %d\n", opcode);
+			fprintf(stderr, "illegal instruction: %d (pc=%d)\n", opcode, (int)(pc - F->code - 1));
 			return;
 		}
 	}
@@ -144,6 +225,7 @@ static void runfun(js_State *J, js_Function *F)
 
 void jsR_runfunction(js_State *J, js_Function *F)
 {
-	runfun(J, F);
-	dumpstack(J);
+	js_Object *varenv = js_newobject(J);
+	runfun(J, F, varenv);
+	js_dumpobject(J, varenv);
 }

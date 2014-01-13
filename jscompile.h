@@ -7,7 +7,9 @@ enum
 	OP_DUP,
 
 	OP_CLOSURE,
-	OP_CONST,
+	OP_NUMBER,
+	OP_STRING,
+
 	OP_UNDEF,
 	OP_NULL,
 	OP_TRUE,
@@ -23,12 +25,12 @@ enum
 	OP_VARDEC,	/* -(name)- */
 
 	OP_LOADVAR,	/* -(name)- <value> */
-	OP_LOADINDEX,	/* <obj> <idx> -- <value> */
 	OP_LOADMEMBER,	/* <obj> -(name)- <value> */
+	OP_LOADINDEX,	/* <obj> <idx> -- <value> */
 
 	OP_AVAR,	/* -(name)- <addr> */
-	OP_AINDEX,	/* <obj> <idx> -- <addr> */
 	OP_AMEMBER,	/* <obj> -(name)- <addr> */
+	OP_AINDEX,	/* <obj> <idx> -- <addr> */
 
 	OP_LOAD,	/* <addr> -- <addr> <value> */
 	OP_STORE,	/* <addr> <value> -- <value> */
@@ -89,13 +91,19 @@ struct js_Function
 	const char *name;
 	int numparams;
 
-	unsigned char *code;
-	int cap, len;
+	short *code;
+	int codecap, codelen;
 
-	js_Value *klist;
-	int kcap, klen;
+	js_Function **funlist;
+	int funcap, funlen;
 
-	js_Function *next;
+	double *numlist;
+	int numcap, numlen;
+
+	const char **strlist;
+	int strcap, strlen;
+
+	js_Function *next; /* alloc list */
 };
 
 js_Function *jsC_compile(js_State *J, js_Ast *prog);

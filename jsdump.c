@@ -1,7 +1,8 @@
 #include "js.h"
 #include "jsparse.h"
 #include "jscompile.h"
-#include "jsrun.h"
+#include "jsvalue.h"
+#include "jsobject.h"
 
 #include <assert.h>
 
@@ -25,12 +26,6 @@ static const char *opname[] = {
 #include "opnames.h"
 };
 
-static void pstmlist(int d, js_Ast *list);
-static void pexpi(int d, int i, js_Ast *exp);
-static void pstm(int d, js_Ast *stm);
-static void slist(int d, js_Ast *list);
-static void sblock(int d, js_Ast *list);
-
 static inline void pc(int c)
 {
 	putchar(c);
@@ -51,6 +46,14 @@ static inline void nl(void)
 {
 	putchar('\n');
 }
+
+/* Pretty-printed Javascript syntax */
+
+static void pstmlist(int d, js_Ast *list);
+static void pexpi(int d, int i, js_Ast *exp);
+static void pstm(int d, js_Ast *stm);
+static void slist(int d, js_Ast *list);
+static void sblock(int d, js_Ast *list);
 
 static void pargs(int d, js_Ast *list)
 {
@@ -509,6 +512,8 @@ void jsP_dumpsyntax(js_State *J, js_Ast *prog)
 	}
 }
 
+/* S-expression list representation */
+
 static void snode(int d, js_Ast *node)
 {
 	void (*afun)(int,js_Ast*) = snode;
@@ -583,76 +588,71 @@ void jsP_dumplist(js_State *J, js_Ast *prog)
 	nl();
 }
 
-void jsC_dumpvalue(js_State *J, js_Value v)
+/* Compiled code */
+
+void jsC_dumpfunction(js_State *J, js_Function *F)
 {
-	switch (v.type) {
-	case JS_TUNDEFINED: ps("undefined"); break;
-	case JS_TNULL: ps("null"); break;
-	case JS_TBOOLEAN: ps(v.u.boolean ? "true" : "false"); break;
-	case JS_TNUMBER: printf("%.9g", v.u.number); break;
-	case JS_TSTRING: pstr(v.u.string); break;
-	case JS_TREGEXP: printf("<regexp %p>", v.u.p); break;
-	case JS_TOBJECT: printf("<object %p>", v.u.p); break;
-
-	case JS_TFUNCTION: printf("<function %p>", v.u.function); break;
-	case JS_TCFUNCTION: printf("<cfunction %p>", v.u.p); break;
-	case JS_TCLOSURE: printf("<closure %p>", v.u.p); break;
-	case JS_TARGUMENTS: printf("<arguments %p>", v.u.p); break;
-
-	case JS_TOBJSLOT: printf("<objslot %p>", v.u.p); break;
-	}
-}
-
-void jsC_dumpfunction(js_State *J, js_Function *fun)
-{
-	unsigned char *p = fun->code;
-	unsigned char *end = fun->code + fun->len;
+	short *p = F->code;
+	short *end = F->code + F->codelen;
 	int i, dest;
 
-	printf("function %p, %s, %d parameters, %d constants\n",
-		fun, fun->name, fun->numparams, fun->klen);
+	printf("function %p %s(%d)\n", F, F->name, F->numparams);
+	for (i = 0; i < F->funlen; i++)
+		printf("\tfunction %p %s\n", F->funlist[i], F->funlist[i]->name);
+	for (i = 0; i < F->strlen; i++) {
+		ps("\tstring "); pstr(F->strlist[i]); ps("\n");
+	}
+	// TODO: regexp
+	for (i = 0; i < F->numlen; i++)
+		printf("\tnumber %.9g\n", F->numlist[i]);
 
 	while (p < end) {
 		int c = *p++;
 
-		printf("%04d: ", (int)(p - fun->code) - 1);
+		printf("%04d: ", (int)(p - F->code) - 1);
 		ps(opname[c]);
 
 		switch (c) {
-		case OP_CONST:
+		case OP_CLOSURE:
+			pc(' ');
+			ps(F->funlist[*p++]->name);
+			break;
+		case OP_NUMBER:
+			printf(" %.9g", F->numlist[*p++]);
+			break;
+		case OP_STRING:
+			pc(' ');
+			pstr(F->strlist[*p++]);
+			break;
+
 		case OP_OBJECTPUT:
-		case OP_VARDEC:
 		case OP_FUNDEC:
+		case OP_VARDEC:
 		case OP_LOADVAR:
 		case OP_LOADMEMBER:
 		case OP_AVAR:
 		case OP_AMEMBER:
-		case OP_CLOSURE:
 			pc(' ');
-			jsC_dumpvalue(J, fun->klist[*p++]);
+			ps(F->strlist[*p++]);
 			break;
+
+		case OP_ARRAYPUT:
 		case OP_CALL:
 		case OP_NEW:
-			printf(" %d", *p++);
-			break;
 		case OP_JUMP:
 		case OP_JTRUE:
 		case OP_JFALSE:
-			dest = (*p++) << 8;
-			dest += (*p++);
-			printf(" %d", dest);
+			printf(" %d", *p++);
 			break;
 		}
 
 		nl();
 	}
 
-	for (i = 0; i < fun->klen; i++) {
-		if (fun->klist[i].type == JS_TFUNCTION) {
-			if (fun->klist[i].u.function != fun) {
-				nl();
-				jsC_dumpfunction(J, fun->klist[i].u.function);
-			}
+	for (i = 0; i < F->funlen; i++) {
+		if (F->funlist[i] != F) {
+			nl();
+			jsC_dumpfunction(J, F->funlist[i]);
 		}
 	}
 }

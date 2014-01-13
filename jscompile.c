@@ -1,15 +1,13 @@
 #include "js.h"
 #include "jsparse.h"
 #include "jscompile.h"
-#include "jsrun.h"
 #include "jsstate.h"
 
 #define cexp js_cexp /* collision with math.h */
 
 #define JF js_State *J, js_Function *F
 
-static js_Function *newfun(js_State *J, js_Ast *name, js_Ast *params, js_Ast *body);
-
+static void cfunbody(JF, js_Ast *name, js_Ast *params, js_Ast *body);
 static void cexp(JF, js_Ast *exp);
 static void cstmlist(JF, js_Ast *list);
 
@@ -23,108 +21,130 @@ static int listlen(js_Ast *list)
 	return n;
 }
 
-static int consteq(js_Value a, js_Value b)
+static js_Function *newfun(js_State *J, js_Ast *name, js_Ast *params, js_Ast *body)
 {
-	if (a.type != b.type) return 0;
-	if (a.type == JS_TNUMBER) return a.u.number == b.u.number;
-	if (a.type == JS_TSTRING) return a.u.string == b.u.string;
-	return a.u.p == b.u.p;
+	js_Function *F = malloc(sizeof *F);
+	memset(F, 0, sizeof *F);
+
+	F->name = name ? name->string : "<anonymous>";
+	F->numparams = listlen(params);
+
+	F->codecap = 256;
+	F->codelen = 0;
+	F->code = malloc(F->codecap * sizeof *F->code);
+
+	F->next = J->fun;
+	J->fun = F;
+
+	cfunbody(J, F, name, params, body);
+
+	return F;
 }
 
-static int addconst(JF, js_Value v)
+static void freefun(js_State *J, js_Function *F)
 {
-	int i;
-
-	for (i = 0; i < F->klen; i++) {
-		if (consteq(F->klist[i], v)) {
-			return i;
-		}
-	}
-
-	if (F->klen >= F->kcap) {
-		F->kcap *= 2;
-		F->klist = realloc(F->klist, F->kcap * sizeof(js_Value));
-	}
-
-	F->klist[F->klen] = v;
-	return F->klen++;
+//	int i;
+//	for (i = 0; i < F->funlen; i++)
+//		freefun(J, F->funlist[i]);
+	free(F->funlist);
+	free(F->numlist);
+	free(F->strlist);
+	free(F->code);
+	free(F);
 }
+
+/* Emit opcodes, constants and jumps */
 
 static void emit(JF, int value)
 {
-	if (F->len >= F->cap) {
-		F->cap *= 2;
-		F->code = realloc(F->code, F->cap);
+	if (F->codelen >= F->codecap) {
+		F->codecap *= 2;
+		F->code = realloc(F->code, F->codecap * sizeof *F->code);
 	}
+	F->code[F->codelen++] = value;
+}
 
-	F->code[F->len++] = value;
+static int addfunction(JF, js_Function *value)
+{
+	if (F->funlen >= F->funcap) {
+		F->funcap = F->funcap ? F->funcap * 2 : 16;
+		F->funlist = realloc(F->funlist, F->funcap * sizeof *F->funlist);
+	}
+	F->funlist[F->funlen] = value;
+	return F->funlen++;
+}
+
+static int addnumber(JF, double value)
+{
+	int i;
+	for (i = 0; i < F->numlen; i++)
+		if (F->numlist[i] == value)
+			return i;
+	if (F->numlen >= F->numcap) {
+		F->numcap = F->numcap ? F->numcap * 2 : 16;
+		F->numlist = realloc(F->numlist, F->numcap * sizeof *F->numlist);
+	}
+	F->numlist[F->numlen] = value;
+	return F->numlen++;
+}
+
+static int addstring(JF, const char *value)
+{
+	int i;
+	for (i = 0; i < F->strlen; i++)
+		if (!strcmp(F->strlist[i], value))
+			return i;
+	if (F->strlen >= F->strcap) {
+		F->strcap = F->strcap ? F->strcap * 2 : 16;
+		F->strlist = realloc(F->strlist, F->strcap * sizeof *F->strlist);
+	}
+	F->strlist[F->strlen] = value;
+	return F->strlen++;
 }
 
 static void emitfunction(JF, int opcode, js_Function *fun)
 {
-	js_Value v;
-	v.type = JS_TFUNCTION;
-	v.u.function = fun;
 	emit(J, F, opcode);
-	emit(J, F, addconst(J, F, v));
+	emit(J, F, addfunction(J, F, fun));
 }
 
-static void emitnumber(JF, int opcode, double n)
+static void emitnumber(JF, int opcode, double num)
 {
-	js_Value v;
-	v.type = JS_TNUMBER;
-	v.u.number = n;
 	emit(J, F, opcode);
-	emit(J, F, addconst(J, F, v));
+	emit(J, F, addnumber(J, F, num));
 }
 
-static void emitstring(JF, int opcode, const char *s)
+static void emitstring(JF, int opcode, const char *str)
 {
-	js_Value v;
-	v.type = JS_TSTRING;
-	v.u.string = s;
 	emit(J, F, opcode);
-	emit(J, F, addconst(J, F, v));
-}
-
-static void emitname(JF, int opcode, const char *s)
-{
-	js_Value v;
-	v.type = JS_TSTRING;
-	v.u.string = s;
-	emit(J, F, opcode);
-	emit(J, F, addconst(J, F, v));
+	emit(J, F, addstring(J, F, str));
 }
 
 static int here(JF)
 {
-	return F->len;
-}
-
-static void labelto(JF, int inst, int dest)
-{
-	F->code[inst+0] = (dest >> 8) & 0xFF;
-	F->code[inst+1] = (dest) & 0xFF;
-}
-
-static void label(JF, int inst)
-{
-	labelto(J, F, inst, here(J, F));
+	return F->codelen;
 }
 
 static int jump(JF, int opcode)
 {
-	int inst = F->len + 1;
+	int inst = F->codelen + 1;
 	emit(J, F, opcode);
-	emit(J, F, 0);
 	emit(J, F, 0);
 	return inst;
 }
 
 static void jumpto(JF, int opcode, int dest)
 {
-	labelto(J, F, jump(J, F, opcode), dest);
+	emit(J, F, opcode);
+	emit(J, F, dest);
 }
+
+static void label(JF, int inst)
+{
+	F->code[inst] = F->codelen;
+}
+
+/* Expressions */
 
 static void unary(JF, js_Ast *exp, int opcode)
 {
@@ -141,9 +161,11 @@ static void binary(JF, js_Ast *exp, int opcode)
 
 static void carray(JF, js_Ast *list)
 {
+	int i = 0;
 	while (list) {
 		cexp(J, F, list->a);
 		emit(J, F, OP_ARRAYPUT);
+		emit(J, F, i++);
 		list = list->b;
 	}
 }
@@ -156,7 +178,7 @@ static void cobject(JF, js_Ast *list)
 			js_Ast *prop = kv->a;
 			cexp(J, F, kv->b);
 			if (prop->type == AST_IDENTIFIER || prop->type == AST_STRING)
-				emitname(J, F, OP_OBJECTPUT, prop->string);
+				emitstring(J, F, OP_OBJECTPUT, prop->string);
 			else if (prop->type == AST_STRING)
 				emitstring(J, F, OP_OBJECTPUT, prop->string);
 			else if (prop->type == AST_NUMBER)
@@ -184,7 +206,7 @@ static void clval(JF, js_Ast *exp)
 {
 	switch (exp->type) {
 	case AST_IDENTIFIER:
-		emitname(J, F, OP_AVAR, exp->string);
+		emitstring(J, F, OP_AVAR, exp->string);
 		break;
 	case EXP_INDEX:
 		cexp(J, F, exp->a);
@@ -193,7 +215,7 @@ static void clval(JF, js_Ast *exp)
 		break;
 	case EXP_MEMBER:
 		cexp(J, F, exp->a);
-		emitname(J, F, OP_AMEMBER, exp->b->string);
+		emitstring(J, F, OP_AMEMBER, exp->b->string);
 		break;
 	case EXP_CALL:
 		/* host functions may return an assignable l-value */
@@ -214,6 +236,20 @@ static void assignop(JF, js_Ast *exp, int opcode)
 	emit(J, F, OP_STORE);
 }
 
+static void cvarinit(JF, js_Ast *list)
+{
+	while (list) {
+		js_Ast *var = list->a;
+		if (var->b) {
+			cexp(J, F, var->b);
+			emitstring(J, F, OP_AVAR, var->a->string);
+			emit(J, F, OP_STORE);
+			emit(J, F, OP_POP);
+		}
+		list = list->b;
+	}
+}
+
 static void ccall(JF, js_Ast *fun, js_Ast *args)
 {
 	int n;
@@ -227,7 +263,7 @@ static void ccall(JF, js_Ast *fun, js_Ast *args)
 	case EXP_MEMBER:
 		cexp(J, F, fun->a);
 		emit(J, F, OP_DUP);
-		emitname(J, F, OP_LOADMEMBER, fun->b->string);
+		emitstring(J, F, OP_LOADMEMBER, fun->b->string);
 		break;
 	default:
 		emit(J, F, OP_THIS);
@@ -245,9 +281,9 @@ static void cexp(JF, js_Ast *exp)
 	int n;
 
 	switch (exp->type) {
-	case AST_IDENTIFIER: emitname(J, F, OP_LOADVAR, exp->string); break;
-	case AST_NUMBER: emitnumber(J, F, OP_CONST, exp->number); break;
-	case AST_STRING: emitstring(J, F, OP_CONST, exp->string); break;
+	case AST_IDENTIFIER: emitstring(J, F, OP_LOADVAR, exp->string); break;
+	case AST_NUMBER: emitnumber(J, F, OP_NUMBER, exp->number); break;
+	case AST_STRING: emitstring(J, F, OP_STRING, exp->string); break;
 	case EXP_UNDEF: emit(J, F, OP_UNDEF); break;
 	case EXP_NULL: emit(J, F, OP_NULL); break;
 	case EXP_TRUE: emit(J, F, OP_TRUE); break;
@@ -272,7 +308,7 @@ static void cexp(JF, js_Ast *exp)
 
 	case EXP_MEMBER:
 		cexp(J, F, exp->a);
-		emitname(J, F, OP_LOADMEMBER, exp->b->string);
+		emitstring(J, F, OP_LOADMEMBER, exp->b->string);
 		break;
 
 	case EXP_CALL:
@@ -393,19 +429,7 @@ static void cexp(JF, js_Ast *exp)
 	}
 }
 
-static void cvarinit(JF, js_Ast *list)
-{
-	while (list) {
-		js_Ast *var = list->a;
-		if (var->b) {
-			cexp(J, F, var->b);
-			emitname(J, F, OP_AVAR, var->a->string);
-			emit(J, F, OP_STORE);
-			emit(J, F, OP_POP);
-		}
-		list = list->b;
-	}
-}
+/* Statements */
 
 static void cstm(JF, js_Ast *stm)
 {
@@ -505,13 +529,15 @@ static void cstmlist(JF, js_Ast *list)
 	}
 }
 
+/* Declarations and programs */
+
 static void cfundecs(JF, js_Ast *list)
 {
 	while (list) {
 		js_Ast *stm = list->a;
 		if (stm->type == AST_FUNDEC) {
 			emitfunction(J, F, OP_CLOSURE, newfun(J, stm->a, stm->b, stm->c));
-			emitname(J, F, OP_FUNDEC, stm->a->string);
+			emitstring(J, F, OP_FUNDEC, stm->a->string);
 		}
 		list = list->b;
 	}
@@ -520,7 +546,7 @@ static void cfundecs(JF, js_Ast *list)
 static void cvardecs(JF, js_Ast *node)
 {
 	if (node->type == EXP_VAR) {
-		emitname(J, F, OP_VARDEC, node->a->string);
+		emitstring(J, F, OP_VARDEC, node->a->string);
 	} else if (node->type != EXP_FUN && node->type != AST_FUNDEC) {
 		if (node->a) cvardecs(J, F, node->a);
 		if (node->b) cvardecs(J, F, node->b);
@@ -533,7 +559,7 @@ static void cfunbody(JF, js_Ast *name, js_Ast *params, js_Ast *body)
 {
 	if (name) {
 		emitfunction(J, F, OP_CLOSURE, F);
-		emitname(J, F, OP_FUNDEC, name->string);
+		emitstring(J, F, OP_FUNDEC, name->string);
 	}
 
 	if (body) {
@@ -542,51 +568,10 @@ static void cfunbody(JF, js_Ast *name, js_Ast *params, js_Ast *body)
 		cstmlist(J, F, body);
 	}
 
-	if (F->len == 0 || F->code[F->len - 1] != OP_RETURN) {
+	if (F->codelen == 0 || F->code[F->codelen - 1] != OP_RETURN) {
 		emit(J, F, OP_UNDEF);
 		emit(J, F, OP_RETURN);
 	}
-}
-
-static js_Function *newfun(js_State *J, js_Ast *name, js_Ast *params, js_Ast *body)
-{
-	js_Function *F = malloc(sizeof(js_Function));
-
-	F->name = name ? name->string : "<anonymous>";
-	F->numparams = listlen(params);
-
-	F->cap = 256;
-	F->len = 0;
-	F->code = malloc(F->cap);
-
-	F->kcap = 16;
-	F->klen = 0;
-	F->klist = malloc(F->kcap * sizeof(js_Value));
-
-	F->next = J->fun;
-	J->fun = F;
-
-	cfunbody(J, F, name, params, body);
-
-	return F;
-}
-
-static void freefun(js_State *J, js_Function *F)
-{
-	free(F->klist);
-	free(F->code);
-	free(F);
-}
-
-void jsC_freecompile(js_State *J)
-{
-	js_Function *F = J->fun;
-	while (F) {
-		js_Function *next = F->next;
-		freefun(J, F);
-		F = next;
-	}
-	J->fun = NULL;
 }
 
 int jsC_error(js_State *J, js_Ast *node, const char *fmt, ...)
@@ -601,6 +586,17 @@ int jsC_error(js_State *J, js_Ast *node, const char *fmt, ...)
 
 	longjmp(J->jb, 1);
 	return 0;
+}
+
+void jsC_freecompile(js_State *J)
+{
+	js_Function *F = J->fun;
+	while (F) {
+		js_Function *next = F->next;
+		freefun(J, F);
+		F = next;
+	}
+	J->fun = NULL;
 }
 
 js_Function *jsC_compile(js_State *J, js_Ast *prog)
