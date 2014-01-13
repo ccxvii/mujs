@@ -12,27 +12,13 @@ struct js_StringNode
 
 static js_StringNode sentinel = { "", &sentinel, &sentinel, 0 };
 
-static js_StringNode *makestringnode(const char *string, const char **out)
+static js_StringNode *newstringnode(const char *string, const char **result)
 {
 	js_StringNode *node = malloc(sizeof(js_StringNode));
-	node->string = *out = strdup(string);
+	node->string = *result = strdup(string);
 	node->left = node->right = &sentinel;
 	node->level = 1;
 	return node;
-}
-
-static const char *lookup(js_StringNode *node, const char *string)
-{
-	if (node && node != &sentinel) {
-		int c = strcmp(string, node->string);
-		if (c == 0)
-			return node->string;
-		else if (c < 0)
-			return lookup(node->left, string);
-		else
-			return lookup(node->right, string);
-	}
-	return NULL;
 }
 
 static js_StringNode *skew(js_StringNode *node)
@@ -62,20 +48,21 @@ static js_StringNode *split(js_StringNode *node)
 	return node;
 }
 
-static js_StringNode *insert(js_StringNode *node, const char *string, const char **out)
+static js_StringNode *insert(js_StringNode *node, const char *string, const char **result)
 {
-	if (node && node != &sentinel) {
+	if (node != &sentinel) {
 		int c = strcmp(string, node->string);
 		if (c < 0)
-			node->left = insert(node->left, string, out);
+			node->left = insert(node->left, string, result);
+		else if (c > 0)
+			node->right = insert(node->right, string, result);
 		else
-			node->right = insert(node->right, string, out);
+			return *result = node->string, node;
 		node = skew(node);
 		node = split(node);
 		return node;
-	} else {
-		return makestringnode(string, out);
 	}
+	return newstringnode(string, result);
 }
 
 static void printstringnode(js_StringNode *node, int level)
@@ -83,9 +70,10 @@ static void printstringnode(js_StringNode *node, int level)
 	int i;
 	if (node->left != &sentinel)
 		printstringnode(node->left, level + 1);
+	printf("%d: ", node->level);
 	for (i = 0; i < level; i++)
-		putchar(' ');
-	printf("'%s' (%d)\n", node->string, node->level);
+		putchar('\t');
+	printf("'%s'\n", node->string);
 	if (node->right != &sentinel)
 		printstringnode(node->right, level + 1);
 }
@@ -101,8 +89,9 @@ void js_printstringtree(js_State *J)
 
 const char *js_intern(js_State *J, const char *s)
 {
-	const char *a = lookup(J->strings, s);
-	if (!a)
-		J->strings = insert(J->strings, s, &a);
-	return a;
+	const char *result;
+	if (!J->strings)
+		J->strings = &sentinel;
+	J->strings = insert(J->strings, s, &result);
+	return result;
 }
