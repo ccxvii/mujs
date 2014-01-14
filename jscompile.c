@@ -174,8 +174,8 @@ static void carray(JF, js_Ast *list)
 	while (list) {
 		emit(J, F, OP_DUP);
 		emit(J, F, OP_NUMBER_X);
-		cexp(J, F, list->a);
 		emit(J, F, i++);
+		cexp(J, F, list->a);
 		emit(J, F, OP_SETPROP);
 		emit(J, F, OP_POP);
 		list = list->b;
@@ -237,6 +237,35 @@ static void cassign(JF, js_Ast *lhs, js_Ast *rhs)
 	case EXP_CALL: /* host functions may return an assignable l-value */
 		cexp(J, F, lhs);
 		cexp(J, F, rhs);
+		emit(J, F, OP_SETPROP);
+		break;
+	default:
+		jsC_error(J, lhs, "invalid l-value in assignment");
+		break;
+	}
+}
+
+static void cassignloop(JF, js_Ast *lhs)
+{
+	switch (lhs->type) {
+	case AST_IDENTIFIER:
+		emitstring(J, F, OP_SETVAR, lhs->string);
+		break;
+	case EXP_INDEX:
+		cexp(J, F, lhs->a);
+		cexp(J, F, lhs->b);
+		emit(J, F, OP_ROT3);
+		emit(J, F, OP_SETPROP);
+		break;
+	case EXP_MEMBER:
+		cexp(J, F, lhs->a);
+		emitstring(J, F, OP_STRING, lhs->b->string);
+		emit(J, F, OP_ROT3);
+		emit(J, F, OP_SETPROP);
+		break;
+	case EXP_CALL: /* host functions may return an assignable l-value */
+		cexp(J, F, lhs);
+		emit(J, F, OP_ROT3);
 		emit(J, F, OP_SETPROP);
 		break;
 	default:
@@ -596,15 +625,13 @@ static void cstm(JF, js_Ast *stm)
 		break;
 
 	case STM_FOR:
-		cexp(J, F, stm->a);
-		emit(J, F, OP_POP);
-		goto for_body;
-
 	case STM_FOR_VAR:
-		cvarinit(J, F, stm->a);
-		goto for_body;
-
-	for_body:
+		if (stm->type == STM_FOR_VAR) {
+			cvarinit(J, F, stm->a);
+		} else {
+			cexp(J, F, stm->a);
+			emit(J, F, OP_POP);
+		}
 		loop = here(J, F);
 		cexp(J, F, stm->b);
 		end = jump(J, F, OP_JFALSE);
@@ -614,7 +641,25 @@ static void cstm(JF, js_Ast *stm)
 		jumpto(J, F, OP_JUMP, loop);
 		label(J, F, end);
 		break;
-	// for-in
+
+	case STM_FOR_IN:
+	case STM_FOR_IN_VAR:
+		cexp(J, F, stm->b);
+		emit(J, F, OP_UNDEF);
+		loop = here(J, F);
+		emit(J, F, OP_NEXTPROP);
+		end = jump(J, F, OP_JFALSE);
+		if (stm->type == STM_FOR_IN_VAR) {
+			if (stm->a->b)
+				jsC_error(J, stm->a->b, "more than one loop variable in for-in statement");
+			emitstring(J, F, OP_SETVAR, stm->a->a->a->string); /* stm(list(var-init(ident))) */
+		} else {
+			cassignloop(J, F, stm->a);
+		}
+		cstm(J, F, stm->c);
+		jumpto(J, F, OP_JUMP, loop);
+		label(J, F, end);
+		break;
 
 	// break
 	// continue

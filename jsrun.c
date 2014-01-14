@@ -82,6 +82,18 @@ void js_pushobject(js_State *J, js_Object *v)
 	++top;
 }
 
+int js_isundefined(js_State *J, int idx)
+{
+	idx += top;
+	return stack[idx].type == JS_TUNDEFINED;
+}
+
+int js_isstring(js_State *J, int idx)
+{
+	idx += top;
+	return stack[idx].type == JS_TSTRING;
+}
+
 js_Value js_tovalue(js_State *J, int idx)
 {
 	idx += top;
@@ -178,6 +190,15 @@ void js_dup2(js_State *J)
 	top += 2;
 }
 
+void js_rot3(js_State *J)
+{
+	/* A B C -> C A B */
+	js_Value tmp = stack[top-1];	/* A B C (C) */
+	stack[top-1] = stack[top-2];	/* A B B */
+	stack[top-2] = stack[top-3];	/* A A B */
+	stack[top-3] = tmp;		/* C A B */
+}
+
 void js_rot3pop2(js_State *J)
 {
 	/* A B C -> C */
@@ -192,6 +213,7 @@ void js_dup1rot4(js_State *J)
 	stack[top-1] = stack[top-2];	/* A B B C */
 	stack[top-2] = stack[top-3];	/* A A B C */
 	stack[top-3] = stack[top];	/* C A B C */
+	++top;
 }
 
 void js_trap(js_State *J)
@@ -219,6 +241,7 @@ static void runfun(js_State *J, js_Function *F, js_Object *E)
 		case OP_POP: js_pop(J, 1); break;
 		case OP_DUP: js_dup(J); break;
 		case OP_DUP2: js_dup2(J); break;
+		case OP_ROT3: js_rot3(J); break;
 		case OP_DUP1ROT4: js_dup1rot4(J); break;
 
 		case OP_NUMBER_0: js_pushnumber(J, 0); break;
@@ -237,8 +260,16 @@ static void runfun(js_State *J, js_Function *F, js_Object *E)
 		case OP_NEWOBJECT: js_pushobject(J, js_newobject(J)); break;
 		case OP_NEWARRAY: js_pushobject(J, js_newobject(J)); break;
 
-		case OP_FUNDEC: js_pop(J, 1); break;
+		case OP_FUNDEC:
+			ref = js_setproperty(J, E, ST[*pc++]);
+//			if (ref)
+//				ref->value = js_toclosure(J, -1);
+			js_pop(J, 1);
+			break;
+
 		case OP_VARDEC: pc++; break;
+			ref = js_setproperty(J, E, ST[*pc++]);
+			break;
 
 		case OP_GETVAR:
 			ref = js_getproperty(J, E, ST[*pc++]);
@@ -285,6 +316,23 @@ static void runfun(js_State *J, js_Function *F, js_Object *E)
 			break;
 
 		// OP_DELPROP
+
+		case OP_NEXTPROP:
+			obj = js_toobject(J, -2);
+			if (js_isundefined(J, -1))
+				ref = js_firstproperty(J, obj);
+			else
+				ref = js_nextproperty(J, obj, js_tostring(J, -1));
+			printf("nextprop -> %s\n", ref ? ref->name : "(end)");
+			if (ref) {
+				js_pop(J, 1);
+				js_pushstring(J, ref->name);
+				js_pushboolean(J, 1);
+			} else {
+				js_pop(J, 2);
+				js_pushboolean(J, 0);
+			}
+			break;
 
 		/* Unary expressions */
 

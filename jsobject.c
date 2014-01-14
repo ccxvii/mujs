@@ -20,22 +20,20 @@
 
 static js_Property sentinel = { "", &sentinel, &sentinel, 0 };
 
-static js_Property undefined = { "", &sentinel, &sentinel, 0, { {0}, JS_TUNDEFINED } };
-
-static js_Property *newproperty(const char *key)
+static js_Property *newproperty(const char *name)
 {
 	js_Property *node = malloc(sizeof(js_Property));
-	node->key = strdup(key);
+	node->name = strdup(name);
 	node->left = node->right = &sentinel;
 	node->level = 1;
-//	node->value = 0;
+	node->value.type = JS_TUNDEFINED;
 	return node;
 }
 
-static js_Property *lookup(js_Property *node, const char *key)
+static js_Property *lookup(js_Property *node, const char *name)
 {
 	while (node != &sentinel) {
-		int c = strcmp(key, node->key);
+		int c = strcmp(name, node->name);
 		if (c == 0)
 			return node;
 		else if (c < 0)
@@ -73,21 +71,60 @@ static inline js_Property *split(js_Property *node)
 	return node;
 }
 
-static js_Property *insert(js_Property *node, const char *key, js_Property **result)
+static js_Property *insert(js_Property *node, const char *name, js_Property **result)
 {
 	if (node != &sentinel) {
-		int c = strcmp(key, node->key);
+		int c = strcmp(name, node->name);
 		if (c < 0)
-			node->left = insert(node->left, key, result);
+			node->left = insert(node->left, name, result);
 		else if (c > 0)
-			node->right = insert(node->right, key, result);
+			node->right = insert(node->right, name, result);
 		else
 			return *result = node;
 		node = skew(node);
 		node = split(node);
 		return node;
 	}
-	return *result = newproperty(key);
+	return *result = newproperty(name);
+}
+
+static js_Property *lookupfirst(js_Property *node)
+{
+	while (node != &sentinel) {
+		if (node->left == &sentinel)
+			return node;
+		node = node->left;
+	}
+	return NULL;
+}
+
+static js_Property *lookupnext(js_Property *node, const char *name)
+{
+	js_Property *stack[100], *parent;
+	int top = 0;
+
+	stack[0] = NULL;
+	while (node != &sentinel) {
+		stack[++top] = node;
+		int c = strcmp(name, node->name);
+		if (c == 0)
+			goto found;
+		else if (c < 0)
+			node = node->left;
+		else
+			node = node->right;
+	}
+	return NULL;
+
+found:
+	if (node->right != &sentinel)
+		return lookupfirst(node->right);
+	parent = stack[--top];
+	while (parent && node == parent->right) {
+		node = parent;
+		parent = stack[--top];
+	}
+	return parent;
 }
 
 js_Object *js_newobject(js_State *J)
@@ -109,6 +146,16 @@ js_Property *js_setproperty(js_State *J, js_Object *obj, const char *name)
 	return result;
 }
 
+js_Property *js_firstproperty(js_State *J, js_Object *obj)
+{
+	return lookupfirst(obj->properties);
+}
+
+js_Property *js_nextproperty(js_State *J, js_Object *obj, const char *name)
+{
+	return lookupnext(obj->properties, name);
+}
+
 static void js_dumpvalue(js_State *J, js_Value v)
 {
 	switch (v.type) {
@@ -127,7 +174,7 @@ static void js_dumpproperty(js_State *J, js_Property *node)
 {
 	if (node->left != &sentinel)
 		js_dumpproperty(J, node->left);
-	printf("\t%s: ", node->key);
+	printf("\t%s: ", node->name);
 	js_dumpvalue(J, node->value);
 	printf(",\n");
 	if (node->right != &sentinel)
