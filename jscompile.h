@@ -3,12 +3,18 @@
 
 enum
 {
-	OP_POP,
-	OP_DUP,
+	OP_POP,		/* A -- */
+	OP_DUP,		/* A -- A A */
+	OP_DUP2,	/* A B -- A B A B */
+	OP_DUP1ROT4,	/* A B C -- C A B C */
 
-	OP_CLOSURE,
-	OP_NUMBER,
-	OP_STRING,
+	OP_NUMBER_0,	/* -- 0 */
+	OP_NUMBER_1,	/* -- 1 */
+	OP_NUMBER_X,	/* -K- K */
+
+	OP_NUMBER,	/* -N- <number> */
+	OP_STRING,	/* -S- <string> */
+	OP_CLOSURE,	/* -F- <closure> */
 
 	OP_UNDEF,
 	OP_NULL,
@@ -17,32 +23,22 @@ enum
 	OP_THIS,
 
 	OP_NEWARRAY,
-	OP_ARRAYPUT,
 	OP_NEWOBJECT,
-	OP_OBJECTPUT,
 
-	OP_FUNDEC,	/* <closure> -(name)- */
-	OP_VARDEC,	/* -(name)- */
+	OP_FUNDEC,	/* <closure> -S- */
+	OP_VARDEC,	/* -S- */
 
-	OP_LOADVAR,	/* -(name)- <value> */
-	OP_LOADMEMBER,	/* <obj> -(name)- <value> */
-	OP_LOADINDEX,	/* <obj> <idx> -- <value> */
+	OP_GETVAR,	/* -S- <value> */
+	OP_SETVAR,	/* <value> -S- <value> */
+	OP_DELVAR,	/* -S- <success> */
 
-	OP_AVAR,	/* -(name)- <addr> */
-	OP_AMEMBER,	/* <obj> -(name)- <addr> */
-	OP_AINDEX,	/* <obj> <idx> -- <addr> */
-
-	OP_LOAD,	/* <addr> -- <addr> <value> */
-	OP_STORE,	/* <addr> <value> -- <value> */
+	OP_IN,		/* <name> <obj> -- <exists?> */
+	OP_GETPROP,	/* <obj> <name> -- <value> */
+	OP_SETPROP,	/* <obj> <name> <value> -- <value> */
+	OP_DELPROP,	/* <obj> <name> -- <success> */
 
 	OP_CALL,	/* <thisvalue> <closure> <args...> -(numargs)- <returnvalue> */
 	OP_NEW,		/* <closure> <args...> -(numargs)- <returnvalue> */
-
-	OP_DELETE,	/* <addr> -- <success> */
-	OP_PREINC,	/* <addr> -- <value+1> */
-	OP_PREDEC,	/* <addr> -- <value-1> */
-	OP_POSTINC,	/* <addr> -- <value> */
-	OP_POSTDEC,	/* <addr> -- <value> */
 
 	OP_VOID,
 	OP_TYPEOF,
@@ -56,14 +52,12 @@ enum
 	OP_BITAND,
 	OP_EQ,
 	OP_NE,
-	OP_EQ3,
-	OP_NE3,
+	OP_STRICTEQ,
+	OP_STRICTNE,
 	OP_LT,
 	OP_GT,
 	OP_LE,
 	OP_GE,
-	OP_INSTANCEOF,
-	OP_IN,
 	OP_SHL,
 	OP_SHR,
 	OP_USHR,
@@ -73,17 +67,20 @@ enum
 	OP_DIV,
 	OP_MOD,
 
-	OP_TRY,
-	OP_THROW,
-	OP_RETURN,
-	OP_DEBUGGER,
+	OP_INSTANCEOF,
 
+	OP_THROW,
+	OP_TRY,
+	OP_CATCH,
+	OP_ENDCATCH,
 	OP_WITH,
 	OP_ENDWITH,
 
+	OP_DEBUGGER,
 	OP_JUMP,
 	OP_JTRUE,
 	OP_JFALSE,
+	OP_RETURN,
 };
 
 struct js_Function
@@ -94,13 +91,13 @@ struct js_Function
 	short *code;
 	int codecap, codelen;
 
-	js_Function **funlist;
+	js_Function **funtab;
 	int funcap, funlen;
 
-	double *numlist;
+	double *numtab;
 	int numcap, numlen;
 
-	const char **strlist;
+	const char **strtab;
 	int strcap, strlen;
 
 	js_Function *next; /* alloc list */

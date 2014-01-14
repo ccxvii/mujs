@@ -45,10 +45,10 @@ static void freefun(js_State *J, js_Function *F)
 {
 //	int i;
 //	for (i = 0; i < F->funlen; i++)
-//		freefun(J, F->funlist[i]);
-	free(F->funlist);
-	free(F->numlist);
-	free(F->strlist);
+//		freefun(J, F->funtab[i]);
+	free(F->funtab);
+	free(F->numtab);
+	free(F->strtab);
 	free(F->code);
 	free(F);
 }
@@ -68,9 +68,9 @@ static int addfunction(JF, js_Function *value)
 {
 	if (F->funlen >= F->funcap) {
 		F->funcap = F->funcap ? F->funcap * 2 : 16;
-		F->funlist = realloc(F->funlist, F->funcap * sizeof *F->funlist);
+		F->funtab = realloc(F->funtab, F->funcap * sizeof *F->funtab);
 	}
-	F->funlist[F->funlen] = value;
+	F->funtab[F->funlen] = value;
 	return F->funlen++;
 }
 
@@ -78,13 +78,13 @@ static int addnumber(JF, double value)
 {
 	int i;
 	for (i = 0; i < F->numlen; i++)
-		if (F->numlist[i] == value)
+		if (F->numtab[i] == value)
 			return i;
 	if (F->numlen >= F->numcap) {
 		F->numcap = F->numcap ? F->numcap * 2 : 16;
-		F->numlist = realloc(F->numlist, F->numcap * sizeof *F->numlist);
+		F->numtab = realloc(F->numtab, F->numcap * sizeof *F->numtab);
 	}
-	F->numlist[F->numlen] = value;
+	F->numtab[F->numlen] = value;
 	return F->numlen++;
 }
 
@@ -92,26 +92,35 @@ static int addstring(JF, const char *value)
 {
 	int i;
 	for (i = 0; i < F->strlen; i++)
-		if (!strcmp(F->strlist[i], value))
+		if (!strcmp(F->strtab[i], value))
 			return i;
 	if (F->strlen >= F->strcap) {
 		F->strcap = F->strcap ? F->strcap * 2 : 16;
-		F->strlist = realloc(F->strlist, F->strcap * sizeof *F->strlist);
+		F->strtab = realloc(F->strtab, F->strcap * sizeof *F->strtab);
 	}
-	F->strlist[F->strlen] = value;
+	F->strtab[F->strlen] = value;
 	return F->strlen++;
 }
 
-static void emitfunction(JF, int opcode, js_Function *fun)
+static void emitfunction(JF, js_Function *fun)
 {
-	emit(J, F, opcode);
+	emit(J, F, OP_CLOSURE);
 	emit(J, F, addfunction(J, F, fun));
 }
 
-static void emitnumber(JF, int opcode, double num)
+static void emitnumber(JF, double num)
 {
-	emit(J, F, opcode);
-	emit(J, F, addnumber(J, F, num));
+	if (num == 0)
+		emit(J, F, OP_NUMBER_0);
+	else if (num == 1)
+		emit(J, F, OP_NUMBER_1);
+	else if (num == (short)num) {
+		emit(J, F, OP_NUMBER_X);
+		emit(J, F, (short)num);
+	} else {
+		emit(J, F, OP_NUMBER);
+		emit(J, F, addnumber(J, F, num));
+	}
 }
 
 static void emitstring(JF, int opcode, const char *str)
@@ -146,13 +155,13 @@ static void label(JF, int inst)
 
 /* Expressions */
 
-static void unary(JF, js_Ast *exp, int opcode)
+static void cunary(JF, js_Ast *exp, int opcode)
 {
 	cexp(J, F, exp->a);
 	emit(J, F, opcode);
 }
 
-static void binary(JF, js_Ast *exp, int opcode)
+static void cbinary(JF, js_Ast *exp, int opcode)
 {
 	cexp(J, F, exp->a);
 	cexp(J, F, exp->b);
@@ -163,9 +172,12 @@ static void carray(JF, js_Ast *list)
 {
 	int i = 0;
 	while (list) {
+		emit(J, F, OP_DUP);
+		emit(J, F, OP_NUMBER_X);
 		cexp(J, F, list->a);
-		emit(J, F, OP_ARRAYPUT);
 		emit(J, F, i++);
+		emit(J, F, OP_SETPROP);
+		emit(J, F, OP_POP);
 		list = list->b;
 	}
 }
@@ -176,15 +188,16 @@ static void cobject(JF, js_Ast *list)
 		js_Ast *kv = list->a;
 		if (kv->type == EXP_PROP_VAL) {
 			js_Ast *prop = kv->a;
-			cexp(J, F, kv->b);
+			emit(J, F, OP_DUP);
 			if (prop->type == AST_IDENTIFIER || prop->type == AST_STRING)
-				emitstring(J, F, OP_OBJECTPUT, prop->string);
-			else if (prop->type == AST_STRING)
-				emitstring(J, F, OP_OBJECTPUT, prop->string);
+				emitstring(J, F, OP_STRING, prop->string);
 			else if (prop->type == AST_NUMBER)
-				emitnumber(J, F, OP_OBJECTPUT, prop->number);
+				emitnumber(J, F, prop->number);
 			else
 				jsC_error(J, list, "illegal property name in object initializer");
+			cexp(J, F, kv->b);
+			emit(J, F, OP_SETPROP);
+			emit(J, F, OP_POP);
 		}
 		// TODO: set, get
 		list = list->b;
@@ -202,38 +215,114 @@ static int cargs(JF, js_Ast *list)
 	return n;
 }
 
-static void clval(JF, js_Ast *exp)
+static void cassign(JF, js_Ast *lhs, js_Ast *rhs)
 {
-	switch (exp->type) {
+	switch (lhs->type) {
 	case AST_IDENTIFIER:
-		emitstring(J, F, OP_AVAR, exp->string);
+		cexp(J, F, rhs);
+		emitstring(J, F, OP_SETVAR, lhs->string);
 		break;
 	case EXP_INDEX:
-		cexp(J, F, exp->a);
-		cexp(J, F, exp->b);
-		emit(J, F, OP_AINDEX);
+		cexp(J, F, lhs->a);
+		cexp(J, F, lhs->b);
+		cexp(J, F, rhs);
+		emit(J, F, OP_SETPROP);
 		break;
 	case EXP_MEMBER:
-		cexp(J, F, exp->a);
-		emitstring(J, F, OP_AMEMBER, exp->b->string);
+		cexp(J, F, lhs->a);
+		emitstring(J, F, OP_STRING, lhs->b->string);
+		cexp(J, F, rhs);
+		emit(J, F, OP_SETPROP);
 		break;
-	case EXP_CALL:
-		/* host functions may return an assignable l-value */
-		cexp(J, F, exp);
+	case EXP_CALL: /* host functions may return an assignable l-value */
+		cexp(J, F, lhs);
+		cexp(J, F, rhs);
+		emit(J, F, OP_SETPROP);
 		break;
 	default:
-		jsC_error(J, exp, "invalid l-value in assignment");
+		jsC_error(J, lhs, "invalid l-value in assignment");
 		break;
 	}
 }
 
-static void assignop(JF, js_Ast *exp, int opcode)
+static void cassignop1(JF, js_Ast *lhs, int dup)
 {
-	clval(J, F, exp->a);
-	emit(J, F, OP_LOAD);
-	cexp(J, F, exp->b);
+	switch (lhs->type) {
+	case AST_IDENTIFIER:
+		emitstring(J, F, OP_GETVAR, lhs->string);
+		if (dup) emit(J, F, OP_DUP);
+		break;
+	case EXP_INDEX:
+		cexp(J, F, lhs->a);
+		cexp(J, F, lhs->b);
+		emit(J, F, OP_DUP2);
+		emit(J, F, OP_GETPROP);
+		if (dup) emit(J, F, OP_DUP1ROT4);
+		break;
+	case EXP_MEMBER:
+		cexp(J, F, lhs->a);
+		emitstring(J, F, OP_STRING, lhs->b->string);
+		emit(J, F, OP_DUP2);
+		emit(J, F, OP_GETPROP);
+		if (dup) emit(J, F, OP_DUP1ROT4);
+		break;
+	case EXP_CALL: /* host functions may return an assignable l-value */
+		cexp(J, F, lhs);
+		emit(J, F, OP_DUP2);
+		emit(J, F, OP_GETPROP);
+		if (dup) emit(J, F, OP_DUP1ROT4);
+		break;
+	default:
+		jsC_error(J, lhs, "invalid l-value in assignment");
+		break;
+	}
+}
+
+static void cassignop2(JF, js_Ast *lhs)
+{
+	switch (lhs->type) {
+	case AST_IDENTIFIER:
+		emitstring(J, F, OP_SETVAR, lhs->string);
+		break;
+	case EXP_INDEX:
+	case EXP_MEMBER:
+	case EXP_CALL:
+		emit(J, F, OP_SETPROP);
+		break;
+	default:
+		jsC_error(J, lhs, "invalid l-value in assignment");
+		break;
+	}
+}
+
+static void cassignop(JF, js_Ast *lhs, js_Ast *rhs, int opcode)
+{
+	cassignop1(J, F, lhs, 0);
+	cexp(J, F, rhs);
 	emit(J, F, opcode);
-	emit(J, F, OP_STORE);
+	cassignop2(J, F, lhs);
+}
+
+static void cdelete(JF, js_Ast *exp)
+{
+	switch (exp->type) {
+	case AST_IDENTIFIER:
+		emitstring(J, F, OP_DELVAR, exp->string);
+		break;
+	case EXP_INDEX:
+		cexp(J, F, exp->a);
+		cexp(J, F, exp->b);
+		emit(J, F, OP_DELPROP);
+		break;
+	case EXP_MEMBER:
+		cexp(J, F, exp->a);
+		emitstring(J, F, OP_STRING, exp->b->string);
+		emit(J, F, OP_DELPROP);
+		break;
+	default:
+		jsC_error(J, exp, "invalid l-value in delete expression");
+		break;
+	}
 }
 
 static void cvarinit(JF, js_Ast *list)
@@ -242,9 +331,7 @@ static void cvarinit(JF, js_Ast *list)
 		js_Ast *var = list->a;
 		if (var->b) {
 			cexp(J, F, var->b);
-			emitstring(J, F, OP_AVAR, var->a->string);
-			emit(J, F, OP_STORE);
-			emit(J, F, OP_POP);
+			emitstring(J, F, OP_SETVAR, var->a->string);
 		}
 		list = list->b;
 	}
@@ -258,12 +345,13 @@ static void ccall(JF, js_Ast *fun, js_Ast *args)
 		cexp(J, F, fun->a);
 		emit(J, F, OP_DUP);
 		cexp(J, F, fun->b);
-		emit(J, F, OP_LOADINDEX);
+		emit(J, F, OP_GETPROP);
 		break;
 	case EXP_MEMBER:
 		cexp(J, F, fun->a);
 		emit(J, F, OP_DUP);
-		emitstring(J, F, OP_LOADMEMBER, fun->b->string);
+		emitstring(J, F, OP_STRING, fun->b->string);
+		emit(J, F, OP_GETPROP);
 		break;
 	default:
 		emit(J, F, OP_THIS);
@@ -281,9 +369,8 @@ static void cexp(JF, js_Ast *exp)
 	int n;
 
 	switch (exp->type) {
-	case AST_IDENTIFIER: emitstring(J, F, OP_LOADVAR, exp->string); break;
-	case AST_NUMBER: emitnumber(J, F, OP_NUMBER, exp->number); break;
 	case AST_STRING: emitstring(J, F, OP_STRING, exp->string); break;
+	case AST_NUMBER: emitnumber(J, F, exp->number); break;
 	case EXP_UNDEF: emit(J, F, OP_UNDEF); break;
 	case EXP_NULL: emit(J, F, OP_NULL); break;
 	case EXP_TRUE: emit(J, F, OP_TRUE); break;
@@ -300,15 +387,24 @@ static void cexp(JF, js_Ast *exp)
 		carray(J, F, exp->a);
 		break;
 
+	case EXP_FUN:
+		emitfunction(J, F, newfun(J, exp->a, exp->b, exp->c));
+		break;
+
+	case AST_IDENTIFIER:
+		emitstring(J, F, OP_GETVAR, exp->string);
+		break;
+
 	case EXP_INDEX:
 		cexp(J, F, exp->a);
 		cexp(J, F, exp->b);
-		emit(J, F, OP_LOADINDEX);
+		emit(J, F, OP_GETPROP);
 		break;
 
 	case EXP_MEMBER:
 		cexp(J, F, exp->a);
-		emitstring(J, F, OP_LOADMEMBER, exp->b->string);
+		emitstring(J, F, OP_STRING, exp->b->string);
+		emit(J, F, OP_GETPROP);
 		break;
 
 	case EXP_CALL:
@@ -322,13 +418,38 @@ static void cexp(JF, js_Ast *exp)
 		emit(J, F, n);
 		break;
 
-	case EXP_FUN:
-		emitfunction(J, F, OP_CLOSURE, newfun(J, exp->a, exp->b, exp->c));
+	case EXP_DELETE:
+		cdelete(J, F, exp->a);
 		break;
 
-	case EXP_DELETE:
-		clval(J, F, exp->a);
-		emit(J, F, OP_DELETE);
+	case EXP_PREINC:
+		cassignop1(J, F, exp->a, 0);
+		emit(J, F, OP_NUMBER_1);
+		emit(J, F, OP_ADD);
+		cassignop2(J, F, exp->a);
+		break;
+
+	case EXP_PREDEC:
+		cassignop1(J, F, exp->a, 0);
+		emit(J, F, OP_NUMBER_1);
+		emit(J, F, OP_SUB);
+		cassignop2(J, F, exp->a);
+		break;
+
+	case EXP_POSTINC:
+		cassignop1(J, F, exp->a, 1);
+		emit(J, F, OP_NUMBER_1);
+		emit(J, F, OP_ADD);
+		cassignop2(J, F, exp->a);
+		emit(J, F, OP_POP);
+		break;
+
+	case EXP_POSTDEC:
+		cassignop1(J, F, exp->a, 1);
+		emit(J, F, OP_NUMBER_1);
+		emit(J, F, OP_SUB);
+		cassignop2(J, F, exp->a);
+		emit(J, F, OP_POP);
 		break;
 
 	case EXP_VOID:
@@ -337,56 +458,46 @@ static void cexp(JF, js_Ast *exp)
 		emit(J, F, OP_UNDEF);
 		break;
 
-	case EXP_TYPEOF: unary(J, F, exp, OP_TYPEOF); break;
-	case EXP_POS: unary(J, F, exp, OP_POS); break;
-	case EXP_NEG: unary(J, F, exp, OP_NEG); break;
-	case EXP_BITNOT: unary(J, F, exp, OP_BITNOT); break;
-	case EXP_LOGNOT: unary(J, F, exp, OP_LOGNOT); break;
+	case EXP_TYPEOF: cunary(J, F, exp, OP_TYPEOF); break;
+	case EXP_POS: cunary(J, F, exp, OP_POS); break;
+	case EXP_NEG: cunary(J, F, exp, OP_NEG); break;
+	case EXP_BITNOT: cunary(J, F, exp, OP_BITNOT); break;
+	case EXP_LOGNOT: cunary(J, F, exp, OP_LOGNOT); break;
 
-	case EXP_PREINC: clval(J, F, exp->a); emit(J, F, OP_PREINC); break;
-	case EXP_PREDEC: clval(J, F, exp->a); emit(J, F, OP_PREDEC); break;
-	case EXP_POSTINC: clval(J, F, exp->a); emit(J, F, OP_POSTINC); break;
-	case EXP_POSTDEC: clval(J, F, exp->a); emit(J, F, OP_POSTDEC); break;
+	case EXP_BITOR: cbinary(J, F, exp, OP_BITOR); break;
+	case EXP_BITXOR: cbinary(J, F, exp, OP_BITXOR); break;
+	case EXP_BITAND: cbinary(J, F, exp, OP_BITAND); break;
+	case EXP_EQ: cbinary(J, F, exp, OP_EQ); break;
+	case EXP_NE: cbinary(J, F, exp, OP_NE); break;
+	case EXP_STRICTEQ: cbinary(J, F, exp, OP_STRICTEQ); break;
+	case EXP_STRICTNE: cbinary(J, F, exp, OP_STRICTNE); break;
+	case EXP_LT: cbinary(J, F, exp, OP_LT); break;
+	case EXP_GT: cbinary(J, F, exp, OP_GT); break;
+	case EXP_LE: cbinary(J, F, exp, OP_LE); break;
+	case EXP_GE: cbinary(J, F, exp, OP_GE); break;
+	case EXP_INSTANCEOF: cbinary(J, F, exp, OP_INSTANCEOF); break;
+	case EXP_IN: cbinary(J, F, exp, OP_IN); break;
+	case EXP_SHL: cbinary(J, F, exp, OP_SHL); break;
+	case EXP_SHR: cbinary(J, F, exp, OP_SHR); break;
+	case EXP_USHR: cbinary(J, F, exp, OP_USHR); break;
+	case EXP_ADD: cbinary(J, F, exp, OP_ADD); break;
+	case EXP_SUB: cbinary(J, F, exp, OP_SUB); break;
+	case EXP_MUL: cbinary(J, F, exp, OP_MUL); break;
+	case EXP_DIV: cbinary(J, F, exp, OP_DIV); break;
+	case EXP_MOD: cbinary(J, F, exp, OP_MOD); break;
 
-	case EXP_BITOR: binary(J, F, exp, OP_BITOR); break;
-	case EXP_BITXOR: binary(J, F, exp, OP_BITXOR); break;
-	case EXP_BITAND: binary(J, F, exp, OP_BITAND); break;
-	case EXP_EQ: binary(J, F, exp, OP_EQ); break;
-	case EXP_NE: binary(J, F, exp, OP_NE); break;
-	case EXP_EQ3: binary(J, F, exp, OP_EQ3); break;
-	case EXP_NE3: binary(J, F, exp, OP_NE3); break;
-	case EXP_LT: binary(J, F, exp, OP_LT); break;
-	case EXP_GT: binary(J, F, exp, OP_GT); break;
-	case EXP_LE: binary(J, F, exp, OP_LE); break;
-	case EXP_GE: binary(J, F, exp, OP_GE); break;
-	case EXP_INSTANCEOF: binary(J, F, exp, OP_INSTANCEOF); break;
-	case EXP_IN: binary(J, F, exp, OP_IN); break;
-	case EXP_SHL: binary(J, F, exp, OP_SHL); break;
-	case EXP_SHR: binary(J, F, exp, OP_SHR); break;
-	case EXP_USHR: binary(J, F, exp, OP_USHR); break;
-	case EXP_ADD: binary(J, F, exp, OP_ADD); break;
-	case EXP_SUB: binary(J, F, exp, OP_SUB); break;
-	case EXP_MUL: binary(J, F, exp, OP_MUL); break;
-	case EXP_DIV: binary(J, F, exp, OP_DIV); break;
-	case EXP_MOD: binary(J, F, exp, OP_MOD); break;
-
-	case EXP_ASS:
-		clval(J, F, exp->a);
-		cexp(J, F, exp->b);
-		emit(J, F, OP_STORE);
-		break;
-
-	case EXP_ASS_MUL: assignop(J, F, exp, OP_MUL); break;
-	case EXP_ASS_DIV: assignop(J, F, exp, OP_DIV); break;
-	case EXP_ASS_MOD: assignop(J, F, exp, OP_MOD); break;
-	case EXP_ASS_ADD: assignop(J, F, exp, OP_ADD); break;
-	case EXP_ASS_SUB: assignop(J, F, exp, OP_SUB); break;
-	case EXP_ASS_SHL: assignop(J, F, exp, OP_SHL); break;
-	case EXP_ASS_SHR: assignop(J, F, exp, OP_SHR); break;
-	case EXP_ASS_USHR: assignop(J, F, exp, OP_USHR); break;
-	case EXP_ASS_BITAND: assignop(J, F, exp, OP_BITAND); break;
-	case EXP_ASS_BITXOR: assignop(J, F, exp, OP_BITXOR); break;
-	case EXP_ASS_BITOR: assignop(J, F, exp, OP_BITOR); break;
+	case EXP_ASS: cassign(J, F, exp->a, exp->b); break;
+	case EXP_ASS_MUL: cassignop(J, F, exp->a, exp->b, OP_MUL); break;
+	case EXP_ASS_DIV: cassignop(J, F, exp->a, exp->b, OP_DIV); break;
+	case EXP_ASS_MOD: cassignop(J, F, exp->a, exp->b, OP_MOD); break;
+	case EXP_ASS_ADD: cassignop(J, F, exp->a, exp->b, OP_ADD); break;
+	case EXP_ASS_SUB: cassignop(J, F, exp->a, exp->b, OP_SUB); break;
+	case EXP_ASS_SHL: cassignop(J, F, exp->a, exp->b, OP_SHL); break;
+	case EXP_ASS_SHR: cassignop(J, F, exp->a, exp->b, OP_SHR); break;
+	case EXP_ASS_USHR: cassignop(J, F, exp->a, exp->b, OP_USHR); break;
+	case EXP_ASS_BITAND: cassignop(J, F, exp->a, exp->b, OP_BITAND); break;
+	case EXP_ASS_BITXOR: cassignop(J, F, exp->a, exp->b, OP_BITXOR); break;
+	case EXP_ASS_BITOR: cassignop(J, F, exp->a, exp->b, OP_BITOR); break;
 
 	case EXP_COMMA:
 		cexp(J, F, exp->a);
@@ -536,7 +647,7 @@ static void cfundecs(JF, js_Ast *list)
 	while (list) {
 		js_Ast *stm = list->a;
 		if (stm->type == AST_FUNDEC) {
-			emitfunction(J, F, OP_CLOSURE, newfun(J, stm->a, stm->b, stm->c));
+			emitfunction(J, F, newfun(J, stm->a, stm->b, stm->c));
 			emitstring(J, F, OP_FUNDEC, stm->a->string);
 		}
 		list = list->b;
@@ -558,7 +669,7 @@ static void cvardecs(JF, js_Ast *node)
 static void cfunbody(JF, js_Ast *name, js_Ast *params, js_Ast *body)
 {
 	if (name) {
-		emitfunction(J, F, OP_CLOSURE, F);
+		emitfunction(J, F, F);
 		emitstring(J, F, OP_FUNDEC, name->string);
 	}
 
@@ -568,10 +679,8 @@ static void cfunbody(JF, js_Ast *name, js_Ast *params, js_Ast *body)
 		cstmlist(J, F, body);
 	}
 
-	if (F->codelen == 0 || F->code[F->codelen - 1] != OP_RETURN) {
-		emit(J, F, OP_UNDEF);
-		emit(J, F, OP_RETURN);
-	}
+	emit(J, F, OP_UNDEF);
+	emit(J, F, OP_RETURN);
 }
 
 int jsC_error(js_State *J, js_Ast *node, const char *fmt, ...)

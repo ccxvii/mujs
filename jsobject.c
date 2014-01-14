@@ -1,5 +1,4 @@
 #include "js.h"
-#include "jsvalue.h"
 #include "jsobject.h"
 
 /*
@@ -20,6 +19,8 @@
 */
 
 static js_Property sentinel = { "", &sentinel, &sentinel, 0 };
+
+static js_Property undefined = { "", &sentinel, &sentinel, 0, { {0}, JS_TUNDEFINED } };
 
 static js_Property *newproperty(const char *key)
 {
@@ -116,11 +117,9 @@ static void js_dumpvalue(js_State *J, js_Value v)
 	case JS_TBOOLEAN: printf(v.u.boolean ? "true" : "false"); break;
 	case JS_TNUMBER: printf("%.9g", v.u.number); break;
 	case JS_TSTRING: printf("'%s'", v.u.string); break;
-	case JS_TREGEXP: printf("/%s/", v.u.regexp.prog); break;
 	case JS_TOBJECT: printf("<object %p>", v.u.object); break;
 	case JS_TCLOSURE: printf("<closure %p>", v.u.closure); break;
 	case JS_TCFUNCTION: printf("<cfunction %p>", v.u.cfunction); break;
-	case JS_TREFERENCE: printf("<reference %p>", v.u.reference); break;
 	}
 }
 

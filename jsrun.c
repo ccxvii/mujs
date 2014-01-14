@@ -1,5 +1,4 @@
 #include "js.h"
-#include "jsvalue.h"
 #include "jsobject.h"
 #include "jscompile.h"
 #include "jsrun.h"
@@ -8,213 +7,452 @@
 static js_Value stack[256];
 static int top = 0;
 
-static inline int i32(double d)
+static inline double tointeger(double n)
+{
+	double sign = n < 0 ? -1 : 1;
+	if (isnan(n)) return 0;
+	if (n == 0 || isinf(n)) return n;
+	return sign * floor(abs(n));
+}
+
+static inline int toint32(double n)
 {
 	double two32 = 4294967296.0;
 	double two31 = 2147483648.0;
 
-	if (!isfinite(d) || d == 0)
+	if (!isfinite(n) || n == 0)
 		return 0;
 
-	d = fmod(d, two32);
-	d = d >= 0 ? floor(d) : ceil(d) + two32;
-	if (d >= two31)
-		return d - two32;
+	n = fmod(n, two32);
+	n = n >= 0 ? floor(n) : ceil(n) + two32;
+	if (n >= two31)
+		return n - two32;
 	else
-		return d;
+		return n;
 }
 
-static inline unsigned int u32(double d)
+static inline unsigned int touint32(double n)
 {
-	return i32(d);
+	return toint32(n);
 }
 
-static inline void push(js_State *J, js_Value v)
+static void js_pushvalue(js_State *J, js_Value v)
 {
-	stack[top++] = v;
+	stack[top] = v;
+	++top;
 }
 
-static inline js_Value pop(js_State *J)
+void js_pushundefined(js_State *J)
 {
-	return stack[--top];
+	stack[top].type = JS_TUNDEFINED;
+	++top;
 }
 
-static inline js_Value peek(js_State *J)
+void js_pushnull(js_State *J)
 {
-	return stack[top-1];
+	stack[top].type = JS_TNULL;
+	++top;
 }
 
-static inline void pushnumber(js_State *J, double number)
+void js_pushboolean(js_State *J, int v)
 {
-	js_Value v;
-	v.type = JS_TNUMBER;
-	v.u.number = number;
-	push(J, v);
+	stack[top].type = JS_TBOOLEAN;
+	stack[top].u.boolean = !!v;
+	++top;
 }
 
-static inline double popnumber(js_State *J)
+void js_pushnumber(js_State *J, double v)
 {
-	js_Value v = pop(J);
-	if (v.type == JS_TNUMBER)
-		return v.u.number;
-	if (v.type == JS_TSTRING)
-		return strtod(v.u.string, 0);
-	return 0;
+	stack[top].type = JS_TNUMBER;
+	stack[top].u.number = v;
+	++top;
 }
 
-static inline void pushundefined(js_State *J)
+void js_pushstring(js_State *J, const char *v)
 {
-	js_Value v;
-	v.type = JS_TUNDEFINED;
-	push(J, v);
+	stack[top].type = JS_TSTRING;
+	stack[top].u.string = v;
+	++top;
 }
 
-static inline void pushnull(js_State *J)
+void js_pushobject(js_State *J, js_Object *v)
 {
-	js_Value v;
-	v.type = JS_TNULL;
-	push(J, v);
+	stack[top].type = JS_TOBJECT;
+	stack[top].u.object = v;
+	++top;
 }
 
-static inline void pushboolean(js_State *J, int boolean)
+js_Value js_tovalue(js_State *J, int idx)
 {
-	js_Value v;
-	v.type = JS_TBOOLEAN;
-	v.u.boolean = boolean;
-	push(J, v);
+	idx += top;
+	return stack[idx];
 }
 
-static inline int popboolean(js_State *J)
+int js_toboolean(js_State *J, int idx)
 {
-	js_Value v = pop(J);
-	if (v.type == JS_TBOOLEAN)
-		return v.u.boolean;
-	if (v.type == JS_TNUMBER)
-		return v.u.number != 0;
-	return 0;
+	const char *s;
+	double n;
+	idx += top;
+	switch (stack[idx].type) {
+	case JS_TUNDEFINED: return 0;
+	case JS_TNULL: return 0;
+	case JS_TBOOLEAN: return stack[idx].u.boolean;
+	case JS_TNUMBER: n = stack[idx].u.number; return n != 0 || !isnan(n);
+	case JS_TSTRING: s = stack[idx].u.string; return s[0] != 0;
+	default: return 1;
+	}
 }
 
-static inline void pushreference(js_State *J, js_Property *reference)
+double js_tonumber(js_State *J, int idx)
 {
-	js_Value v;
-	v.type = JS_TREFERENCE;
-	v.u.reference = reference;
-	push(J, v);
+	idx += top;
+	switch (stack[idx].type) {
+	case JS_TUNDEFINED: return NAN;
+	case JS_TNULL: return 0;
+	case JS_TBOOLEAN: return stack[idx].u.boolean;
+	case JS_TNUMBER: return stack[idx].u.number;
+	case JS_TSTRING: return strtod(stack[idx].u.string, NULL);
+	default: return 0;
+	}
 }
 
-static inline js_Property *popreference(js_State *J)
+double js_tointeger(js_State *J, int idx)
 {
-	js_Value v = pop(J);
-	if (v.type == JS_TREFERENCE)
-		return v.u.reference;
-	return 0;
+	return toint32(js_tonumber(J, idx));
 }
 
-static inline js_Property *peekreference(js_State *J)
+int js_toint32(js_State *J, int idx)
 {
-	js_Value v = peek(J);
-	if (v.type == JS_TREFERENCE)
-		return v.u.reference;
-	return 0;
+	return toint32(js_tonumber(J, idx));
 }
 
-#define UNARY(X) a = popnumber(J); pushnumber(J, X)
-#define BINARY(X) b = popnumber(J); a = popnumber(J); pushnumber(J, X)
+unsigned int js_touint32(js_State *J, int idx)
+{
+	return toint32(js_tonumber(J, idx));
+}
+
+const char *js_tostring(js_State *J, int idx)
+{
+	char buf[20];
+	idx += top;
+	switch (stack[idx].type) {
+	case JS_TUNDEFINED: return "undefined";
+	case JS_TNULL: return "null";
+	case JS_TBOOLEAN: return stack[idx].u.boolean ? "true" : "false";
+	case JS_TNUMBER: sprintf(buf, "%.9g", stack[idx].u.number); return js_intern(J, buf);
+	case JS_TSTRING: return stack[idx].u.string;
+	default: return "undefined";
+	}
+}
+
+js_Object *js_toobject(js_State *J, int idx)
+{
+	idx += top;
+	switch (stack[idx].type) {
+	case JS_TUNDEFINED: jsR_error(J, "TypeError");
+	case JS_TNULL: jsR_error(J, "TypeError");
+	case JS_TBOOLEAN: jsR_error(J, "new Boolean()");
+	case JS_TNUMBER: jsR_error(J, "new Number()");
+	case JS_TSTRING: jsR_error(J, "new String()");
+	case JS_TOBJECT: return stack[idx].u.object;
+	default: jsR_error(J, "TypeError");
+	}
+	return NULL;
+}
+
+void js_pop(js_State *J, int n)
+{
+	top -= n;
+}
+
+void js_dup(js_State *J)
+{
+	stack[top] = stack[top-1];
+	++top;
+}
+
+void js_dup2(js_State *J)
+{
+	stack[top] = stack[top-2];
+	stack[top+1] = stack[top-1];
+	top += 2;
+}
+
+void js_rot3pop2(js_State *J)
+{
+	/* A B C -> C */
+	stack[top-3] = stack[top-1];
+	top -= 2;
+}
+
+void js_dup1rot4(js_State *J)
+{
+	/* A B C -> C A B C */
+	stack[top] = stack[top-1];	/* A B C C */
+	stack[top-1] = stack[top-2];	/* A B B C */
+	stack[top-2] = stack[top-3];	/* A A B C */
+	stack[top-3] = stack[top];	/* C A B C */
+}
+
+void js_trap(js_State *J)
+{
+}
 
 static void runfun(js_State *J, js_Function *F, js_Object *E)
 {
+	js_Function **FT = F->funtab;
+	double *NT = F->numtab;
+	const char **ST = F->strtab;
+	short *pcstart = F->code;
 	short *pc = F->code;
-	int opcode, addr;
-	js_Property *p;
-	js_Value v;
-	double a, b;
-	const char *s;
+	int opcode, offset;
+
+	const char *str;
+	js_Object *obj;
+	js_Property *ref;
+	double x, y;
+	int b;
 
 	while (1) {
 		opcode = *pc++;
 		switch (opcode) {
-		case OP_NUMBER:
-			pushnumber(J, F->numlist[*pc++]);
-			break;
+		case OP_POP: js_pop(J, 1); break;
+		case OP_DUP: js_dup(J); break;
+		case OP_DUP2: js_dup2(J); break;
+		case OP_DUP1ROT4: js_dup1rot4(J); break;
 
-		case OP_LOADVAR:
-			s = F->strlist[*pc++];
-			p = js_getproperty(J, E, s);
-			if (p)
-				push(J, p->value);
+		case OP_NUMBER_0: js_pushnumber(J, 0); break;
+		case OP_NUMBER_1: js_pushnumber(J, 1); break;
+		case OP_NUMBER_X: js_pushnumber(J, *pc++); break;
+		case OP_NUMBER: js_pushnumber(J, NT[*pc++]); break;
+		case OP_STRING: js_pushstring(J, ST[*pc++]); break;
+		// case OP_CLOSURE: break;
+
+		case OP_UNDEF: js_pushundefined(J); break;
+		case OP_NULL: js_pushnull(J); break;
+		case OP_TRUE: js_pushboolean(J, 1); break;
+		case OP_FALSE: js_pushboolean(J, 0); break;
+		// case OP_THIS: break;
+
+		case OP_NEWOBJECT: js_pushobject(J, js_newobject(J)); break;
+		case OP_NEWARRAY: js_pushobject(J, js_newobject(J)); break;
+
+		// FUNDEC
+		// VARDEC
+
+		case OP_GETVAR:
+			ref = js_getproperty(J, E, ST[*pc++]);
+			if (ref)
+				js_pushvalue(J, ref->value);
 			else
-				pushundefined(J);
+				js_pushundefined(J);
 			break;
 
-		case OP_AVAR:
-			s = F->strlist[*pc++];
-			p = js_setproperty(J, E, s);
-			pushreference(J, p);
+		case OP_SETVAR:
+			ref = js_setproperty(J, E, ST[*pc++]);
+			if (ref)
+				ref->value = js_tovalue(J, -1);
 			break;
 
-		case OP_LOAD:
-			p = peekreference(J);
-			if (p)
-				push(J, p->value);
+		// OP_DELVAR
+
+		case OP_IN:
+			str = js_tostring(J, -2);
+			obj = js_toobject(J, -1);
+			ref = js_getproperty(J, obj, str);
+			js_pop(J, 2);
+			js_pushboolean(J, ref != NULL);
+			break;
+
+		case OP_GETPROP:
+			obj = js_toobject(J, -2);
+			str = js_tostring(J, -1);
+			ref = js_getproperty(J, obj, str);
+			js_pop(J, 2);
+			if (ref)
+				js_pushvalue(J, ref->value);
 			else
-				pushundefined(J);
+				js_pushundefined(J);
 			break;
 
-		case OP_STORE:
-			v = pop(J);
-			p = popreference(J);
-			if (p)
-				p->value = v;
-			push(J, v);
+		case OP_SETPROP:
+			obj = js_toobject(J, -3);
+			str = js_tostring(J, -2);
+			ref = js_setproperty(J, obj, str);
+			if (ref)
+				ref->value = js_tovalue(J, -1);
+			js_rot3pop2(J);
 			break;
 
-		case OP_UNDEF: pushundefined(J); break;
-		case OP_NULL: pushnull(J); break;
-		case OP_TRUE: pushboolean(J, 1); break;
-		case OP_FALSE: pushboolean(J, 0); break;
+		// OP_DELPROP
 
-		case OP_POS: UNARY(a); break;
-		case OP_NEG: UNARY(-a); break;
-		case OP_BITNOT: UNARY(~i32(a)); break;
-		case OP_LOGNOT: UNARY(!a); break;
+		/* Unary expressions */
 
-		case OP_ADD: BINARY(a + b); break;
-		case OP_SUB: BINARY(a - b); break;
-		case OP_MUL: BINARY(a * b); break;
-		case OP_DIV: BINARY(a / b); break;
-		case OP_MOD: BINARY(fmod(a, b)); break;
-		case OP_SHL: BINARY(i32(a) << (u32(b) & 0x1F)); break;
-		case OP_SHR: BINARY(i32(a) >> (u32(b) & 0x1F)); break;
-		case OP_USHR: BINARY(u32(a) >> (u32(b) & 0x1F)); break;
-		case OP_BITAND: BINARY(i32(a) & i32(b)); break;
-		case OP_BITXOR: BINARY(i32(a) ^ i32(b)); break;
-		case OP_BITOR: BINARY(i32(a) | i32(b)); break;
-
-		case OP_LT: BINARY(a < b); break;
-		case OP_GT: BINARY(a > b); break;
-		case OP_LE: BINARY(a <= b); break;
-		case OP_GE: BINARY(a >= b); break;
-		case OP_EQ: BINARY(a == b); break;
-		case OP_NE: BINARY(a != b); break;
-
-		case OP_JFALSE:
-			addr = *pc++;
-			if (!popboolean(J))
-				pc = F->code + addr;
+		case OP_POS:
+			x = js_tonumber(J, -1);
+			js_pop(J, 1);
+			js_pushnumber(J, x);
 			break;
 
-		case OP_JTRUE:
-			addr = *pc++;
-			if (popboolean(J))
-				pc = F->code + addr;
+		case OP_NEG:
+			x = js_tonumber(J, -1);
+			js_pop(J, 1);
+			js_pushnumber(J, -x);
+			break;
+
+		case OP_BITNOT:
+			x = js_tonumber(J, -1);
+			js_pop(J, 1);
+			js_pushnumber(J, ~toint32(x));
+			break;
+
+		case OP_LOGNOT:
+			b = js_toboolean(J, -1);
+			js_pop(J, 1);
+			js_pushnumber(J, !b);
+			break;
+
+		/* Binary expressions */
+
+		case OP_ADD:
+			// TODO: check string concatenation
+			x = js_tonumber(J, -2);
+			y = js_tonumber(J, -1);
+			js_pop(J, 2);
+			js_pushnumber(J, x + y);
+			break;
+
+		case OP_SUB:
+			x = js_tonumber(J, -2);
+			y = js_tonumber(J, -1);
+			js_pop(J, 2);
+			js_pushnumber(J, x - y);
+			break;
+
+		case OP_MUL:
+			x = js_tonumber(J, -2);
+			y = js_tonumber(J, -1);
+			js_pop(J, 2);
+			js_pushnumber(J, x * y);
+			break;
+
+		case OP_DIV:
+			x = js_tonumber(J, -2);
+			y = js_tonumber(J, -1);
+			js_pop(J, 2);
+			js_pushnumber(J, x / y);
+			break;
+
+		case OP_MOD:
+			x = js_tonumber(J, -2);
+			y = js_tonumber(J, -1);
+			js_pop(J, 2);
+			js_pushnumber(J, fmod(x, y));
+			break;
+
+		case OP_SHL:
+			x = js_tonumber(J, -2);
+			y = js_tonumber(J, -1);
+			js_pop(J, 2);
+			js_pushnumber(J, toint32(x) << (touint32(y) & 0x1F));
+			break;
+
+		case OP_SHR:
+			x = js_tonumber(J, -2);
+			y = js_tonumber(J, -1);
+			js_pop(J, 2);
+			js_pushnumber(J, toint32(x) >> (touint32(y) & 0x1F)); break;
+			break;
+
+		case OP_USHR:
+			x = js_tonumber(J, -2);
+			y = js_tonumber(J, -1);
+			js_pop(J, 2);
+			js_pushnumber(J, touint32(x) >> (touint32(y) & 0x1F)); break;
+			break;
+
+		case OP_BITAND:
+			x = js_tonumber(J, -2);
+			y = js_tonumber(J, -1);
+			js_pop(J, 2);
+			js_pushnumber(J, toint32(x) & toint32(y));
+			break;
+
+		case OP_BITXOR:
+			x = js_tonumber(J, -2);
+			y = js_tonumber(J, -1);
+			js_pop(J, 2);
+			js_pushnumber(J, toint32(x) ^ toint32(y));
+			break;
+
+		case OP_BITOR:
+			x = js_tonumber(J, -2);
+			y = js_tonumber(J, -1);
+			js_pop(J, 2);
+			js_pushnumber(J, toint32(x) | toint32(y));
+			break;
+
+		/* Relational expressions */
+
+		/* TODO: string comparisons */
+		case OP_LT:
+			x = js_tonumber(J, -2);
+			y = js_tonumber(J, -1);
+			js_pop(J, 2);
+			js_pushboolean(J, x < y);
+			break;
+		case OP_GT:
+			x = js_tonumber(J, -2);
+			y = js_tonumber(J, -1);
+			js_pop(J, 2);
+			js_pushboolean(J, x > y);
+			break;
+		case OP_LE:
+			x = js_tonumber(J, -2);
+			y = js_tonumber(J, -1);
+			js_pop(J, 2);
+			js_pushboolean(J, x <= y);
+			break;
+		case OP_GE:
+			x = js_tonumber(J, -2);
+			y = js_tonumber(J, -1);
+			js_pop(J, 2);
+			js_pushboolean(J, x >= y);
+			break;
+
+		// case OP_EQ:
+		// case OP_NE:
+		// case OP_STRICTEQ:
+		// case OP_STRICTNE:
+
+		/* Branching */
+
+		case OP_DEBUGGER:
+			js_trap(J);
 			break;
 
 		case OP_JUMP:
-			pc = F->code + *pc;
+			pc = pcstart + *pc;
 			break;
 
-		case OP_POP: pop(J); break;
-		case OP_RETURN: return;
+		case OP_JTRUE:
+			offset = *pc++;
+			b = js_toboolean(J, -1);
+			js_pop(J, 1);
+			if (b)
+				pc = pcstart + offset;
+			break;
+
+		case OP_JFALSE:
+			offset = *pc++;
+			b = js_toboolean(J, -1);
+			js_pop(J, 1);
+			if (!b)
+				pc = pcstart + offset;
+			break;
+
+		case OP_RETURN:
+			return;
 
 		default:
 			fprintf(stderr, "illegal instruction: %d (pc=%d)\n", opcode, (int)(pc - F->code - 1));
@@ -223,9 +461,22 @@ static void runfun(js_State *J, js_Function *F, js_Object *E)
 	}
 }
 
+void jsR_error(js_State *J, const char *message)
+{
+	fprintf(stderr, "runtime error: %s\n", message);
+	longjmp(J->jb, 1);
+}
+
 void jsR_runfunction(js_State *J, js_Function *F)
 {
 	js_Object *varenv = js_newobject(J);
+
+	if (setjmp(J->jb)) {
+		js_dumpobject(J, varenv);
+		return;
+	}
+
 	runfun(J, F, varenv);
+
 	js_dumpobject(J, varenv);
 }

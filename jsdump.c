@@ -1,7 +1,6 @@
 #include "js.h"
 #include "jsparse.h"
 #include "jscompile.h"
-#include "jsvalue.h"
 #include "jsobject.h"
 
 #include <assert.h>
@@ -194,8 +193,8 @@ static void pexpi(int d, int i, js_Ast *exp)
 	case EXP_BITAND: pbin(d, i, exp, " & "); break;
 	case EXP_EQ: pbin(d, i, exp, " == "); break;
 	case EXP_NE: pbin(d, i, exp, " != "); break;
-	case EXP_EQ3: pbin(d, i, exp, " === "); break;
-	case EXP_NE3: pbin(d, i, exp, " !== "); break;
+	case EXP_STRICTEQ: pbin(d, i, exp, " === "); break;
+	case EXP_STRICTNE: pbin(d, i, exp, " !== "); break;
 	case EXP_LT: pbin(d, i, exp, " < "); break;
 	case EXP_GT: pbin(d, i, exp, " > "); break;
 	case EXP_LE: pbin(d, i, exp, " <= "); break;
@@ -598,13 +597,13 @@ void jsC_dumpfunction(js_State *J, js_Function *F)
 
 	printf("function %p %s(%d)\n", F, F->name, F->numparams);
 	for (i = 0; i < F->funlen; i++)
-		printf("\tfunction %p %s\n", F->funlist[i], F->funlist[i]->name);
+		printf("\tfunction %p %s\n", F->funtab[i], F->funtab[i]->name);
 	for (i = 0; i < F->strlen; i++) {
-		ps("\tstring "); pstr(F->strlist[i]); ps("\n");
+		ps("\tstring "); pstr(F->strtab[i]); ps("\n");
 	}
 	// TODO: regexp
 	for (i = 0; i < F->numlen; i++)
-		printf("\tnumber %.9g\n", F->numlist[i]);
+		printf("\tnumber %.9g\n", F->numtab[i]);
 
 	while (p < end) {
 		int c = *p++;
@@ -614,29 +613,27 @@ void jsC_dumpfunction(js_State *J, js_Function *F)
 
 		switch (c) {
 		case OP_CLOSURE:
-			pc(' ');
-			ps(F->funlist[*p++]->name);
+			ps(" f:");
+			ps(F->funtab[*p++]->name);
 			break;
 		case OP_NUMBER:
-			printf(" %.9g", F->numlist[*p++]);
+			printf(" %.9g", F->numtab[*p++]);
 			break;
 		case OP_STRING:
 			pc(' ');
-			pstr(F->strlist[*p++]);
+			pstr(F->strtab[*p++]);
 			break;
 
-		case OP_OBJECTPUT:
 		case OP_FUNDEC:
 		case OP_VARDEC:
-		case OP_LOADVAR:
-		case OP_LOADMEMBER:
-		case OP_AVAR:
-		case OP_AMEMBER:
+		case OP_GETVAR:
+		case OP_SETVAR:
+		case OP_DELVAR:
 			pc(' ');
-			ps(F->strlist[*p++]);
+			ps(F->strtab[*p++]);
 			break;
 
-		case OP_ARRAYPUT:
+		case OP_NUMBER_X:
 		case OP_CALL:
 		case OP_NEW:
 		case OP_JUMP:
@@ -650,9 +647,9 @@ void jsC_dumpfunction(js_State *J, js_Function *F)
 	}
 
 	for (i = 0; i < F->funlen; i++) {
-		if (F->funlist[i] != F) {
+		if (F->funtab[i] != F) {
 			nl();
-			jsC_dumpfunction(J, F->funlist[i]);
+			jsC_dumpfunction(J, F->funtab[i]);
 		}
 	}
 }

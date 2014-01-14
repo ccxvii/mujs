@@ -525,7 +525,7 @@ static int lex(js_State *J, const char **sp)
 		case '=':
 			if (ACCEPT('=')) {
 				if (ACCEPT('='))
-					return TK_EQ3;
+					return TK_STRICTEQ;
 				return TK_EQ;
 			}
 			return '=';
@@ -533,7 +533,7 @@ static int lex(js_State *J, const char **sp)
 		case '!':
 			if (ACCEPT('=')) {
 				if (ACCEPT('='))
-					return TK_NE3;
+					return TK_STRICTNE;
 				return TK_NE;
 			}
 			return '!';
