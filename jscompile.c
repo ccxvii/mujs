@@ -332,6 +332,7 @@ static void cvarinit(JF, js_Ast *list)
 		if (var->b) {
 			cexp(J, F, var->b);
 			emitstring(J, F, OP_SETVAR, var->a->string);
+			emit(J, F, OP_POP);
 		}
 		list = list->b;
 	}
@@ -578,6 +579,13 @@ static void cstm(JF, js_Ast *stm)
 		}
 		break;
 
+	case STM_DO:
+		loop = here(J, F);
+		cstm(J, F, stm->a);
+		cexp(J, F, stm->b);
+		jumpto(J, F, OP_JTRUE, loop);
+		break;
+
 	case STM_WHILE:
 		loop = here(J, F);
 		cexp(J, F, stm->a);
@@ -587,15 +595,29 @@ static void cstm(JF, js_Ast *stm)
 		label(J, F, end);
 		break;
 
-	case STM_DO:
-		loop = here(J, F);
-		cstm(J, F, stm->a);
-		cexp(J, F, stm->b);
-		jumpto(J, F, OP_JTRUE, loop);
-		break;
+	case STM_FOR:
+		cexp(J, F, stm->a);
+		emit(J, F, OP_POP);
+		goto for_body;
 
-	// for
+	case STM_FOR_VAR:
+		cvarinit(J, F, stm->a);
+		goto for_body;
+
+	for_body:
+		loop = here(J, F);
+		cexp(J, F, stm->b);
+		end = jump(J, F, OP_JFALSE);
+		cstm(J, F, stm->d);
+		cexp(J, F, stm->c);
+		emit(J, F, OP_POP);
+		jumpto(J, F, OP_JUMP, loop);
+		label(J, F, end);
+		break;
 	// for-in
+
+	// break
+	// continue
 
 	case STM_RETURN:
 		if (stm->a)
@@ -613,13 +635,14 @@ static void cstm(JF, js_Ast *stm)
 		break;
 
 	// switch
-	// throw, try
-	// label
 
 	case STM_THROW:
 		cexp(J, F, stm->a);
 		emit(J, F, OP_THROW);
 		break;
+
+	// try
+	// label
 
 	case STM_DEBUGGER:
 		emit(J, F, OP_DEBUGGER);

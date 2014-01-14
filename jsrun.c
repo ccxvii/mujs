@@ -237,8 +237,8 @@ static void runfun(js_State *J, js_Function *F, js_Object *E)
 		case OP_NEWOBJECT: js_pushobject(J, js_newobject(J)); break;
 		case OP_NEWARRAY: js_pushobject(J, js_newobject(J)); break;
 
-		// FUNDEC
-		// VARDEC
+		case OP_FUNDEC: js_pop(J, 1); break;
+		case OP_VARDEC: pc++; break;
 
 		case OP_GETVAR:
 			ref = js_getproperty(J, E, ST[*pc++]);
