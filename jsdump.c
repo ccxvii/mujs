@@ -595,7 +595,10 @@ void jsC_dumpfunction(js_State *J, js_Function *F)
 	short *end = F->code + F->codelen;
 	int i;
 
-	printf("function %p %s(%d)\n", F, F->name, F->numparams);
+	printf("function %p %s(", F, F->name);
+	for (i = 0; i < F->numparams; i++)
+		printf("%s%s", i > 0 ? ", " : "", F->params[i]);
+	printf(")\n");
 	for (i = 0; i < F->funlen; i++)
 		printf("\tfunction %p %s\n", F->funtab[i], F->funtab[i]->name);
 	for (i = 0; i < F->strlen; i++) {

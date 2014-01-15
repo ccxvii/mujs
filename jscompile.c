@@ -11,7 +11,7 @@ static void cfunbody(JF, js_Ast *name, js_Ast *params, js_Ast *body);
 static void cexp(JF, js_Ast *exp);
 static void cstmlist(JF, js_Ast *list);
 
-static int listlen(js_Ast *list)
+static int paramlen(js_Ast *list)
 {
 	int n = 0;
 	while (list) {
@@ -21,13 +21,23 @@ static int listlen(js_Ast *list)
 	return n;
 }
 
+static void makeparams(JF, js_Ast *list, const char **params)
+{
+	while (list) {
+		*params++ = list->a->string;
+		list = list->b;
+	}
+}
+
 static js_Function *newfun(js_State *J, js_Ast *name, js_Ast *params, js_Ast *body)
 {
 	js_Function *F = malloc(sizeof *F);
 	memset(F, 0, sizeof *F);
 
 	F->name = name ? name->string : "<anonymous>";
-	F->numparams = listlen(params);
+	F->numparams = paramlen(params);
+	F->params = malloc(F->numparams * sizeof *F->params);
+	makeparams(J, F, params, F->params);
 
 	F->codecap = 256;
 	F->codelen = 0;

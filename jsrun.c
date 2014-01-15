@@ -8,7 +8,17 @@ static js_Value stack[256];
 static int top = 0;
 static int bot = 0;
 
-static void js_call(js_State *J, js_Object *obj, int argc);
+static void js_call(js_State *J, int argc);
+
+static void js_dumpstack(js_State *J)
+{
+	int i;
+	for (i = 0; i < top; i++) {
+		printf("stack %d: ", i);
+		js_dumpvalue(J, stack[i]);
+		putchar('\n');
+	}
+}
 
 static inline double tointeger(double n)
 {
@@ -235,6 +245,7 @@ void js_dup1rot4(js_State *J)
 
 void js_trap(js_State *J)
 {
+	js_dumpstack(J);
 }
 
 static void runfun(js_State *J, js_Function *F, js_Environment *E)
@@ -250,7 +261,7 @@ static void runfun(js_State *J, js_Function *F, js_Environment *E)
 	js_Object *obj;
 	js_Property *ref;
 	double x, y;
-	int b, argc;
+	int b;
 
 	while (1) {
 		opcode = *pc++;
@@ -351,6 +362,10 @@ static void runfun(js_State *J, js_Function *F, js_Environment *E)
 				js_pop(J, 2);
 				js_pushboolean(J, 0);
 			}
+			break;
+
+		case OP_CALL:
+			js_call(J, *pc++);
 			break;
 
 		/* Unary expressions */
@@ -533,9 +548,34 @@ static void runfun(js_State *J, js_Function *F, js_Environment *E)
 	}
 }
 
-void jsR_error(js_State *J, const char *message)
+static void js_call(js_State *J, int argc)
 {
-	fprintf(stderr, "runtime error: %s\n", message);
+	js_Environment *E;
+	js_Property *ref;
+	js_Function *F;
+	js_Object *obj;
+	int i;
+	int savebot = bot;
+
+	bot = top - argc;
+
+	obj = js_toobject(J, -argc - 1);
+
+	F = obj->function;
+	E = js_newenvironment(J, obj->scope, js_newobject(J, JS_COBJECT));
+
+	for (i = 0; i < F->numparams; i++) {
+		ref = js_decvar(J, E, F->params[i]);
+		if (i + 1 < argc)
+			ref->value = js_tovalue(J, i + 1);
+	}
+	js_pop(J, argc + 1);
+
+	runfun(J, F, E);
+
+	bot = savebot;
+}
+
 void jsR_error(js_State *J, const char *fmt, ...)
 {
 	va_list ap;
@@ -547,16 +587,6 @@ void jsR_error(js_State *J, const char *fmt, ...)
 	fprintf(stderr, "\n");
 
 	longjmp(J->jb, 1);
-}
-
-static void js_dumpstack(js_State *J)
-{
-	int i;
-	for (i = 0; i < top; i++) {
-		printf("stack %d: ", i);
-		js_dumpvalue(J, stack[i]);
-		putchar('\n');
-	}
 }
 
 void jsR_runfunction(js_State *J, js_Function *F)

@@ -90,6 +90,7 @@ struct js_Function
 {
 	const char *name;
 	int numparams;
+	const char **params;
 
 	short *code;
 	int codecap, codelen;
