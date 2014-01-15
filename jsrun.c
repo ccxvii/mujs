@@ -69,10 +69,17 @@ void js_pushnumber(js_State *J, double v)
 	++top;
 }
 
-void js_pushstring(js_State *J, const char *v)
+void js_pushlstring(js_State *J, const char *v)
 {
 	stack[top].type = JS_TSTRING;
 	stack[top].u.string = v;
+	++top;
+}
+
+void js_pushstring(js_State *J, const char *v)
+{
+	stack[top].type = JS_TSTRING;
+	stack[top].u.string = js_intern(J, v);
 	++top;
 }
 
@@ -261,7 +268,7 @@ static void runfun(js_State *J, js_Function *F, js_Object *E)
 		case OP_NUMBER_1: js_pushnumber(J, 1); break;
 		case OP_NUMBER_X: js_pushnumber(J, *pc++); break;
 		case OP_NUMBER: js_pushnumber(J, NT[*pc++]); break;
-		case OP_STRING: js_pushstring(J, ST[*pc++]); break;
+		case OP_STRING: js_pushlstring(J, ST[*pc++]); break;
 		// case OP_CLOSURE: break;
 
 		case OP_UNDEF: js_pushundefined(J); break;
@@ -339,7 +346,7 @@ static void runfun(js_State *J, js_Function *F, js_Object *E)
 				ref = js_nextproperty(J, obj, js_tostring(J, -1));
 			if (ref) {
 				js_pop(J, 1);
-				js_pushstring(J, ref->name);
+				js_pushlstring(J, ref->name);
 				js_pushboolean(J, 1);
 			} else {
 				js_pop(J, 2);
