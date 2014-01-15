@@ -172,12 +172,16 @@ static void carray(JF, js_Ast *list)
 {
 	int i = 0;
 	while (list) {
-		emit(J, F, OP_DUP);
-		emit(J, F, OP_NUMBER_X);
-		emit(J, F, i++);
-		cexp(J, F, list->a);
-		emit(J, F, OP_SETPROP);
-		emit(J, F, OP_POP);
+		if (list->a->type != EXP_UNDEF) {
+			emit(J, F, OP_DUP);
+			emit(J, F, OP_NUMBER_X);
+			emit(J, F, i++);
+			cexp(J, F, list->a);
+			emit(J, F, OP_SETPROP);
+			emit(J, F, OP_POP);
+		} else {
+			++i;
+		}
 		list = list->b;
 	}
 }
@@ -538,7 +542,6 @@ static void cexp(JF, js_Ast *exp)
 		break;
 
 	case EXP_LOGOR:
-		/* if a == true then a else b */
 		cexp(J, F, exp->a);
 		emit(J, F, OP_DUP);
 		end = jump(J, F, OP_JTRUE);
@@ -548,7 +551,6 @@ static void cexp(JF, js_Ast *exp)
 		break;
 
 	case EXP_LOGAND:
-		/* if a == false then a else b */
 		cexp(J, F, exp->a);
 		emit(J, F, OP_DUP);
 		end = jump(J, F, OP_JFALSE);
