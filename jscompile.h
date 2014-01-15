@@ -6,6 +6,7 @@ enum
 	OP_POP,		/* A -- */
 	OP_DUP,		/* A -- A A */
 	OP_DUP2,	/* A B -- A B A B */
+	OP_ROT2,	/* A B -- B A */
 	OP_ROT3,	/* A B C -- C A B */
 	OP_DUP1ROT4,	/* A B C -- C A B C */
 
@@ -39,7 +40,7 @@ enum
 	OP_DELPROP,	/* <obj> <name> -- <success> */
 	OP_NEXTPROP,	/* <obj> <name> -- <obj> <name+1> true || false */
 
-	OP_CALL,	/* <thisvalue> <closure> <args...> -(numargs)- <returnvalue> */
+	OP_CALL,	/* <closure> <this> <args...> -(numargs)- <returnvalue> */
 	OP_NEW,		/* <closure> <args...> -(numargs)- <returnvalue> */
 
 	OP_VOID,

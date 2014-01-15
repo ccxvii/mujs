@@ -376,21 +376,23 @@ static void ccall(JF, js_Ast *fun, js_Ast *args)
 		emit(J, F, OP_DUP);
 		cexp(J, F, fun->b);
 		emit(J, F, OP_GETPROP);
+		emit(J, F, OP_ROT2);
 		break;
 	case EXP_MEMBER:
 		cexp(J, F, fun->a);
 		emit(J, F, OP_DUP);
 		emitstring(J, F, OP_STRING, fun->b->string);
 		emit(J, F, OP_GETPROP);
+		emit(J, F, OP_ROT2);
 		break;
 	default:
-		emit(J, F, OP_THIS);
 		cexp(J, F, fun);
+		emit(J, F, OP_THIS);
 		break;
 	}
 	n = cargs(J, F, args);
 	emit(J, F, OP_CALL);
-	emit(J, F, n);
+	emit(J, F, 1 + n);
 }
 
 static void cexp(JF, js_Ast *exp)
@@ -661,6 +663,7 @@ static void cstm(JF, js_Ast *stm)
 		label(J, F, end);
 		break;
 
+	// label
 	// break
 	// continue
 
@@ -687,7 +690,6 @@ static void cstm(JF, js_Ast *stm)
 		break;
 
 	// try
-	// label
 
 	case STM_DEBUGGER:
 		emit(J, F, OP_DEBUGGER);

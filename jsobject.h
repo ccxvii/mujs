@@ -20,7 +20,7 @@ struct js_Value
 		const char *string;
 		js_Object *object;
 		js_Closure *closure;
-		js_CFunction *cfunction;
+		js_CFunction cfunction;
 	} u;
 	js_ValueType type;
 };

@@ -12,7 +12,7 @@
 typedef struct js_State js_State;
 
 typedef enum js_ValueType js_ValueType;
-typedef int (*js_CFunction)(js_State *J);
+typedef int (*js_CFunction)(js_State *J, int n);
 typedef struct js_Ast js_Ast;
 typedef struct js_Closure js_Closure;
 typedef struct js_Function js_Function;
