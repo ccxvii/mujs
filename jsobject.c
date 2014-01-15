@@ -27,6 +27,8 @@ static js_Property *newproperty(const char *name)
 	node->left = node->right = &sentinel;
 	node->level = 1;
 	node->value.type = JS_TUNDEFINED;
+	node->value.u.number = 0;
+	node->flags = 0;
 	return node;
 }
 
@@ -127,11 +129,69 @@ found:
 	return parent;
 }
 
-js_Object *js_newobject(js_State *J)
+js_Object *js_newobject(js_State *J, js_Class type)
 {
 	js_Object *obj = malloc(sizeof(js_Object));
+	obj->type = type;
 	obj->properties = &sentinel;
+	obj->prototype = NULL;
+	obj->primitive.number = 0;
+	obj->scope = NULL;
+	obj->function = NULL;
+	obj->cfunction = NULL;
 	return obj;
+}
+
+js_Object *js_newfunction(js_State *J, js_Function *function, js_Environment *scope)
+{
+	js_Object *obj = js_newobject(J, JS_CFUNCTION);
+	obj->function = function;
+	obj->scope = scope;
+	return obj;
+}
+
+js_Object *js_newcfunction(js_State *J, js_CFunction cfunction)
+{
+	js_Object *obj = js_newobject(J, JS_CCFUNCTION);
+	obj->cfunction = cfunction;
+	return obj;
+}
+
+js_Environment *js_newenvironment(js_State *J, js_Environment *outer, js_Object *vars)
+{
+	js_Environment *E = malloc(sizeof *E);
+	E->outer = outer;
+	E->variables = vars;
+	return E;
+}
+
+js_Property *js_decvar(js_State *J, js_Environment *E, const char *name)
+{
+	return js_setproperty(J, E->variables, name);
+}
+
+js_Property *js_getvar(js_State *J, js_Environment *E, const char *name)
+{
+	while (E) {
+		js_Property *ref = js_getproperty(J, E->variables, name);
+		if (ref)
+			return ref;
+		E = E->outer;
+	}
+	return NULL;
+}
+
+js_Property *js_setvar(js_State *J, js_Environment *E, const char *name)
+{
+	while (1) {
+		js_Property *ref = js_getproperty(J, E->variables, name);
+		if (ref)
+			return ref;
+		if (!E->outer)
+			break;
+		E = E->outer;
+	}
+	return js_setproperty(J, E->variables, name);
 }
 
 js_Property *js_getproperty(js_State *J, js_Object *obj, const char *name)
@@ -156,7 +216,7 @@ js_Property *js_nextproperty(js_State *J, js_Object *obj, const char *name)
 	return lookupnext(obj->properties, name);
 }
 
-static void js_dumpvalue(js_State *J, js_Value v)
+void js_dumpvalue(js_State *J, js_Value v)
 {
 	switch (v.type) {
 	case JS_TUNDEFINED: printf("undefined"); break;
@@ -165,8 +225,6 @@ static void js_dumpvalue(js_State *J, js_Value v)
 	case JS_TNUMBER: printf("%.9g", v.u.number); break;
 	case JS_TSTRING: printf("'%s'", v.u.string); break;
 	case JS_TOBJECT: printf("<object %p>", v.u.object); break;
-	case JS_TCLOSURE: printf("<closure %p>", v.u.closure); break;
-	case JS_TCFUNCTION: printf("<cfunction %p>", v.u.cfunction); break;
 	}
 }
 

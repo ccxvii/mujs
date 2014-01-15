@@ -613,8 +613,7 @@ void jsC_dumpfunction(js_State *J, js_Function *F)
 
 		switch (c) {
 		case OP_CLOSURE:
-			ps(" f:");
-			ps(F->funtab[*p++]->name);
+			printf(" %p", F->funtab[*p++]);
 			break;
 		case OP_NUMBER:
 			printf(" %.9g", F->numtab[*p++]);

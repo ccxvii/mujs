@@ -11,16 +11,16 @@
 
 typedef struct js_State js_State;
 
-typedef enum js_ValueType js_ValueType;
-typedef int (*js_CFunction)(js_State *J, int n);
+typedef struct js_StringNode js_StringNode;
 typedef struct js_Ast js_Ast;
-typedef struct js_Closure js_Closure;
 typedef struct js_Function js_Function;
+typedef struct js_Environment js_Environment;
+
+typedef struct js_Value js_Value;
 typedef struct js_Object js_Object;
 typedef struct js_Property js_Property;
-typedef struct js_RegExp js_RegExp;
-typedef struct js_StringNode js_StringNode;
-typedef struct js_Value js_Value;
+
+typedef int (*js_CFunction)(js_State *J, int argc);
 
 #define JS_REGEXP_G 1
 #define JS_REGEXP_I 2

@@ -238,11 +238,6 @@ static void cassign(JF, js_Ast *lhs, js_Ast *rhs)
 		cexp(J, F, rhs);
 		emit(J, F, OP_SETPROP);
 		break;
-	case EXP_CALL: /* host functions may return an assignable l-value */
-		cexp(J, F, lhs);
-		cexp(J, F, rhs);
-		emit(J, F, OP_SETPROP);
-		break;
 	default:
 		jsC_error(J, lhs, "invalid l-value in assignment");
 		break;
@@ -264,11 +259,6 @@ static void cassignloop(JF, js_Ast *lhs)
 	case EXP_MEMBER:
 		cexp(J, F, lhs->a);
 		emitstring(J, F, OP_STRING, lhs->b->string);
-		emit(J, F, OP_ROT3);
-		emit(J, F, OP_SETPROP);
-		break;
-	case EXP_CALL: /* host functions may return an assignable l-value */
-		cexp(J, F, lhs);
 		emit(J, F, OP_ROT3);
 		emit(J, F, OP_SETPROP);
 		break;
@@ -295,12 +285,6 @@ static void cassignop1(JF, js_Ast *lhs, int dup)
 	case EXP_MEMBER:
 		cexp(J, F, lhs->a);
 		emitstring(J, F, OP_STRING, lhs->b->string);
-		emit(J, F, OP_DUP2);
-		emit(J, F, OP_GETPROP);
-		if (dup) emit(J, F, OP_DUP1ROT4);
-		break;
-	case EXP_CALL: /* host functions may return an assignable l-value */
-		cexp(J, F, lhs);
 		emit(J, F, OP_DUP2);
 		emit(J, F, OP_GETPROP);
 		if (dup) emit(J, F, OP_DUP1ROT4);

@@ -1,10 +1,13 @@
 #include "js.h"
 #include "jsstate.h"
+#include "jsobject.h"
 
 js_State *js_newstate(void)
 {
 	js_State *J = malloc(sizeof *J);
 	memset(J, 0, sizeof(*J));
+	J->global = js_newobject(J, JS_COBJECT);
+	J->E = js_newenvironment(J, NULL, J->global);
 	return J;
 }
 

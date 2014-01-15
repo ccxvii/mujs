@@ -18,14 +18,14 @@ enum
 	OP_STRING,	/* -S- <string> */
 	OP_CLOSURE,	/* -F- <closure> */
 
+	OP_NEWARRAY,
+	OP_NEWOBJECT,
+
 	OP_UNDEF,
 	OP_NULL,
 	OP_TRUE,
 	OP_FALSE,
 	OP_THIS,
-
-	OP_NEWARRAY,
-	OP_NEWOBJECT,
 
 	OP_FUNDEC,	/* <closure> -S- */
 	OP_VARDEC,	/* -S- */
