@@ -8,10 +8,8 @@ main(int argc, char **argv)
 
 	J = js_newstate();
 
-	for (i = 1; i < argc; ++i) {
-		js_loadfile(J, argv[i]);
-		// js_run(J);
-	}
+	for (i = 1; i < argc; ++i)
+		js_dofile(J, argv[i]);
 
 	js_close(J);
 

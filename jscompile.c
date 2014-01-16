@@ -7,6 +7,8 @@
 
 #define JF js_State *J, js_Function *F
 
+JS_NORETURN int jsC_error(js_State *J, js_Ast *node, const char *fmt, ...);
+
 static void cfunbody(JF, js_Ast *name, js_Ast *params, js_Ast *body);
 static void cexp(JF, js_Ast *exp);
 static void cstmlist(JF, js_Ast *list);
@@ -754,7 +756,7 @@ int jsC_error(js_State *J, js_Ast *node, const char *fmt, ...)
 	longjmp(J->jb, 1);
 }
 
-void jsC_freecompile(js_State *J)
+static void jsC_freecompile(js_State *J)
 {
 	js_Function *F = J->fun;
 	while (F) {

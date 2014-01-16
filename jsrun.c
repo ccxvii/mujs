@@ -1,5 +1,6 @@
 #include "js.h"
 #include "jsobject.h"
+#include "jsparse.h"
 #include "jscompile.h"
 #include "jsrun.h"
 #include "jsstate.h"
@@ -88,7 +89,7 @@ void js_pushstring(js_State *J, const char *v)
 	++top;
 }
 
-void jsR_pushliteral(js_State *J, const char *v)
+void js_pushliteral(js_State *J, const char *v)
 {
 	stack[top].type = JS_TSTRING;
 	stack[top].u.string = v;
@@ -100,6 +101,11 @@ void js_pushobject(js_State *J, js_Object *v)
 	stack[top].type = JS_TOBJECT;
 	stack[top].u.object = v;
 	++top;
+}
+
+void js_pushglobal(js_State *J)
+{
+	js_pushobject(J, J->G);
 }
 
 void js_newobject(js_State *J)
@@ -298,7 +304,7 @@ static void jsR_run(js_State *J, js_Function *F, js_Environment *E)
 		case OP_NUMBER_1: js_pushnumber(J, 1); break;
 		case OP_NUMBER_X: js_pushnumber(J, *pc++); break;
 		case OP_NUMBER: js_pushnumber(J, NT[*pc++]); break;
-		case OP_STRING: jsR_pushliteral(J, ST[*pc++]); break;
+		case OP_STRING: js_pushliteral(J, ST[*pc++]); break;
 
 		case OP_CLOSURE: js_pushobject(J, jsR_newfunction(J, FT[*pc++], E)); break;
 		case OP_NEWOBJECT: js_newobject(J); break;
@@ -378,7 +384,7 @@ static void jsR_run(js_State *J, js_Function *F, js_Environment *E)
 				ref = jsR_nextproperty(J, obj, js_tostring(J, -1));
 			if (ref) {
 				js_pop(J, 1);
-				jsR_pushliteral(J, ref->name);
+				js_pushliteral(J, ref->name);
 				js_pushboolean(J, 1);
 			} else {
 				js_pop(J, 2);
@@ -583,6 +589,24 @@ js_Environment *jsR_newenvironment(js_State *J, js_Object *vars, js_Environment 
 	return E;
 }
 
+int jsR_loadstring(js_State *J, const char *filename, const char *source, js_Environment *E)
+{
+	js_Ast *P;
+	js_Function *F;
+
+	// TODO: push exception stack
+
+	P = jsP_parse(J, filename, source);
+	if (!P) return 1;
+	jsP_optimize(J, P);
+	F = jsC_compile(J, P);
+	jsP_freeparse(J);
+	if (!F) return 1;
+
+	js_pushobject(J, jsR_newfunction(J, F, E));
+	return 0;
+}
+
 void js_setglobal(js_State *J, const char *name)
 {
 	js_Property *ref = jsR_setproperty(J, J->G, name);
@@ -630,18 +654,4 @@ void jsR_error(js_State *J, const char *fmt, ...)
 	fprintf(stderr, "\n");
 
 	longjmp(J->jb, 1);
-}
-
-void jsR_runfunction(js_State *J, js_Function *F)
-{
-	if (setjmp(J->jb)) {
-		js_dumpobject(J, J->G);
-		return;
-	}
-
-	js_pushobject(J, J->G); /* initial "this" */
-	jsR_run(J, F, J->GE);
-
-	js_dumpobject(J, J->G);
-	js_dumpstack(J);
 }

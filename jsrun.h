@@ -14,8 +14,13 @@ js_Property *js_decvar(js_State *J, js_Environment *E, const char *name);
 js_Property *js_getvar(js_State *J, js_Environment *E, const char *name);
 js_Property *js_setvar(js_State *J, js_Environment *E, const char *name);
 
+int jsR_loadstring(js_State *J, const char *filename, const char *source, js_Environment *E);
+
 void jsR_runfunction(js_State *J, js_Function *F);
 
+void js_call(js_State *J, int n);
+
+void js_pushglobal(js_State *J);
 void js_pushundefined(js_State *J);
 void js_pushnull(js_State *J);
 void js_pushboolean(js_State *J, int v);

@@ -41,8 +41,10 @@ void js_close(js_State *J);
 
 int js_error(js_State *J, const char *fmt, ...);
 
-int js_loadstring(js_State *J, const char *s);
+int js_loadstring(js_State *J, const char *source);
 int js_loadfile(js_State *J, const char *filename);
+int js_dostring(js_State *J, const char *source);
+int js_dofile(js_State *J, const char *filename);
 
 /* binding API: TODO: move from jsrun.h */
 
