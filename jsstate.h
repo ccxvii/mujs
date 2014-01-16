@@ -26,11 +26,12 @@ struct js_State
 	/* compiler */
 	js_Function *fun; /* list of allocated functions to free on errors */
 
-	/* runtime */
-	js_Environment *E;
-	js_Object *global;
-
 	int strict;
+
+	/* runtime */
+	js_Object *G;
+	js_Environment *GE;
+
 };
 
 #endif

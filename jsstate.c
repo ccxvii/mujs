@@ -1,5 +1,6 @@
 #include "js.h"
 #include "jsobject.h"
+#include "jsrun.h"
 #include "jsstate.h"
 
 static int jsB_print(js_State *J, int argc)
@@ -19,10 +20,10 @@ js_State *js_newstate(void)
 	js_State *J = malloc(sizeof *J);
 	memset(J, 0, sizeof(*J));
 
-	J->global = js_newobject(J, JS_COBJECT);
-	J->E = js_newenvironment(J, NULL, J->global);
+	J->G = jsR_newobject(J, JS_COBJECT);
+	J->GE = jsR_newenvironment(J, J->G, NULL);
 
-	js_pushobject(J, js_newcfunction(J, jsB_print));
+	js_pushcfunction(J, jsB_print);
 	js_setglobal(J, "print");
 
 	return J;

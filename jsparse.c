@@ -1,7 +1,7 @@
 #include "js.h"
-#include "jsstate.h"
 #include "jslex.h"
 #include "jsparse.h"
+#include "jsstate.h"
 
 #define nelem(a) (sizeof (a) / sizeof (a)[0])
 

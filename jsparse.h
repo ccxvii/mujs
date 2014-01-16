@@ -1,16 +1,6 @@
 #ifndef js_parse_h
 #define js_parse_h
 
-struct js_Ast
-{
-	int type;
-	int line;
-	js_Ast *a, *b, *c, *d;
-	double number;
-	const char *string;
-	js_Ast *next; /* next in alloc list */
-};
-
 enum
 {
 	AST_LIST,
@@ -123,10 +113,19 @@ enum
 	STM_DEFAULT,
 };
 
+struct js_Ast
+{
+	int type;
+	int line;
+	js_Ast *a, *b, *c, *d;
+	double number;
+	const char *string;
+	js_Ast *next; /* next in alloc list */
+};
 js_Ast *jsP_parse(js_State *J, const char *filename, const char *source);
+void jsP_optimize(js_State *J, js_Ast *prog);
 void jsP_freeparse(js_State *J);
 
-void jsP_optimize(js_State *J, js_Ast *prog);
 void jsP_dumpsyntax(js_State *J, js_Ast *prog);
 void jsP_dumplist(js_State *J, js_Ast *prog);
 

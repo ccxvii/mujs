@@ -1,7 +1,8 @@
 #ifndef js_lex_h
 #define js_lex_h
 
-enum {
+enum
+{
 	TK_IDENTIFIER = 256,
 	TK_NUMBER,
 	TK_STRING,
@@ -65,9 +66,11 @@ enum {
 	TK_WITH,
 };
 
+const char *jsP_tokenstring(int token);
+
 void jsP_initlex(js_State *J, const char *filename, const char *source);
 int jsP_lex(js_State *J);
-const char *jsP_tokenstring(int token);
+
 JS_NORETURN int jsP_error(js_State *J, const char *fmt, ...);
 void jsP_warning(js_State *J, const char *fmt, ...);
 

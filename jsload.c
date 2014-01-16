@@ -1,6 +1,7 @@
 #include "js.h"
 #include "jsparse.h"
 #include "jscompile.h"
+#include "jsobject.h"
 #include "jsrun.h"
 
 static int jsP_loadstring(js_State *J, const char *filename, const char *source)

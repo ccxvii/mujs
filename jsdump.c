@@ -655,3 +655,36 @@ void jsC_dumpfunction(js_State *J, js_Function *F)
 		}
 	}
 }
+
+/* Runtime values */
+
+void js_dumpvalue(js_State *J, js_Value v)
+{
+	switch (v.type) {
+	case JS_TUNDEFINED: printf("undefined"); break;
+	case JS_TNULL: printf("null"); break;
+	case JS_TBOOLEAN: printf(v.u.boolean ? "true" : "false"); break;
+	case JS_TNUMBER: printf("%.9g", v.u.number); break;
+	case JS_TSTRING: printf("'%s'", v.u.string); break;
+	case JS_TOBJECT: printf("<object %p>", v.u.object); break;
+	}
+}
+
+static void js_dumpproperty(js_State *J, js_Property *node)
+{
+	if (node->left->level)
+		js_dumpproperty(J, node->left);
+	printf("\t%s: ", node->name);
+	js_dumpvalue(J, node->value);
+	printf(",\n");
+	if (node->right->level)
+		js_dumpproperty(J, node->right);
+}
+
+void js_dumpobject(js_State *J, js_Object *obj)
+{
+	printf("{\n");
+	if (obj->properties->level)
+		js_dumpproperty(J, obj->properties);
+	printf("}\n");
+}

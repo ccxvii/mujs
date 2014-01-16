@@ -7,12 +7,6 @@ typedef struct js_Value js_Value;
 typedef enum js_Class js_Class;
 typedef struct js_Property js_Property;
 
-struct js_Environment
-{
-	js_Environment *outer;
-	js_Object *variables;
-};
-
 enum js_Type {
 	JS_TUNDEFINED,
 	JS_TNULL,
@@ -20,32 +14,6 @@ enum js_Type {
 	JS_TNUMBER,
 	JS_TSTRING,
 	JS_TOBJECT,
-};
-
-struct js_Value
-{
-	js_Type type;
-	union {
-		int boolean;
-		double number;
-		const char *string;
-		js_Object *object;
-	} u;
-};
-
-enum {
-	JS_PWRITABLE = 1,
-	JS_PENUMERABLE = 2,
-	JS_PCONFIGURABLE = 4,
-};
-
-struct js_Property
-{
-	char *name;
-	js_Property *left, *right;
-	int level;
-	js_Value value;
-	int flags;
 };
 
 enum js_Class {
@@ -60,6 +28,23 @@ enum js_Class {
 	JS_COBJECT,
 	JS_CREGEXP,
 	JS_CSTRING,
+};
+
+enum {
+	JS_PWRITABLE = 1,
+	JS_PENUMERABLE = 2,
+	JS_PCONFIGURABLE = 4,
+};
+
+struct js_Value
+{
+	js_Type type;
+	union {
+		int boolean;
+		double number;
+		const char *string;
+		js_Object *object;
+	} u;
 };
 
 struct js_Object
@@ -77,23 +62,41 @@ struct js_Object
 	js_CFunction cfunction;
 };
 
-js_Object *js_newobject(js_State *J, js_Class type);
-js_Object *js_newfunction(js_State *J, js_Function *function, js_Environment *scope);
-js_Object *js_newcfunction(js_State *J, js_CFunction cfunction);
+struct js_Property
+{
+	char *name;
+	js_Property *left, *right;
+	int level;
+	js_Value value;
+	int flags;
+};
 
-js_Environment *js_newenvironment(js_State *J, js_Environment *outer, js_Object *vars);
-js_Property *js_decvar(js_State *J, js_Environment *E, const char *name);
-js_Property *js_getvar(js_State *J, js_Environment *E, const char *name);
-js_Property *js_setvar(js_State *J, js_Environment *E, const char *name);
+/* jsvalue.c */
+int jsR_toboolean(js_State *J, const js_Value *v);
+double jsR_tonumber(js_State *J, const js_Value *v);
+const char *jsR_tostring(js_State *J, const js_Value *v);
+js_Object *jsR_toobject(js_State *J, const js_Value *v);
 
-js_Property *js_getproperty(js_State *J, js_Object *obj, const char *name);
-js_Property *js_setproperty(js_State *J, js_Object *obj, const char *name);
-void js_deleteproperty(js_State *J, js_Object *obj, const char *name);
+/* jsproperty.c */
+js_Object *jsR_newobject(js_State *J, js_Class type);
+js_Property *jsR_getproperty(js_State *J, js_Object *obj, const char *name);
+js_Property *jsR_setproperty(js_State *J, js_Object *obj, const char *name);
+js_Property *jsR_nextproperty(js_State *J, js_Object *obj, const char *name);
 
-js_Property *js_firstproperty(js_State *J, js_Object *obj);
-js_Property *js_nextproperty(js_State *J, js_Object *obj, const char *name);
+/* jsobject.c */
+js_Object *jsR_newfunction(js_State *J, js_Function *function, js_Environment *scope);
+js_Object *jsR_newcfunction(js_State *J, js_CFunction cfunction);
+js_Object *jsR_newboolean(js_State *J, int v);
+js_Object *jsR_newnumber(js_State *J, double v);
+js_Object *jsR_newstring(js_State *J, const char *v);
+
+/* jsrun.c */
+void jsR_pushobject(js_State *J, js_Object *v);
+js_Object *js_toobject(js_State *J, int idx);
 
 void js_dumpobject(js_State *J, js_Object *obj);
 void js_dumpvalue(js_State *J, js_Value v);
+
+JS_NORETURN void jsR_error(js_State *J, const char *fmt, ...);
 
 #endif
