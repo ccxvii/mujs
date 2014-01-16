@@ -13,7 +13,7 @@ static void js_call(js_State *J, int argc);
 static void js_dumpstack(js_State *J)
 {
 	int i;
-	for (i = 0; i < top; i++) {
+	for (i = 0; i < top; ++i) {
 		printf("stack %d: ", i);
 		js_dumpvalue(J, stack[i]);
 		putchar('\n');
@@ -502,15 +502,20 @@ static void runfun(js_State *J, js_Function *F, js_Environment *E)
 			js_pushboolean(J, x >= y);
 			break;
 
-		// case OP_EQ:
-		// case OP_NE:
+		case OP_EQ:
 		case OP_STRICTEQ:
 			x = js_tonumber(J, -2);
 			y = js_tonumber(J, -1);
 			js_pop(J, 2);
 			js_pushboolean(J, x == y);
 			break;
-		// case OP_STRICTNE:
+		case OP_NE:
+		case OP_STRICTNE:
+			x = js_tonumber(J, -2);
+			y = js_tonumber(J, -1);
+			js_pop(J, 2);
+			js_pushboolean(J, x != y);
+			break;
 
 		/* Branching */
 
@@ -564,7 +569,7 @@ static void js_call(js_State *J, int argc)
 	F = obj->function;
 	E = js_newenvironment(J, obj->scope, js_newobject(J, JS_COBJECT));
 
-	for (i = 0; i < F->numparams; i++) {
+	for (i = 0; i < F->numparams; ++i) {
 		ref = js_decvar(J, E, F->params[i]);
 		if (i + 1 < argc)
 			ref->value = js_tovalue(J, i + 1);

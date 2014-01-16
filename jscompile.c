@@ -15,8 +15,8 @@ static int paramlen(js_Ast *list)
 {
 	int n = 0;
 	while (list) {
-		n++;
 		list = list->b;
+		++n;
 	}
 	return n;
 }
@@ -54,7 +54,7 @@ static js_Function *newfun(js_State *J, js_Ast *name, js_Ast *params, js_Ast *bo
 static void freefun(js_State *J, js_Function *F)
 {
 //	int i;
-//	for (i = 0; i < F->funlen; i++)
+//	for (i = 0; i < F->funlen; ++i)
 //		freefun(J, F->funtab[i]);
 	free(F->funtab);
 	free(F->numtab);
@@ -87,7 +87,7 @@ static int addfunction(JF, js_Function *value)
 static int addnumber(JF, double value)
 {
 	int i;
-	for (i = 0; i < F->numlen; i++)
+	for (i = 0; i < F->numlen; ++i)
 		if (F->numtab[i] == value)
 			return i;
 	if (F->numlen >= F->numcap) {
@@ -101,7 +101,7 @@ static int addnumber(JF, double value)
 static int addstring(JF, const char *value)
 {
 	int i;
-	for (i = 0; i < F->strlen; i++)
+	for (i = 0; i < F->strlen; ++i)
 		if (!strcmp(F->strtab[i], value))
 			return i;
 	if (F->strlen >= F->strcap) {
@@ -224,7 +224,7 @@ static int cargs(JF, js_Ast *list)
 	while (list) {
 		cexp(J, F, list->a);
 		list = list->b;
-		n++;
+		++n;
 	}
 	return n;
 }

@@ -71,7 +71,7 @@ static void printstringnode(js_StringNode *node, int level)
 	if (node->left != &sentinel)
 		printstringnode(node->left, level + 1);
 	printf("%d: ", node->level);
-	for (i = 0; i < level; i++)
+	for (i = 0; i < level; ++i)
 		putchar('\t');
 	printf("'%s'\n", node->string);
 	if (node->right != &sentinel)

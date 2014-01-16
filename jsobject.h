@@ -1,8 +1,11 @@
 #ifndef js_object_h
 #define js_object_h
 
-typedef enum js_Class js_Class;
 typedef enum js_Type js_Type;
+typedef struct js_Value js_Value;
+
+typedef enum js_Class js_Class;
+typedef struct js_Property js_Property;
 
 struct js_Environment
 {

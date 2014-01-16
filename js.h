@@ -11,15 +11,6 @@
 
 typedef struct js_State js_State;
 
-typedef struct js_StringNode js_StringNode;
-typedef struct js_Ast js_Ast;
-typedef struct js_Function js_Function;
-typedef struct js_Environment js_Environment;
-
-typedef struct js_Value js_Value;
-typedef struct js_Object js_Object;
-typedef struct js_Property js_Property;
-
 typedef int (*js_CFunction)(js_State *J, int argc);
 
 #define JS_REGEXP_G 1
@@ -34,8 +25,15 @@ int js_error(js_State *J, const char *fmt, ...);
 int js_loadstring(js_State *J, const char *s);
 int js_loadfile(js_State *J, const char *filename);
 
-const char *js_intern(js_State *J, const char *s);
+/* private */
 
+typedef struct js_Ast js_Ast;
+typedef struct js_Environment js_Environment;
+typedef struct js_Function js_Function;
+typedef struct js_Object js_Object;
+typedef struct js_StringNode js_StringNode;
+
+const char *js_intern(js_State *J, const char *s);
 void js_printstringtree(js_State *J);
 
 #endif

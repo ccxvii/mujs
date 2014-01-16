@@ -596,16 +596,16 @@ void jsC_dumpfunction(js_State *J, js_Function *F)
 	int i;
 
 	printf("function %p %s(", F, F->name);
-	for (i = 0; i < F->numparams; i++)
+	for (i = 0; i < F->numparams; ++i)
 		printf("%s%s", i > 0 ? ", " : "", F->params[i]);
 	printf(")\n");
-	for (i = 0; i < F->funlen; i++)
+	for (i = 0; i < F->funlen; ++i)
 		printf("\tfunction %p %s\n", F->funtab[i], F->funtab[i]->name);
-	for (i = 0; i < F->strlen; i++) {
+	for (i = 0; i < F->strlen; ++i) {
 		ps("\tstring "); pstr(F->strtab[i]); ps("\n");
 	}
 	// TODO: regexp
-	for (i = 0; i < F->numlen; i++)
+	for (i = 0; i < F->numlen; ++i)
 		printf("\tnumber %.9g\n", F->numtab[i]);
 
 	while (p < end) {
@@ -648,7 +648,7 @@ void jsC_dumpfunction(js_State *J, js_Function *F)
 		nl();
 	}
 
-	for (i = 0; i < F->funlen; i++) {
+	for (i = 0; i < F->funlen; ++i) {
 		if (F->funtab[i] != F) {
 			nl();
 			jsC_dumpfunction(J, F->funtab[i]);
