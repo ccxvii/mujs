@@ -595,7 +595,7 @@ void jsC_dumpfunction(js_State *J, js_Function *F)
 	short *end = F->code + F->codelen;
 	int i;
 
-	printf("function %p %s(", F, F->name);
+	printf("function %p %s (", F, F->name);
 	for (i = 0; i < F->numparams; ++i)
 		printf("%s%s", i > 0 ? ", " : "", F->params[i]);
 	printf(")\n");
@@ -608,10 +608,11 @@ void jsC_dumpfunction(js_State *J, js_Function *F)
 	for (i = 0; i < F->numlen; ++i)
 		printf("\tnumber %.9g\n", F->numtab[i]);
 
+	printf("{\n");
 	while (p < end) {
 		int c = *p++;
 
-		printf("%04d: ", (int)(p - F->code) - 1);
+		printf("% 5d: ", (int)(p - F->code) - 1);
 		ps(opname[c]);
 
 		switch (c) {
@@ -647,6 +648,7 @@ void jsC_dumpfunction(js_State *J, js_Function *F)
 
 		nl();
 	}
+	printf("}\n");
 
 	for (i = 0; i < F->funlen; ++i) {
 		if (F->funtab[i] != F) {

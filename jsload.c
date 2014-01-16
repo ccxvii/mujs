@@ -9,9 +9,9 @@ static int jsP_loadstring(js_State *J, const char *filename, const char *source)
 	js_Ast *prog = jsP_parse(J, filename, source);
 	if (prog) {
 		js_Function *fun;
-		//jsP_optimize(J, prog);
+		jsP_optimize(J, prog);
 		//jsP_dumpsyntax(J, prog);
-		jsP_dumplist(J, prog);
+		//jsP_dumplist(J, prog);
 		fun = jsC_compile(J, prog);
 		if (fun) {
 			jsC_dumpfunction(J, fun);
