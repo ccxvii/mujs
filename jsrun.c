@@ -567,18 +567,38 @@ static void js_call(js_State *J, int argc)
 	obj = js_toobject(J, -argc - 1);
 
 	F = obj->function;
-	E = js_newenvironment(J, obj->scope, js_newobject(J, JS_COBJECT));
+	if (F) {
+		E = js_newenvironment(J, obj->scope, js_newobject(J, JS_COBJECT));
 
-	for (i = 0; i < F->numparams; ++i) {
-		ref = js_decvar(J, E, F->params[i]);
-		if (i + 1 < argc)
-			ref->value = js_tovalue(J, i + 1);
+		for (i = 0; i < F->numparams; ++i) {
+			ref = js_decvar(J, E, F->params[i]);
+			if (i + 1 < argc)
+				ref->value = js_tovalue(J, i + 1);
+		}
+		js_pop(J, argc + 1);
+
+		runfun(J, F, E);
+	} else {
+		js_CFunction CF = obj->cfunction;
+		i = CF(J, argc);
+		if (i) {
+			js_Value v = js_tovalue(J, -1);
+			js_pop(J, top - bot + 1);
+			js_pushvalue(J, v);
+		} else {
+			js_pop(J, top - bot + 1);
+			js_pushundefined(J);
+		}
 	}
-	js_pop(J, argc + 1);
-
-	runfun(J, F, E);
 
 	bot = savebot;
+}
+
+void js_setglobal(js_State *J, const char *name)
+{
+	js_Property *ref = js_setproperty(J, J->E->variables, name);
+	ref->value = js_tovalue(J, -1);
+	js_pop(J, 1);
 }
 
 void jsR_error(js_State *J, const char *fmt, ...)
