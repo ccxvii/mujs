@@ -860,7 +860,6 @@ int jsP_error(js_State *J, const char *fmt, ...)
 	fprintf(stderr, "\n");
 
 	longjmp(J->jb, 1);
-	return 0;
 }
 
 js_Ast *jsP_parse(js_State *J, const char *filename, const char *source)

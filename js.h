@@ -9,8 +9,28 @@
 #include <setjmp.h>
 #include <math.h>
 
-typedef struct js_State js_State;
+/* noreturn is a GCC extension */
+#ifdef __GNUC__
+#define JS_NORETURN __attribute__((noreturn))
+#else
+#ifdef _MSC_VER
+#define JS_NORETURN __declspec(noreturn)
+#else
+#define JS_NORETURN
+#endif
+#endif
 
+/* GCC can do type checking of printf strings */
+#ifndef __printflike
+#if __GNUC__ > 2 || __GNUC__ == 2 && __GNUC_MINOR__ >= 7
+#define __printflike(fmtarg, firstvararg) \
+	__attribute__((__format__ (__printf__, fmtarg, firstvararg)))
+#else
+#define __printflike(fmtarg, firstvararg)
+#endif
+#endif
+
+typedef struct js_State js_State;
 
 #define JS_REGEXP_G 1
 #define JS_REGEXP_I 2

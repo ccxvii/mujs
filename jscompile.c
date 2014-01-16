@@ -752,7 +752,6 @@ int jsC_error(js_State *J, js_Ast *node, const char *fmt, ...)
 	fprintf(stderr, "\n");
 
 	longjmp(J->jb, 1);
-	return 0;
 }
 
 void jsC_freecompile(js_State *J)
