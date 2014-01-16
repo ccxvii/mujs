@@ -23,7 +23,7 @@ jsdump.c : opnames.h
 js: build/main.o build/libjs.a
 	$(CC) -o $@ $^ -lm
 
-tags: $(SRCS) $(HDRS)
+tags: $(SRCS) main.c $(HDRS)
 	ctags $^
 
 clean:
