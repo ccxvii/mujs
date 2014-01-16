@@ -11,37 +11,12 @@ static void cfunbody(JF, js_Ast *name, js_Ast *params, js_Ast *body);
 static void cexp(JF, js_Ast *exp);
 static void cstmlist(JF, js_Ast *list);
 
-static int paramlen(js_Ast *list)
-{
-	int n = 0;
-	while (list) {
-		list = list->b;
-		++n;
-	}
-	return n;
-}
-
-static void makeparams(JF, js_Ast *list, const char **params)
-{
-	while (list) {
-		*params++ = list->a->string;
-		list = list->b;
-	}
-}
-
 static js_Function *newfun(js_State *J, js_Ast *name, js_Ast *params, js_Ast *body)
 {
 	js_Function *F = malloc(sizeof *F);
 	memset(F, 0, sizeof *F);
 
 	F->name = name ? name->string : "<anonymous>";
-	F->numparams = paramlen(params);
-	F->params = malloc(F->numparams * sizeof *F->params);
-	makeparams(J, F, params, F->params);
-
-	F->codecap = 256;
-	F->codelen = 0;
-	F->code = malloc(F->codecap * sizeof *F->code);
 
 	F->next = J->fun;
 	J->fun = F;
@@ -53,9 +28,6 @@ static js_Function *newfun(js_State *J, js_Ast *name, js_Ast *params, js_Ast *bo
 
 static void freefun(js_State *J, js_Function *F)
 {
-//	int i;
-//	for (i = 0; i < F->funlen; ++i)
-//		freefun(J, F->funtab[i]);
 	free(F->funtab);
 	free(F->numtab);
 	free(F->strtab);
@@ -68,7 +40,7 @@ static void freefun(js_State *J, js_Function *F)
 static void emit(JF, int value)
 {
 	if (F->codelen >= F->codecap) {
-		F->codecap *= 2;
+		F->codecap = F->codecap ? F->codecap * 2 : 64;
 		F->code = realloc(F->code, F->codecap * sizeof *F->code);
 	}
 	F->code[F->codelen++] = value;
@@ -708,6 +680,24 @@ static void cstmlist(JF, js_Ast *list)
 
 /* Declarations and programs */
 
+static int listlength(js_Ast *list)
+{
+	int n = 0;
+	while (list) ++n, list = list->b;
+	return n;
+}
+
+static void cparams(JF, js_Ast *list)
+{
+	F->numparams = listlength(list);
+	F->params = malloc(F->numparams * sizeof *F->params);
+	int i = 0;
+	while (list) {
+		F->params[i++] = list->a->string;
+		list = list->b;
+	}
+}
+
 static void cfundecs(JF, js_Ast *list)
 {
 	while (list) {
@@ -738,6 +728,8 @@ static void cfunbody(JF, js_Ast *name, js_Ast *params, js_Ast *body)
 		emitfunction(J, F, F);
 		emitstring(J, F, OP_FUNDEC, name->string);
 	}
+
+	cparams(J, F, params);
 
 	if (body) {
 		cfundecs(J, F, body);
