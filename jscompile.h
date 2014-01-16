@@ -26,6 +26,7 @@ enum
 	OP_TRUE,
 	OP_FALSE,
 	OP_THIS,
+	OP_GLOBAL,
 
 	OP_FUNDEC,	/* <closure> -S- */
 	OP_VARDEC,	/* -S- */

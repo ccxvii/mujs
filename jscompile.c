@@ -357,12 +357,12 @@ static void ccall(JF, js_Ast *fun, js_Ast *args)
 		break;
 	default:
 		cexp(J, F, fun);
-		emit(J, F, OP_THIS);
+		emit(J, F, OP_GLOBAL);
 		break;
 	}
 	n = cargs(J, F, args);
 	emit(J, F, OP_CALL);
-	emit(J, F, 1 + n);
+	emit(J, F, n);
 }
 
 static void cexp(JF, js_Ast *exp)

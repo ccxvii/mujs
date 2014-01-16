@@ -8,7 +8,7 @@ static js_Value stack[256];
 static int top = 0;
 static int bot = 0;
 
-static void js_call(js_State *J, int argc);
+static void jsR_run(js_State *J, js_Function *F, js_Environment *E);
 
 static void js_dumpstack(js_State *J)
 {
@@ -220,10 +220,56 @@ void js_dup1rot4(js_State *J)
 
 void js_trap(js_State *J)
 {
+	fprintf(stderr, "trap!\n");
 	js_dumpstack(J);
 }
 
-static void runfun(js_State *J, js_Function *F, js_Environment *E)
+static void jsR_callfunction(js_State *J, int n, js_Function *F, js_Environment *scope)
+{
+	js_Environment *E;
+	int i;
+
+	E = jsR_newenvironment(J, jsR_newobject(J, JS_COBJECT), scope);
+	for (i = 0; i < n; i++) {
+		js_Property *ref = js_decvar(J, E, F->params[i]);
+		if (i < n)
+			ref->value = js_tovalue(J, i + 1);
+	}
+	js_pop(J, n);
+
+	jsR_run(J, F, E);
+
+	js_rot3pop2(J);
+}
+
+static void jsR_callcfunction(js_State *J, int n, js_CFunction F)
+{
+	int rv = F(J, n + 1);
+	if (rv) {
+		js_Value v = js_tovalue(J, -1);
+		js_pop(J, top - bot + 1);
+		js_pushvalue(J, v);
+	} else {
+		js_pop(J, top - bot + 1);
+		js_pushundefined(J);
+	}
+}
+
+void js_call(js_State *J, int n)
+{
+	js_Object *obj = js_toobject(J, -n - 2);
+	int savebot = bot;
+	bot = top - n - 1;
+	if (obj->type == JS_CFUNCTION)
+		jsR_callfunction(J, n, obj->function, obj->scope);
+	else if (obj->type == JS_CCFUNCTION)
+		jsR_callcfunction(J, n, obj->cfunction);
+	else
+		jsR_error(J, "TypeError (not a function)");
+	bot = savebot;
+}
+
+static void jsR_run(js_State *J, js_Function *F, js_Environment *E)
 {
 	js_Function **FT = F->funtab;
 	double *NT = F->numtab;
@@ -263,7 +309,8 @@ static void runfun(js_State *J, js_Function *F, js_Environment *E)
 		case OP_TRUE: js_pushboolean(J, 1); break;
 		case OP_FALSE: js_pushboolean(J, 0); break;
 
-		case OP_THIS: js_pushnull(J); break;
+		case OP_THIS: js_pushobject(J, js_toobject(J, 0)); break;
+		case OP_GLOBAL: js_pushobject(J, J->G); break;
 
 		case OP_FUNDEC:
 			ref = js_decvar(J, E, ST[*pc++]);
@@ -528,47 +575,6 @@ static void runfun(js_State *J, js_Function *F, js_Environment *E)
 	}
 }
 
-static void js_call(js_State *J, int argc)
-{
-	js_Environment *E;
-	js_Property *ref;
-	js_Function *F;
-	js_Object *obj;
-	int i;
-	int savebot = bot;
-
-	bot = top - argc;
-
-	obj = js_toobject(J, -argc - 1);
-
-	F = obj->function;
-	if (F) {
-		E = jsR_newenvironment(J, jsR_newobject(J, JS_COBJECT), obj->scope);
-
-		for (i = 0; i < F->numparams; ++i) {
-			ref = js_decvar(J, E, F->params[i]);
-			if (i + 1 < argc)
-				ref->value = js_tovalue(J, i + 1);
-		}
-		js_pop(J, argc + 1);
-
-		runfun(J, F, E);
-	} else {
-		js_CFunction CF = obj->cfunction;
-		i = CF(J, argc);
-		if (i) {
-			js_Value v = js_tovalue(J, -1);
-			js_pop(J, top - bot + 1);
-			js_pushvalue(J, v);
-		} else {
-			js_pop(J, top - bot + 1);
-			js_pushundefined(J);
-		}
-	}
-
-	bot = savebot;
-}
-
 js_Environment *jsR_newenvironment(js_State *J, js_Object *vars, js_Environment *outer)
 {
 	js_Environment *E = malloc(sizeof *E);
@@ -633,7 +639,8 @@ void jsR_runfunction(js_State *J, js_Function *F)
 		return;
 	}
 
-	runfun(J, F, J->GE);
+	js_pushobject(J, J->G); /* initial "this" */
+	jsR_run(J, F, J->GE);
 
 	js_dumpobject(J, J->G);
 	js_dumpstack(J);

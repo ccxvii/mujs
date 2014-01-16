@@ -666,7 +666,18 @@ void js_dumpvalue(js_State *J, js_Value v)
 	case JS_TBOOLEAN: printf(v.u.boolean ? "true" : "false"); break;
 	case JS_TNUMBER: printf("%.9g", v.u.number); break;
 	case JS_TSTRING: printf("'%s'", v.u.string); break;
-	case JS_TOBJECT: printf("<object %p>", v.u.object); break;
+	case JS_TOBJECT:
+		switch (v.u.object->type) {
+		case JS_COBJECT: printf("object(%p)", v.u.object); break;
+		case JS_CARRAY: printf("array(%p)", v.u.object); break;
+		case JS_CFUNCTION: printf("function(%s)", v.u.object->function->name); break;
+		case JS_CCFUNCTION: printf("cfunction(%p)", v.u.object->cfunction); break;
+		case JS_CBOOLEAN: printf("boolean(%d)", v.u.object->primitive.boolean); break;
+		case JS_CNUMBER: printf("number(%g)", v.u.object->primitive.number); break;
+		case JS_CSTRING: printf("string('%s')", v.u.object->primitive.string); break;
+		default: printf("<unknown %p>", v.u.object); break;
+		}
+		break;
 	}
 }
 
