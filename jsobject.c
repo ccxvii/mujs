@@ -9,6 +9,13 @@ js_Object *jsR_newfunction(js_State *J, js_Function *function, js_Environment *s
 	return obj;
 }
 
+js_Object *jsR_newscript(js_State *J, js_Function *function)
+{
+	js_Object *obj = jsR_newobject(J, JS_CSCRIPT);
+	obj->function = function;
+	return obj;
+}
+
 js_Object *jsR_newcfunction(js_State *J, js_CFunction cfunction)
 {
 	js_Object *obj = jsR_newobject(J, JS_CCFUNCTION);

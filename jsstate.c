@@ -54,8 +54,8 @@ int js_dostring(js_State *J, const char *source)
 	if (!rv) {
 		if (setjmp(J->jb))
 			return 1;
-		js_dup(J, 0);
-		js_eval(J);
+		js_pushglobal(J);
+		js_call(J, 0);
 		js_pop(J, 1);
 	}
 	return rv;
@@ -67,8 +67,8 @@ int js_dofile(js_State *J, const char *filename)
 	if (!rv) {
 		if (setjmp(J->jb))
 			return 1;
-		js_dup(J, 0);
-		js_eval(J);
+		js_pushglobal(J);
+		js_call(J, 0);
 		js_pop(J, 1);
 	}
 	return rv;
@@ -100,7 +100,7 @@ static int jsB_eval(js_State *J, int argc)
 		jsR_error(J, "SyntaxError (eval)");
 
 	js_dup(J, 0); /* copy this */
-	js_eval(J); /* call with current scope chain */
+	js_call(J, 0);
 	return 1;
 }
 

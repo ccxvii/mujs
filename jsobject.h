@@ -17,17 +17,18 @@ enum js_Type {
 };
 
 enum js_Class {
-	JS_CARRAY,
-	JS_CBOOLEAN,
-	JS_CCFUNCTION,
-	JS_CDATE,
-	JS_CERROR,
-	JS_CFUNCTION,
-	JS_CMATH,
-	JS_CNUMBER,
 	JS_COBJECT,
-	JS_CREGEXP,
+	JS_CARRAY,
+	JS_CFUNCTION,
+	JS_CSCRIPT, /* function created from global/eval code */
+	JS_CCFUNCTION, /* built-in function */
+	JS_CERROR,
+	JS_CBOOLEAN,
+	JS_CNUMBER,
 	JS_CSTRING,
+	JS_CREGEXP,
+	JS_CDATE,
+	JS_CMATH,
 };
 
 enum {
@@ -93,6 +94,7 @@ js_Property *jsR_nextproperty(js_State *J, js_Object *obj, const char *name);
 
 /* jsobject.c */
 js_Object *jsR_newfunction(js_State *J, js_Function *function, js_Environment *scope);
+js_Object *jsR_newscript(js_State *J, js_Function *function);
 js_Object *jsR_newcfunction(js_State *J, js_CFunction cfunction);
 js_Object *jsR_newboolean(js_State *J, int v);
 js_Object *jsR_newnumber(js_State *J, double v);

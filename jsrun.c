@@ -348,6 +348,13 @@ static void jsR_callfunction(js_State *J, int n, js_Function *F, js_Environment 
 	J->E = saveE;
 }
 
+static void jsR_callscript(js_State *J, int n, js_Function *F)
+{
+	js_pop(J, n);
+	jsR_run(J, F);
+	js_rot3pop2(J);
+}
+
 static void jsR_callcfunction(js_State *J, int n, js_CFunction F)
 {
 	int rv = F(J, n + 1);
@@ -368,24 +375,12 @@ void js_call(js_State *J, int n)
 	bot = top - n - 1;
 	if (obj->type == JS_CFUNCTION)
 		jsR_callfunction(J, n, obj->function, obj->scope);
+	else if (obj->type == JS_CSCRIPT)
+		jsR_callscript(J, n, obj->function);
 	else if (obj->type == JS_CCFUNCTION)
 		jsR_callcfunction(J, n, obj->cfunction);
 	else
 		jsR_error(J, "TypeError (not a function)");
-	bot = savebot;
-}
-
-void js_eval(js_State *J)
-{
-	js_Object *obj = js_toobject(J, -2);
-	int savebot = bot;
-	bot = top - 1;
-	if (obj->type == JS_CFUNCTION) {
-		jsR_run(J, obj->function);
-		js_rot3pop2(J);
-	}
-	else
-		jsR_error(J, "TypeError (not a script)");
 	bot = savebot;
 }
 
@@ -743,7 +738,7 @@ int jsR_loadscript(js_State *J, const char *filename, const char *source)
 	jsP_freeparse(J);
 	if (!F) return 1;
 
-	js_pushobject(J, jsR_newfunction(J, F, NULL));
+	js_pushobject(J, jsR_newscript(J, F));
 	return 0;
 }
 
