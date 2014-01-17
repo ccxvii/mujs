@@ -117,6 +117,17 @@ void js_newarray(js_State *J)
 	js_pushobject(J, jsR_newobject(J, JS_CARRAY, J->Array_prototype));
 }
 
+void js_newfunction(js_State *J, js_Function *F, js_Environment *scope)
+{
+	js_pushobject(J, jsR_newfunction(J, F, scope));
+	js_pushnumber(J, F->numparams);
+	js_setproperty(J, -2, "length");
+	js_newobject(J);
+	js_copy(J, -2);
+	js_setproperty(J, -2, "constructor");
+	js_setproperty(J, -2, "prototype");
+}
+
 void js_pushcfunction(js_State *J, js_CFunction v)
 {
 	js_pushobject(J, jsR_newcfunction(J, v));
@@ -447,7 +458,7 @@ static void jsR_run(js_State *J, js_Function *F)
 		case OP_NUMBER: js_pushnumber(J, NT[*pc++]); break;
 		case OP_STRING: js_pushliteral(J, ST[*pc++]); break;
 
-		case OP_CLOSURE: js_pushobject(J, jsR_newfunction(J, FT[*pc++], J->E)); break;
+		case OP_CLOSURE: js_newfunction(J, FT[*pc++], J->E); break;
 		case OP_NEWOBJECT: js_newobject(J); break;
 		case OP_NEWARRAY: js_newarray(J); break;
 
