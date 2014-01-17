@@ -43,6 +43,12 @@ struct js_State
 	js_Object *G;
 	js_Environment *E;
 
+	/* garbage collector list */
+	int gcmark;
+	js_Environment *gcenv;
+	js_Function *gcfun;
+	js_Object *gcobj;
+
 	int top, bot;
 	js_Value stack[JS_STACKSIZE];
 };

@@ -46,6 +46,8 @@ int js_loadfile(js_State *J, const char *filename);
 int js_dostring(js_State *J, const char *source);
 int js_dofile(js_State *J, const char *filename);
 
+void js_gc(js_State *J);
+
 /* binding API: TODO: move from jsrun.h */
 
 typedef int (*js_CFunction)(js_State *J, int argc);
@@ -59,6 +61,7 @@ typedef struct js_Object js_Object;
 typedef struct js_StringNode js_StringNode;
 
 const char *js_intern(js_State *J, const char *s);
-void js_printstringtree(js_State *J);
+void js_printstrings(js_State *J);
+void js_freestrings(js_State *J);
 
 #endif

@@ -68,11 +68,14 @@ struct js_Object
 	js_Function *function;
 	js_CFunction cfunction;
 	js_CFunction cconstructor;
+
+	js_Object *gcnext;
+	int gcmark;
 };
 
 struct js_Property
 {
-	char *name;
+	const char *name;
 	js_Property *left, *right;
 	int level;
 	js_Value value;

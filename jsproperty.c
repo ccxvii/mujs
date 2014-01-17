@@ -21,10 +21,10 @@
 
 static js_Property sentinel = { "", &sentinel, &sentinel, 0 };
 
-static js_Property *newproperty(const char *name)
+static js_Property *newproperty(js_State *J, const char *name)
 {
 	js_Property *node = malloc(sizeof(js_Property));
-	node->name = strdup(name);
+	node->name = js_intern(J, name);
 	node->left = node->right = &sentinel;
 	node->level = 1;
 	node->value.type = JS_TUNDEFINED;
@@ -74,21 +74,21 @@ static inline js_Property *split(js_Property *node)
 	return node;
 }
 
-static js_Property *insert(js_Property *node, const char *name, js_Property **result)
+static js_Property *insert(js_State *J, js_Property *node, const char *name, js_Property **result)
 {
 	if (node != &sentinel) {
 		int c = strcmp(name, node->name);
 		if (c < 0)
-			node->left = insert(node->left, name, result);
+			node->left = insert(J, node->left, name, result);
 		else if (c > 0)
-			node->right = insert(node->right, name, result);
+			node->right = insert(J, node->right, name, result);
 		else
 			return *result = node;
 		node = skew(node);
 		node = split(node);
 		return node;
 	}
-	return *result = newproperty(name);
+	return *result = newproperty(J, name);
 }
 
 static js_Property *lookupfirst(js_Property *node)
@@ -133,6 +133,10 @@ found:
 js_Object *jsR_newobject(js_State *J, js_Class type, js_Object *prototype)
 {
 	js_Object *obj = malloc(sizeof(js_Object));
+	obj->gcmark = 0;
+	obj->gcnext = J->gcobj;
+	J->gcobj = obj;
+
 	obj->type = type;
 	obj->properties = &sentinel;
 	obj->prototype = prototype;
@@ -162,7 +166,7 @@ js_Property *jsR_getproperty(js_State *J, js_Object *obj, const char *name)
 js_Property *jsR_setproperty(js_State *J, js_Object *obj, const char *name)
 {
 	js_Property *result;
-	obj->properties = insert(obj->properties, name, &result);
+	obj->properties = insert(J, obj->properties, name, &result);
 	return result;
 }
 

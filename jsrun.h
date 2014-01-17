@@ -5,6 +5,9 @@ struct js_Environment
 {
 	js_Environment *outer;
 	js_Object *variables;
+
+	js_Environment *gcnext;
+	int gcmark;
 };
 
 /* private */

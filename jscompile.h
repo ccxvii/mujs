@@ -109,7 +109,8 @@ struct js_Function
 	const char *filename;
 	int line;
 
-	js_Function *next; /* alloc list */
+	js_Function *gcnext;
+	int gcmark;
 };
 
 js_Function *jsC_compile(js_State *J, js_Ast *prog);

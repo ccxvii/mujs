@@ -17,25 +17,16 @@ static js_Function *newfun(js_State *J, js_Ast *name, js_Ast *params, js_Ast *bo
 {
 	js_Function *F = malloc(sizeof *F);
 	memset(F, 0, sizeof *F);
+	F->gcmark = 0;
+	F->gcnext = J->gcfun;
+	J->gcfun = F;
 
 	F->filename = js_intern(J, J->filename);
 	F->line = name ? name->line : params ? params->line : body->line;
 
-	F->next = J->fun;
-	J->fun = F;
-
 	cfunbody(J, F, name, params, body);
 
 	return F;
-}
-
-static void freefun(js_State *J, js_Function *F)
-{
-	free(F->funtab);
-	free(F->numtab);
-	free(F->strtab);
-	free(F->code);
-	free(F);
 }
 
 /* Emit opcodes, constants and jumps */
@@ -760,25 +751,12 @@ int jsC_error(js_State *J, js_Ast *node, const char *fmt, ...)
 	longjmp(J->jb, 1);
 }
 
-static void jsC_freecompile(js_State *J)
-{
-	js_Function *F = J->fun;
-	while (F) {
-		js_Function *next = F->next;
-		freefun(J, F);
-		F = next;
-	}
-	J->fun = NULL;
-}
-
 js_Function *jsC_compile(js_State *J, js_Ast *prog)
 {
 	js_Function *F;
 
-	if (setjmp(J->jb)) {
-		jsC_freecompile(J);
+	if (setjmp(J->jb))
 		return NULL;
-	}
 
 	F = newfun(J, NULL, NULL, prog);
 

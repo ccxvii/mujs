@@ -324,6 +324,10 @@ int js_nextproperty(js_State *J, int idx)
 js_Environment *jsR_newenvironment(js_State *J, js_Object *vars, js_Environment *outer)
 {
 	js_Environment *E = malloc(sizeof *E);
+	E->gcmark = 0;
+	E->gcnext = J->gcenv;
+	J->gcenv = E;
+
 	E->outer = outer;
 	E->variables = vars;
 	return E;

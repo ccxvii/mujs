@@ -87,12 +87,6 @@ js_State *js_newstate(void)
 	return J;
 }
 
-void js_close(js_State *J)
-{
-	free(J->buf.text);
-	free(J);
-}
-
 int js_error(js_State *J, const char *fmt, ...)
 {
 	va_list ap;
