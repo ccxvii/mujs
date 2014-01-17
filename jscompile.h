@@ -90,6 +90,7 @@ enum
 struct js_Function
 {
 	const char *name;
+
 	int numparams;
 	const char **params;
 
@@ -104,6 +105,9 @@ struct js_Function
 
 	const char **strtab;
 	int strcap, strlen;
+
+	const char *filename;
+	int line;
 
 	js_Function *next; /* alloc list */
 };

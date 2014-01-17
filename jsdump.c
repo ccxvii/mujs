@@ -599,12 +599,12 @@ void jsC_dumpfunction(js_State *J, js_Function *F)
 	for (i = 0; i < F->numparams; ++i)
 		printf("%s%s", i > 0 ? ", " : "", F->params[i]);
 	printf(")\n");
+	printf("\tsource %s:%d\n", F->filename, F->line);
 	for (i = 0; i < F->funlen; ++i)
 		printf("\tfunction %p %s\n", F->funtab[i], F->funtab[i]->name);
 	for (i = 0; i < F->strlen; ++i) {
 		ps("\tstring "); pstr(F->strtab[i]); ps("\n");
 	}
-	// TODO: regexp
 	for (i = 0; i < F->numlen; ++i)
 		printf("\tnumber %.9g\n", F->numtab[i]);
 
@@ -652,7 +652,6 @@ void jsC_dumpfunction(js_State *J, js_Function *F)
 
 	for (i = 0; i < F->funlen; ++i) {
 		if (F->funtab[i] != F) {
-			nl();
 			jsC_dumpfunction(J, F->funtab[i]);
 		}
 	}
@@ -672,7 +671,14 @@ void js_dumpvalue(js_State *J, js_Value v)
 		switch (v.u.object->type) {
 		case JS_COBJECT: printf("object(%p)", v.u.object); break;
 		case JS_CARRAY: printf("array(%p)", v.u.object); break;
-		case JS_CFUNCTION: printf("function(%s)", v.u.object->function->name); break;
+		case JS_CFUNCTION:
+			printf("function(%p, %s, %s:%d)",
+				v.u.object,
+				v.u.object->function->name,
+				v.u.object->function->filename,
+				v.u.object->function->line);
+			break;
+		case JS_CSCRIPT: printf("script(%s)", v.u.object->function->filename); break;
 		case JS_CCFUNCTION: printf("cfunction(%p)", v.u.object->cfunction); break;
 		case JS_CBOOLEAN: printf("boolean(%d)", v.u.object->primitive.boolean); break;
 		case JS_CNUMBER: printf("number(%g)", v.u.object->primitive.number); break;

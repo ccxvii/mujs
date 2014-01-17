@@ -18,7 +18,8 @@ static js_Function *newfun(js_State *J, js_Ast *name, js_Ast *params, js_Ast *bo
 	js_Function *F = malloc(sizeof *F);
 	memset(F, 0, sizeof *F);
 
-	F->name = name ? name->string : "<anonymous>";
+	F->filename = js_intern(J, J->filename);
+	F->line = name ? name->line : params ? params->line : body->line;
 
 	F->next = J->fun;
 	J->fun = F;
@@ -727,8 +728,11 @@ static void cvardecs(JF, js_Ast *node)
 static void cfunbody(JF, js_Ast *name, js_Ast *params, js_Ast *body)
 {
 	if (name) {
+		F->name = name->string;
 		emitfunction(J, F, F);
 		emitstring(J, F, OP_FUNDEC, name->string);
+	} else {
+		F->name = "<anonymous>";
 	}
 
 	cparams(J, F, params);

@@ -386,19 +386,34 @@ void js_call(js_State *J, int n)
 
 /* Main interpreter loop */
 
-void js_dumpstack(js_State *J)
+void jsR_dumpstack(js_State *J)
 {
 	int i;
+	printf("stack {\n");
 	for (i = 0; i < top; ++i) {
-		printf("stack %d: ", i);
+		putchar(i == bot ? '>' : ' ');
+		printf("% 3d: ", i);
 		js_dumpvalue(J, stack[i]);
 		putchar('\n');
 	}
+	printf("}\n");
 }
 
-void js_trap(js_State *J)
+void jsR_dumpenvironment(js_State *J, js_Environment *E, int d)
 {
-	fprintf(stderr, "trap!\n");
+	printf("scope %d ", d);
+	js_dumpobject(J, E->variables);
+	if (E->outer)
+		jsR_dumpenvironment(J, E->outer, d+1);
+}
+
+void js_trap(js_State *J, int pc)
+{
+	fprintf(stderr, "trap at %d in ", pc);
+	js_Function *F = stack[bot-1].u.object->function;
+	jsC_dumpfunction(J, F);
+	jsR_dumpstack(J);
+	jsR_dumpenvironment(J, J->E, 0);
 }
 
 static void jsR_run(js_State *J, js_Function *F)
@@ -691,7 +706,7 @@ static void jsR_run(js_State *J, js_Function *F)
 		/* Branching */
 
 		case OP_DEBUGGER:
-			js_trap(J);
+			js_trap(J, (int)(pc - pcstart) - 1);
 			break;
 
 		case OP_JUMP:
