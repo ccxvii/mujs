@@ -7,10 +7,14 @@ struct js_Environment
 	js_Object *variables;
 };
 
+/* private */
 void jsB_init(js_State *J);
 js_Environment *jsR_newenvironment(js_State *J, js_Object *variables, js_Environment *outer);
 int jsR_loadscript(js_State *J, const char *filename, const char *source);
 void jsR_error(js_State *J, const char *fmt, ...);
+void js_pushobject(js_State *J, js_Object *v);
+
+/* public */
 
 void js_call(js_State *J, int n);
 

@@ -94,6 +94,35 @@ static void jsB_initstring(js_State *J)
 	js_setglobal(J, "String");
 }
 
+static int jsB_parseInt(js_State *J, int argc)
+{
+	const char *s = js_tostring(J, 1);
+	double radix = argc > 1 ? js_tonumber(J, 2) : 10;
+	js_pushnumber(J, strtol(s, NULL, radix == 0 ? 10 : radix));
+	return 1;
+}
+
+static int jsB_parseFloat(js_State *J, int argc)
+{
+	const char *s = js_tostring(J, 1);
+	js_pushnumber(J, strtod(s, NULL));
+	return 1;
+}
+
+static int jsB_isNaN(js_State *J, int argc)
+{
+	double n = js_tonumber(J, 1);
+	js_pushboolean(J, isnan(n));
+	return 1;
+}
+
+static int jsB_isFinite(js_State *J, int argc)
+{
+	double n = js_tonumber(J, 1);
+	js_pushboolean(J, isfinite(n));
+	return 1;
+}
+
 static void jsB_register(js_State *J, const char *name, js_CFunction cfun)
 {
 	js_pushcfunction(J, cfun);
@@ -109,6 +138,20 @@ void jsB_init(js_State *J)
 	jsB_initnumber(J);
 	jsB_initstring(J);
 
+	js_pushnumber(J, NAN);
+	js_setglobal(J, "NaN");
+
+	js_pushnumber(J, INFINITY);
+	js_setglobal(J, "Infinity");
+
+	js_pushundefined(J);
+	js_setglobal(J, "undefined");
+
 	jsB_register(J, "eval", jsB_eval);
+	jsB_register(J, "parseInt", jsB_parseInt);
+	jsB_register(J, "parseFloat", jsB_parseFloat);
+	jsB_register(J, "isNaN", jsB_isNaN);
+	jsB_register(J, "isFinite", jsB_isFinite);
+
 	jsB_register(J, "print", jsB_print);
 }
