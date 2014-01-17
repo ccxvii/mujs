@@ -79,6 +79,8 @@ js_State *js_newstate(void)
 	js_State *J = malloc(sizeof *J);
 	memset(J, 0, sizeof(*J));
 
+	J->gcmark = 1;
+
 	J->G = jsR_newobject(J, JS_COBJECT, NULL);
 	J->E = jsR_newenvironment(J, J->G, NULL);
 

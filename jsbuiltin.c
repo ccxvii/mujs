@@ -15,6 +15,13 @@ static int jsB_print(js_State *J, int argc)
 	return 0;
 }
 
+static int jsB_collectGarbage(js_State *J, int argc)
+{
+	int report = js_toboolean(J, 1);
+	js_gc(J, report);
+	return 0;
+}
+
 static int jsB_eval(js_State *J, int argc)
 {
 	const char *s;
@@ -167,5 +174,6 @@ void jsB_init(js_State *J)
 	jsB_register(J, "isNaN", jsB_isNaN);
 	jsB_register(J, "isFinite", jsB_isFinite);
 
+	jsB_register(J, "collectGarbage", jsB_collectGarbage);
 	jsB_register(J, "print", jsB_print);
 }

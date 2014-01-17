@@ -46,7 +46,7 @@ int js_loadfile(js_State *J, const char *filename);
 int js_dostring(js_State *J, const char *source);
 int js_dofile(js_State *J, const char *filename);
 
-void js_gc(js_State *J);
+void js_gc(js_State *J, int report);
 
 /* binding API: TODO: move from jsrun.h */
 
