@@ -327,6 +327,7 @@ js_Environment *jsR_newenvironment(js_State *J, js_Object *vars, js_Environment 
 	E->gcmark = 0;
 	E->gcnext = J->gcenv;
 	J->gcenv = E;
+	++J->gccounter;
 
 	E->outer = outer;
 	E->variables = vars;
@@ -500,6 +501,11 @@ static void jsR_run(js_State *J, js_Function *F)
 	int b;
 
 	while (1) {
+		if (J->gccounter > JS_GCLIMIT) {
+			J->gccounter = 0;
+			js_gc(J, 0);
+		}
+
 		opcode = *pc++;
 		switch (opcode) {
 		case OP_POP: js_pop(J, 1); break;

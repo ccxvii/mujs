@@ -20,6 +20,7 @@ static js_Function *newfun(js_State *J, js_Ast *name, js_Ast *params, js_Ast *bo
 	F->gcmark = 0;
 	F->gcnext = J->gcfun;
 	J->gcfun = F;
+	++J->gccounter;
 
 	F->filename = js_intern(J, J->filename);
 	F->line = name ? name->line : params ? params->line : body->line;

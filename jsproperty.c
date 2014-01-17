@@ -136,6 +136,7 @@ js_Object *jsR_newobject(js_State *J, js_Class type, js_Object *prototype)
 	obj->gcmark = 0;
 	obj->gcnext = J->gcobj;
 	J->gcobj = obj;
+	++J->gccounter;
 
 	obj->type = type;
 	obj->properties = &sentinel;

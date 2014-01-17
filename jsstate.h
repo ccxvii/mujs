@@ -4,6 +4,7 @@
 #include "jsobject.h" /* for js_Value */
 
 #define JS_STACKSIZE 256
+#define JS_GCLIMIT 10000 /* run gc cycle every N allocations */
 
 struct js_State
 {
@@ -45,10 +46,12 @@ struct js_State
 
 	/* garbage collector list */
 	int gcmark;
+	int gccounter;
 	js_Environment *gcenv;
 	js_Function *gcfun;
 	js_Object *gcobj;
 
+	/* execution stack */
 	int top, bot;
 	js_Value stack[JS_STACKSIZE];
 };
