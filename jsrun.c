@@ -121,9 +121,23 @@ void js_newfunction(js_State *J, js_Function *F, js_Environment *scope)
 	js_setproperty(J, -2, "prototype");
 }
 
-void js_pushcfunction(js_State *J, js_CFunction v)
+void js_pushcfunction(js_State *J, js_CFunction fun)
 {
-	js_pushobject(J, jsR_newcfunction(J, v));
+	js_pushobject(J, jsR_newcfunction(J, fun));
+	// TODO: length property?
+	js_newobject(J);
+	js_copy(J, -2);
+	js_setproperty(J, -2, "constructor");
+	js_setproperty(J, -2, "prototype");
+}
+
+void js_pushcconstructor(js_State *J, js_CFunction fun, js_CFunction con)
+{
+	js_pushobject(J, jsR_newcconstructor(J, fun, con));
+	js_newobject(J);
+	js_copy(J, -2);
+	js_setproperty(J, -2, "constructor");
+	js_setproperty(J, -2, "prototype");
 }
 
 /* Read values from stack */
@@ -137,15 +151,13 @@ static const js_Value *stackidx(js_State *J, int idx)
 	return stack + idx;
 }
 
-int js_isundefined(js_State *J, int idx)
-{
-	return stackidx(J, idx)->type == JS_TUNDEFINED;
-}
-
-int js_isstring(js_State *J, int idx)
-{
-	return stackidx(J, idx)->type == JS_TSTRING;
-}
+int js_isundefined(js_State *J, int idx) { return stackidx(J, idx)->type == JS_TUNDEFINED; }
+int js_isnull(js_State *J, int idx) { return stackidx(J, idx)->type == JS_TNULL; }
+int js_isboolean(js_State *J, int idx) { return stackidx(J, idx)->type == JS_TBOOLEAN; }
+int js_isnumber(js_State *J, int idx) { return stackidx(J, idx)->type == JS_TNUMBER; }
+int js_isstring(js_State *J, int idx) { return stackidx(J, idx)->type == JS_TSTRING; }
+int js_isprimitive(js_State *J, int idx) { return stackidx(J, idx)->type != JS_TOBJECT; }
+int js_isobject(js_State *J, int idx) { return stackidx(J, idx)->type == JS_TOBJECT; }
 
 js_Value js_tovalue(js_State *J, int idx)
 {
@@ -235,6 +247,15 @@ void js_dup1rot4(js_State *J)
 	stack[top-2] = stack[top-3];	/* A A B C */
 	stack[top-3] = stack[top];	/* C A B C */
 	++top;
+}
+
+void js_rot(js_State *J, int n)
+{
+	int i;
+	js_Value tmp = stack[top-1];
+	for (i = 1; i <= n; i++)
+		stack[top-i] = stack[top-i-1];
+	stack[top-i] = tmp;
 }
 
 /* Global and object property accessors */
@@ -394,6 +415,37 @@ void js_call(js_State *J, int n)
 	else
 		jsR_error(J, "TypeError (not a function)");
 	bot = savebot;
+}
+
+void js_construct(js_State *J, int n)
+{
+	js_Object *obj = js_toobject(J, -n - 1);
+	js_Object *prototype;
+
+	/* built-in constructors create their own objects */
+	if (obj->type == JS_CCFUNCTION && obj->cconstructor) {
+		int savebot = bot;
+		bot = top - n;
+		jsR_callcfunction(J, n, obj->cconstructor);
+		bot = savebot;
+		return;
+	}
+
+	/* extract the function object's prototype property */
+	js_getproperty(J, -n - 1, "prototype");
+	if (js_isobject(J, -1))
+		prototype = js_toobject(J, -1);
+	else
+		prototype = J->Object_prototype;
+	js_pop(J, 1);
+
+	/* create a new object with above prototype, and shift it into the 'this' slot */
+	js_pushobject(J, jsR_newobject(J, JS_COBJECT, prototype));
+	if (n > 0)
+		js_rot(J, n + 1);
+
+	/* call the function */
+	js_call(J, n);
 }
 
 /* Main interpreter loop */
@@ -557,6 +609,10 @@ static void jsR_run(js_State *J, js_Function *F)
 
 		case OP_CALL:
 			js_call(J, *pc++);
+			break;
+
+		case OP_NEW:
+			js_construct(J, *pc++);
 			break;
 
 		/* Unary expressions */

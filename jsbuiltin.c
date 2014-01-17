@@ -33,7 +33,21 @@ static int jsB_eval(js_State *J, int argc)
 	return 1;
 }
 
-static int jsB_Object(js_State *J, int n) { return 0; }
+static int jsB_Object(js_State *J, int n) {
+	if (n == 0 || js_isundefined(J, 1) || js_isnull(J, 1))
+		js_newobject(J);
+	else
+		js_pushobject(J, js_toobject(J, 1));
+	return 1;
+}
+
+static int jsB_new_Object(js_State *J, int n) {
+	if (n == 0 || js_isundefined(J, 0) || js_isnull(J, 0))
+		js_newobject(J);
+	else
+		js_pushobject(J, js_toobject(J, 0));
+	return 1;
+}
 static int jsB_Array(js_State *J, int n) { return 0; }
 static int jsB_Function(js_State *J, int n) { return 0; }
 static int jsB_Boolean(js_State *J, int n) { return 0; }
@@ -43,7 +57,7 @@ static int jsB_String(js_State *J, int n) { return 0; }
 static void jsB_initobject(js_State *J)
 {
 	J->Object_prototype = jsR_newobject(J, JS_COBJECT, NULL);
-	js_pushcfunction(J, jsB_Object);
+	js_pushcconstructor(J, jsB_Object, jsB_new_Object);
 	js_pushobject(J, J->Object_prototype);
 	js_setproperty(J, -2, "prototype");
 	js_setglobal(J, "Object");

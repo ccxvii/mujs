@@ -21,6 +21,15 @@ js_Object *jsR_newcfunction(js_State *J, js_CFunction cfunction)
 {
 	js_Object *obj = jsR_newobject(J, JS_CCFUNCTION, NULL);
 	obj->cfunction = cfunction;
+	obj->cconstructor = NULL;
+	return obj;
+}
+
+js_Object *jsR_newcconstructor(js_State *J, js_CFunction cfunction, js_CFunction cconstructor)
+{
+	js_Object *obj = jsR_newobject(J, JS_CCFUNCTION, NULL);
+	obj->cfunction = cfunction;
+	obj->cconstructor = cconstructor;
 	return obj;
 }
 

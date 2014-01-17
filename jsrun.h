@@ -17,6 +17,7 @@ void js_pushobject(js_State *J, js_Object *v);
 /* public */
 
 void js_call(js_State *J, int n);
+void js_construct(js_State *J, int n);
 
 void js_getglobal(js_State *J, const char *name);
 void js_setglobal(js_State *J, const char *name);
@@ -33,10 +34,16 @@ void js_pushnumber(js_State *J, double v);
 void js_pushstring(js_State *J, const char *v);
 void js_newobject(js_State *J);
 void js_newarray(js_State *J);
-void js_pushcfunction(js_State *J, js_CFunction v);
+void js_pushcfunction(js_State *J, js_CFunction fun);
+void js_pushcconstructor(js_State *J, js_CFunction fun, js_CFunction con);
 
 int js_isundefined(js_State *J, int idx);
+int js_isnull(js_State *J, int idx);
+int js_isboolean(js_State *J, int idx);
+int js_isnumber(js_State *J, int idx);
 int js_isstring(js_State *J, int idx);
+int js_isprimitive(js_State *J, int idx);
+int js_isobject(js_State *J, int idx);
 
 int js_toboolean(js_State *J, int idx);
 double js_tonumber(js_State *J, int idx);
