@@ -5,7 +5,7 @@
 #include "jsrun.h"
 #include "jsstate.h"
 
-static void jsR_run(js_State *J, js_Function *F, js_Environment *E);
+static void jsR_run(js_State *J, js_Function *F);
 
 static js_Value stack[256];
 static int top = 0;
@@ -296,13 +296,14 @@ js_Environment *jsR_newenvironment(js_State *J, js_Object *vars, js_Environment 
 	return E;
 }
 
-static js_Property *js_decvar(js_State *J, js_Environment *E, const char *name)
+static js_Property *js_decvar(js_State *J, const char *name)
 {
-	return jsR_setproperty(J, E->variables, name);
+	return jsR_setproperty(J, J->E->variables, name);
 }
 
-static js_Property *js_getvar(js_State *J, js_Environment *E, const char *name)
+static js_Property *js_getvar(js_State *J, const char *name)
 {
+	js_Environment *E = J->E;
 	do {
 		js_Property *ref = jsR_getproperty(J, E->variables, name);
 		if (ref)
@@ -312,8 +313,9 @@ static js_Property *js_getvar(js_State *J, js_Environment *E, const char *name)
 	return NULL;
 }
 
-static js_Property *js_setvar(js_State *J, js_Environment *E, const char *name)
+static js_Property *js_setvar(js_State *J, const char *name)
 {
+	js_Environment *E = J->E;
 	do {
 		js_Property *ref = jsR_getproperty(J, E->variables, name);
 		if (ref)
@@ -327,20 +329,23 @@ static js_Property *js_setvar(js_State *J, js_Environment *E, const char *name)
 
 static void jsR_callfunction(js_State *J, int n, js_Function *F, js_Environment *scope)
 {
-	js_Environment *E;
+	js_Environment *saveE;
 	int i;
 
-	E = jsR_newenvironment(J, jsR_newobject(J, JS_COBJECT), scope);
+	saveE = J->E;
+
+	J->E = jsR_newenvironment(J, jsR_newobject(J, JS_COBJECT), scope);
 	for (i = 0; i < n; i++) {
-		js_Property *ref = js_decvar(J, E, F->params[i]);
+		js_Property *ref = js_decvar(J, F->params[i]);
 		if (i < n)
 			ref->value = js_tovalue(J, i + 1);
 	}
 	js_pop(J, n);
 
-	jsR_run(J, F, E);
-
+	jsR_run(J, F);
 	js_rot3pop2(J);
+
+	J->E = saveE;
 }
 
 static void jsR_callcfunction(js_State *J, int n, js_CFunction F)
@@ -370,6 +375,20 @@ void js_call(js_State *J, int n)
 	bot = savebot;
 }
 
+void js_eval(js_State *J)
+{
+	js_Object *obj = js_toobject(J, -2);
+	int savebot = bot;
+	bot = top - 1;
+	if (obj->type == JS_CFUNCTION) {
+		jsR_run(J, obj->function);
+		js_rot3pop2(J);
+	}
+	else
+		jsR_error(J, "TypeError (not a script)");
+	bot = savebot;
+}
+
 /* Main interpreter loop */
 
 void js_dumpstack(js_State *J)
@@ -387,7 +406,7 @@ void js_trap(js_State *J)
 	fprintf(stderr, "trap!\n");
 }
 
-static void jsR_run(js_State *J, js_Function *F, js_Environment *E)
+static void jsR_run(js_State *J, js_Function *F)
 {
 	js_Function **FT = F->funtab;
 	double *NT = F->numtab;
@@ -418,7 +437,7 @@ static void jsR_run(js_State *J, js_Function *F, js_Environment *E)
 		case OP_NUMBER: js_pushnumber(J, NT[*pc++]); break;
 		case OP_STRING: js_pushliteral(J, ST[*pc++]); break;
 
-		case OP_CLOSURE: js_pushobject(J, jsR_newfunction(J, FT[*pc++], E)); break;
+		case OP_CLOSURE: js_pushobject(J, jsR_newfunction(J, FT[*pc++], J->E)); break;
 		case OP_NEWOBJECT: js_newobject(J); break;
 		case OP_NEWARRAY: js_newarray(J); break;
 
@@ -431,19 +450,19 @@ static void jsR_run(js_State *J, js_Function *F, js_Environment *E)
 		case OP_GLOBAL: js_pushobject(J, J->G); break;
 
 		case OP_FUNDEC:
-			ref = js_decvar(J, E, ST[*pc++]);
+			ref = js_decvar(J, ST[*pc++]);
 			if (ref)
 				ref->value = js_tovalue(J, -1);
 			js_pop(J, 1);
 			break;
 
 		case OP_VARDEC:
-			ref = js_decvar(J, E, ST[*pc++]);
+			ref = js_decvar(J, ST[*pc++]);
 			break;
 
 		case OP_GETVAR:
 			str = ST[*pc++];
-			ref = js_getvar(J, E, str);
+			ref = js_getvar(J, str);
 			if (ref)
 				js_pushvalue(J, ref->value);
 			else
@@ -451,7 +470,7 @@ static void jsR_run(js_State *J, js_Function *F, js_Environment *E)
 			break;
 
 		case OP_SETVAR:
-			ref = js_setvar(J, E, ST[*pc++]);
+			ref = js_setvar(J, ST[*pc++]);
 			if (ref)
 				ref->value = js_tovalue(J, -1);
 			break;
@@ -710,7 +729,7 @@ static void jsR_run(js_State *J, js_Function *F, js_Environment *E)
 	}
 }
 
-int jsR_loadstring(js_State *J, const char *filename, const char *source, js_Environment *E)
+int jsR_loadscript(js_State *J, const char *filename, const char *source)
 {
 	js_Ast *P;
 	js_Function *F;
@@ -724,7 +743,7 @@ int jsR_loadstring(js_State *J, const char *filename, const char *source, js_Env
 	jsP_freeparse(J);
 	if (!F) return 1;
 
-	js_pushobject(J, jsR_newfunction(J, F, E));
+	js_pushobject(J, jsR_newfunction(J, F, NULL));
 	return 0;
 }
 

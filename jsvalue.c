@@ -5,7 +5,7 @@ js_Value jsR_toprimitive(js_State *J, const js_Value *v, int preferred)
 {
 	js_Object *obj;
 
-	if (v->type != JS_COBJECT)
+	if (v->type != JS_TOBJECT)
 		return *v;
 
 	obj = v->u.object;

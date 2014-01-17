@@ -5,7 +5,7 @@
 
 int js_loadstring(js_State *J, const char *source)
 {
-	return jsR_loadstring(J, "(string)", source, J->GE);
+	return jsR_loadscript(J, "(string)", source);
 }
 
 int js_loadfile(js_State *J, const char *filename)
@@ -41,7 +41,7 @@ int js_loadfile(js_State *J, const char *filename)
 
 	s[n] = 0; /* zero-terminate string containing file data */
 
-	t = jsR_loadstring(J, filename, s, J->GE);
+	t = jsR_loadscript(J, filename, s);
 
 	free(s);
 	fclose(f);
@@ -54,8 +54,8 @@ int js_dostring(js_State *J, const char *source)
 	if (!rv) {
 		if (setjmp(J->jb))
 			return 1;
-		js_pushglobal(J);
-		js_call(J, 0);
+		js_dup(J, 0);
+		js_eval(J);
 		js_pop(J, 1);
 	}
 	return rv;
@@ -67,8 +67,8 @@ int js_dofile(js_State *J, const char *filename)
 	if (!rv) {
 		if (setjmp(J->jb))
 			return 1;
-		js_pushglobal(J);
-		js_call(J, 0);
+		js_dup(J, 0);
+		js_eval(J);
 		js_pop(J, 1);
 	}
 	return rv;
@@ -93,15 +93,14 @@ static int jsB_eval(js_State *J, int argc)
 	if (!js_isstring(J, -1))
 		return 1;
 
-	// FIXME: use the real environment
 	// FIXME: return value if eval string is an expression
 
 	s = js_tostring(J, -1);
-	if (jsR_loadstring(J, "(eval)", s, J->GE))
+	if (jsR_loadscript(J, "(eval)", s))
 		jsR_error(J, "SyntaxError (eval)");
 
-	js_pushglobal(J);
-	js_call(J, 0);
+	js_dup(J, 0); /* copy this */
+	js_eval(J); /* call with current scope chain */
 	return 1;
 }
 
@@ -111,7 +110,7 @@ js_State *js_newstate(void)
 	memset(J, 0, sizeof(*J));
 
 	J->G = jsR_newobject(J, JS_COBJECT);
-	J->GE = jsR_newenvironment(J, J->G, NULL);
+	J->E = jsR_newenvironment(J, J->G, NULL);
 
 	js_pushcfunction(J, jsB_eval);
 	js_setglobal(J, "eval");

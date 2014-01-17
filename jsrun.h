@@ -9,9 +9,10 @@ struct js_Environment
 
 js_Environment *jsR_newenvironment(js_State *J, js_Object *variables, js_Environment *outer);
 
-int jsR_loadstring(js_State *J, const char *filename, const char *source, js_Environment *E);
+int jsR_loadscript(js_State *J, const char *filename, const char *source);
 
 void js_call(js_State *J, int n);
+void js_eval(js_State *J);
 
 void js_getglobal(js_State *J, const char *name);
 void js_setglobal(js_State *J, const char *name);

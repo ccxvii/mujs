@@ -30,7 +30,7 @@ struct js_State
 
 	/* runtime */
 	js_Object *G;
-	js_Environment *GE;
+	js_Environment *E;
 
 };
 
