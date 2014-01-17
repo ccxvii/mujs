@@ -164,6 +164,12 @@ js_Object *js_toobject(js_State *J, int idx)
 	return jsR_toobject(J, &stack[idx]);
 }
 
+js_Value js_toprimitive(js_State *J, int idx, int hint)
+{
+	idx = stackidx(J, idx);
+	return jsR_toprimitive(J, &stack[idx], hint);
+}
+
 /* Stack manipulation */
 
 void js_pop(js_State *J, int n)
@@ -528,17 +534,31 @@ static void jsR_run(js_State *J, js_Function *F, js_Environment *E)
 		case OP_LOGNOT:
 			b = js_toboolean(J, -1);
 			js_pop(J, 1);
-			js_pushnumber(J, !b);
+			js_pushboolean(J, !b);
 			break;
 
 		/* Binary expressions */
 
 		case OP_ADD:
-			// TODO: check string concatenation
-			x = js_tonumber(J, -2);
-			y = js_tonumber(J, -1);
-			js_pop(J, 2);
-			js_pushnumber(J, x + y);
+			{
+				js_Value va = js_toprimitive(J, -2, JS_HNONE);
+				js_Value vb = js_toprimitive(J, -1, JS_HNONE);
+				if (va.type == JS_TSTRING || vb.type == JS_TSTRING) {
+					const char *sa = jsR_tostring(J, &va);
+					const char *sb = jsR_tostring(J, &vb);
+					char *sab = malloc(strlen(sa) + strlen(sb) + 1);
+					strcpy(sab, sa);
+					strcat(sab, sb);
+					js_pop(J, 2);
+					js_pushstring(J, sab);
+					free(sab);
+				} else {
+					x = jsR_tonumber(J, &va);
+					y = jsR_tonumber(J, &vb);
+					js_pop(J, 2);
+					js_pushnumber(J, x + y);
+				}
+			}
 			break;
 
 		case OP_SUB:

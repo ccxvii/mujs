@@ -1,15 +1,14 @@
 #include "js.h"
 #include "jsobject.h"
 
-enum {
-	JS_HNONE,
-	JS_HNUMBER,
-	JS_HSTRING,
-};
-
-static js_Value jsR_toprimitive(js_State *J, const js_Value *v, int preferred)
+js_Value jsR_toprimitive(js_State *J, const js_Value *v, int preferred)
 {
-	js_Object *obj = v->u.object;
+	js_Object *obj;
+
+	if (v->type != JS_COBJECT)
+		return *v;
+
+	obj = v->u.object;
 
 	if (preferred == JS_HNONE)
 		preferred = obj->type == JS_CDATE ? JS_HSTRING : JS_HNUMBER;

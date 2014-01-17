@@ -36,6 +36,12 @@ enum {
 	JS_PCONFIGURABLE = 4,
 };
 
+enum {
+	JS_HNONE,
+	JS_HNUMBER,
+	JS_HSTRING,
+};
+
 struct js_Value
 {
 	js_Type type;
@@ -76,6 +82,7 @@ int jsR_toboolean(js_State *J, const js_Value *v);
 double jsR_tonumber(js_State *J, const js_Value *v);
 const char *jsR_tostring(js_State *J, const js_Value *v);
 js_Object *jsR_toobject(js_State *J, const js_Value *v);
+js_Value jsR_toprimitive(js_State *J, const js_Value *v, int preferred);
 
 /* jsproperty.c */
 js_Object *jsR_newobject(js_State *J, js_Class type);
