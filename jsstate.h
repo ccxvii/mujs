@@ -1,6 +1,10 @@
 #ifndef js_state_h
 #define js_state_h
 
+#include "jsobject.h" /* for js_Value */
+
+#define JS_STACKSIZE 256
+
 struct js_State
 {
 	jmp_buf jb; /* setjmp buffer for error handling in parser */
@@ -39,6 +43,8 @@ struct js_State
 	js_Object *G;
 	js_Environment *E;
 
+	int top, bot;
+	js_Value stack[JS_STACKSIZE];
 };
 
 #endif

@@ -7,10 +7,6 @@
 
 static void jsR_run(js_State *J, js_Function *F);
 
-static js_Value stack[256];
-static int top = 0;
-static int bot = 0;
-
 static inline double tointeger(double n)
 {
 	double sign = n < 0 ? -1 : 1;
@@ -42,57 +38,61 @@ static inline unsigned int touint32(double n)
 
 /* Push values on stack */
 
+#define STACK (J->stack)
+#define TOP (J->top)
+#define BOT (J->bot)
+
 static void js_pushvalue(js_State *J, js_Value v)
 {
-	stack[top] = v;
-	++top;
+	STACK[TOP] = v;
+	++TOP;
 }
 
 void js_pushundefined(js_State *J)
 {
-	stack[top].type = JS_TUNDEFINED;
-	++top;
+	STACK[TOP].type = JS_TUNDEFINED;
+	++TOP;
 }
 
 void js_pushnull(js_State *J)
 {
-	stack[top].type = JS_TNULL;
-	++top;
+	STACK[TOP].type = JS_TNULL;
+	++TOP;
 }
 
 void js_pushboolean(js_State *J, int v)
 {
-	stack[top].type = JS_TBOOLEAN;
-	stack[top].u.boolean = !!v;
-	++top;
+	STACK[TOP].type = JS_TBOOLEAN;
+	STACK[TOP].u.boolean = !!v;
+	++TOP;
 }
 
 void js_pushnumber(js_State *J, double v)
 {
-	stack[top].type = JS_TNUMBER;
-	stack[top].u.number = v;
-	++top;
+	STACK[TOP].type = JS_TNUMBER;
+	STACK[TOP].u.number = v;
+	++TOP;
 }
 
 void js_pushstring(js_State *J, const char *v)
 {
-	stack[top].type = JS_TSTRING;
-	stack[top].u.string = js_intern(J, v);
-	++top;
+	STACK[TOP].type = JS_TSTRING;
+	STACK[TOP].u.string = js_intern(J, v);
+	++TOP;
 }
 
 void js_pushliteral(js_State *J, const char *v)
 {
-	stack[top].type = JS_TSTRING;
-	stack[top].u.string = v;
-	++top;
+	STACK[TOP].type = JS_TSTRING;
+	STACK[TOP].u.string = v;
+	++TOP;
 }
 
 void js_pushobject(js_State *J, js_Object *v)
 {
-	stack[top].type = JS_TOBJECT;
-	stack[top].u.object = v;
-	++top;
+	STACK[TOP].type = JS_TOBJECT;
+	STACK[TOP].u.object = v;
+	++TOP;
 }
 
 void js_pushglobal(js_State *J)
@@ -145,10 +145,10 @@ void js_pushcconstructor(js_State *J, js_CFunction fun, js_CFunction con)
 static const js_Value *stackidx(js_State *J, int idx)
 {
 	static js_Value undefined = { JS_TUNDEFINED, { 0 } };
-	idx = idx < 0 ? top + idx : bot + idx;
-	if (idx < 0 || idx >= top)
+	idx = idx < 0 ? TOP + idx : BOT + idx;
+	if (idx < 0 || idx >= TOP)
 		return &undefined;
-	return stack + idx;
+	return STACK + idx;
 }
 
 int js_isundefined(js_State *J, int idx) { return stackidx(J, idx)->type == JS_TUNDEFINED; }
@@ -193,69 +193,69 @@ js_Value js_toprimitive(js_State *J, int idx, int hint)
 
 void js_pop(js_State *J, int n)
 {
-	top -= n;
+	TOP -= n;
 }
 
 void js_copy(js_State *J, int idx)
 {
-	stack[top] = *stackidx(J, idx);
-	++top;
+	STACK[TOP] = *stackidx(J, idx);
+	++TOP;
 }
 
 void js_dup(js_State *J)
 {
-	stack[top] = stack[top-1];
-	++top;
+	STACK[TOP] = STACK[TOP-1];
+	++TOP;
 }
 
 void js_dup2(js_State *J)
 {
-	stack[top] = stack[top-2];
-	stack[top+1] = stack[top-1];
-	top += 2;
+	STACK[TOP] = STACK[TOP-2];
+	STACK[TOP+1] = STACK[TOP-1];
+	TOP += 2;
 }
 
 void js_rot2(js_State *J)
 {
 	/* A B -> B A */
-	js_Value tmp = stack[top-1];	/* A B (B) */
-	stack[top-1] = stack[top-2];	/* A A */
-	stack[top-2] = tmp;		/* B A */
+	js_Value tmp = STACK[TOP-1];	/* A B (B) */
+	STACK[TOP-1] = STACK[TOP-2];	/* A A */
+	STACK[TOP-2] = tmp;		/* B A */
 }
 
 void js_rot3(js_State *J)
 {
 	/* A B C -> C A B */
-	js_Value tmp = stack[top-1];	/* A B C (C) */
-	stack[top-1] = stack[top-2];	/* A B B */
-	stack[top-2] = stack[top-3];	/* A A B */
-	stack[top-3] = tmp;		/* C A B */
+	js_Value tmp = STACK[TOP-1];	/* A B C (C) */
+	STACK[TOP-1] = STACK[TOP-2];	/* A B B */
+	STACK[TOP-2] = STACK[TOP-3];	/* A A B */
+	STACK[TOP-3] = tmp;		/* C A B */
 }
 
 void js_rot3pop2(js_State *J)
 {
 	/* A B C -> C */
-	stack[top-3] = stack[top-1];
-	top -= 2;
+	STACK[TOP-3] = STACK[TOP-1];
+	TOP -= 2;
 }
 
 void js_dup1rot4(js_State *J)
 {
 	/* A B C -> C A B C */
-	stack[top] = stack[top-1];	/* A B C C */
-	stack[top-1] = stack[top-2];	/* A B B C */
-	stack[top-2] = stack[top-3];	/* A A B C */
-	stack[top-3] = stack[top];	/* C A B C */
-	++top;
+	STACK[TOP] = STACK[TOP-1];	/* A B C C */
+	STACK[TOP-1] = STACK[TOP-2];	/* A B B C */
+	STACK[TOP-2] = STACK[TOP-3];	/* A A B C */
+	STACK[TOP-3] = STACK[TOP];	/* C A B C */
+	++TOP;
 }
 
 void js_rot(js_State *J, int n)
 {
 	int i;
-	js_Value tmp = stack[top-1];
+	js_Value tmp = STACK[TOP-1];
 	for (i = 1; i <= n; i++)
-		stack[top-i] = stack[top-i-1];
-	stack[top-i] = tmp;
+		STACK[TOP-i] = STACK[TOP-i-1];
+	STACK[TOP-i] = tmp;
 }
 
 /* Global and object property accessors */
@@ -393,10 +393,10 @@ static void jsR_callcfunction(js_State *J, int n, js_CFunction F)
 	int rv = F(J, n + 1);
 	if (rv) {
 		js_Value v = js_tovalue(J, -1);
-		js_pop(J, top - bot + 1);
+		js_pop(J, TOP - BOT + 1);
 		js_pushvalue(J, v);
 	} else {
-		js_pop(J, top - bot + 1);
+		js_pop(J, TOP - BOT + 1);
 		js_pushundefined(J);
 	}
 }
@@ -404,8 +404,8 @@ static void jsR_callcfunction(js_State *J, int n, js_CFunction F)
 void js_call(js_State *J, int n)
 {
 	js_Object *obj = js_toobject(J, -n - 2);
-	int savebot = bot;
-	bot = top - n - 1;
+	int savebot = BOT;
+	BOT = TOP - n - 1;
 	if (obj->type == JS_CFUNCTION)
 		jsR_callfunction(J, n, obj->function, obj->scope);
 	else if (obj->type == JS_CSCRIPT)
@@ -414,7 +414,7 @@ void js_call(js_State *J, int n)
 		jsR_callcfunction(J, n, obj->cfunction);
 	else
 		jsR_error(J, "TypeError (not a function)");
-	bot = savebot;
+	BOT = savebot;
 }
 
 void js_construct(js_State *J, int n)
@@ -424,10 +424,10 @@ void js_construct(js_State *J, int n)
 
 	/* built-in constructors create their own objects */
 	if (obj->type == JS_CCFUNCTION && obj->cconstructor) {
-		int savebot = bot;
-		bot = top - n;
+		int savebot = BOT;
+		BOT = TOP - n;
 		jsR_callcfunction(J, n, obj->cconstructor);
-		bot = savebot;
+		BOT = savebot;
 		return;
 	}
 
@@ -454,10 +454,10 @@ void jsR_dumpstack(js_State *J)
 {
 	int i;
 	printf("stack {\n");
-	for (i = 0; i < top; ++i) {
-		putchar(i == bot ? '>' : ' ');
+	for (i = 0; i < TOP; ++i) {
+		putchar(i == BOT ? '>' : ' ');
 		printf("% 4d: ", i);
-		js_dumpvalue(J, stack[i]);
+		js_dumpvalue(J, STACK[i]);
 		putchar('\n');
 	}
 	printf("}\n");
@@ -474,7 +474,7 @@ void jsR_dumpenvironment(js_State *J, js_Environment *E, int d)
 void js_trap(js_State *J, int pc)
 {
 	fprintf(stderr, "trap at %d in ", pc);
-	js_Function *F = stack[bot-1].u.object->function;
+	js_Function *F = STACK[BOT-1].u.object->function;
 	jsC_dumpfunction(J, F);
 	jsR_dumpstack(J);
 	jsR_dumpenvironment(J, J->E, 0);
