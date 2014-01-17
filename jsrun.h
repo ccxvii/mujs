@@ -44,6 +44,7 @@ double js_tointeger(js_State *J, int idx);
 const char *js_tostring(js_State *J, int idx);
 
 void js_pop(js_State *J, int n);
-void js_dup(js_State *J, int idx);
+void js_dup(js_State *J);
+void js_copy(js_State *J, int idx);
 
 #endif

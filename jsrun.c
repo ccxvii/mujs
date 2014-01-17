@@ -40,14 +40,7 @@ static inline unsigned int touint32(double n)
 	return toint32(n);
 }
 
-/* Push and read stack values stack */
-
-static int stackidx(js_State *J, int idx)
-{
-	if (idx < 0)
-		return top + idx;
-	return bot + idx;
-}
+/* Push values on stack */
 
 static void js_pushvalue(js_State *J, js_Value v)
 {
@@ -133,52 +126,55 @@ void js_pushcfunction(js_State *J, js_CFunction v)
 	js_pushobject(J, jsR_newcfunction(J, v));
 }
 
+/* Read values from stack */
+
+static const js_Value *stackidx(js_State *J, int idx)
+{
+	static js_Value undefined = { JS_TUNDEFINED, { 0 } };
+	idx = idx < 0 ? top + idx : bot + idx;
+	if (idx < 0 || idx >= top)
+		return &undefined;
+	return stack + idx;
+}
+
 int js_isundefined(js_State *J, int idx)
 {
-	idx = stackidx(J, idx);
-	return stack[idx].type == JS_TUNDEFINED;
+	return stackidx(J, idx)->type == JS_TUNDEFINED;
 }
 
 int js_isstring(js_State *J, int idx)
 {
-	idx = stackidx(J, idx);
-	return stack[idx].type == JS_TSTRING;
+	return stackidx(J, idx)->type == JS_TSTRING;
 }
 
 js_Value js_tovalue(js_State *J, int idx)
 {
-	idx = stackidx(J, idx);
-	return stack[idx];
+	return *stackidx(J, idx);
 }
 
 int js_toboolean(js_State *J, int idx)
 {
-	idx = stackidx(J, idx);
-	return jsR_toboolean(J, &stack[idx]);
+	return jsR_toboolean(J, stackidx(J, idx));
 }
 
 double js_tonumber(js_State *J, int idx)
 {
-	idx = stackidx(J, idx);
-	return jsR_tonumber(J, &stack[idx]);
+	return jsR_tonumber(J, stackidx(J, idx));
 }
 
 const char *js_tostring(js_State *J, int idx)
 {
-	idx = stackidx(J, idx);
-	return jsR_tostring(J, &stack[idx]);
+	return jsR_tostring(J, stackidx(J, idx));
 }
 
 js_Object *js_toobject(js_State *J, int idx)
 {
-	idx = stackidx(J, idx);
-	return jsR_toobject(J, &stack[idx]);
+	return jsR_toobject(J, stackidx(J, idx));
 }
 
 js_Value js_toprimitive(js_State *J, int idx, int hint)
 {
-	idx = stackidx(J, idx);
-	return jsR_toprimitive(J, &stack[idx], hint);
+	return jsR_toprimitive(J, stackidx(J, idx), hint);
 }
 
 /* Stack manipulation */
@@ -188,10 +184,15 @@ void js_pop(js_State *J, int n)
 	top -= n;
 }
 
-void js_dup(js_State *J, int idx)
+void js_copy(js_State *J, int idx)
 {
-	idx = stackidx(J, idx);
-	stack[top] = stack[idx];
+	stack[top] = *stackidx(J, idx);
+	++top;
+}
+
+void js_dup(js_State *J)
+{
+	stack[top] = stack[top-1];
 	++top;
 }
 
@@ -446,7 +447,7 @@ static void jsR_run(js_State *J, js_Function *F)
 		opcode = *pc++;
 		switch (opcode) {
 		case OP_POP: js_pop(J, 1); break;
-		case OP_DUP: js_dup(J, -1); break;
+		case OP_DUP: js_dup(J); break;
 		case OP_DUP2: js_dup2(J); break;
 		case OP_ROT2: js_rot2(J); break;
 		case OP_ROT3: js_rot3(J); break;
@@ -467,7 +468,7 @@ static void jsR_run(js_State *J, js_Function *F)
 		case OP_TRUE: js_pushboolean(J, 1); break;
 		case OP_FALSE: js_pushboolean(J, 0); break;
 
-		case OP_THIS: js_dup(J, 0); break;
+		case OP_THIS: js_copy(J, 0); break;
 		case OP_GLOBAL: js_pushobject(J, J->G); break;
 
 		case OP_FUNDEC:

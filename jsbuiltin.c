@@ -28,7 +28,7 @@ static int jsB_eval(js_State *J, int argc)
 	if (jsR_loadscript(J, "(eval)", s))
 		jsR_error(J, "SyntaxError (eval)");
 
-	js_dup(J, 0); /* copy this */
+	js_copy(J, 0); /* copy this */
 	js_call(J, 0);
 	return 1;
 }
