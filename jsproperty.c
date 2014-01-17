@@ -129,12 +129,12 @@ found:
 	return parent;
 }
 
-js_Object *jsR_newobject(js_State *J, js_Class type)
+js_Object *jsR_newobject(js_State *J, js_Class type, js_Object *prototype)
 {
 	js_Object *obj = malloc(sizeof(js_Object));
 	obj->type = type;
 	obj->properties = &sentinel;
-	obj->prototype = NULL;
+	obj->prototype = prototype;
 	obj->primitive.number = 0;
 	obj->scope = NULL;
 	obj->function = NULL;

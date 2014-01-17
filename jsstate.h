@@ -29,6 +29,13 @@ struct js_State
 	int strict;
 
 	/* runtime */
+	js_Object *Object_prototype;
+	js_Object *Array_prototype;
+	js_Object *Function_prototype;
+	js_Object *Boolean_prototype;
+	js_Object *Number_prototype;
+	js_Object *String_prototype;
+
 	js_Object *G;
 	js_Environment *E;
 

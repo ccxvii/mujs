@@ -74,49 +74,15 @@ int js_dofile(js_State *J, const char *filename)
 	return rv;
 }
 
-static int jsB_print(js_State *J, int argc)
-{
-	int i;
-	for (i = 1; i < argc; ++i) {
-		const char *s = js_tostring(J, i);
-		if (i > 1) putchar(' ');
-		fputs(s, stdout);
-	}
-	putchar('\n');
-	return 0;
-}
-
-static int jsB_eval(js_State *J, int argc)
-{
-	const char *s;
-
-	if (!js_isstring(J, -1))
-		return 1;
-
-	// FIXME: return value if eval string is an expression
-
-	s = js_tostring(J, -1);
-	if (jsR_loadscript(J, "(eval)", s))
-		jsR_error(J, "SyntaxError (eval)");
-
-	js_dup(J, 0); /* copy this */
-	js_call(J, 0);
-	return 1;
-}
-
 js_State *js_newstate(void)
 {
 	js_State *J = malloc(sizeof *J);
 	memset(J, 0, sizeof(*J));
 
-	J->G = jsR_newobject(J, JS_COBJECT);
+	J->G = jsR_newobject(J, JS_COBJECT, NULL);
 	J->E = jsR_newenvironment(J, J->G, NULL);
 
-	js_pushcfunction(J, jsB_eval);
-	js_setglobal(J, "eval");
-
-	js_pushcfunction(J, jsB_print);
-	js_setglobal(J, "print");
+	jsB_init(J);
 
 	return J;
 }

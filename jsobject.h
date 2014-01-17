@@ -86,7 +86,7 @@ js_Object *jsR_toobject(js_State *J, const js_Value *v);
 js_Value jsR_toprimitive(js_State *J, const js_Value *v, int preferred);
 
 /* jsproperty.c */
-js_Object *jsR_newobject(js_State *J, js_Class type);
+js_Object *jsR_newobject(js_State *J, js_Class type, js_Object *prototype);
 js_Property *jsR_getownproperty(js_State *J, js_Object *obj, const char *name);
 js_Property *jsR_getproperty(js_State *J, js_Object *obj, const char *name);
 js_Property *jsR_setproperty(js_State *J, js_Object *obj, const char *name);

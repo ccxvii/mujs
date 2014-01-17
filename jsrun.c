@@ -109,12 +109,12 @@ void js_pushglobal(js_State *J)
 
 void js_newobject(js_State *J)
 {
-	js_pushobject(J, jsR_newobject(J, JS_COBJECT));
+	js_pushobject(J, jsR_newobject(J, JS_COBJECT, J->Object_prototype));
 }
 
 void js_newarray(js_State *J)
 {
-	js_pushobject(J, jsR_newobject(J, JS_CARRAY));
+	js_pushobject(J, jsR_newobject(J, JS_CARRAY, J->Array_prototype));
 }
 
 void js_pushcfunction(js_State *J, js_CFunction v)
@@ -334,7 +334,7 @@ static void jsR_callfunction(js_State *J, int n, js_Function *F, js_Environment 
 
 	saveE = J->E;
 
-	J->E = jsR_newenvironment(J, jsR_newobject(J, JS_COBJECT), scope);
+	J->E = jsR_newenvironment(J, jsR_newobject(J, JS_COBJECT, NULL), scope);
 	for (i = 0; i < n; i++) {
 		js_Property *ref = js_decvar(J, F->params[i]);
 		if (i < n)
@@ -392,7 +392,7 @@ void jsR_dumpstack(js_State *J)
 	printf("stack {\n");
 	for (i = 0; i < top; ++i) {
 		putchar(i == bot ? '>' : ' ');
-		printf("% 3d: ", i);
+		printf("% 4d: ", i);
 		js_dumpvalue(J, stack[i]);
 		putchar('\n');
 	}
@@ -523,15 +523,22 @@ static void jsR_run(js_State *J, js_Function *F)
 		case OP_NEXTPROP:
 			obj = js_toobject(J, -2);
 			if (js_isundefined(J, -1))
-				ref = jsR_nextproperty(J, obj, NULL);
+				str = NULL;
 			else
-				ref = jsR_nextproperty(J, obj, js_tostring(J, -1));
+				str = js_tostring(J, -1);
+
+			ref = jsR_nextproperty(J, obj, str);
+			if (!ref && obj->prototype) {
+				obj = obj->prototype;
+				ref = jsR_nextproperty(J, obj, NULL);
+			}
+
+			js_pop(J, 2);
 			if (ref) {
-				js_pop(J, 1);
+				js_pushobject(J, obj);
 				js_pushliteral(J, ref->name);
 				js_pushboolean(J, 1);
 			} else {
-				js_pop(J, 2);
 				js_pushboolean(J, 0);
 			}
 			break;
