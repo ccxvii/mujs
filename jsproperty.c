@@ -142,9 +142,20 @@ js_Object *jsR_newobject(js_State *J, js_Class type)
 	return obj;
 }
 
-js_Property *jsR_getproperty(js_State *J, js_Object *obj, const char *name)
+js_Property *jsR_getownproperty(js_State *J, js_Object *obj, const char *name)
 {
 	return lookup(obj->properties, name);
+}
+
+js_Property *jsR_getproperty(js_State *J, js_Object *obj, const char *name)
+{
+	do {
+		js_Property *ref = lookup(obj->properties, name);
+		if (ref)
+			return ref;
+		obj = obj->prototype;
+	} while (obj);
+	return NULL;
 }
 
 js_Property *jsR_setproperty(js_State *J, js_Object *obj, const char *name)

@@ -85,7 +85,7 @@ const char *jsR_tostring(js_State *J, const js_Value *v)
 			return jsR_tostring(J, &vv);
 		}
 	}
-	return NULL;
+	return "undefined";
 }
 
 js_Object *jsR_toobject(js_State *J, const js_Value *v)
@@ -98,5 +98,5 @@ js_Object *jsR_toobject(js_State *J, const js_Value *v)
 	case JS_TSTRING: return jsR_newstring(J, v->u.string);
 	case JS_TOBJECT: return v->u.object;
 	}
-	return NULL;
+	jsR_error(J, "TypeError (ToObject)");
 }

@@ -89,10 +89,13 @@ static int jsB_print(js_State *J, int argc)
 static int jsB_eval(js_State *J, int argc)
 {
 	const char *s;
+
 	if (!js_isstring(J, -1))
 		return 1;
 
-	// FIXME: need the real environment!
+	// FIXME: use the real environment
+	// FIXME: return value if eval string is an expression
+
 	s = js_tostring(J, -1);
 	if (jsR_loadstring(J, "(eval)", s, J->GE))
 		jsR_error(J, "SyntaxError (eval)");
