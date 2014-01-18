@@ -21,15 +21,15 @@ static js_Object *jsR_newscript(js_State *J, js_Function *function)
 
 static js_Object *jsR_newcfunction(js_State *J, js_CFunction cfunction)
 {
-	js_Object *obj = jsR_newobject(J, JS_CCFUNCTION, NULL);
+	js_Object *obj = jsR_newobject(J, JS_CCFUNCTION, J->Function_prototype);
 	obj->cfunction = cfunction;
 	obj->cconstructor = NULL;
 	return obj;
 }
 
-static js_Object *jsR_newcconstructor(js_State *J, js_CFunction cfunction, js_CFunction cconstructor)
+js_Object *jsR_newcconstructor(js_State *J, js_CFunction cfunction, js_CFunction cconstructor)
 {
-	js_Object *obj = jsR_newobject(J, JS_CCFUNCTION, NULL);
+	js_Object *obj = jsR_newobject(J, JS_CCFUNCTION, J->Function_prototype);
 	obj->cfunction = cfunction;
 	obj->cconstructor = cconstructor;
 	return obj;
@@ -85,19 +85,10 @@ void js_newscript(js_State *J, js_Function *F)
 void js_newcfunction(js_State *J, js_CFunction fun)
 {
 	js_pushobject(J, jsR_newcfunction(J, fun));
-	// TODO: length property?
 	js_newobject(J);
-	js_copy(J, -2);
-	js_setproperty(J, -2, "constructor");
-	js_setproperty(J, -2, "prototype");
-}
-
-void js_newcconstructor(js_State *J, js_CFunction fun, js_CFunction con)
-{
-	js_pushobject(J, jsR_newcconstructor(J, fun, con));
-	// TODO: length property?
-	js_newobject(J);
-	js_copy(J, -2);
-	js_setproperty(J, -2, "constructor");
+	{
+		js_copy(J, -2);
+		js_setproperty(J, -2, "constructor");
+	}
 	js_setproperty(J, -2, "prototype");
 }

@@ -8,6 +8,7 @@
 #include <string.h>
 #include <setjmp.h>
 #include <math.h>
+#include <float.h>
 
 /* noreturn is a GCC extension */
 #ifdef __GNUC__
@@ -63,5 +64,12 @@ typedef struct js_StringNode js_StringNode;
 const char *js_intern(js_State *J, const char *s);
 void js_printstrings(js_State *J);
 void js_freestrings(js_State *J);
+
+void jsB_initobject(js_State *J);
+void jsB_initarray(js_State *J);
+void jsB_initfunction(js_State *J);
+void jsB_initboolean(js_State *J);
+void jsB_initnumber(js_State *J);
+void jsB_initstring(js_State *J);
 
 #endif
