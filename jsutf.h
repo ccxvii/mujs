@@ -43,36 +43,36 @@ enum
 	Runeerror	= 0xFFFD,	/* decoding error in UTF */
 };
 
-int		chartorune(Rune *rune, char *str);
-int		fullrune(char *str, int n);
+int		chartorune(Rune *rune, const char *str);
+int		fullrune(const char *str, int n);
 int		isalpharune(Rune c);
 int		islowerrune(Rune c);
 int		isspacerune(Rune c);
 int		istitlerune(Rune c);
 int		isupperrune(Rune c);
 int		runelen(long c);
-int		runenlen(Rune *r, int nrune);
-Rune*		runestrcat(Rune *s1, Rune *s2);
-Rune*		runestrchr(Rune *s, Rune c);
-int		runestrcmp(Rune *s1, Rune *s2);
-Rune*		runestrcpy(Rune *s1, Rune *s2);
-Rune*		runestrdup(Rune *s) ;
-Rune*		runestrecpy(Rune *s1, Rune *es1, Rune *s2);
-long		runestrlen(Rune *s);
-Rune*		runestrncat(Rune *s1, Rune *s2, long n);
-int		runestrncmp(Rune *s1, Rune *s2, long n);
-Rune*		runestrncpy(Rune *s1, Rune *s2, long n);
-Rune*		runestrrchr(Rune *s, Rune c);
-Rune*		runestrstr(Rune *s1, Rune *s2);
-int		runetochar(char *str, Rune *rune);
+int		runenlen(const Rune *r, int nrune);
+Rune*		runestrcat(Rune *s1, const Rune *s2);
+Rune*		runestrchr(const Rune *s, Rune c);
+int		runestrcmp(const Rune *s1, const Rune *s2);
+Rune*		runestrcpy(Rune *s1, const Rune *s2);
+Rune*		runestrdup(const Rune *s) ;
+Rune*		runestrecpy(Rune *s1, Rune *es1, const Rune *s2);
+long		runestrlen(const Rune *s);
+Rune*		runestrncat(Rune *s1, const Rune *s2, long n);
+int		runestrncmp(const Rune *s1, const Rune *s2, long n);
+Rune*		runestrncpy(Rune *s1, const Rune *s2, long n);
+Rune*		runestrrchr(const Rune *s, Rune c);
+Rune*		runestrstr(const Rune *s1, const Rune *s2);
+int		runetochar(char *str, const Rune *rune);
 Rune		tolowerrune(Rune c);
 Rune		totitlerune(Rune c);
 Rune		toupperrune(Rune c);
-char*		utfecpy(char *to, char *e, char *from);
-int		utflen(char *s);
-int		utfnlen(char *s, long m);
-char*		utfrrune(char *s, long c);
-char*		utfrune(char *s, long c);
-char*		utfutf(char *s1, char *s2);
+char*		utfecpy(char *to, char *e, const char *from);
+int		utflen(const char *s);
+int		utfnlen(const char *s, long m);
+char*		utfrrune(const char *s, long c);
+char*		utfrune(const char *s, long c);
+char*		utfutf(const char *s1, const char *s2);
 
 #endif

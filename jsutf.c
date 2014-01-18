@@ -46,7 +46,7 @@ enum
 };
 
 int
-chartorune(Rune *rune, char *str)
+chartorune(Rune *rune, const char *str)
 {
 	int c, c1, c2;
 	long l;
@@ -102,7 +102,7 @@ bad:
 }
 
 int
-runetochar(char *str, Rune *rune)
+runetochar(char *str, const Rune *rune)
 {
 	long c;
 
@@ -147,7 +147,7 @@ runelen(long c)
 }
 
 int
-runenlen(Rune *r, int nrune)
+runenlen(const Rune *r, int nrune)
 {
 	int nb, c;
 
@@ -166,7 +166,7 @@ runenlen(Rune *r, int nrune)
 }
 
 int
-fullrune(char *str, int n)
+fullrune(const char *str, int n)
 {
 	int c;
 
@@ -182,15 +182,14 @@ fullrune(char *str, int n)
 }
 
 Rune*
-runestrcat(Rune *s1, Rune *s2)
+runestrcat(Rune *s1, const Rune *s2)
 {
-
 	runestrcpy(runestrchr(s1, 0), s2);
 	return s1;
 }
 
 Rune*
-runestrchr(Rune *s, Rune c)
+runestrchr(const Rune *s, Rune c)
 {
 	Rune c0 = c;
 	Rune c1;
@@ -198,17 +197,17 @@ runestrchr(Rune *s, Rune c)
 	if(c == 0) {
 		while(*s++)
 			;
-		return s-1;
+		return (Rune*) s-1;
 	}
 
 	while((c1 = *s++))
 		if(c1 == c0)
-			return s-1;
+			return (Rune*) s-1;
 	return 0;
 }
 
 int
-runestrcmp(Rune *s1, Rune *s2)
+runestrcmp(const Rune *s1, const Rune *s2)
 {
 	Rune c1, c2;
 
@@ -226,7 +225,7 @@ runestrcmp(Rune *s1, Rune *s2)
 }
 
 Rune*
-runestrcpy(Rune *s1, Rune *s2)
+runestrcpy(Rune *s1, const Rune *s2)
 {
 	Rune *os1;
 
@@ -237,7 +236,7 @@ runestrcpy(Rune *s1, Rune *s2)
 }
 
 Rune*
-runestrdup(Rune *s)
+runestrdup(const Rune *s)
 {
 	Rune *ns;
 
@@ -249,7 +248,7 @@ runestrdup(Rune *s)
 }
 
 Rune*
-runestrecpy(Rune *s1, Rune *es1, Rune *s2)
+runestrecpy(Rune *s1, Rune *es1, const Rune *s2)
 {
 	if(s1 >= es1)
 		return s1;
@@ -264,14 +263,14 @@ runestrecpy(Rune *s1, Rune *es1, Rune *s2)
 }
 
 long
-runestrlen(Rune *s)
+runestrlen(const Rune *s)
 {
 
 	return runestrchr(s, 0) - s;
 }
 
 Rune*
-runestrncat(Rune *s1, Rune *s2, long n)
+runestrncat(Rune *s1, const Rune *s2, long n)
 {
 	Rune *os1;
 
@@ -286,7 +285,7 @@ runestrncat(Rune *s1, Rune *s2, long n)
 }
 
 int
-runestrncmp(Rune *s1, Rune *s2, long n)
+runestrncmp(const Rune *s1, const Rune *s2, long n)
 {
 	Rune c1, c2;
 
@@ -306,7 +305,7 @@ runestrncmp(Rune *s1, Rune *s2, long n)
 }
 
 Rune*
-runestrncpy(Rune *s1, Rune *s2, long n)
+runestrncpy(Rune *s1, const Rune *s2, long n)
 {
 	int i;
 	Rune *os1;
@@ -322,7 +321,7 @@ runestrncpy(Rune *s1, Rune *s2, long n)
 }
 
 Rune*
-runestrrchr(Rune *s, Rune c)
+runestrrchr(const Rune *s, Rune c)
 {
 	Rune *r;
 
@@ -330,7 +329,7 @@ runestrrchr(Rune *s, Rune c)
 		return runestrchr(s, 0);
 	r = 0;
 	while((s = runestrchr(s, c)))
-		r = s++;
+		r = (Rune*) s++;
 	return r;
 }
 
@@ -339,21 +338,21 @@ runestrrchr(Rune *s, Rune c)
  * 0 if none
  */
 Rune*
-runestrstr(Rune *s1, Rune *s2)
+runestrstr(const Rune *s1, const Rune *s2)
 {
-	Rune *p, *pa, *pb;
+	const Rune *p, *pa, *pb;
 	int c0, c;
 
 	c0 = *s2;
 	if(c0 == 0)
-		return s1;
+		return (Rune*) s1;
 	s2++;
 	for(p=runestrchr(s1, c0); p; p=runestrchr(p+1, c0)) {
 		pa = p;
 		for(pb=s2;; pb++) {
 			c = *pb;
 			if(c == 0)
-				return p;
+				return (Rune*) p;
 			if(c != *++pa)
 				break;
 		}
@@ -362,7 +361,7 @@ runestrstr(Rune *s1, Rune *s2)
 }
 
 char*
-utfecpy(char *to, char *e, char *from)
+utfecpy(char *to, char *e, const char *from)
 {
 	char *end;
 
@@ -381,7 +380,7 @@ utfecpy(char *to, char *e, char *from)
 }
 
 int
-utflen(char *s)
+utflen(const char *s)
 {
 	int c;
 	long n;
@@ -401,12 +400,12 @@ utflen(char *s)
 }
 
 int
-utfnlen(char *s, long m)
+utfnlen(const char *s, long m)
 {
 	int c;
 	long n;
 	Rune rune;
-	char *es;
+	const char *es;
 
 	es = s + m;
 	for(n = 0; s < es; n++) {
@@ -425,11 +424,11 @@ utfnlen(char *s, long m)
 }
 
 char*
-utfrrune(char *s, long c)
+utfrrune(const char *s, long c)
 {
 	long c1;
 	Rune r;
-	char *s1;
+	const char *s1;
 
 	if(c < Runesync)		/* not part of utf sequence */
 		return strrchr(s, c);
@@ -439,7 +438,7 @@ utfrrune(char *s, long c)
 		c1 = *(uchar*)s;
 		if(c1 < Runeself) {	/* one byte rune */
 			if(c1 == 0)
-				return s1;
+				return (char*) s1;
 			if(c1 == c)
 				s1 = s;
 			s++;
@@ -453,7 +452,7 @@ utfrrune(char *s, long c)
 }
 
 char*
-utfrune(char *s, long c)
+utfrune(const char *s, long c)
 {
 	long c1;
 	Rune r;
@@ -468,13 +467,13 @@ utfrune(char *s, long c)
 			if(c1 == 0)
 				return 0;
 			if(c1 == c)
-				return s;
+				return (char*) s;
 			s++;
 			continue;
 		}
 		n = chartorune(&r, s);
 		if(r == c)
-			return s;
+			return (char*) s;
 		s += n;
 	}
 }
@@ -484,9 +483,9 @@ utfrune(char *s, long c)
  * 0 if none
  */
 char*
-utfutf(char *s1, char *s2)
+utfutf(const char *s1, const char *s2)
 {
-	char *p;
+	const char *p;
 	long f, n1, n2;
 	Rune r;
 
@@ -498,6 +497,6 @@ utfutf(char *s1, char *s2)
 	n2 = strlen(s2);
 	for(p=s1; (p=utfrune(p, f)); p+=n1)
 		if(strncmp(p, s2, n2) == 0)
-			return p;
+			return (char*) p;
 	return 0;
 }
