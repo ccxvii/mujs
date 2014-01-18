@@ -39,8 +39,8 @@ js_Ast *jsP_newnode(js_State *J, int type, js_Ast *a, js_Ast *b, js_Ast *c, js_A
 	node->number = 0;
 	node->string = NULL;
 
-	node->next = J->ast;
-	J->ast = node;
+	node->gcnext = J->gcast;
+	J->gcast = node;
 
 	return node;
 }
@@ -61,13 +61,13 @@ js_Ast *jsP_newnumnode(js_State *J, int type, double n)
 
 void jsP_freeparse(js_State *J)
 {
-	js_Ast *node = J->ast;
+	js_Ast *node = J->gcast;
 	while (node) {
-		js_Ast *next = node->next;
+		js_Ast *next = node->gcnext;
 		free(node);
 		node = next;
 	}
-	J->ast = NULL;
+	J->gcast = NULL;
 }
 
 /* Lookahead */

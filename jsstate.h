@@ -26,7 +26,7 @@ struct js_State
 	int lookahead;
 	const char *text;
 	double number;
-	js_Ast *ast; /* list of allocated nodes to free after parsing */
+	js_Ast *gcast; /* list of allocated nodes to free after parsing */
 
 	/* compiler */
 	js_Function *fun; /* list of allocated functions to free on errors */
