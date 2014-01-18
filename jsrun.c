@@ -693,48 +693,19 @@ static void jsR_run(js_State *J, js_Function *F)
 
 		/* Relational operators */
 
-		/* TODO: string comparisons */
-		case OP_LT:
-			x = js_tonumber(J, -2);
-			y = js_tonumber(J, -1);
-			js_pop(J, 2);
-			js_pushboolean(J, x < y);
-			break;
-		case OP_GT:
-			x = js_tonumber(J, -2);
-			y = js_tonumber(J, -1);
-			js_pop(J, 2);
-			js_pushboolean(J, x > y);
-			break;
-		case OP_LE:
-			x = js_tonumber(J, -2);
-			y = js_tonumber(J, -1);
-			js_pop(J, 2);
-			js_pushboolean(J, x <= y);
-			break;
-		case OP_GE:
-			x = js_tonumber(J, -2);
-			y = js_tonumber(J, -1);
-			js_pop(J, 2);
-			js_pushboolean(J, x >= y);
-			break;
+		case OP_LT: b = jsR_compare(J); js_pushboolean(J, b < 0); break;
+		case OP_GT: b = jsR_compare(J); js_pushboolean(J, b > 0); break;
+		case OP_LE: b = jsR_compare(J); js_pushboolean(J, b <= 0); break;
+		case OP_GE: b = jsR_compare(J); js_pushboolean(J, b >= 0); break;
+
+		// OP_INSTANCEOF
 
 		/* Equality */
 
-		case OP_EQ:
-		case OP_STRICTEQ:
-			x = js_tonumber(J, -2);
-			y = js_tonumber(J, -1);
-			js_pop(J, 2);
-			js_pushboolean(J, x == y);
-			break;
-		case OP_NE:
-		case OP_STRICTNE:
-			x = js_tonumber(J, -2);
-			y = js_tonumber(J, -1);
-			js_pop(J, 2);
-			js_pushboolean(J, x != y);
-			break;
+		case OP_EQ: b = jsR_equal(J); js_pushboolean(J, b); break;
+		case OP_NE: b = jsR_equal(J); js_pushboolean(J, !b); break;
+		case OP_STRICTEQ: b = jsR_strictequal(J); js_pushboolean(J, b); break;
+		case OP_STRICTNE: b = jsR_strictequal(J); js_pushboolean(J, !b); break;
 
 		/* Binary bitwise operators */
 

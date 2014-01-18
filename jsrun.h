@@ -18,6 +18,11 @@ void jsR_error(js_State *J, const char *fmt, ...);
 void js_pushobject(js_State *J, js_Object *v);
 js_Object *js_toobject(js_State *J, int idx);
 js_Value js_toprimitive(js_State *J, int idx, int hint);
+js_Value js_tovalue(js_State *J, int idx);
+void jsR_concat(js_State *J);
+int jsR_compare(js_State *J);
+int jsR_equal(js_State *J);
+int jsR_strictequal(js_State *J);
 
 /* public */
 

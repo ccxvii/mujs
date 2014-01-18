@@ -124,5 +124,67 @@ void jsR_concat(js_State *J)
 
 int jsR_compare(js_State *J)
 {
+	js_Value va = js_toprimitive(J, -2, JS_HNUMBER);
+	js_Value vb = js_toprimitive(J, -1, JS_HNUMBER);
+	js_pop(J, 2);
+	if (va.type == JS_TSTRING && vb.type == JS_TSTRING) {
+		return strcmp(va.u.string, va.u.string);
+	} else {
+		double x = jsR_tonumber(J, &va);
+		double y = jsR_tonumber(J, &vb);
+		return x < y ? -1 : x > y ? 1 : 0;
+	}
+}
+
+int jsR_equal(js_State *J)
+{
+	js_Value va = js_tovalue(J, -2);
+	js_Value vb = js_tovalue(J, -1);
+	js_pop(J, 2);
+
+retry:
+	if (va.type == vb.type) {
+		if (va.type == JS_TUNDEFINED) return 1;
+		if (va.type == JS_TNULL) return 1;
+		if (va.type == JS_TNUMBER) return va.u.number == vb.u.number;
+		if (va.type == JS_TBOOLEAN) return va.u.boolean == vb.u.boolean;
+		if (va.type == JS_TSTRING) return !strcmp(va.u.string, vb.u.string);
+		if (va.type == JS_TOBJECT) return va.u.object == vb.u.object;
+		return 0;
+	}
+
+	if (va.type == JS_TNULL && vb.type == JS_TUNDEFINED) return 1;
+	if (va.type == JS_TUNDEFINED && vb.type == JS_TNULL) return 1;
+
+	if (va.type == JS_TNUMBER && (vb.type == JS_TSTRING || vb.type == JS_TBOOLEAN))
+		return va.u.number == jsR_tonumber(J, &vb);
+	if ((va.type == JS_TSTRING || va.type == JS_TBOOLEAN) && vb.type == JS_TNUMBER)
+		return jsR_tonumber(J, &va) == vb.u.number;
+
+	if ((va.type == JS_TSTRING || va.type == JS_TNUMBER) && vb.type == JS_TOBJECT) {
+		vb = jsR_toprimitive(J, &vb, JS_HNONE);
+		goto retry;
+	}
+	if (va.type == JS_TOBJECT && (vb.type == JS_TSTRING || vb.type == JS_TNUMBER)) {
+		va = jsR_toprimitive(J, &va, JS_HNONE);
+		goto retry;
+	}
+
+	return 0;
+}
+
+int jsR_strictequal(js_State *J)
+{
+	js_Value va = js_tovalue(J, -2);
+	js_Value vb = js_tovalue(J, -1);
+	js_pop(J, 2);
+
+	if (va.type != vb.type) return 0;
+	if (va.type == JS_TUNDEFINED) return 1;
+	if (va.type == JS_TNULL) return 1;
+	if (va.type == JS_TNUMBER) return va.u.number == vb.u.number;
+	if (va.type == JS_TBOOLEAN) return va.u.boolean == vb.u.boolean;
+	if (va.type == JS_TSTRING) return !strcmp(va.u.string, vb.u.string);
+	if (va.type == JS_TOBJECT) return va.u.object == vb.u.object;
 	return 0;
 }
