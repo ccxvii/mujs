@@ -100,47 +100,6 @@ void js_pushglobal(js_State *J)
 	js_pushobject(J, J->G);
 }
 
-void js_newobject(js_State *J)
-{
-	js_pushobject(J, jsR_newobject(J, JS_COBJECT, J->Object_prototype));
-}
-
-void js_newarray(js_State *J)
-{
-	js_pushobject(J, jsR_newobject(J, JS_CARRAY, J->Array_prototype));
-}
-
-void js_newfunction(js_State *J, js_Function *F, js_Environment *scope)
-{
-	js_pushobject(J, jsR_newfunction(J, F, scope));
-	js_pushnumber(J, F->numparams);
-	js_setproperty(J, -2, "length");
-	js_newobject(J);
-	js_copy(J, -2);
-	js_setproperty(J, -2, "constructor");
-	js_setproperty(J, -2, "prototype");
-}
-
-void js_newcfunction(js_State *J, js_CFunction fun)
-{
-	js_pushobject(J, jsR_newcfunction(J, fun));
-	// TODO: length property?
-	js_newobject(J);
-	js_copy(J, -2);
-	js_setproperty(J, -2, "constructor");
-	js_setproperty(J, -2, "prototype");
-}
-
-void js_newcconstructor(js_State *J, js_CFunction fun, js_CFunction con)
-{
-	js_pushobject(J, jsR_newcconstructor(J, fun, con));
-	// TODO: length property?
-	js_newobject(J);
-	js_copy(J, -2);
-	js_setproperty(J, -2, "constructor");
-	js_setproperty(J, -2, "prototype");
-}
-
 /* Read values from stack */
 
 static const js_Value *stackidx(js_State *J, int idx)
@@ -839,7 +798,7 @@ int jsR_loadscript(js_State *J, const char *filename, const char *source)
 	jsP_freeparse(J);
 	if (!F) return 1;
 
-	js_pushobject(J, jsR_newscript(J, F));
+	js_newscript(J, F);
 	return 0;
 }
 

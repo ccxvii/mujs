@@ -38,6 +38,8 @@ void js_pushstring(js_State *J, const char *v);
 
 void js_newobject(js_State *J);
 void js_newarray(js_State *J);
+void js_newfunction(js_State *J, js_Function *function, js_Environment *scope);
+void js_newscript(js_State *J, js_Function *function);
 void js_newcfunction(js_State *J, js_CFunction fun);
 void js_newcconstructor(js_State *J, js_CFunction fun, js_CFunction con);
 
