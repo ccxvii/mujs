@@ -27,4 +27,4 @@ tags: $(SRCS) main.c $(HDRS)
 	ctags $^
 
 clean:
-	rm -f build/* js
+	rm -f opnames.h build/* js
