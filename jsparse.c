@@ -31,7 +31,7 @@ js_Ast *jsP_newnode(js_State *J, int type, js_Ast *a, js_Ast *b, js_Ast *c, js_A
 	js_Ast *node = malloc(sizeof(js_Ast));
 
 	node->type = type;
-	node->line = J->line;
+	node->line = J->lexline;
 	node->a = a;
 	node->b = b;
 	node->c = c;
@@ -842,7 +842,7 @@ void jsP_warning(js_State *J, const char *fmt, ...)
 {
 	va_list ap;
 
-	fprintf(stderr, "%s:%d: warning: ", J->filename, J->line);
+	fprintf(stderr, "%s:%d: warning: ", J->filename, J->lexline);
 	va_start(ap, fmt);
 	vfprintf(stderr, fmt, ap);
 	va_end(ap);
@@ -853,7 +853,7 @@ int jsP_error(js_State *J, const char *fmt, ...)
 {
 	va_list ap;
 
-	fprintf(stderr, "%s:%d: error: ", J->filename, J->line);
+	fprintf(stderr, "%s:%d: error: ", J->filename, J->lexline);
 	va_start(ap, fmt);
 	vfprintf(stderr, fmt, ap);
 	va_end(ap);

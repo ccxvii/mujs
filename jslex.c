@@ -423,6 +423,7 @@ static int lex(js_State *J, const char **sp)
 	J->newline = 0;
 
 	while (1) {
+		J->lexline = J->line; /* save location of beginning of token */
 		int c = NEXT();
 
 		while (iswhite(c))
