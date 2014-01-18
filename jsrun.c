@@ -119,6 +119,19 @@ int js_isstring(js_State *J, int idx) { return stackidx(J, idx)->type == JS_TSTR
 int js_isprimitive(js_State *J, int idx) { return stackidx(J, idx)->type != JS_TOBJECT; }
 int js_isobject(js_State *J, int idx) { return stackidx(J, idx)->type == JS_TOBJECT; }
 
+const char *js_typeof(js_State *J, int idx)
+{
+	switch (stackidx(J, idx)->type) {
+	case JS_TUNDEFINED: return "undefined";
+	case JS_TNULL: return "object";
+	case JS_TBOOLEAN: return "boolean";
+	case JS_TNUMBER: return "number";
+	case JS_TSTRING: return "string";
+	case JS_TOBJECT: return "object";
+	}
+	return "object";
+}
+
 js_Value js_tovalue(js_State *J, int idx)
 {
 	return *stackidx(J, idx);
@@ -587,6 +600,12 @@ static void jsR_run(js_State *J, js_Function *F)
 
 		/* Unary expressions */
 
+		case OP_TYPEOF:
+			str = js_typeof(J, -1);
+			js_pop(J, 1);
+			js_pushliteral(J, str);
+			break;
+
 		case OP_POS:
 			x = js_tonumber(J, -1);
 			js_pop(J, 1);
@@ -614,25 +633,7 @@ static void jsR_run(js_State *J, js_Function *F)
 		/* Binary expressions */
 
 		case OP_ADD:
-			{
-				js_Value va = js_toprimitive(J, -2, JS_HNONE);
-				js_Value vb = js_toprimitive(J, -1, JS_HNONE);
-				if (va.type == JS_TSTRING || vb.type == JS_TSTRING) {
-					const char *sa = jsR_tostring(J, &va);
-					const char *sb = jsR_tostring(J, &vb);
-					char *sab = malloc(strlen(sa) + strlen(sb) + 1);
-					strcpy(sab, sa);
-					strcat(sab, sb);
-					js_pop(J, 2);
-					js_pushstring(J, sab);
-					free(sab);
-				} else {
-					x = jsR_tonumber(J, &va);
-					y = jsR_tonumber(J, &vb);
-					js_pop(J, 2);
-					js_pushnumber(J, x + y);
-				}
-			}
+			jsR_concat(J);
 			break;
 
 		case OP_SUB:
@@ -795,6 +796,9 @@ int jsR_loadscript(js_State *J, const char *filename, const char *source)
 	if (!P) return 1;
 	jsP_optimize(J, P);
 	F = jsC_compile(J, P);
+
+	jsP_dumpsyntax(J, P);
+
 	jsP_freeparse(J);
 	if (!F) return 1;
 

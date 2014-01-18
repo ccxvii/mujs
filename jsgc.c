@@ -1,7 +1,7 @@
 #include "js.h"
 #include "jscompile.h"
-#include "jsrun.h"
 #include "jsobject.h"
+#include "jsrun.h"
 #include "jsstate.h"
 
 static void jsG_markobject(js_State *J, int mark, js_Object *obj);

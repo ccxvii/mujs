@@ -44,7 +44,6 @@ enum
 	OP_CALL,	/* <closure> <this> <args...> -(numargs)- <returnvalue> */
 	OP_NEW,		/* <closure> <args...> -(numargs)- <returnvalue> */
 
-	OP_VOID,
 	OP_TYPEOF,
 	OP_POS,
 	OP_NEG,

@@ -16,6 +16,8 @@ js_Environment *jsR_newenvironment(js_State *J, js_Object *variables, js_Environ
 int jsR_loadscript(js_State *J, const char *filename, const char *source);
 void jsR_error(js_State *J, const char *fmt, ...);
 void js_pushobject(js_State *J, js_Object *v);
+js_Object *js_toobject(js_State *J, int idx);
+js_Value js_toprimitive(js_State *J, int idx, int hint);
 
 /* public */
 
@@ -43,6 +45,7 @@ void js_newscript(js_State *J, js_Function *function);
 void js_newcfunction(js_State *J, js_CFunction fun);
 void js_newcconstructor(js_State *J, js_CFunction fun, js_CFunction con);
 
+const char *js_typeof(js_State *J, int idx);
 int js_isundefined(js_State *J, int idx);
 int js_isnull(js_State *J, int idx);
 int js_isboolean(js_State *J, int idx);

@@ -1,5 +1,6 @@
 #include "js.h"
 #include "jsobject.h"
+#include "jsrun.h"
 
 js_Value jsR_toprimitive(js_State *J, const js_Value *v, int preferred)
 {
@@ -98,4 +99,30 @@ js_Object *jsR_toobject(js_State *J, const js_Value *v)
 	case JS_TOBJECT: return v->u.object;
 	}
 	jsR_error(J, "TypeError (ToObject)");
+}
+
+void jsR_concat(js_State *J)
+{
+	js_Value va = js_toprimitive(J, -2, JS_HNONE);
+	js_Value vb = js_toprimitive(J, -1, JS_HNONE);
+	if (va.type == JS_TSTRING || vb.type == JS_TSTRING) {
+		const char *sa = jsR_tostring(J, &va);
+		const char *sb = jsR_tostring(J, &vb);
+		char *sab = malloc(strlen(sa) + strlen(sb) + 1);
+		strcpy(sab, sa);
+		strcat(sab, sb);
+		js_pop(J, 2);
+		js_pushstring(J, sab);
+		free(sab);
+	} else {
+		double x = jsR_tonumber(J, &va);
+		double y = jsR_tonumber(J, &vb);
+		js_pop(J, 2);
+		js_pushnumber(J, x + y);
+	}
+}
+
+int jsR_compare(js_State *J)
+{
+	return 0;
 }
