@@ -1,6 +1,7 @@
 #include "js.h"
 #include "jslex.h"
 #include "jsstate.h"
+#include "jsutf.h"
 
 #define nelem(a) (sizeof (a) / sizeof (a)[0])
 
@@ -102,7 +103,7 @@ static inline int isnewline(c)
 
 static inline int isidentifierstart(int c)
 {
-	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '$' || c == '_';
+	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '$' || c == '_' || isalpharune(c);
 }
 
 static inline int isidentifierpart(int c)
@@ -139,7 +140,8 @@ static inline int tohex(int c)
 
 static void next(js_State *J, const char **sp)
 {
-	int c = *(*sp)++;
+	Rune c;
+	(*sp) += chartorune(&c, *sp);
 	/* consume CR LF as one unit */
 	if (c == '\r' && PEEK == '\n')
 		(*sp)++;
@@ -159,13 +161,14 @@ static void textinit(js_State *J)
 	J->buf.len = 0;
 }
 
-static inline void textpush(js_State *J, int c)
+static inline void textpush(js_State *J, Rune c)
 {
-	if (J->buf.len >= J->buf.cap) {
+	int n = runelen(c);
+	if (J->buf.len + n > J->buf.cap) {
 		J->buf.cap = J->buf.cap * 2;
 		J->buf.text = realloc(J->buf.text, J->buf.cap);
 	}
-	J->buf.text[J->buf.len++] = c;
+	J->buf.len += runetochar(J->buf.text + J->buf.len, &c);
 }
 
 static inline char *textend(js_State *J)
