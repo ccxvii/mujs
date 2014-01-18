@@ -20,6 +20,7 @@ struct js_State
 	/* lexer */
 	struct { char *text; size_t len, cap; } buf;
 	int lexline;
+	int lexchar;
 	int lasttoken;
 	int newline;
 

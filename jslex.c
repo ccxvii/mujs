@@ -131,23 +131,23 @@ static inline int tohex(int c)
 	return 0;
 }
 
-#define PEEK() (**sp)
+#define PEEK (J->lexchar)
 #define NEXT() next(J, sp)
-#define UNGET() ((*sp)--)
-#define NEXTPEEK() (NEXT(), PEEK())
-#define ACCEPT(x) (PEEK() == x ? (NEXT(), 1) : 0)
+#define NEXTPEEK (NEXT(), PEEK)
+#define ACCEPT(x) (PEEK == x ? (NEXT(), 1) : 0)
+#define EXPECT(x) (ACCEPT(x) || (jsP_error(J, "expected '%c'", x), 0))
 
-static int next(js_State *J, const char **sp)
+static void next(js_State *J, const char **sp)
 {
 	int c = *(*sp)++;
 	/* consume CR LF as one unit */
-	if (c == '\r' && PEEK() == '\n')
+	if (c == '\r' && PEEK == '\n')
 		(*sp)++;
 	if (isnewline(c)) {
 		J->line++;
-		J->newline = 1;
+		c = '\n';
 	}
-	return c;
+	J->lexchar = c;
 }
 
 static void textinit(js_State *J)
@@ -176,34 +176,33 @@ static inline char *textend(js_State *J)
 
 static inline void lexlinecomment(js_State *J, const char **sp)
 {
-	int c = PEEK();
-	while (c && !isnewline(c)) {
-		c = NEXTPEEK();
-	}
+	while (PEEK && !isnewline(PEEK))
+		NEXT();
 }
 
 static inline int lexcomment(js_State *J, const char **sp)
 {
-	while (1) {
-		int c = NEXT();
-		if (c == '*') {
-			while (c == '*')
-				c = NEXT();
-			if (c == '/')
+	/* already consumed initial '/' '*' sequence */
+	while (PEEK != 0) {
+		if (ACCEPT('*')) {
+			while (ACCEPT('*'))
+				NEXT();
+			if (ACCEPT('/'))
 				return 0;
-		} else if (c == 0) {
-			return -1;
 		}
+		NEXT();
 	}
+	return -1;
 }
 
 static inline double lexhex(js_State *J, const char **sp)
 {
 	double n = 0;
-	int c = PEEK();
-	while (ishex(c)) {
-		n = n * 16 + tohex(c);
-		c = NEXTPEEK();
+	if (!ishex(PEEK))
+		return jsP_error(J, "malformed hexadecimal number");
+	while (ishex(PEEK)) {
+		n = n * 16 + tohex(PEEK);
+		NEXT();
 	}
 	return n;
 }
@@ -211,10 +210,11 @@ static inline double lexhex(js_State *J, const char **sp)
 static inline double lexinteger(js_State *J, const char **sp)
 {
 	double n = 0;
-	int c = PEEK();
-	while (isdec(c)) {
-		n = n * 10 + (c - '0');
-		c = NEXTPEEK();
+	if (!isdec(PEEK))
+		return jsP_error(J, "malformed number");
+	while (isdec(PEEK)) {
+		n = n * 10 + (PEEK - '0');
+		NEXT();
 	}
 	return n;
 }
@@ -223,49 +223,52 @@ static inline double lexfraction(js_State *J, const char **sp)
 {
 	double n = 0;
 	double d = 1;
-	int c = PEEK();
-	while (isdec(c)) {
-		n = n * 10 + (c - '0');
+	while (isdec(PEEK)) {
+		n = n * 10 + (PEEK - '0');
 		d = d * 10;
-		c = NEXTPEEK();
+		NEXT();
 	}
 	return n / d;
 }
 
 static inline double lexexponent(js_State *J, const char **sp)
 {
+	double sign;
 	if (ACCEPT('e') || ACCEPT('E')) {
-		if (ACCEPT('-'))
-			return -lexinteger(J, sp);
-		else if (ACCEPT('+'))
-			return lexinteger(J, sp);
-		else
-			return lexinteger(J, sp);
+		if (ACCEPT('-')) sign = -1;
+		else if (ACCEPT('+')) sign = 1;
+		else sign = 1;
+		return sign * lexinteger(J, sp);
 	}
 	return 0;
 }
 
 static inline int lexnumber(js_State *J, const char **sp)
 {
-	double n;
+	double n = 0;
 
-	if ((*sp)[0] == '0' && ((*sp)[1] == 'x' || (*sp)[1] == 'X')) {
-		*sp += 2;
-		if (!ishex(PEEK()))
-			return jsP_error(J, "0x not followed by hexademical digit");
-		J->number = lexhex(J, sp);
-		return TK_NUMBER;
+	if (ACCEPT('0')) {
+		if (ACCEPT('x') || ACCEPT('X')) {
+			J->number = lexhex(J, sp);
+			return TK_NUMBER;
+		}
+		if (isdec(PEEK))
+			return jsP_error(J, "number with leading zero");
 	}
 
-	if ((*sp)[0] == '0' && isdec((*sp)[1]))
-		return jsP_error(J, "number with leading zero");
+	if (ACCEPT('.')) {
+		if (!isdec(PEEK))
+			return '.';
+		n = lexfraction(J, sp);
+		n *= pow(10, lexexponent(J, sp));
+	} else {
+		n = lexinteger(J, sp);
+		if (ACCEPT('.'))
+			n += lexfraction(J, sp);
+		n *= pow(10, lexexponent(J, sp));
+	}
 
-	n = lexinteger(J, sp);
-	if (ACCEPT('.'))
-		n += lexfraction(J, sp);
-	n *= pow(10, lexexponent(J, sp));
-
-	if (isidentifierstart(PEEK()))
+	if (isidentifierstart(PEEK))
 		return jsP_error(J, "number with letter suffix");
 
 	J->number = n;
@@ -274,58 +277,66 @@ static inline int lexnumber(js_State *J, const char **sp)
 
 static inline int lexescape(js_State *J, const char **sp)
 {
-	int c = NEXT();
 	int x = 0;
 
-	if (isnewline(c))
-		return 0;
+	/* already consumed '\' */
 
-	switch (c) {
+	if (isnewline(PEEK)) {
+		NEXT();
+		return 0;
+	}
+
+	switch (PEEK) {
 	case 'u':
-		if (!ishex(PEEK())) return 1; else x |= NEXTPEEK() << 12;
-		if (!ishex(PEEK())) return 1; else x |= NEXTPEEK() << 8;
-		if (!ishex(PEEK())) return 1; else x |= NEXTPEEK() << 4;
-		if (!ishex(PEEK())) return 1; else x |= NEXTPEEK();
+		NEXT();
+		if (!ishex(PEEK)) return 1; else { x |= PEEK << 12; NEXT(); }
+		if (!ishex(PEEK)) return 1; else { x |= PEEK << 8; NEXT(); }
+		if (!ishex(PEEK)) return 1; else { x |= PEEK << 4; NEXT(); }
+		if (!ishex(PEEK)) return 1; else { x |= PEEK; NEXT(); }
 		textpush(J, x);
 		break;
 	case 'x':
-		if (!ishex(PEEK())) return 1; else x |= NEXTPEEK() << 4;
-		if (!ishex(PEEK())) return 1; else x |= NEXTPEEK();
+		NEXT();
+		if (!ishex(PEEK)) return 1; else { x |= PEEK << 4; NEXT(); }
+		if (!ishex(PEEK)) return 1; else { x |= PEEK; NEXT(); }
 		textpush(J, x);
 		break;
-	case '0': textpush(J, 0); break;
-	case '\\': textpush(J, '\\'); break;
-	case '\'': textpush(J, '\''); break;
-	case '"': textpush(J, '"'); break;
-	case 'b': textpush(J, '\b'); break;
-	case 'f': textpush(J, '\f'); break;
-	case 'n': textpush(J, '\n'); break;
-	case 'r': textpush(J, '\r'); break;
-	case 't': textpush(J, '\t'); break;
-	case 'v': textpush(J, '\v'); break;
-	default: textpush(J, c); break;
+	case '0': textpush(J, 0); NEXT(); break;
+	case '\\': textpush(J, '\\'); NEXT(); break;
+	case '\'': textpush(J, '\''); NEXT(); break;
+	case '"': textpush(J, '"'); NEXT(); break;
+	case 'b': textpush(J, '\b'); NEXT(); break;
+	case 'f': textpush(J, '\f'); NEXT(); break;
+	case 'n': textpush(J, '\n'); NEXT(); break;
+	case 'r': textpush(J, '\r'); NEXT(); break;
+	case 't': textpush(J, '\t'); NEXT(); break;
+	case 'v': textpush(J, '\v'); NEXT(); break;
+	default: textpush(J, PEEK); NEXT(); break;
 	}
 	return 0;
 }
 
-static inline int lexstring(js_State *J, const char **sp, int q)
+static inline int lexstring(js_State *J, const char **sp)
 {
 	const char *s;
-	int c = NEXT();
+
+	int q = PEEK;
+	NEXT();
 
 	textinit(J);
 
-	while (c != q) {
-		if (c == 0 || isnewline(c))
+	while (PEEK != q) {
+		if (PEEK == 0 || isnewline(PEEK))
 			return jsP_error(J, "string not terminated");
-		if (c == '\\') {
+		if (ACCEPT('\\')) {
 			if (lexescape(J, sp))
 				return jsP_error(J, "malformed escape sequence");
 		} else {
-			textpush(J, c);
+			textpush(J, PEEK);
+			NEXT();
 		}
-		c = NEXT();
 	}
+	EXPECT(q);
 
 	s = textend(J);
 
@@ -359,38 +370,38 @@ static int lexregexp(js_State *J, const char **sp)
 	int g, m, i;
 	int c;
 
+	/* already consumed initial '/' */
+
 	textinit(J);
 
 	/* regexp body */
-	c = NEXT();
-	while (c != '/') {
-		if (c == 0 || isnewline(c)) {
+	while (PEEK != '/') {
+		if (PEEK == 0 || isnewline(PEEK)) {
 			return jsP_error(J, "regular expression not terminated");
-		} else if (c == '\\') {
-			textpush(J, c);
-			c = NEXT();
-			if (c == 0 || isnewline(c))
+		} else if (ACCEPT('\\')) {
+			textpush(J, '\\');
+			if (PEEK == 0 || isnewline(PEEK))
 				return jsP_error(J, "regular expression not terminated");
-			textpush(J, c);
-			c = NEXT();
+			textpush(J, PEEK);
+			NEXT();
 		} else {
-			textpush(J, c);
-			c = NEXT();
+			textpush(J, PEEK);
+			NEXT();
 		}
 	}
+	EXPECT('/');
 
 	s = textend(J);
 
 	/* regexp flags */
 	g = i = m = 0;
 
-	c = PEEK();
-	while (isidentifierpart(c)) {
-		if (c == 'g') ++g;
-		else if (c == 'i') ++i;
-		else if (c == 'm') ++m;
-		else return jsP_error(J, "illegal flag in regular expression: %c", c);
-		c = NEXTPEEK();
+	c = PEEK;
+	while (isidentifierpart(PEEK)) {
+		if (ACCEPT('g')) ++g;
+		else if (ACCEPT('i')) ++i;
+		else if (ACCEPT('m')) ++m;
+		else return jsP_error(J, "illegal flag in regular expression: %c", PEEK);
 	}
 
 	if (g > 1 || i > 1 || m > 1)
@@ -424,18 +435,19 @@ static int lex(js_State *J, const char **sp)
 
 	while (1) {
 		J->lexline = J->line; /* save location of beginning of token */
-		int c = NEXT();
 
-		while (iswhite(c))
-			c = NEXT();
+		while (iswhite(PEEK))
+			NEXT();
 
-		if (isnewline(c)) {
+		if (isnewline(PEEK)) {
+			NEXT();
+			J->newline = 1;
 			if (isnlthcontext(J->lasttoken))
 				return ';';
 			continue;
 		}
 
-		if (c == '/') {
+		if (ACCEPT('/')) {
 			if (ACCEPT('/')) {
 				lexlinecomment(J, sp);
 				continue;
@@ -453,14 +465,14 @@ static int lex(js_State *J, const char **sp)
 		}
 
 		// TODO: \uXXXX escapes
-		if (isidentifierstart(c)) {
+		if (isidentifierstart(PEEK)) {
 			textinit(J);
-			textpush(J, c);
+			textpush(J, PEEK);
 
-			c = PEEK();
-			while (isidentifierpart(c)) {
-				textpush(J, c);
-				c = NEXTPEEK();
+			NEXT();
+			while (isidentifierpart(PEEK)) {
+				textpush(J, PEEK);
+				NEXT();
 			}
 
 			textend(J);
@@ -468,37 +480,32 @@ static int lex(js_State *J, const char **sp)
 			return findkeyword(J, J->buf.text);
 		}
 
-		if (c >= '0' && c <= '9') {
-			UNGET();
+		if (PEEK >= '0' && PEEK <= '9') {
 			return lexnumber(J, sp);
 		}
 
-		switch (c) {
-		case '(':
-		case ')':
-		case ',':
-		case ':':
-		case ';':
-		case '?':
-		case '[':
-		case ']':
-		case '{':
-		case '}':
-		case '~':
-			return c;
+		switch (PEEK) {
+		case '(': NEXT(); return '(';
+		case ')': NEXT(); return ')';
+		case ',': NEXT(); return ',';
+		case ':': NEXT(); return ':';
+		case ';': NEXT(); return ';';
+		case '?': NEXT(); return '?';
+		case '[': NEXT(); return '[';
+		case ']': NEXT(); return ']';
+		case '{': NEXT(); return '{';
+		case '}': NEXT(); return '}';
+		case '~': NEXT(); return '~';
 
 		case '\'':
 		case '"':
-			return lexstring(J, sp, c);
+			return lexstring(J, sp);
 
 		case '.':
-			if (isdec(PEEK())) {
-				UNGET();
-				return lexnumber(J, sp);
-			}
-			return '.';
+			return lexnumber(J, sp);
 
 		case '<':
+			NEXT();
 			if (ACCEPT('<')) {
 				if (ACCEPT('='))
 					return TK_SHL_ASS;
@@ -509,6 +516,7 @@ static int lex(js_State *J, const char **sp)
 			return '<';
 
 		case '>':
+			NEXT();
 			if (ACCEPT('>')) {
 				if (ACCEPT('>')) {
 					if (ACCEPT('='))
@@ -524,6 +532,7 @@ static int lex(js_State *J, const char **sp)
 			return '>';
 
 		case '=':
+			NEXT();
 			if (ACCEPT('=')) {
 				if (ACCEPT('='))
 					return TK_STRICTEQ;
@@ -532,6 +541,7 @@ static int lex(js_State *J, const char **sp)
 			return '=';
 
 		case '!':
+			NEXT();
 			if (ACCEPT('=')) {
 				if (ACCEPT('='))
 					return TK_STRICTNE;
@@ -540,6 +550,7 @@ static int lex(js_State *J, const char **sp)
 			return '!';
 
 		case '+':
+			NEXT();
 			if (ACCEPT('+'))
 				return TK_INC;
 			if (ACCEPT('='))
@@ -547,6 +558,7 @@ static int lex(js_State *J, const char **sp)
 			return '+';
 
 		case '-':
+			NEXT();
 			if (ACCEPT('-'))
 				return TK_DEC;
 			if (ACCEPT('='))
@@ -554,16 +566,19 @@ static int lex(js_State *J, const char **sp)
 			return '-';
 
 		case '*':
+			NEXT();
 			if (ACCEPT('='))
 				return TK_MUL_ASS;
 			return '*';
 
 		case '%':
+			NEXT();
 			if (ACCEPT('='))
 				return TK_MOD_ASS;
 			return '%';
 
 		case '&':
+			NEXT();
 			if (ACCEPT('&'))
 				return TK_AND;
 			if (ACCEPT('='))
@@ -571,6 +586,7 @@ static int lex(js_State *J, const char **sp)
 			return '&';
 
 		case '|':
+			NEXT();
 			if (ACCEPT('|'))
 				return TK_OR;
 			if (ACCEPT('='))
@@ -578,6 +594,7 @@ static int lex(js_State *J, const char **sp)
 			return '|';
 
 		case '^':
+			NEXT();
 			if (ACCEPT('='))
 				return TK_XOR_ASS;
 			return '^';
@@ -586,9 +603,9 @@ static int lex(js_State *J, const char **sp)
 			return 0; /* EOF */
 		}
 
-		if (c >= 0x20 && c <= 0x7E)
-			return jsP_error(J, "unexpected character: '%c'", c);
-		return jsP_error(J, "unexpected character: \\u%04X", c);
+		if (PEEK >= 0x20 && PEEK <= 0x7E)
+			return jsP_error(J, "unexpected character: '%c'", PEEK);
+		return jsP_error(J, "unexpected character: \\u%04X", PEEK);
 	}
 }
 
@@ -598,9 +615,7 @@ void jsP_initlex(js_State *J, const char *filename, const char *source)
 	J->source = source;
 	J->line = 1;
 	J->lasttoken = 0;
-	// FIXME: parse utf-8 proper instead of just skipping BOM
-	if (!strncmp(source, "\357\273\277", 3))
-		J->source += 3;
+	next(J, &J->source); /* load first lookahead character */
 }
 
 int jsP_lex(js_State *J)
