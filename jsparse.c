@@ -864,6 +864,8 @@ int jsP_error(js_State *J, const char *fmt, ...)
 
 js_Ast *jsP_parse(js_State *J, const char *filename, const char *source)
 {
+	js_Ast *p, *last;
+
 	jsP_initlex(J, filename, source);
 
 	if (setjmp(J->jb)) {
@@ -872,5 +874,16 @@ js_Ast *jsP_parse(js_State *J, const char *filename, const char *source)
 	}
 
 	next(J);
-	return script(J);
+	p = script(J);
+
+	/* patch up global and eval code to return value of last expression */
+	last = p;
+	if (last) {
+		while (last->b)
+			last = last->b;
+		if (last->a->type >= AST_IDENTIFIER && last->a->type < STM_BLOCK)
+			last->a = STM1(RETURN, last->a);
+	}
+
+	return p;
 }

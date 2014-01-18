@@ -4,13 +4,12 @@
 enum
 {
 	AST_LIST,
+	AST_FUNDEC,
 
 	AST_IDENTIFIER,
 	AST_NUMBER,
 	AST_STRING,
 	AST_REGEXP,
-
-	AST_FUNDEC,
 
 	/* literals */
 	EXP_UNDEF, /* for array elisions */

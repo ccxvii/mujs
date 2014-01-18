@@ -6,7 +6,7 @@
 #include <assert.h>
 
 static const char *astname[] = {
-	"list", "ident", "number", "string", "regexp", "fundec", "undef",
+	"list", "fundec", "ident", "number", "string", "regexp", "undef",
 	"null", "true", "false", "this", "fun", "array", "object", "prop_val",
 	"prop_get", "prop_set", "index", "member", "call", "new", "delete",
 	"void", "typeof", "preinc", "predec", "postinc", "postdec", "pos",
