@@ -121,7 +121,7 @@ void js_newfunction(js_State *J, js_Function *F, js_Environment *scope)
 	js_setproperty(J, -2, "prototype");
 }
 
-void js_pushcfunction(js_State *J, js_CFunction fun)
+void js_newcfunction(js_State *J, js_CFunction fun)
 {
 	js_pushobject(J, jsR_newcfunction(J, fun));
 	// TODO: length property?
@@ -131,9 +131,10 @@ void js_pushcfunction(js_State *J, js_CFunction fun)
 	js_setproperty(J, -2, "prototype");
 }
 
-void js_pushcconstructor(js_State *J, js_CFunction fun, js_CFunction con)
+void js_newcconstructor(js_State *J, js_CFunction fun, js_CFunction con)
 {
 	js_pushobject(J, jsR_newcconstructor(J, fun, con));
+	// TODO: length property?
 	js_newobject(J);
 	js_copy(J, -2);
 	js_setproperty(J, -2, "constructor");

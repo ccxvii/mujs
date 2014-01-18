@@ -64,7 +64,7 @@ static int jsB_String(js_State *J, int n) { return 0; }
 static void jsB_initobject(js_State *J)
 {
 	J->Object_prototype = jsR_newobject(J, JS_COBJECT, NULL);
-	js_pushcconstructor(J, jsB_Object, jsB_new_Object);
+	js_newcconstructor(J, jsB_Object, jsB_new_Object);
 	js_pushobject(J, J->Object_prototype);
 	js_setproperty(J, -2, "prototype");
 	js_setglobal(J, "Object");
@@ -73,7 +73,7 @@ static void jsB_initobject(js_State *J)
 static void jsB_initarray(js_State *J)
 {
 	J->Array_prototype = jsR_newobject(J, JS_COBJECT, NULL);
-	js_pushcfunction(J, jsB_Array);
+	js_newcfunction(J, jsB_Array);
 	js_pushobject(J, J->Array_prototype);
 	js_setproperty(J, -2, "prototype");
 	js_setglobal(J, "Array");
@@ -82,7 +82,7 @@ static void jsB_initarray(js_State *J)
 static void jsB_initfunction(js_State *J)
 {
 	J->Function_prototype = jsR_newobject(J, JS_COBJECT, NULL);
-	js_pushcfunction(J, jsB_Function);
+	js_newcfunction(J, jsB_Function);
 	js_pushobject(J, J->Function_prototype);
 	js_setproperty(J, -2, "prototype");
 	js_setglobal(J, "Function");
@@ -91,7 +91,7 @@ static void jsB_initfunction(js_State *J)
 static void jsB_initboolean(js_State *J)
 {
 	J->Boolean_prototype = jsR_newobject(J, JS_COBJECT, NULL);
-	js_pushcfunction(J, jsB_Boolean);
+	js_newcfunction(J, jsB_Boolean);
 	js_pushobject(J, J->Boolean_prototype);
 	js_setproperty(J, -2, "prototype");
 	js_setglobal(J, "Boolean");
@@ -100,7 +100,7 @@ static void jsB_initboolean(js_State *J)
 static void jsB_initnumber(js_State *J)
 {
 	J->Number_prototype = jsR_newobject(J, JS_COBJECT, NULL);
-	js_pushcfunction(J, jsB_Number);
+	js_newcfunction(J, jsB_Number);
 	js_pushobject(J, J->Number_prototype);
 	js_setproperty(J, -2, "prototype");
 	js_setglobal(J, "Number");
@@ -109,7 +109,7 @@ static void jsB_initnumber(js_State *J)
 static void jsB_initstring(js_State *J)
 {
 	J->String_prototype = jsR_newobject(J, JS_COBJECT, NULL);
-	js_pushcfunction(J, jsB_String);
+	js_newcfunction(J, jsB_String);
 	js_pushobject(J, J->String_prototype);
 	js_setproperty(J, -2, "prototype");
 	js_setglobal(J, "String");
@@ -146,7 +146,7 @@ static int jsB_isFinite(js_State *J, int argc)
 
 static void jsB_register(js_State *J, const char *name, js_CFunction cfun)
 {
-	js_pushcfunction(J, cfun);
+	js_newcfunction(J, cfun);
 	js_setglobal(J, name);
 }
 
