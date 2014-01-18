@@ -24,6 +24,9 @@ int jsR_compare(js_State *J);
 int jsR_equal(js_State *J);
 int jsR_strictequal(js_State *J);
 
+const char *jsR_numbertostring(js_State *J, double number);
+double jsR_stringtonumber(js_State *J, const char *string);
+
 /* public */
 
 void js_call(js_State *J, int n);
@@ -41,6 +44,7 @@ void js_pushundefined(js_State *J);
 void js_pushnull(js_State *J);
 void js_pushboolean(js_State *J, int v);
 void js_pushnumber(js_State *J, double v);
+void js_pushliteral(js_State *J, const char *v);
 void js_pushstring(js_State *J, const char *v);
 
 void js_newobject(js_State *J);
@@ -58,6 +62,7 @@ int js_isnumber(js_State *J, int idx);
 int js_isstring(js_State *J, int idx);
 int js_isprimitive(js_State *J, int idx);
 int js_isobject(js_State *J, int idx);
+int js_iscallable(js_State *J, int idx);
 
 int js_toboolean(js_State *J, int idx);
 double js_tonumber(js_State *J, int idx);
@@ -67,5 +72,8 @@ const char *js_tostring(js_State *J, int idx);
 void js_pop(js_State *J, int n);
 void js_dup(js_State *J);
 void js_copy(js_State *J, int idx);
+void js_rot(js_State *J, int n);
+void js_rot2(js_State *J);
+void js_rot3(js_State *J);
 
 #endif

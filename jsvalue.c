@@ -2,8 +2,57 @@
 #include "jsobject.h"
 #include "jsrun.h"
 
+const char *jsR_numbertostring(js_State *J, double n)
+{
+	char buf[32];
+	if (isnan(n)) return "NaN";
+	if (isinf(n)) return n < 0 ? "-Infinity" : "Infinity";
+	if (n == 0) return "0";
+	sprintf(buf, "%.17g", n); /* DBL_DECIMAL_DIG == 17 */
+	return js_intern(J, buf);
+}
+
+double jsR_stringtonumber(js_State *J, const char *s)
+{
+	/* TODO: use lexer to parse string grammar */
+	return strtod(s, NULL);
+}
+
+static int jsR_toString(js_State *J, js_Object *obj)
+{
+	js_pushobject(J, obj);
+	js_getproperty(J, -1, "toString");
+	if (js_iscallable(J, -1)) {
+		js_rot2(J);
+		js_call(J, 0);
+		if (js_isprimitive(J, -1))
+			return 1;
+		js_pop(J, 1);
+		return 0;
+	}
+	js_pop(J, 2);
+	return 0;
+}
+
+static int jsR_valueOf(js_State *J, js_Object *obj)
+{
+	js_pushobject(J, obj);
+	js_getproperty(J, -1, "valueOf");
+	if (js_iscallable(J, -1)) {
+		js_rot2(J);
+		js_call(J, 0);
+		if (js_isprimitive(J, -1))
+			return 1;
+		js_pop(J, 1);
+		return 0;
+	}
+	js_pop(J, 2);
+	return 0;
+}
+
 js_Value jsR_toprimitive(js_State *J, const js_Value *v, int preferred)
 {
+	js_Value vv;
 	js_Object *obj;
 
 	if (v->type != JS_TOBJECT)
@@ -15,15 +64,17 @@ js_Value jsR_toprimitive(js_State *J, const js_Value *v, int preferred)
 		preferred = obj->type == JS_CDATE ? JS_HSTRING : JS_HNUMBER;
 
 	if (preferred == JS_HSTRING) {
-		// try "toString"
-		// if result is primitive, return result
-		// try "valueOf"
-		// if result is primitive, return result
+		if (jsR_toString(J, obj) || jsR_valueOf(J, obj)) {
+			vv = js_tovalue(J, -1);
+			js_pop(J, 1);
+			return vv;
+		}
 	} else {
-		// try "toString"
-		// if result is primitive, return result
-		// try "valueOf"
-		// if result is primitive, return result
+		if (jsR_valueOf(J, obj) || jsR_toString(J, obj)) {
+			vv = js_tovalue(J, -1);
+			js_pop(J, 1);
+			return vv;
+		}
 	}
 	jsR_error(J, "TypeError (ToPrimitive)");
 }
@@ -48,11 +99,7 @@ double jsR_tonumber(js_State *J, const js_Value *v)
 	case JS_TNULL: return 0;
 	case JS_TBOOLEAN: return v->u.boolean;
 	case JS_TNUMBER: return v->u.number;
-	case JS_TSTRING:
-		{
-			/* TODO: use lexer to parse string grammar */
-			return strtod(v->u.string, NULL);
-		}
+	case JS_TSTRING: return jsR_stringtonumber(J, v->u.string);
 	case JS_TOBJECT:
 		{
 			js_Value vv = jsR_toprimitive(J, v, JS_HNUMBER);
@@ -68,16 +115,7 @@ const char *jsR_tostring(js_State *J, const js_Value *v)
 	case JS_TUNDEFINED: return "undefined";
 	case JS_TNULL: return "null";
 	case JS_TBOOLEAN: return v->u.boolean ? "true" : "false";
-	case JS_TNUMBER:
-		{
-			char buf[32];
-			double n = v->u.number;
-			if (isnan(n)) return "NaN";
-			if (isinf(n)) return n < 0 ? "-Infinity" : "Infinity";
-			if (n == 0) return "0";
-			sprintf(buf, "%.17g", n); /* DBL_DECIMAL_DIG == 17 */
-			return js_intern(J, buf);
-		}
+	case JS_TNUMBER: return jsR_numbertostring(J, v->u.number);
 	case JS_TSTRING: return v->u.string;
 	case JS_TOBJECT:
 		{

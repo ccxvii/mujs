@@ -119,6 +119,14 @@ int js_isstring(js_State *J, int idx) { return stackidx(J, idx)->type == JS_TSTR
 int js_isprimitive(js_State *J, int idx) { return stackidx(J, idx)->type != JS_TOBJECT; }
 int js_isobject(js_State *J, int idx) { return stackidx(J, idx)->type == JS_TOBJECT; }
 
+int js_iscallable(js_State *J, int idx)
+{
+	const js_Value *v = stackidx(J, idx);
+	if (v->type == JS_TOBJECT)
+		return v->u.object->type == JS_CFUNCTION || v->u.object->type == JS_CCFUNCTION;
+	return 0;
+}
+
 const char *js_typeof(js_State *J, int idx)
 {
 	switch (stackidx(J, idx)->type) {
