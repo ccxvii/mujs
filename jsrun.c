@@ -590,6 +590,8 @@ static void jsR_run(js_State *J, js_Function *F)
 			}
 			break;
 
+		/* Function calls */
+
 		case OP_CALL:
 			js_call(J, *pc++);
 			break;
@@ -598,7 +600,7 @@ static void jsR_run(js_State *J, js_Function *F)
 			js_construct(J, *pc++);
 			break;
 
-		/* Unary expressions */
+		/* Unary operators */
 
 		case OP_TYPEOF:
 			str = js_typeof(J, -1);
@@ -630,18 +632,7 @@ static void jsR_run(js_State *J, js_Function *F)
 			js_pushboolean(J, !b);
 			break;
 
-		/* Binary expressions */
-
-		case OP_ADD:
-			jsR_concat(J);
-			break;
-
-		case OP_SUB:
-			x = js_tonumber(J, -2);
-			y = js_tonumber(J, -1);
-			js_pop(J, 2);
-			js_pushnumber(J, x - y);
-			break;
+		/* Multiplicative operators */
 
 		case OP_MUL:
 			x = js_tonumber(J, -2);
@@ -664,6 +655,21 @@ static void jsR_run(js_State *J, js_Function *F)
 			js_pushnumber(J, fmod(x, y));
 			break;
 
+		/* Additive operators */
+
+		case OP_ADD:
+			jsR_concat(J);
+			break;
+
+		case OP_SUB:
+			x = js_tonumber(J, -2);
+			y = js_tonumber(J, -1);
+			js_pop(J, 2);
+			js_pushnumber(J, x - y);
+			break;
+
+		/* Shift operators */
+
 		case OP_SHL:
 			x = js_tonumber(J, -2);
 			y = js_tonumber(J, -1);
@@ -685,28 +691,7 @@ static void jsR_run(js_State *J, js_Function *F)
 			js_pushnumber(J, touint32(x) >> (touint32(y) & 0x1F)); break;
 			break;
 
-		case OP_BITAND:
-			x = js_tonumber(J, -2);
-			y = js_tonumber(J, -1);
-			js_pop(J, 2);
-			js_pushnumber(J, toint32(x) & toint32(y));
-			break;
-
-		case OP_BITXOR:
-			x = js_tonumber(J, -2);
-			y = js_tonumber(J, -1);
-			js_pop(J, 2);
-			js_pushnumber(J, toint32(x) ^ toint32(y));
-			break;
-
-		case OP_BITOR:
-			x = js_tonumber(J, -2);
-			y = js_tonumber(J, -1);
-			js_pop(J, 2);
-			js_pushnumber(J, toint32(x) | toint32(y));
-			break;
-
-		/* Relational expressions */
+		/* Relational operators */
 
 		/* TODO: string comparisons */
 		case OP_LT:
@@ -734,6 +719,8 @@ static void jsR_run(js_State *J, js_Function *F)
 			js_pushboolean(J, x >= y);
 			break;
 
+		/* Equality */
+
 		case OP_EQ:
 		case OP_STRICTEQ:
 			x = js_tonumber(J, -2);
@@ -747,6 +734,29 @@ static void jsR_run(js_State *J, js_Function *F)
 			y = js_tonumber(J, -1);
 			js_pop(J, 2);
 			js_pushboolean(J, x != y);
+			break;
+
+		/* Binary bitwise operators */
+
+		case OP_BITAND:
+			x = js_tonumber(J, -2);
+			y = js_tonumber(J, -1);
+			js_pop(J, 2);
+			js_pushnumber(J, toint32(x) & toint32(y));
+			break;
+
+		case OP_BITXOR:
+			x = js_tonumber(J, -2);
+			y = js_tonumber(J, -1);
+			js_pop(J, 2);
+			js_pushnumber(J, toint32(x) ^ toint32(y));
+			break;
+
+		case OP_BITOR:
+			x = js_tonumber(J, -2);
+			y = js_tonumber(J, -1);
+			js_pop(J, 2);
+			js_pushnumber(J, toint32(x) | toint32(y));
 			break;
 
 		/* Branching */
