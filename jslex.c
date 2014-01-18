@@ -152,6 +152,23 @@ static void next(js_State *J, const char **sp)
 	J->lexchar = c;
 }
 
+static void unescape(js_State *J, const char **sp)
+{
+	if (ACCEPT('\\')) {
+		if (ACCEPT('u')) {
+			int x = 0;
+			if (!ishex(PEEK)) goto error; x |= tohex(PEEK) << 12; NEXT();
+			if (!ishex(PEEK)) goto error; x |= tohex(PEEK) << 8; NEXT();
+			if (!ishex(PEEK)) goto error; x |= tohex(PEEK) << 4; NEXT();
+			if (!ishex(PEEK)) goto error; x |= tohex(PEEK);
+			J->lexchar = x;
+			return;
+		}
+error:
+		jsP_error(J, "unexpected escape sequence");
+	}
+}
+
 static void textinit(js_State *J)
 {
 	if (!J->buf.text) {
@@ -294,16 +311,16 @@ static inline int lexescape(js_State *J, const char **sp)
 	switch (PEEK) {
 	case 'u':
 		NEXT();
-		if (!ishex(PEEK)) return 1; else { x |= PEEK << 12; NEXT(); }
-		if (!ishex(PEEK)) return 1; else { x |= PEEK << 8; NEXT(); }
-		if (!ishex(PEEK)) return 1; else { x |= PEEK << 4; NEXT(); }
-		if (!ishex(PEEK)) return 1; else { x |= PEEK; NEXT(); }
+		if (!ishex(PEEK)) return 1; else { x |= tohex(PEEK) << 12; NEXT(); }
+		if (!ishex(PEEK)) return 1; else { x |= tohex(PEEK) << 8; NEXT(); }
+		if (!ishex(PEEK)) return 1; else { x |= tohex(PEEK) << 4; NEXT(); }
+		if (!ishex(PEEK)) return 1; else { x |= tohex(PEEK); NEXT(); }
 		textpush(J, x);
 		break;
 	case 'x':
 		NEXT();
-		if (!ishex(PEEK)) return 1; else { x |= PEEK << 4; NEXT(); }
-		if (!ishex(PEEK)) return 1; else { x |= PEEK; NEXT(); }
+		if (!ishex(PEEK)) return 1; else { x |= tohex(PEEK) << 4; NEXT(); }
+		if (!ishex(PEEK)) return 1; else { x |= tohex(PEEK); NEXT(); }
 		textpush(J, x);
 		break;
 	case '0': textpush(J, 0); NEXT(); break;
@@ -469,22 +486,6 @@ static int lex(js_State *J, const char **sp)
 			}
 		}
 
-		// TODO: \uXXXX escapes
-		if (isidentifierstart(PEEK)) {
-			textinit(J);
-			textpush(J, PEEK);
-
-			NEXT();
-			while (isidentifierpart(PEEK)) {
-				textpush(J, PEEK);
-				NEXT();
-			}
-
-			textend(J);
-
-			return findkeyword(J, J->buf.text);
-		}
-
 		if (PEEK >= '0' && PEEK <= '9') {
 			return lexnumber(J, sp);
 		}
@@ -606,6 +607,25 @@ static int lex(js_State *J, const char **sp)
 
 		case 0:
 			return 0; /* EOF */
+		}
+
+		/* Handle \uXXXX escapes in identifiers */
+		unescape(J, sp);
+		if (isidentifierstart(PEEK)) {
+			textinit(J);
+			textpush(J, PEEK);
+
+			NEXT();
+			unescape(J, sp);
+			while (isidentifierpart(PEEK)) {
+				textpush(J, PEEK);
+				NEXT();
+				unescape(J, sp);
+			}
+
+			textend(J);
+
+			return findkeyword(J, J->buf.text);
 		}
 
 		if (PEEK >= 0x20 && PEEK <= 0x7E)
