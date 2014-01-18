@@ -245,7 +245,7 @@ static inline double lexexponent(js_State *J, const char **sp)
 
 static inline int lexnumber(js_State *J, const char **sp)
 {
-	double n = 0;
+	double n;
 
 	if (ACCEPT('0')) {
 		if (ACCEPT('x') || ACCEPT('X')) {
@@ -254,9 +254,11 @@ static inline int lexnumber(js_State *J, const char **sp)
 		}
 		if (isdec(PEEK))
 			return jsP_error(J, "number with leading zero");
-	}
-
-	if (ACCEPT('.')) {
+		n = 0;
+		if (ACCEPT('.'))
+			n += lexfraction(J, sp);
+		n *= pow(10, lexexponent(J, sp));
+	} else if (ACCEPT('.')) {
 		if (!isdec(PEEK))
 			return '.';
 		n = lexfraction(J, sp);
