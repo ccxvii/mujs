@@ -134,7 +134,6 @@ static inline int tohex(int c)
 
 #define PEEK (J->lexchar)
 #define NEXT() next(J, sp)
-#define NEXTPEEK (NEXT(), PEEK)
 #define ACCEPT(x) (PEEK == x ? (NEXT(), 1) : 0)
 #define EXPECT(x) (ACCEPT(x) || (jsP_error(J, "expected '%c'", x), 0))
 
@@ -196,7 +195,7 @@ static inline char *textend(js_State *J)
 
 static inline void lexlinecomment(js_State *J, const char **sp)
 {
-	while (PEEK && !isnewline(PEEK))
+	while (PEEK && PEEK != '\n')
 		NEXT();
 }
 
@@ -303,10 +302,8 @@ static inline int lexescape(js_State *J, const char **sp)
 
 	/* already consumed '\' */
 
-	if (isnewline(PEEK)) {
-		NEXT();
+	if (ACCEPT('\n'))
 		return 0;
-	}
 
 	switch (PEEK) {
 	case 'u':
@@ -348,7 +345,7 @@ static inline int lexstring(js_State *J, const char **sp)
 	textinit(J);
 
 	while (PEEK != q) {
-		if (PEEK == 0 || isnewline(PEEK))
+		if (PEEK == 0 || PEEK == '\n')
 			return jsP_error(J, "string not terminated");
 		if (ACCEPT('\\')) {
 			if (lexescape(J, sp))
@@ -398,11 +395,11 @@ static int lexregexp(js_State *J, const char **sp)
 
 	/* regexp body */
 	while (PEEK != '/') {
-		if (PEEK == 0 || isnewline(PEEK)) {
+		if (PEEK == 0 || PEEK == '\n') {
 			return jsP_error(J, "regular expression not terminated");
 		} else if (ACCEPT('\\')) {
 			textpush(J, '\\');
-			if (PEEK == 0 || isnewline(PEEK))
+			if (PEEK == 0 || PEEK == '\n')
 				return jsP_error(J, "regular expression not terminated");
 			textpush(J, PEEK);
 			NEXT();
@@ -461,8 +458,7 @@ static int lex(js_State *J, const char **sp)
 		while (iswhite(PEEK))
 			NEXT();
 
-		if (isnewline(PEEK)) {
-			NEXT();
+		if (ACCEPT('\n')) {
 			J->newline = 1;
 			if (isnlthcontext(J->lasttoken))
 				return ';';
