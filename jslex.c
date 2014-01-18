@@ -133,17 +133,17 @@ static inline int tohex(int c)
 }
 
 #define PEEK (J->lexchar)
-#define NEXT() next(J, sp)
+#define NEXT() next(J)
 #define ACCEPT(x) (PEEK == x ? (NEXT(), 1) : 0)
 #define EXPECT(x) (ACCEPT(x) || (jsP_error(J, "expected '%c'", x), 0))
 
-static void next(js_State *J, const char **sp)
+static void next(js_State *J)
 {
 	Rune c;
-	(*sp) += chartorune(&c, *sp);
+	J->source += chartorune(&c, J->source);
 	/* consume CR LF as one unit */
 	if (c == '\r' && PEEK == '\n')
-		(*sp)++;
+		++J->source;
 	if (isnewline(c)) {
 		J->line++;
 		c = '\n';
@@ -151,7 +151,7 @@ static void next(js_State *J, const char **sp)
 	J->lexchar = c;
 }
 
-static void unescape(js_State *J, const char **sp)
+static void unescape(js_State *J)
 {
 	if (ACCEPT('\\')) {
 		if (ACCEPT('u')) {
@@ -193,13 +193,13 @@ static inline char *textend(js_State *J)
 	return J->buf.text;
 }
 
-static inline void lexlinecomment(js_State *J, const char **sp)
+static inline void lexlinecomment(js_State *J)
 {
 	while (PEEK && PEEK != '\n')
 		NEXT();
 }
 
-static inline int lexcomment(js_State *J, const char **sp)
+static inline int lexcomment(js_State *J)
 {
 	/* already consumed initial '/' '*' sequence */
 	while (PEEK != 0) {
@@ -214,7 +214,7 @@ static inline int lexcomment(js_State *J, const char **sp)
 	return -1;
 }
 
-static inline double lexhex(js_State *J, const char **sp)
+static inline double lexhex(js_State *J)
 {
 	double n = 0;
 	if (!ishex(PEEK))
@@ -226,7 +226,7 @@ static inline double lexhex(js_State *J, const char **sp)
 	return n;
 }
 
-static inline double lexinteger(js_State *J, const char **sp)
+static inline double lexinteger(js_State *J)
 {
 	double n = 0;
 	if (!isdec(PEEK))
@@ -238,7 +238,7 @@ static inline double lexinteger(js_State *J, const char **sp)
 	return n;
 }
 
-static inline double lexfraction(js_State *J, const char **sp)
+static inline double lexfraction(js_State *J)
 {
 	double n = 0;
 	double d = 1;
@@ -250,43 +250,43 @@ static inline double lexfraction(js_State *J, const char **sp)
 	return n / d;
 }
 
-static inline double lexexponent(js_State *J, const char **sp)
+static inline double lexexponent(js_State *J)
 {
 	double sign;
 	if (ACCEPT('e') || ACCEPT('E')) {
 		if (ACCEPT('-')) sign = -1;
 		else if (ACCEPT('+')) sign = 1;
 		else sign = 1;
-		return sign * lexinteger(J, sp);
+		return sign * lexinteger(J);
 	}
 	return 0;
 }
 
-static inline int lexnumber(js_State *J, const char **sp)
+static inline int lexnumber(js_State *J)
 {
 	double n;
 
 	if (ACCEPT('0')) {
 		if (ACCEPT('x') || ACCEPT('X')) {
-			J->number = lexhex(J, sp);
+			J->number = lexhex(J);
 			return TK_NUMBER;
 		}
 		if (isdec(PEEK))
 			return jsP_error(J, "number with leading zero");
 		n = 0;
 		if (ACCEPT('.'))
-			n += lexfraction(J, sp);
-		n *= pow(10, lexexponent(J, sp));
+			n += lexfraction(J);
+		n *= pow(10, lexexponent(J));
 	} else if (ACCEPT('.')) {
 		if (!isdec(PEEK))
 			return '.';
-		n = lexfraction(J, sp);
-		n *= pow(10, lexexponent(J, sp));
+		n = lexfraction(J);
+		n *= pow(10, lexexponent(J));
 	} else {
-		n = lexinteger(J, sp);
+		n = lexinteger(J);
 		if (ACCEPT('.'))
-			n += lexfraction(J, sp);
-		n *= pow(10, lexexponent(J, sp));
+			n += lexfraction(J);
+		n *= pow(10, lexexponent(J));
 	}
 
 	if (isidentifierstart(PEEK))
@@ -296,7 +296,7 @@ static inline int lexnumber(js_State *J, const char **sp)
 	return TK_NUMBER;
 }
 
-static inline int lexescape(js_State *J, const char **sp)
+static inline int lexescape(js_State *J)
 {
 	int x = 0;
 
@@ -335,7 +335,7 @@ static inline int lexescape(js_State *J, const char **sp)
 	return 0;
 }
 
-static inline int lexstring(js_State *J, const char **sp)
+static inline int lexstring(js_State *J)
 {
 	const char *s;
 
@@ -348,7 +348,7 @@ static inline int lexstring(js_State *J, const char **sp)
 		if (PEEK == 0 || PEEK == '\n')
 			return jsP_error(J, "string not terminated");
 		if (ACCEPT('\\')) {
-			if (lexescape(J, sp))
+			if (lexescape(J))
 				return jsP_error(J, "malformed escape sequence");
 		} else {
 			textpush(J, PEEK);
@@ -383,7 +383,7 @@ static int isregexpcontext(int last)
 	}
 }
 
-static int lexregexp(js_State *J, const char **sp)
+static int lexregexp(js_State *J)
 {
 	const char *s;
 	int g, m, i;
@@ -448,7 +448,7 @@ static inline int isnlthcontext(int last)
 	}
 }
 
-static int lex(js_State *J, const char **sp)
+static int lex(js_State *J)
 {
 	J->newline = 0;
 
@@ -467,14 +467,14 @@ static int lex(js_State *J, const char **sp)
 
 		if (ACCEPT('/')) {
 			if (ACCEPT('/')) {
-				lexlinecomment(J, sp);
+				lexlinecomment(J);
 				continue;
 			} else if (ACCEPT('*')) {
-				if (lexcomment(J, sp))
+				if (lexcomment(J))
 					return jsP_error(J, "multi-line comment not terminated");
 				continue;
 			} else if (isregexpcontext(J->lasttoken)) {
-				return lexregexp(J, sp);
+				return lexregexp(J);
 			} else if (ACCEPT('=')) {
 				return TK_DIV_ASS;
 			} else {
@@ -483,7 +483,7 @@ static int lex(js_State *J, const char **sp)
 		}
 
 		if (PEEK >= '0' && PEEK <= '9') {
-			return lexnumber(J, sp);
+			return lexnumber(J);
 		}
 
 		switch (PEEK) {
@@ -501,10 +501,10 @@ static int lex(js_State *J, const char **sp)
 
 		case '\'':
 		case '"':
-			return lexstring(J, sp);
+			return lexstring(J);
 
 		case '.':
-			return lexnumber(J, sp);
+			return lexnumber(J);
 
 		case '<':
 			NEXT();
@@ -606,17 +606,17 @@ static int lex(js_State *J, const char **sp)
 		}
 
 		/* Handle \uXXXX escapes in identifiers */
-		unescape(J, sp);
+		unescape(J);
 		if (isidentifierstart(PEEK)) {
 			textinit(J);
 			textpush(J, PEEK);
 
 			NEXT();
-			unescape(J, sp);
+			unescape(J);
 			while (isidentifierpart(PEEK)) {
 				textpush(J, PEEK);
 				NEXT();
-				unescape(J, sp);
+				unescape(J);
 			}
 
 			textend(J);
@@ -636,10 +636,10 @@ void jsP_initlex(js_State *J, const char *filename, const char *source)
 	J->source = source;
 	J->line = 1;
 	J->lasttoken = 0;
-	next(J, &J->source); /* load first lookahead character */
+	next(J); /* load first lookahead character */
 }
 
 int jsP_lex(js_State *J)
 {
-	return J->lasttoken = lex(J, &J->source);
+	return J->lasttoken = lex(J);
 }
