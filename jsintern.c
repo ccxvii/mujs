@@ -5,19 +5,20 @@
 
 struct js_StringNode
 {
-	char *string;
 	js_StringNode *left, *right;
 	int level;
+	char string[1];
 };
 
-static js_StringNode sentinel = { "", &sentinel, &sentinel, 0 };
+static js_StringNode sentinel = { &sentinel, &sentinel, 0, ""};
 
 static js_StringNode *newstringnode(const char *string, const char **result)
 {
-	js_StringNode *node = malloc(sizeof(js_StringNode));
-	node->string = strdup(string);
+	int n = strlen(string);
+	js_StringNode *node = malloc(offsetof(js_StringNode, string) + n + 1);
 	node->left = node->right = &sentinel;
 	node->level = 1;
+	strcpy(node->string, string);
 	return *result = node->string, node;
 }
 
@@ -91,7 +92,6 @@ static void js_freestringnode(js_State *J, js_StringNode *node)
 {
 	if (node->left != &sentinel) js_freestringnode(J, node->left);
 	if (node->right != &sentinel) js_freestringnode(J, node->right);
-	free(node->string);
 	free(node);
 }
 
