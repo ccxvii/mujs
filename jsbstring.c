@@ -32,6 +32,54 @@ static int Sp_valueOf(js_State *J, int n)
 	return 1;
 }
 
+static inline const char *utfindex(const char *s, int i)
+{
+	Rune rune;
+	int c, n = 0;
+	for (n = 0; n < i; ++n) {
+		c = *(unsigned char*)s;
+		if (c < Runeself) {
+			if (c == 0)
+				return NULL;
+			++s;
+		} else
+			s += chartorune(&rune, s);
+	}
+	return s;
+}
+
+static int Sp_charAt(js_State *J, int n)
+{
+	char buf[UTFmax + 1];
+	const char *s = js_tostring(J, 0);
+	int pos = js_tointeger(J, 1);
+	s = utfindex(s, pos);
+	if (s) {
+		Rune rune;
+		chartorune(&rune, s);
+		buf[runetochar(buf, &rune)] = 0;
+		js_pushstring(J, buf);
+	} else {
+		js_pushliteral(J, "");
+	}
+	return 1;
+}
+
+static int Sp_charCodeAt(js_State *J, int n)
+{
+	const char *s = js_tostring(J, 0);
+	int pos = js_tointeger(J, 1);
+	s = utfindex(s, pos);
+	if (s) {
+		Rune rune;
+		chartorune(&rune, s);
+		js_pushnumber(J, rune);
+	} else {
+		js_pushnumber(J, NAN);
+	}
+	return 1;
+}
+
 static int S_fromCharCode(js_State *J, int n)
 {
 	int i;
@@ -39,7 +87,7 @@ static int S_fromCharCode(js_State *J, int n)
 	char *s = malloc(n * UTFmax + 1), *p = s;
 	// TODO: guard malloc with try/catch
 	for (i = 0; i < n; i++) {
-		c = js_tonumber(J, i + 1); // TODO: ToUInt16()
+		c = js_tointeger(J, i + 1); // TODO: ToUInt16()
 		p += runetochar(p, &c);
 	}
 	*p = 0;
@@ -62,6 +110,8 @@ void jsB_initstring(js_State *J)
 			js_setproperty(J, -2, "constructor");
 			jsB_propf(J, "toString", Sp_toString, 0);
 			jsB_propf(J, "valueOf", Sp_valueOf, 0);
+			jsB_propf(J, "charAt", Sp_charAt, 1);
+			jsB_propf(J, "charCodeAt", Sp_charCodeAt, 1);
 		}
 		js_setproperty(J, -2, "prototype");
 

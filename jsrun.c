@@ -801,8 +801,6 @@ int jsR_loadscript(js_State *J, const char *filename, const char *source)
 	jsP_optimize(J, P);
 	F = jsC_compile(J, P);
 
-	jsP_dumpsyntax(J, P);
-
 	jsP_freeparse(J);
 	if (!F) return 1;
 

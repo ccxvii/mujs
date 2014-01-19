@@ -3,6 +3,7 @@
 #include "jsobject.h"
 #include "jsrun.h"
 #include "jsstate.h"
+#include "jsutf.h"
 
 static js_Object *jsR_newfunction(js_State *J, js_Function *function, js_Environment *scope)
 {
@@ -58,7 +59,7 @@ js_Object *jsR_newstring(js_State *J, const char *v)
 		js_Property *ref;
 		ref = jsR_setproperty(J, obj, "length");
 		ref->value.type = JS_TNUMBER;
-		ref->value.u.number = strlen(v);
+		ref->value.u.number = utflen(v);
 		ref->readonly = 1;
 		ref->dontenum = 1;
 		ref->dontconf = 1;
