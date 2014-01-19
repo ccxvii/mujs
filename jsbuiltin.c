@@ -24,16 +24,10 @@ static int jsB_collectGarbage(js_State *J, int argc)
 
 static int jsB_eval(js_State *J, int argc)
 {
-	const char *s;
-
 	if (!js_isstring(J, -1))
 		return 1;
-
-	s = js_tostring(J, -1);
-	if (jsR_loadscript(J, "(eval)", s))
-		jsR_error(J, "SyntaxError (eval)");
-
-	js_copy(J, 0); /* copy this */
+	jsR_loadscript(J, "(eval)", js_tostring(J, -1));
+	js_copy(J, 0);
 	js_call(J, 0);
 	return 1;
 }
@@ -85,6 +79,12 @@ void jsB_propn(js_State *J, const char *name, double number)
 	js_setproperty(J, -2, name);
 }
 
+void jsB_props(js_State *J, const char *name, const char *string)
+{
+	js_pushliteral(J, string);
+	js_setproperty(J, -2, name);
+}
+
 void jsB_init(js_State *J)
 {
 	/* Create the prototype objects here, before the constructors */
@@ -95,6 +95,15 @@ void jsB_init(js_State *J)
 	J->Number_prototype = jsR_newobject(J, JS_CNUMBER, J->Object_prototype);
 	J->String_prototype = jsR_newobject(J, JS_CSTRING, J->Object_prototype);
 
+	/* All the native error types */
+	J->Error_prototype = jsR_newobject(J, JS_CERROR, J->Object_prototype);
+	J->EvalError_prototype = jsR_newobject(J, JS_CERROR, J->Error_prototype);
+	J->RangeError_prototype = jsR_newobject(J, JS_CERROR, J->Error_prototype);
+	J->ReferenceError_prototype = jsR_newobject(J, JS_CERROR, J->Error_prototype);
+	J->SyntaxError_prototype = jsR_newobject(J, JS_CERROR, J->Error_prototype);
+	J->TypeError_prototype = jsR_newobject(J, JS_CERROR, J->Error_prototype);
+	J->URIError_prototype = jsR_newobject(J, JS_CERROR, J->Error_prototype);
+
 	/* Create the constructors and fill out the prototype objects */
 	jsB_initobject(J);
 	jsB_initarray(J);
@@ -102,6 +111,7 @@ void jsB_init(js_State *J)
 	jsB_initboolean(J);
 	jsB_initnumber(J);
 	jsB_initstring(J);
+	jsB_initerror(J);
 
 	jsB_initmath(J);
 

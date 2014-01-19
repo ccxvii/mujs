@@ -14,10 +14,11 @@ struct js_Environment
 void jsB_init(js_State *J);
 void jsB_propf(js_State *J, const char *name, js_CFunction cfun, int n);
 void jsB_propn(js_State *J, const char *name, double number);
+void jsB_props(js_State *J, const char *name, const char *string);
 
 js_Environment *jsR_newenvironment(js_State *J, js_Object *variables, js_Environment *outer);
 js_Object *jsR_newcconstructor(js_State *J, js_CFunction cfunction, js_CFunction cconstructor);
-int jsR_loadscript(js_State *J, const char *filename, const char *source);
+void jsR_loadscript(js_State *J, const char *filename, const char *source);
 void jsR_error(js_State *J, const char *fmt, ...);
 void js_pushobject(js_State *J, js_Object *v);
 js_Object *js_toobject(js_State *J, int idx);
@@ -74,6 +75,8 @@ const char *js_tostring(js_State *J, int idx);
 double js_tointeger(js_State *J, int idx);
 int js_toint32(js_State *J, int idx);
 unsigned int js_touint32(js_State *J, int idx);
+short js_toint16(js_State *J, int idx);
+unsigned short js_touint16(js_State *J, int idx);
 
 void js_pop(js_State *J, int n);
 void js_dup(js_State *J);

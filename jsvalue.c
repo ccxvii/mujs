@@ -76,7 +76,7 @@ js_Value jsR_toprimitive(js_State *J, const js_Value *v, int preferred)
 			return vv;
 		}
 	}
-	jsR_error(J, "TypeError (ToPrimitive)");
+	jsR_throwTypeError(J, "cannot convert object to primitive");
 }
 
 int jsR_toboolean(js_State *J, const js_Value *v)
@@ -129,14 +129,14 @@ const char *jsR_tostring(js_State *J, const js_Value *v)
 js_Object *jsR_toobject(js_State *J, const js_Value *v)
 {
 	switch (v->type) {
-	case JS_TUNDEFINED: jsR_error(J, "TypeError (ToObject(undefined))");
-	case JS_TNULL: jsR_error(J, "TypeError (ToObject(null))");
+	case JS_TUNDEFINED: jsR_throwTypeError(J, "cannot convert undefined to object");
+	case JS_TNULL: jsR_throwTypeError(J, "cannot convert null to object");
 	case JS_TBOOLEAN: return jsR_newboolean(J, v->u.boolean);
 	case JS_TNUMBER: return jsR_newnumber(J, v->u.number);
 	case JS_TSTRING: return jsR_newstring(J, v->u.string);
 	case JS_TOBJECT: return v->u.object;
 	}
-	jsR_error(J, "TypeError (ToObject)");
+	jsR_throwTypeError(J, "cannot convert value to object");
 }
 
 void jsR_concat(js_State *J)

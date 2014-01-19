@@ -394,10 +394,10 @@ static void jsR_callcfunction(js_State *J, int n, js_CFunction F)
 	int rv = F(J, n + 1);
 	if (rv) {
 		js_Value v = js_tovalue(J, -1);
-		js_pop(J, TOP - BOT + 1);
+		TOP = --BOT; /* pop down to below function */
 		js_pushvalue(J, v);
 	} else {
-		js_pop(J, TOP - BOT + 1);
+		TOP = --BOT; /* pop down to below function */
 		js_pushundefined(J);
 	}
 }
@@ -414,7 +414,7 @@ void js_call(js_State *J, int n)
 	else if (obj->type == JS_CCFUNCTION)
 		jsR_callcfunction(J, n, obj->u.c.function);
 	else
-		jsR_error(J, "TypeError (not a function)");
+		jsR_throwTypeError(J, "not a function");
 	BOT = savebot;
 }
 
@@ -447,6 +447,33 @@ void js_construct(js_State *J, int n)
 
 	/* call the function */
 	js_call(J, n);
+}
+
+/* Exceptions */
+
+void js_savetry(js_State *J, short *pc)
+{
+	if (J->trylen == JS_TRYLIMIT)
+		js_error(J, "exception stack overflow");
+	J->trybuf[J->trylen].E = J->E;
+	J->trybuf[J->trylen].top = J->top;
+	J->trybuf[J->trylen].bot = J->bot;
+	J->trybuf[J->trylen].pc = pc;
+}
+
+void js_throw(js_State *J)
+{
+	if (J->trylen > 0) {
+		js_Value v = js_tovalue(J, -1);
+		--J->trylen;
+		J->E = J->trybuf[J->trylen].E;
+		J->top = J->trybuf[J->trylen].top;
+		J->bot = J->trybuf[J->trylen].bot;
+		js_pushvalue(J, v);
+		longjmp(J->trybuf[J->trylen].buf, 1);
+	}
+	fprintf(stderr, "libjs: uncaught exception!\n");
+	abort();
 }
 
 /* Main interpreter loop */
@@ -546,7 +573,7 @@ static void jsR_run(js_State *J, js_Function *F)
 			if (ref)
 				js_pushvalue(J, ref->value);
 			else
-				jsR_error(J, "ReferenceError (%s)", str);
+				jsR_throwReferenceError(J, str);
 			break;
 
 		case OP_SETVAR:
@@ -783,40 +810,26 @@ static void jsR_run(js_State *J, js_Function *F)
 			return;
 
 		default:
-			fprintf(stderr, "illegal instruction: %d (pc=%d)\n", opcode, (int)(pc - F->code - 1));
-			return;
+			js_error(J, "illegal instruction: %d (pc=%d)", opcode, (int)(pc - F->code - 1));
 		}
 	}
 }
 
-int jsR_loadscript(js_State *J, const char *filename, const char *source)
+void jsR_loadscript(js_State *J, const char *filename, const char *source)
 {
 	js_Ast *P;
 	js_Function *F;
 
-	// TODO: push exception stack
+	if (js_try(J)) {
+		jsP_freeparse(J);
+		js_throw(J);
+	}
 
 	P = jsP_parse(J, filename, source);
-	if (!P) return 1;
 	jsP_optimize(J, P);
 	F = jsC_compile(J, P);
-
 	jsP_freeparse(J);
-	if (!F) return 1;
-
 	js_newscript(J, F);
-	return 0;
-}
 
-void jsR_error(js_State *J, const char *fmt, ...)
-{
-	va_list ap;
-
-	fprintf(stderr, "runtime error: ");
-	va_start(ap, fmt);
-	vfprintf(stderr, fmt, ap);
-	va_end(ap);
-	fprintf(stderr, "\n");
-
-	longjmp(J->jb, 1);
+	js_endtry(J);
 }

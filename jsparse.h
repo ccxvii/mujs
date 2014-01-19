@@ -121,6 +121,7 @@ struct js_Ast
 	const char *string;
 	js_Ast *gcnext; /* next in alloc list */
 };
+
 js_Ast *jsP_parse(js_State *J, const char *filename, const char *source);
 void jsP_optimize(js_State *J, js_Ast *prog);
 void jsP_freeparse(js_State *J);

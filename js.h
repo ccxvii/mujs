@@ -40,10 +40,8 @@ typedef struct js_State js_State;
 js_State *js_newstate(void);
 void js_close(js_State *J);
 
-int js_error(js_State *J, const char *fmt, ...);
-
-int js_loadstring(js_State *J, const char *source);
-int js_loadfile(js_State *J, const char *filename);
+void js_loadstring(js_State *J, const char *source);
+void js_loadfile(js_State *J, const char *filename);
 int js_dostring(js_State *J, const char *source);
 int js_dofile(js_State *J, const char *filename);
 
@@ -71,6 +69,18 @@ void jsB_initfunction(js_State *J);
 void jsB_initboolean(js_State *J);
 void jsB_initnumber(js_State *J);
 void jsB_initstring(js_State *J);
+void jsB_initerror(js_State *J);
 void jsB_initmath(js_State *J);
+
+JS_NORETURN void js_throw(js_State *J);
+JS_NORETURN void js_error(js_State *J, const char *fmt, ...) __printflike(2,3);
+
+JS_NORETURN void jsR_throwError(js_State *J, const char *message);
+JS_NORETURN void jsR_throwEvalError(js_State *J, const char *message);
+JS_NORETURN void jsR_throwRangeError(js_State *J, const char *message);
+JS_NORETURN void jsR_throwReferenceError(js_State *J, const char *message);
+JS_NORETURN void jsR_throwSyntaxError(js_State *J, const char *message);
+JS_NORETURN void jsR_throwTypeError(js_State *J, const char *message);
+JS_NORETURN void jsR_throwURIError(js_State *J, const char *message);
 
 #endif

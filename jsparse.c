@@ -852,14 +852,17 @@ void jsP_warning(js_State *J, const char *fmt, ...)
 int jsP_error(js_State *J, const char *fmt, ...)
 {
 	va_list ap;
+	char buf[512];
+	char msgbuf[256];
 
-	fprintf(stderr, "%s:%d: error: ", J->filename, J->lexline);
 	va_start(ap, fmt);
-	vfprintf(stderr, fmt, ap);
+	vsnprintf(msgbuf, 256, fmt, ap);
 	va_end(ap);
-	fprintf(stderr, "\n");
 
-	longjmp(J->jb, 1);
+	snprintf(buf, 256, "%s:%d: ", J->filename, J->lexline);
+	strcat(buf, msgbuf);
+
+	jsR_throwSyntaxError(J, buf);
 }
 
 js_Ast *jsP_parse(js_State *J, const char *filename, const char *source)
@@ -867,11 +870,6 @@ js_Ast *jsP_parse(js_State *J, const char *filename, const char *source)
 	js_Ast *p, *last;
 
 	jsP_initlex(J, filename, source);
-
-	if (setjmp(J->jb)) {
-		jsP_freeparse(J);
-		return NULL;
-	}
 
 	next(J);
 	p = script(J);

@@ -742,25 +742,20 @@ static void cfunbody(JF, js_Ast *name, js_Ast *params, js_Ast *body)
 int jsC_error(js_State *J, js_Ast *node, const char *fmt, ...)
 {
 	va_list ap;
+	char buf[512];
+	char msgbuf[256];
 
-	fprintf(stderr, "%s:%d: error: ", J->filename, node->line);
 	va_start(ap, fmt);
-	vfprintf(stderr, fmt, ap);
+	vsnprintf(msgbuf, 256, fmt, ap);
 	va_end(ap);
-	fprintf(stderr, "\n");
 
-	longjmp(J->jb, 1);
+	snprintf(buf, 256, "%s:%d: ", J->filename, node->line);
+	strcat(buf, msgbuf);
+
+	jsR_throwSyntaxError(J, buf);
 }
 
 js_Function *jsC_compile(js_State *J, js_Ast *prog)
 {
-	js_Function *F;
-
-	if (setjmp(J->jb))
-		return NULL;
-
-	F = newfun(J, NULL, NULL, prog);
-
-	J->fun = NULL;
-	return F;
+	return newfun(J, NULL, NULL, prog);
 }

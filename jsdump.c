@@ -683,6 +683,7 @@ void js_dumpvalue(js_State *J, js_Value v)
 		case JS_CBOOLEAN: printf("boolean(%d)", v.u.object->u.boolean); break;
 		case JS_CNUMBER: printf("number(%g)", v.u.object->u.number); break;
 		case JS_CSTRING: printf("string('%s')", v.u.object->u.string); break;
+		case JS_CERROR: printf("error()"); break;
 		default: printf("<unknown %p>", v.u.object); break;
 		}
 		break;
