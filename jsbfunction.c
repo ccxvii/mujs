@@ -12,6 +12,33 @@ static int jsB_Function_prototype(js_State *J, int n)
 	return 1;
 }
 
+static int Fp_apply(js_State *J, int n)
+{
+	int i, argc;
+	char name[20];
+
+	if (!js_iscallable(J, 0))
+		jsR_error(J, "TypeError");
+	js_copy(J, 0);
+
+	if (js_isundefined(J, 1) || js_isnull(J, 1))
+		js_pushglobal(J);
+	else
+		js_copy(J, 1);
+
+	js_getproperty(J, 2, "length");
+	argc = js_tonumber(J, -1);
+	js_pop(J, 1);
+
+	for (i = 0; i < argc; ++i) {
+		sprintf(name, "%d", i);
+		js_getproperty(J, 2, name);
+	}
+
+	js_call(J, argc);
+	return 1;
+}
+
 static int Fp_call(js_State *J, int n)
 {
 	int i;
