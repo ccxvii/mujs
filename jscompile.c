@@ -724,7 +724,7 @@ static void cfunbody(JF, js_Ast *name, js_Ast *params, js_Ast *body)
 		emitfunction(J, F, F);
 		emitstring(J, F, OP_FUNDEC, name->string);
 	} else {
-		F->name = "<anonymous>";
+		F->name = "";
 	}
 
 	cparams(J, F, params);
