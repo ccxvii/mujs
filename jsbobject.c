@@ -23,8 +23,8 @@ static int jsB_Object(js_State *J, int n)
 
 static int Op_toString(js_State *J, int n)
 {
-	js_Object *T = js_toobject(J, 0);
-	switch (T->type) {
+	js_Object *self = js_toobject(J, 0);
+	switch (self->type) {
 	case JS_COBJECT: js_pushliteral(J, "[object Object]"); break;
 	case JS_CARRAY: js_pushliteral(J, "[object Array]"); break;
 	case JS_CFUNCTION: js_pushliteral(J, "[object Function]"); break;
@@ -50,21 +50,21 @@ static int Op_valueOf(js_State *J, int n)
 
 static int Op_hasOwnProperty(js_State *J, int n)
 {
-	js_Object *T = js_toobject(J, 0);
+	js_Object *self = js_toobject(J, 0);
 	const char *name = js_tostring(J, 1);
-	js_Property *ref = jsR_getownproperty(J, T, name);
+	js_Property *ref = jsR_getownproperty(J, self, name);
 	js_pushboolean(J, ref != NULL);
 	return 1;
 }
 
 static int Op_isPrototypeOf(js_State *J, int n)
 {
-	js_Object *T = js_toobject(J, 0);
+	js_Object *self = js_toobject(J, 0);
 	if (js_isobject(J, 1)) {
 		js_Object *V = js_toobject(J, 1);
 		do {
 			V = V->prototype;
-			if (V == T) {
+			if (V == self) {
 				js_pushboolean(J, 1);
 				return 1;
 			}
@@ -76,10 +76,10 @@ static int Op_isPrototypeOf(js_State *J, int n)
 
 static int Op_propertyIsEnumerable(js_State *J, int n)
 {
-	js_Object *T = js_toobject(J, 0);
+	js_Object *self = js_toobject(J, 0);
 	const char *name = js_tostring(J, 1);
-	js_Property *ref = jsR_getownproperty(J, T, name);
-	js_pushboolean(J, ref && (ref->flags & JS_PENUMERABLE));
+	js_Property *ref = jsR_getownproperty(J, self, name);
+	js_pushboolean(J, ref && !ref->dontenum);
 	return 1;
 }
 

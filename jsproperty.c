@@ -27,9 +27,11 @@ static js_Property *newproperty(js_State *J, const char *name)
 	node->name = js_intern(J, name);
 	node->left = node->right = &sentinel;
 	node->level = 1;
+	node->readonly = 0;
+	node->dontenum = 0;
+	node->dontconf = 0;
 	node->value.type = JS_TUNDEFINED;
 	node->value.u.number = 0;
-	node->flags = 0;
 	return node;
 }
 
@@ -132,7 +134,7 @@ found:
 
 js_Object *jsR_newobject(js_State *J, js_Class type, js_Object *prototype)
 {
-	js_Object *obj = malloc(sizeof(js_Object));
+	js_Object *obj = calloc(sizeof(js_Object), 1);
 	obj->gcmark = 0;
 	obj->gcnext = J->gcobj;
 	J->gcobj = obj;
@@ -141,10 +143,6 @@ js_Object *jsR_newobject(js_State *J, js_Class type, js_Object *prototype)
 	obj->type = type;
 	obj->properties = &sentinel;
 	obj->prototype = prototype;
-	obj->primitive.number = 0;
-	obj->scope = NULL;
-	obj->function = NULL;
-	obj->cfunction = NULL;
 	return obj;
 }
 

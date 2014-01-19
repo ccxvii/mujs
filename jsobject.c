@@ -7,52 +7,53 @@
 static js_Object *jsR_newfunction(js_State *J, js_Function *function, js_Environment *scope)
 {
 	js_Object *obj = jsR_newobject(J, JS_CFUNCTION, J->Function_prototype);
-	obj->function = function;
-	obj->scope = scope;
+	obj->u.f.function = function;
+	obj->u.f.scope = scope;
 	return obj;
 }
 
 static js_Object *jsR_newscript(js_State *J, js_Function *function)
 {
 	js_Object *obj = jsR_newobject(J, JS_CSCRIPT, NULL);
-	obj->function = function;
+	obj->u.f.function = function;
+	obj->u.f.scope = NULL;
 	return obj;
 }
 
 static js_Object *jsR_newcfunction(js_State *J, js_CFunction cfunction)
 {
 	js_Object *obj = jsR_newobject(J, JS_CCFUNCTION, J->Function_prototype);
-	obj->cfunction = cfunction;
-	obj->cconstructor = NULL;
+	obj->u.c.function = cfunction;
+	obj->u.c.constructor = NULL;
 	return obj;
 }
 
 js_Object *jsR_newcconstructor(js_State *J, js_CFunction cfunction, js_CFunction cconstructor)
 {
 	js_Object *obj = jsR_newobject(J, JS_CCFUNCTION, J->Function_prototype);
-	obj->cfunction = cfunction;
-	obj->cconstructor = cconstructor;
+	obj->u.c.function = cfunction;
+	obj->u.c.constructor = cconstructor;
 	return obj;
 }
 
 js_Object *jsR_newboolean(js_State *J, int v)
 {
 	js_Object *obj = jsR_newobject(J, JS_CBOOLEAN, J->Boolean_prototype);
-	obj->primitive.boolean = v;
+	obj->u.boolean = v;
 	return obj;
 }
 
 js_Object *jsR_newnumber(js_State *J, double v)
 {
 	js_Object *obj = jsR_newobject(J, JS_CNUMBER, J->Number_prototype);
-	obj->primitive.number = v;
+	obj->u.number = v;
 	return obj;
 }
 
 js_Object *jsR_newstring(js_State *J, const char *v)
 {
 	js_Object *obj = jsR_newobject(J, JS_CSTRING, J->String_prototype);
-	obj->primitive.string = v;
+	obj->u.string = v;
 	return obj;
 }
 

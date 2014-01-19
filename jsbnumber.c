@@ -17,27 +17,27 @@ static int jsB_Number(js_State *J, int n)
 
 static int Np_valueOf(js_State *J, int n)
 {
-	js_Object *T = js_toobject(J, 0);
-	if (T->type != JS_CNUMBER) jsR_error(J, "TypeError");
-	js_pushnumber(J, T->primitive.number);
+	js_Object *self = js_toobject(J, 0);
+	if (self->type != JS_CNUMBER) jsR_error(J, "TypeError");
+	js_pushnumber(J, self->u.number);
 	return 1;
 }
 
 static int Np_toString(js_State *J, int n)
 {
-	js_Object *T = js_toobject(J, 0);
-	if (T->type != JS_CNUMBER) jsR_error(J, "TypeError");
-	js_pushliteral(J, jsR_numbertostring(J, T->primitive.number));
+	js_Object *self = js_toobject(J, 0);
+	if (self->type != JS_CNUMBER) jsR_error(J, "TypeError");
+	js_pushliteral(J, jsR_numbertostring(J, self->u.number));
 	return 1;
 }
 
 static int Np_toFixed(js_State *J, int n)
 {
 	char buf[40];
-	js_Object *T = js_toobject(J, 0);
+	js_Object *self = js_toobject(J, 0);
 	int width = js_tonumber(J, 1);
-	if (T->type != JS_CNUMBER) jsR_error(J, "TypeError");
-	sprintf(buf, "%*f", width, T->primitive.number);
+	if (self->type != JS_CNUMBER) jsR_error(J, "TypeError");
+	sprintf(buf, "%*f", width, self->u.number);
 	js_pushstring(J, buf);
 	return 1;
 }
@@ -45,10 +45,10 @@ static int Np_toFixed(js_State *J, int n)
 static int Np_toExponential(js_State *J, int n)
 {
 	char buf[40];
-	js_Object *T = js_toobject(J, 0);
+	js_Object *self = js_toobject(J, 0);
 	int width = js_tonumber(J, 1);
-	if (T->type != JS_CNUMBER) jsR_error(J, "TypeError");
-	sprintf(buf, "%*e", width, T->primitive.number);
+	if (self->type != JS_CNUMBER) jsR_error(J, "TypeError");
+	sprintf(buf, "%*e", width, self->u.number);
 	js_pushstring(J, buf);
 	return 1;
 }
@@ -56,17 +56,17 @@ static int Np_toExponential(js_State *J, int n)
 static int Np_toPrecision(js_State *J, int n)
 {
 	char buf[40];
-	js_Object *T = js_toobject(J, 0);
+	js_Object *self = js_toobject(J, 0);
 	int width = js_tonumber(J, 1);
-	if (T->type != JS_CNUMBER) jsR_error(J, "TypeError");
-	sprintf(buf, "%*g", width, T->primitive.number);
+	if (self->type != JS_CNUMBER) jsR_error(J, "TypeError");
+	sprintf(buf, "%*g", width, self->u.number);
 	js_pushstring(J, buf);
 	return 1;
 }
 
 void jsB_initnumber(js_State *J)
 {
-	J->Number_prototype->primitive.number = 0;
+	J->Number_prototype->u.number = 0;
 
 	js_pushobject(J, jsR_newcconstructor(J, jsB_Number, jsB_new_Number));
 	{

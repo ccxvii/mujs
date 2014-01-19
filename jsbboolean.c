@@ -17,23 +17,23 @@ static int jsB_Boolean(js_State *J, int n)
 
 static int Bp_toString(js_State *J, int n)
 {
-	js_Object *T = js_toobject(J, 0);
-	if (T->type != JS_CBOOLEAN) jsR_error(J, "TypeError");
-	js_pushliteral(J, T->primitive.boolean ? "true" : "false");
+	js_Object *self = js_toobject(J, 0);
+	if (self->type != JS_CBOOLEAN) jsR_error(J, "TypeError");
+	js_pushliteral(J, self->u.boolean ? "true" : "false");
 	return 1;
 }
 
 static int Bp_valueOf(js_State *J, int n)
 {
-	js_Object *T = js_toobject(J, 0);
-	if (T->type != JS_CBOOLEAN) jsR_error(J, "TypeError");
-	js_pushboolean(J, T->primitive.boolean);
+	js_Object *self = js_toobject(J, 0);
+	if (self->type != JS_CBOOLEAN) jsR_error(J, "TypeError");
+	js_pushboolean(J, self->u.boolean);
 	return 1;
 }
 
 void jsB_initboolean(js_State *J)
 {
-	J->Boolean_prototype->primitive.boolean = 0;
+	J->Boolean_prototype->u.boolean = 0;
 
 	js_pushobject(J, jsR_newcconstructor(J, jsB_Boolean, jsB_new_Boolean));
 	{

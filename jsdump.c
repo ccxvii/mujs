@@ -674,15 +674,15 @@ void js_dumpvalue(js_State *J, js_Value v)
 		case JS_CFUNCTION:
 			printf("function(%p, %s, %s:%d)",
 				v.u.object,
-				v.u.object->function->name,
-				v.u.object->function->filename,
-				v.u.object->function->line);
+				v.u.object->u.f.function->name,
+				v.u.object->u.f.function->filename,
+				v.u.object->u.f.function->line);
 			break;
-		case JS_CSCRIPT: printf("script(%s)", v.u.object->function->filename); break;
-		case JS_CCFUNCTION: printf("cfunction(%p)", v.u.object->cfunction); break;
-		case JS_CBOOLEAN: printf("boolean(%d)", v.u.object->primitive.boolean); break;
-		case JS_CNUMBER: printf("number(%g)", v.u.object->primitive.number); break;
-		case JS_CSTRING: printf("string('%s')", v.u.object->primitive.string); break;
+		case JS_CSCRIPT: printf("script(%s)", v.u.object->u.f.function->filename); break;
+		case JS_CCFUNCTION: printf("cfunction(%p)", v.u.object->u.c.function); break;
+		case JS_CBOOLEAN: printf("boolean(%d)", v.u.object->u.boolean); break;
+		case JS_CNUMBER: printf("number(%g)", v.u.object->u.number); break;
+		case JS_CSTRING: printf("string('%s')", v.u.object->u.string); break;
 		default: printf("<unknown %p>", v.u.object); break;
 		}
 		break;

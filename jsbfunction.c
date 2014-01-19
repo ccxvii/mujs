@@ -61,8 +61,8 @@ static int Fp_call(js_State *J, int n)
 
 void jsB_initfunction(js_State *J)
 {
-	J->Function_prototype->cfunction = jsB_Function_prototype;
-	J->Function_prototype->cconstructor = NULL;
+	J->Function_prototype->u.c.function = jsB_Function_prototype;
+	J->Function_prototype->u.c.constructor = NULL;
 
 	js_pushobject(J, jsR_newcconstructor(J, jsB_Function, jsB_new_Function));
 	{

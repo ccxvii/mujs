@@ -69,10 +69,12 @@ static void jsG_markobject(js_State *J, int mark, js_Object *obj)
 		jsG_markproperty(J, mark, obj->properties);
 	if (obj->prototype && obj->prototype->gcmark != mark)
 		jsG_markobject(J, mark, obj->prototype);
-	if (obj->scope && obj->scope->gcmark != mark)
-		jsG_markenvironment(J, mark, obj->scope);
-	if (obj->function && obj->function->gcmark != mark)
-		jsG_markfunction(J, mark, obj->function);
+	if (obj->type == JS_CFUNCTION || obj->type == JS_CSCRIPT) {
+		if (obj->u.f.scope && obj->u.f.scope->gcmark != mark)
+			jsG_markenvironment(J, mark, obj->u.f.scope);
+		if (obj->u.f.function && obj->u.f.function->gcmark != mark)
+			jsG_markfunction(J, mark, obj->u.f.function);
+	}
 }
 
 static void jsG_markstack(js_State *J, int mark)

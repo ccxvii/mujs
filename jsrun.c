@@ -393,11 +393,11 @@ void js_call(js_State *J, int n)
 	int savebot = BOT;
 	BOT = TOP - n - 1;
 	if (obj->type == JS_CFUNCTION)
-		jsR_callfunction(J, n, obj->function, obj->scope);
+		jsR_callfunction(J, n, obj->u.f.function, obj->u.f.scope);
 	else if (obj->type == JS_CSCRIPT)
-		jsR_callscript(J, n, obj->function);
+		jsR_callscript(J, n, obj->u.f.function);
 	else if (obj->type == JS_CCFUNCTION)
-		jsR_callcfunction(J, n, obj->cfunction);
+		jsR_callcfunction(J, n, obj->u.c.function);
 	else
 		jsR_error(J, "TypeError (not a function)");
 	BOT = savebot;
@@ -409,10 +409,10 @@ void js_construct(js_State *J, int n)
 	js_Object *prototype;
 
 	/* built-in constructors create their own objects */
-	if (obj->type == JS_CCFUNCTION && obj->cconstructor) {
+	if (obj->type == JS_CCFUNCTION && obj->u.c.constructor) {
 		int savebot = BOT;
 		BOT = TOP - n;
-		jsR_callcfunction(J, n, obj->cconstructor);
+		jsR_callcfunction(J, n, obj->u.c.constructor);
 		BOT = savebot;
 		return;
 	}
@@ -459,8 +459,8 @@ void jsR_dumpenvironment(js_State *J, js_Environment *E, int d)
 
 void js_trap(js_State *J, int pc)
 {
-	fprintf(stderr, "trap at %d in ", pc);
-	js_Function *F = STACK[BOT-1].u.object->function;
+	js_Function *F = STACK[BOT-1].u.object->u.f.function;
+	printf("trap at %d in ", pc);
 	jsC_dumpfunction(J, F);
 	jsR_dumpstack(J);
 	jsR_dumpenvironment(J, J->E, 0);

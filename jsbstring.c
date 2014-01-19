@@ -18,17 +18,17 @@ static int jsB_String(js_State *J, int n)
 
 static int Sp_toString(js_State *J, int n)
 {
-	js_Object *T = js_toobject(J, 0);
-	if (T->type != JS_CSTRING) jsR_error(J, "TypeError");
-	js_pushliteral(J, T->primitive.string);
+	js_Object *self = js_toobject(J, 0);
+	if (self->type != JS_CSTRING) jsR_error(J, "TypeError");
+	js_pushliteral(J, self->u.string);
 	return 1;
 }
 
 static int Sp_valueOf(js_State *J, int n)
 {
-	js_Object *T = js_toobject(J, 0);
-	if (T->type != JS_CSTRING) jsR_error(J, "TypeError");
-	js_pushliteral(J, T->primitive.string);
+	js_Object *self = js_toobject(J, 0);
+	if (self->type != JS_CSTRING) jsR_error(J, "TypeError");
+	js_pushliteral(J, self->u.string);
 	return 1;
 }
 
@@ -50,7 +50,7 @@ static int S_fromCharCode(js_State *J, int n)
 
 void jsB_initstring(js_State *J)
 {
-	J->String_prototype->primitive.string = "";
+	J->String_prototype->u.string = "";
 
 	js_pushobject(J, jsR_newcconstructor(J, jsB_String, jsB_new_String));
 	{

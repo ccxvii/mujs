@@ -32,12 +32,6 @@ enum js_Class {
 };
 
 enum {
-	JS_PWRITABLE = 1,
-	JS_PENUMERABLE = 2,
-	JS_PCONFIGURABLE = 4,
-};
-
-enum {
 	JS_HNONE,
 	JS_HNUMBER,
 	JS_HSTRING,
@@ -63,12 +57,15 @@ struct js_Object
 		int boolean;
 		double number;
 		const char *string;
-	} primitive;
-	js_Environment *scope;
-	js_Function *function;
-	js_CFunction cfunction;
-	js_CFunction cconstructor;
-
+		struct {
+			js_Function *function;
+			js_Environment *scope;
+		} f;
+		struct {
+			js_CFunction function;
+			js_CFunction constructor;
+		} c;
+	} u;
 	js_Object *gcnext;
 	int gcmark;
 };
@@ -78,8 +75,8 @@ struct js_Property
 	const char *name;
 	js_Property *left, *right;
 	int level;
+	unsigned short readonly, dontenum, dontconf;
 	js_Value value;
-	int flags;
 };
 
 /* jsvalue.c */
