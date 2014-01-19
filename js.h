@@ -71,5 +71,6 @@ void jsB_initfunction(js_State *J);
 void jsB_initboolean(js_State *J);
 void jsB_initnumber(js_State *J);
 void jsB_initstring(js_State *J);
+void jsB_initmath(js_State *J);
 
 #endif

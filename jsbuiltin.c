@@ -103,6 +103,8 @@ void jsB_init(js_State *J)
 	jsB_initnumber(J);
 	jsB_initstring(J);
 
+	jsB_initmath(J);
+
 	/* Initialize the global object */
 	js_pushnumber(J, NAN);
 	js_setglobal(J, "NaN");
