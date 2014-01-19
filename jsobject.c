@@ -54,6 +54,15 @@ js_Object *jsR_newstring(js_State *J, const char *v)
 {
 	js_Object *obj = jsR_newobject(J, JS_CSTRING, J->String_prototype);
 	obj->u.string = v;
+	{
+		js_Property *ref;
+		ref = jsR_setproperty(J, obj, "length");
+		ref->value.type = JS_TNUMBER;
+		ref->value.u.number = strlen(v);
+		ref->readonly = 1;
+		ref->dontenum = 1;
+		ref->dontconf = 1;
+	}
 	return obj;
 }
 
