@@ -69,12 +69,16 @@ void js_newarray(js_State *J)
 void js_newfunction(js_State *J, js_Function *F, js_Environment *scope)
 {
 	js_pushobject(J, jsR_newfunction(J, F, scope));
-	js_pushnumber(J, F->numparams);
-	js_setproperty(J, -2, "length");
-	js_newobject(J);
-	js_copy(J, -2);
-	js_setproperty(J, -2, "constructor");
-	js_setproperty(J, -2, "prototype");
+	{
+		js_pushnumber(J, F->numparams);
+		js_setproperty(J, -2, "length");
+		js_newobject(J);
+		{
+			js_copy(J, -2);
+			js_setproperty(J, -2, "constructor");
+		}
+		js_setproperty(J, -2, "prototype");
+	}
 }
 
 void js_newscript(js_State *J, js_Function *F)
@@ -82,13 +86,17 @@ void js_newscript(js_State *J, js_Function *F)
 	js_pushobject(J, jsR_newscript(J, F));
 }
 
-void js_newcfunction(js_State *J, js_CFunction fun)
+void js_newcfunction(js_State *J, js_CFunction fun, int length)
 {
 	js_pushobject(J, jsR_newcfunction(J, fun));
-	js_newobject(J);
 	{
-		js_copy(J, -2);
-		js_setproperty(J, -2, "constructor");
+		js_pushnumber(J, length);
+		js_setproperty(J, -2, "length");
+		js_newobject(J);
+		{
+			js_copy(J, -2);
+			js_setproperty(J, -2, "constructor");
+		}
+		js_setproperty(J, -2, "prototype");
 	}
-	js_setproperty(J, -2, "prototype");
 }

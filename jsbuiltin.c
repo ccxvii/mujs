@@ -67,14 +67,35 @@ static int jsB_isFinite(js_State *J, int argc)
 	return 1;
 }
 
-static void jsB_register(js_State *J, const char *name, js_CFunction cfun)
+static void jsB_globalf(js_State *J, const char *name, js_CFunction cfun, int n)
 {
-	js_newcfunction(J, cfun);
+	js_newcfunction(J, cfun, n);
 	js_setglobal(J, name);
+}
+
+void jsB_propf(js_State *J, const char *name, js_CFunction cfun, int n)
+{
+	js_newcfunction(J, cfun, n);
+	js_setproperty(J, -2, name);
+}
+
+void jsB_propn(js_State *J, const char *name, double number)
+{
+	js_pushnumber(J, number);
+	js_setproperty(J, -2, name);
 }
 
 void jsB_init(js_State *J)
 {
+	/* Create the prototype objects here, before the constructors */
+	J->Object_prototype = jsR_newobject(J, JS_COBJECT, NULL);
+	J->Array_prototype = jsR_newobject(J, JS_CARRAY, J->Object_prototype);
+	J->Function_prototype = jsR_newobject(J, JS_CCFUNCTION, J->Object_prototype);
+	J->Boolean_prototype = jsR_newobject(J, JS_CBOOLEAN, J->Object_prototype);
+	J->Number_prototype = jsR_newobject(J, JS_CNUMBER, J->Object_prototype);
+	J->String_prototype = jsR_newobject(J, JS_CSTRING, J->Object_prototype);
+
+	/* Create the constructors and fill out the prototype objects */
 	jsB_initobject(J);
 	jsB_initarray(J);
 	jsB_initfunction(J);
@@ -82,6 +103,7 @@ void jsB_init(js_State *J)
 	jsB_initnumber(J);
 	jsB_initstring(J);
 
+	/* Initialize the global object */
 	js_pushnumber(J, NAN);
 	js_setglobal(J, "NaN");
 
@@ -91,12 +113,12 @@ void jsB_init(js_State *J)
 	js_pushundefined(J);
 	js_setglobal(J, "undefined");
 
-	jsB_register(J, "eval", jsB_eval);
-	jsB_register(J, "parseInt", jsB_parseInt);
-	jsB_register(J, "parseFloat", jsB_parseFloat);
-	jsB_register(J, "isNaN", jsB_isNaN);
-	jsB_register(J, "isFinite", jsB_isFinite);
+	jsB_globalf(J, "eval", jsB_eval, 1);
+	jsB_globalf(J, "parseInt", jsB_parseInt, 1);
+	jsB_globalf(J, "parseFloat", jsB_parseFloat, 1);
+	jsB_globalf(J, "isNaN", jsB_isNaN, 1);
+	jsB_globalf(J, "isFinite", jsB_isFinite, 1);
 
-	jsB_register(J, "collectGarbage", jsB_collectGarbage);
-	jsB_register(J, "print", jsB_print);
+	jsB_globalf(J, "collectGarbage", jsB_collectGarbage, 0);
+	jsB_globalf(J, "print", jsB_print, 0);
 }

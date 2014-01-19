@@ -12,6 +12,9 @@ struct js_Environment
 
 /* private */
 void jsB_init(js_State *J);
+void jsB_propf(js_State *J, const char *name, js_CFunction cfun, int n);
+void jsB_propn(js_State *J, const char *name, double number);
+
 js_Environment *jsR_newenvironment(js_State *J, js_Object *variables, js_Environment *outer);
 js_Object *jsR_newcconstructor(js_State *J, js_CFunction cfunction, js_CFunction cconstructor);
 int jsR_loadscript(js_State *J, const char *filename, const char *source);
@@ -52,7 +55,7 @@ void js_newobject(js_State *J);
 void js_newarray(js_State *J);
 void js_newfunction(js_State *J, js_Function *function, js_Environment *scope);
 void js_newscript(js_State *J, js_Function *function);
-void js_newcfunction(js_State *J, js_CFunction fun);
+void js_newcfunction(js_State *J, js_CFunction fun, int length);
 
 const char *js_typeof(js_State *J, int idx);
 int js_isundefined(js_State *J, int idx);

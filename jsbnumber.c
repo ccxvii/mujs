@@ -15,7 +15,7 @@ static int jsB_Number(js_State *J, int n)
 	return 1;
 }
 
-static int jsB_Number_p_valueOf(js_State *J, int n)
+static int Np_valueOf(js_State *J, int n)
 {
 	js_Object *T = js_toobject(J, 0);
 	if (T->type != JS_CNUMBER) jsR_error(J, "TypeError");
@@ -23,7 +23,7 @@ static int jsB_Number_p_valueOf(js_State *J, int n)
 	return 1;
 }
 
-static int jsB_Number_p_toString(js_State *J, int n)
+static int Np_toString(js_State *J, int n)
 {
 	js_Object *T = js_toobject(J, 0);
 	if (T->type != JS_CNUMBER) jsR_error(J, "TypeError");
@@ -31,7 +31,7 @@ static int jsB_Number_p_toString(js_State *J, int n)
 	return 1;
 }
 
-static int jsB_Number_p_toFixed(js_State *J, int n)
+static int Np_toFixed(js_State *J, int n)
 {
 	char buf[40];
 	js_Object *T = js_toobject(J, 0);
@@ -42,7 +42,7 @@ static int jsB_Number_p_toFixed(js_State *J, int n)
 	return 1;
 }
 
-static int jsB_Number_p_toExponential(js_State *J, int n)
+static int Np_toExponential(js_State *J, int n)
 {
 	char buf[40];
 	js_Object *T = js_toobject(J, 0);
@@ -53,7 +53,7 @@ static int jsB_Number_p_toExponential(js_State *J, int n)
 	return 1;
 }
 
-static int jsB_Number_p_toPrecision(js_State *J, int n)
+static int Np_toPrecision(js_State *J, int n)
 {
 	char buf[40];
 	js_Object *T = js_toobject(J, 0);
@@ -66,40 +66,30 @@ static int jsB_Number_p_toPrecision(js_State *J, int n)
 
 void jsB_initnumber(js_State *J)
 {
-	J->Number_prototype = jsR_newobject(J, JS_CNUMBER, J->Object_prototype);
 	J->Number_prototype->primitive.number = 0;
 
 	js_pushobject(J, jsR_newcconstructor(J, jsB_Number, jsB_new_Number));
 	{
+		jsB_propn(J, "length", 1);
+
 		js_pushobject(J, J->Number_prototype);
 		{
 			js_copy(J, -2);
 			js_setproperty(J, -2, "constructor");
-			js_newcfunction(J, jsB_Number_p_valueOf);
-			js_setproperty(J, -2, "valueOf");
-			js_newcfunction(J, jsB_Number_p_toString);
-			js_dup(J);
-			js_setproperty(J, -3, "toString");
-			js_setproperty(J, -2, "toLocaleString");
-			js_newcfunction(J, jsB_Number_p_toFixed);
-			js_setproperty(J, -2, "toFixed");
-			js_newcfunction(J, jsB_Number_p_toExponential);
-			js_setproperty(J, -2, "toExponential");
-			js_newcfunction(J, jsB_Number_p_toPrecision);
-			js_setproperty(J, -2, "toPrecision");
+			jsB_propf(J, "valueOf", Np_valueOf, 0);
+			jsB_propf(J, "toString", Np_toString, 0);
+			jsB_propf(J, "toLocaleString", Np_toString, 0);
+			jsB_propf(J, "toFixed", Np_toFixed, 1);
+			jsB_propf(J, "toExponential", Np_toExponential, 1);
+			jsB_propf(J, "toPrecision", Np_toPrecision, 1);
 		}
 		js_setproperty(J, -2, "prototype");
 
-		js_pushnumber(J, DBL_MAX);
-		js_setproperty(J, -2, "MAX_VALUE");
-		js_pushnumber(J, DBL_MIN);
-		js_setproperty(J, -2, "MIN_VALUE");
-		js_pushnumber(J, NAN);
-		js_setproperty(J, -2, "NaN");
-		js_pushnumber(J, -INFINITY);
-		js_setproperty(J, -2, "NEGATIVE_INFINITY");
-		js_pushnumber(J, INFINITY);
-		js_setproperty(J, -2, "POSITIVE_INFINITY");
+		jsB_propn(J, "MAX_VALUE", DBL_MAX);
+		jsB_propn(J, "MIN_VALUE", DBL_MIN);
+		jsB_propn(J, "NaN", NAN);
+		jsB_propn(J, "NEGATIVE_INFINITY", -INFINITY);
+		jsB_propn(J, "POSITIVE_INFINITY", INFINITY);
 	}
 	js_setglobal(J, "Number");
 }

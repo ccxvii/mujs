@@ -3,7 +3,8 @@
 #include "jsrun.h"
 #include "jsstate.h"
 
-static int jsB_new_Object(js_State *J, int n) {
+static int jsB_new_Object(js_State *J, int n)
+{
 	if (n == 0 || js_isundefined(J, 0) || js_isnull(J, 0))
 		js_newobject(J);
 	else
@@ -11,7 +12,8 @@ static int jsB_new_Object(js_State *J, int n) {
 	return 1;
 }
 
-static int jsB_Object(js_State *J, int n) {
+static int jsB_Object(js_State *J, int n)
+{
 	if (n == 0 || js_isundefined(J, 1) || js_isnull(J, 1))
 		js_newobject(J);
 	else
@@ -19,7 +21,7 @@ static int jsB_Object(js_State *J, int n) {
 	return 1;
 }
 
-static int jsB_Object_p_toString(js_State *J, int n)
+static int Op_toString(js_State *J, int n)
 {
 	js_Object *T = js_toobject(J, 0);
 	switch (T->type) {
@@ -40,13 +42,13 @@ static int jsB_Object_p_toString(js_State *J, int n)
 	return 1;
 }
 
-static int jsB_Object_p_valueOf(js_State *J, int n)
+static int Op_valueOf(js_State *J, int n)
 {
 	/* return the 'this' object */
 	return 1;
 }
 
-static int jsB_Object_p_hasOwnProperty(js_State *J, int n)
+static int Op_hasOwnProperty(js_State *J, int n)
 {
 	js_Object *T = js_toobject(J, 0);
 	const char *name = js_tostring(J, 1);
@@ -55,7 +57,7 @@ static int jsB_Object_p_hasOwnProperty(js_State *J, int n)
 	return 1;
 }
 
-static int jsB_Object_p_isPrototypeOf(js_State *J, int n)
+static int Op_isPrototypeOf(js_State *J, int n)
 {
 	js_Object *T = js_toobject(J, 0);
 	if (js_isobject(J, 1)) {
@@ -72,7 +74,7 @@ static int jsB_Object_p_isPrototypeOf(js_State *J, int n)
 	return 1;
 }
 
-static int jsB_Object_p_propertyIsEnumerable(js_State *J, int n)
+static int Op_propertyIsEnumerable(js_State *J, int n)
 {
 	js_Object *T = js_toobject(J, 0);
 	const char *name = js_tostring(J, 1);
@@ -83,25 +85,19 @@ static int jsB_Object_p_propertyIsEnumerable(js_State *J, int n)
 
 void jsB_initobject(js_State *J)
 {
-	J->Object_prototype = jsR_newobject(J, JS_COBJECT, NULL);
 	js_pushobject(J, jsR_newcconstructor(J, jsB_Object, jsB_new_Object));
 	{
+		jsB_propn(J, "length", 1);
 		js_pushobject(J, J->Object_prototype);
 		{
 			js_copy(J, -2);
 			js_setproperty(J, -2, "constructor");
-			js_newcfunction(J, jsB_Object_p_toString);
-			js_dup(J);
-			js_setproperty(J, -3, "toString");
-			js_setproperty(J, -2, "toLocaleString");
-			js_newcfunction(J, jsB_Object_p_valueOf);
-			js_setproperty(J, -2, "valueOf");
-			js_newcfunction(J, jsB_Object_p_hasOwnProperty);
-			js_setproperty(J, -2, "hasOwnProperty");
-			js_newcfunction(J, jsB_Object_p_isPrototypeOf);
-			js_setproperty(J, -2, "isPrototypeOf");
-			js_newcfunction(J, jsB_Object_p_propertyIsEnumerable);
-			js_setproperty(J, -2, "propertyIsEnumerable");
+			jsB_propf(J, "toString", Op_toString, 0);
+			jsB_propf(J, "toLocaleString", Op_toString, 0);
+			jsB_propf(J, "valueOf", Op_valueOf, 0);
+			jsB_propf(J, "hasOwnProperty", Op_hasOwnProperty, 1);
+			jsB_propf(J, "isPrototypeOf", Op_isPrototypeOf, 1);
+			jsB_propf(J, "propertyIsEnumerable", Op_propertyIsEnumerable, 1);
 		}
 		js_setproperty(J, -2, "prototype");
 	}
