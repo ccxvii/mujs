@@ -28,8 +28,8 @@ int jsR_compare(js_State *J);
 int jsR_equal(js_State *J);
 int jsR_strictequal(js_State *J);
 
-const char *jsR_numbertostring(js_State *J, double number);
-double jsR_stringtonumber(js_State *J, const char *string);
+const char *jsR_stringfromnumber(js_State *J, double number);
+double jsR_numberfromstring(js_State *J, const char *string);
 
 /* public */
 
@@ -69,8 +69,11 @@ int js_iscallable(js_State *J, int idx);
 
 int js_toboolean(js_State *J, int idx);
 double js_tonumber(js_State *J, int idx);
-double js_tointeger(js_State *J, int idx);
 const char *js_tostring(js_State *J, int idx);
+
+double js_tointeger(js_State *J, int idx);
+int js_toint32(js_State *J, int idx);
+unsigned int js_touint32(js_State *J, int idx);
 
 void js_pop(js_State *J, int n);
 void js_dup(js_State *J);

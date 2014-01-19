@@ -155,6 +155,21 @@ double js_tonumber(js_State *J, int idx)
 	return jsR_tonumber(J, stackidx(J, idx));
 }
 
+double js_tointeger(js_State *J, int idx)
+{
+	return tointeger(jsR_tonumber(J, stackidx(J, idx)));
+}
+
+int js_toint32(js_State *J, int idx)
+{
+	return toint32(jsR_tonumber(J, stackidx(J, idx)));
+}
+
+unsigned int js_touint32(js_State *J, int idx)
+{
+	return touint32(jsR_tonumber(J, stackidx(J, idx)));
+}
+
 const char *js_tostring(js_State *J, int idx)
 {
 	return jsR_tostring(J, stackidx(J, idx));

@@ -49,7 +49,7 @@ static int jsB_parseInt(js_State *J, int argc)
 static int jsB_parseFloat(js_State *J, int argc)
 {
 	const char *s = js_tostring(J, 1);
-	js_pushnumber(J, jsR_stringtonumber(J, s));
+	js_pushnumber(J, jsR_numberfromstring(J, s));
 	return 1;
 }
 

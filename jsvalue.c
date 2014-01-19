@@ -2,7 +2,7 @@
 #include "jsobject.h"
 #include "jsrun.h"
 
-const char *jsR_numbertostring(js_State *J, double n)
+const char *jsR_stringfromnumber(js_State *J, double n)
 {
 	char buf[32];
 	if (isnan(n)) return "NaN";
@@ -12,7 +12,7 @@ const char *jsR_numbertostring(js_State *J, double n)
 	return js_intern(J, buf);
 }
 
-double jsR_stringtonumber(js_State *J, const char *s)
+double jsR_numberfromstring(js_State *J, const char *s)
 {
 	/* TODO: use lexer to parse string grammar */
 	return strtod(s, NULL);
@@ -99,7 +99,7 @@ double jsR_tonumber(js_State *J, const js_Value *v)
 	case JS_TNULL: return 0;
 	case JS_TBOOLEAN: return v->u.boolean;
 	case JS_TNUMBER: return v->u.number;
-	case JS_TSTRING: return jsR_stringtonumber(J, v->u.string);
+	case JS_TSTRING: return jsR_numberfromstring(J, v->u.string);
 	case JS_TOBJECT:
 		{
 			js_Value vv = jsR_toprimitive(J, v, JS_HNUMBER);
@@ -115,7 +115,7 @@ const char *jsR_tostring(js_State *J, const js_Value *v)
 	case JS_TUNDEFINED: return "undefined";
 	case JS_TNULL: return "null";
 	case JS_TBOOLEAN: return v->u.boolean ? "true" : "false";
-	case JS_TNUMBER: return jsR_numbertostring(J, v->u.number);
+	case JS_TNUMBER: return jsR_stringfromnumber(J, v->u.number);
 	case JS_TSTRING: return v->u.string;
 	case JS_TOBJECT:
 		{

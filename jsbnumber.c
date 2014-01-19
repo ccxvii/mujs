@@ -27,7 +27,7 @@ static int Np_toString(js_State *J, int n)
 {
 	js_Object *self = js_toobject(J, 0);
 	if (self->type != JS_CNUMBER) jsR_error(J, "TypeError");
-	js_pushliteral(J, jsR_numbertostring(J, self->u.number));
+	js_pushliteral(J, jsR_stringfromnumber(J, self->u.number));
 	return 1;
 }
 
