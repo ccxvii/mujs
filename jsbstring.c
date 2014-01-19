@@ -32,20 +32,19 @@ static int Sp_valueOf(js_State *J, int n)
 	return 1;
 }
 
-static inline const char *utfindex(const char *s, int i)
+static inline Rune runeAt(const char *s, int i)
 {
-	Rune rune;
-	int c, n = 0;
-	for (n = 0; n < i; ++n) {
-		c = *(unsigned char*)s;
-		if (c < Runeself) {
-			if (c == 0)
-				return NULL;
+	Rune rune = 0;
+	while (i-- >= 0) {
+		rune = *(unsigned char*)s;
+		if (rune < Runeself) {
+			if (rune == 0)
+				return 0;
 			++s;
 		} else
 			s += chartorune(&rune, s);
 	}
-	return s;
+	return rune;
 }
 
 static int Sp_charAt(js_State *J, int n)
@@ -53,10 +52,8 @@ static int Sp_charAt(js_State *J, int n)
 	char buf[UTFmax + 1];
 	const char *s = js_tostring(J, 0);
 	int pos = js_tointeger(J, 1);
-	s = utfindex(s, pos);
-	if (s) {
-		Rune rune;
-		chartorune(&rune, s);
+	Rune rune = runeAt(s, pos);
+	if (rune > 0) {
 		buf[runetochar(buf, &rune)] = 0;
 		js_pushstring(J, buf);
 	} else {
@@ -69,14 +66,11 @@ static int Sp_charCodeAt(js_State *J, int n)
 {
 	const char *s = js_tostring(J, 0);
 	int pos = js_tointeger(J, 1);
-	s = utfindex(s, pos);
-	if (s) {
-		Rune rune;
-		chartorune(&rune, s);
+	Rune rune = runeAt(s, pos);
+	if (rune > 0)
 		js_pushnumber(J, rune);
-	} else {
+	else
 		js_pushnumber(J, NAN);
-	}
 	return 1;
 }
 
