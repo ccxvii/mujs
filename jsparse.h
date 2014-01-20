@@ -128,6 +128,7 @@ js_Ast *jsP_parse(js_State *J, const char *filename, const char *source);
 void jsP_optimize(js_State *J, js_Ast *prog);
 void jsP_freeparse(js_State *J);
 
+const char *jsP_aststring(js_AstType type);
 void jsP_dumpsyntax(js_State *J, js_Ast *prog);
 void jsP_dumplist(js_State *J, js_Ast *prog);
 

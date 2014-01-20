@@ -5,6 +5,8 @@
 
 #include <assert.h>
 
+#define nelem(a) (sizeof (a) / sizeof (a)[0])
+
 static const char *astname[] = {
 	"list", "fundec", "ident", "number", "string", "regexp", "undef",
 	"null", "true", "false", "this", "fun", "array", "object", "prop_val",
@@ -24,6 +26,20 @@ static const char *astname[] = {
 static const char *opname[] = {
 #include "opnames.h"
 };
+
+const char *jsP_aststring(js_AstType type)
+{
+	if (type < 0 || type > nelem(astname))
+		return "<unknown>";
+	return astname[type];
+}
+
+const char *jsC_opcodestring(int type)
+{
+	if (type < 0 || type > nelem(opname))
+		return "<unknown>";
+	return opname[type];
+}
 
 static inline void pc(int c)
 {

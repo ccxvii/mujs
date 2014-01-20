@@ -808,7 +808,7 @@ static void jsR_run(js_State *J, js_Function *F)
 			return;
 
 		default:
-			js_error(J, "illegal instruction: %d (pc=%d)", opcode, (int)(pc - F->code - 1));
+			js_error(J, "illegal instruction: %s (pc=%d)", jsC_opcodestring(opcode), (int)(pc - F->code - 1));
 		}
 	}
 }
