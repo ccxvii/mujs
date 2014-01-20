@@ -1,5 +1,5 @@
 #include "jsi.h"
-#include "jsobject.h"
+#include "jsvalue.h"
 #include "jsbuiltin.h"
 
 static int Ep_toString(js_State *J, int n)
@@ -17,7 +17,7 @@ static int Ep_toString(js_State *J, int n)
 
 #define DECL(NAME) \
 	static int jsB_new_##NAME(js_State *J, int n) { \
-		js_pushobject(J, jsR_newobject(J, JS_CERROR, J->NAME##_prototype)); \
+		js_pushobject(J, jsV_newobject(J, JS_CERROR, J->NAME##_prototype)); \
 		if (n > 0) { \
 			js_pushstring(J, js_tostring(J, 0)); \
 			js_setproperty(J, -2, "message"); \
@@ -25,7 +25,7 @@ static int Ep_toString(js_State *J, int n)
 		return 1; \
 	} \
 	static int jsB_##NAME(js_State *J, int n) { \
-		js_pushobject(J, jsR_newobject(J, JS_CERROR, J->NAME##_prototype)); \
+		js_pushobject(J, jsV_newobject(J, JS_CERROR, J->NAME##_prototype)); \
 		if (n > 1) { \
 			js_pushstring(J, js_tostring(J, 1)); \
 			js_setproperty(J, -2, "message"); \
@@ -33,23 +33,17 @@ static int Ep_toString(js_State *J, int n)
 		return 1; \
 	} \
 	static void jsB_init##NAME(js_State *J) { \
-		js_pushobject(J, jsR_newcconstructor(J, jsB_##NAME, jsB_new_##NAME)); \
+		js_pushobject(J, J->NAME##_prototype); \
 		{ \
-			jsB_propn(J, "length", 1); \
-			js_pushobject(J, J->NAME##_prototype); \
-			{ \
-				js_copy(J, -2); \
-				js_setproperty(J, -2, "constructor"); \
-				jsB_props(J, "name", STR(NAME)); \
-				jsB_props(J, "message", "an error has occurred"); \
-				jsB_propf(J, "toString", Ep_toString, 0); \
-			} \
-			js_setproperty(J, -2, "prototype"); \
+			jsB_props(J, "name", STR(NAME)); \
+			jsB_props(J, "message", "an error has occurred"); \
+			jsB_propf(J, "toString", Ep_toString, 0); \
 		} \
+		js_newcconstructor(J, jsB_##NAME, jsB_new_##NAME); \
 		js_setglobal(J, STR(NAME)); \
 	} \
 	void jsR_throw##NAME(js_State *J, const char *message) { \
-		js_pushobject(J, jsR_newobject(J, JS_CERROR, J->NAME##_prototype)); \
+		js_pushobject(J, jsV_newobject(J, JS_CERROR, J->NAME##_prototype)); \
 		js_pushstring(J, message); \
 		js_setproperty(J, -2, "message"); \
 		js_throw(J); \

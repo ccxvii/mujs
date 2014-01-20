@@ -68,40 +68,35 @@ struct js_Property
 	const char *name;
 	js_Property *left, *right;
 	int level;
-	unsigned short readonly, dontenum, dontconf;
+	int atts;
 	js_Value value;
 };
 
+/* jsrun.c */
 js_Value js_tovalue(js_State *J, int idx);
 js_Value js_toprimitive(js_State *J, int idx, int hint);
 js_Object *js_toobject(js_State *J, int idx);
-
 void js_pushvalue(js_State *J, js_Value v);
 void js_pushobject(js_State *J, js_Object *v);
 
 /* jsvalue.c */
-int jsR_toboolean(js_State *J, const js_Value *v);
-double jsR_tonumber(js_State *J, const js_Value *v);
-const char *jsR_tostring(js_State *J, const js_Value *v);
-js_Object *jsR_toobject(js_State *J, const js_Value *v);
-js_Value jsR_toprimitive(js_State *J, const js_Value *v, int preferred);
+int jsV_toboolean(js_State *J, const js_Value *v);
+double jsV_tonumber(js_State *J, const js_Value *v);
+const char *jsV_tostring(js_State *J, const js_Value *v);
+js_Object *jsV_toobject(js_State *J, const js_Value *v);
+js_Value jsV_toprimitive(js_State *J, const js_Value *v, int preferred);
+
+const char *jsV_numbertostring(js_State *J, double number);
+double jsV_stringtonumber(js_State *J, const char *string);
 
 /* jsproperty.c */
-js_Object *jsR_newobject(js_State *J, js_Class type, js_Object *prototype);
-js_Property *jsR_getownproperty(js_State *J, js_Object *obj, const char *name);
-js_Property *jsR_getproperty(js_State *J, js_Object *obj, const char *name);
-js_Property *jsR_setproperty(js_State *J, js_Object *obj, const char *name);
-js_Property *jsR_nextproperty(js_State *J, js_Object *obj, const char *name);
+js_Object *jsV_newobject(js_State *J, js_Class type, js_Object *prototype);
+js_Property *jsV_getownproperty(js_State *J, js_Object *obj, const char *name);
+js_Property *jsV_getproperty(js_State *J, js_Object *obj, const char *name);
+js_Property *jsV_setproperty(js_State *J, js_Object *obj, const char *name);
+js_Property *jsV_nextproperty(js_State *J, js_Object *obj, const char *name);
 
-/* jsobject.c */
-js_Object *jsR_newboolean(js_State *J, int v);
-js_Object *jsR_newnumber(js_State *J, double v);
-js_Object *jsR_newstring(js_State *J, const char *v);
-
-/* jsrun.c */
-void jsR_pushobject(js_State *J, js_Object *v);
-js_Object *js_toobject(js_State *J, int idx);
-
+/* jsdump.c */
 void js_dumpobject(js_State *J, js_Object *obj);
 void js_dumpvalue(js_State *J, js_Value v);
 

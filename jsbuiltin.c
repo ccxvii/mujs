@@ -1,5 +1,5 @@
 #include "jsi.h"
-#include "jsobject.h"
+#include "jsvalue.h"
 #include "jsbuiltin.h"
 
 static int jsB_print(js_State *J, int argc)
@@ -42,7 +42,7 @@ static int jsB_parseInt(js_State *J, int argc)
 static int jsB_parseFloat(js_State *J, int argc)
 {
 	const char *s = js_tostring(J, 1);
-	js_pushnumber(J, jsR_numberfromstring(J, s));
+	js_pushnumber(J, strtod(s, NULL));
 	return 1;
 }
 
@@ -87,21 +87,21 @@ void jsB_props(js_State *J, const char *name, const char *string)
 void jsB_init(js_State *J)
 {
 	/* Create the prototype objects here, before the constructors */
-	J->Object_prototype = jsR_newobject(J, JS_COBJECT, NULL);
-	J->Array_prototype = jsR_newobject(J, JS_CARRAY, J->Object_prototype);
-	J->Function_prototype = jsR_newobject(J, JS_CCFUNCTION, J->Object_prototype);
-	J->Boolean_prototype = jsR_newobject(J, JS_CBOOLEAN, J->Object_prototype);
-	J->Number_prototype = jsR_newobject(J, JS_CNUMBER, J->Object_prototype);
-	J->String_prototype = jsR_newobject(J, JS_CSTRING, J->Object_prototype);
+	J->Object_prototype = jsV_newobject(J, JS_COBJECT, NULL);
+	J->Array_prototype = jsV_newobject(J, JS_CARRAY, J->Object_prototype);
+	J->Function_prototype = jsV_newobject(J, JS_CCFUNCTION, J->Object_prototype);
+	J->Boolean_prototype = jsV_newobject(J, JS_CBOOLEAN, J->Object_prototype);
+	J->Number_prototype = jsV_newobject(J, JS_CNUMBER, J->Object_prototype);
+	J->String_prototype = jsV_newobject(J, JS_CSTRING, J->Object_prototype);
 
 	/* All the native error types */
-	J->Error_prototype = jsR_newobject(J, JS_CERROR, J->Object_prototype);
-	J->EvalError_prototype = jsR_newobject(J, JS_CERROR, J->Error_prototype);
-	J->RangeError_prototype = jsR_newobject(J, JS_CERROR, J->Error_prototype);
-	J->ReferenceError_prototype = jsR_newobject(J, JS_CERROR, J->Error_prototype);
-	J->SyntaxError_prototype = jsR_newobject(J, JS_CERROR, J->Error_prototype);
-	J->TypeError_prototype = jsR_newobject(J, JS_CERROR, J->Error_prototype);
-	J->URIError_prototype = jsR_newobject(J, JS_CERROR, J->Error_prototype);
+	J->Error_prototype = jsV_newobject(J, JS_CERROR, J->Object_prototype);
+	J->EvalError_prototype = jsV_newobject(J, JS_CERROR, J->Error_prototype);
+	J->RangeError_prototype = jsV_newobject(J, JS_CERROR, J->Error_prototype);
+	J->ReferenceError_prototype = jsV_newobject(J, JS_CERROR, J->Error_prototype);
+	J->SyntaxError_prototype = jsV_newobject(J, JS_CERROR, J->Error_prototype);
+	J->TypeError_prototype = jsV_newobject(J, JS_CERROR, J->Error_prototype);
+	J->URIError_prototype = jsV_newobject(J, JS_CERROR, J->Error_prototype);
 
 	/* Create the constructors and fill out the prototype objects */
 	jsB_initobject(J);

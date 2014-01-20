@@ -1,7 +1,7 @@
 #include "jsi.h"
 #include "jsparse.h"
 #include "jscompile.h"
-#include "jsobject.h"
+#include "jsvalue.h"
 #include "jsrun.h"
 #include "jsbuiltin.h"
 
@@ -107,7 +107,7 @@ js_State *js_newstate(void)
 
 	J->gcmark = 1;
 
-	J->G = jsR_newobject(J, JS_COBJECT, NULL);
+	J->G = jsV_newobject(J, JS_COBJECT, NULL);
 	J->E = jsR_newenvironment(J, J->G, NULL);
 
 	jsB_init(J);

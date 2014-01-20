@@ -1,6 +1,6 @@
 #include "jsi.h"
 #include "jscompile.h"
-#include "jsobject.h"
+#include "jsvalue.h"
 #include "jsrun.h"
 
 static void jsG_markobject(js_State *J, int mark, js_Object *obj);
@@ -98,9 +98,25 @@ void js_gc(js_State *J, int report)
 
 	mark = J->gcmark = J->gcmark == 1 ? 2 : 1;
 
+	jsG_markobject(J, mark, J->Object_prototype);
+	jsG_markobject(J, mark, J->Array_prototype);
+	jsG_markobject(J, mark, J->Function_prototype);
+	jsG_markobject(J, mark, J->Boolean_prototype);
+	jsG_markobject(J, mark, J->Number_prototype);
+	jsG_markobject(J, mark, J->String_prototype);
+
+	jsG_markobject(J, mark, J->Error_prototype);
+	jsG_markobject(J, mark, J->EvalError_prototype);
+	jsG_markobject(J, mark, J->RangeError_prototype);
+	jsG_markobject(J, mark, J->ReferenceError_prototype);
+	jsG_markobject(J, mark, J->SyntaxError_prototype);
+	jsG_markobject(J, mark, J->TypeError_prototype);
+	jsG_markobject(J, mark, J->URIError_prototype);
+
+	jsG_markobject(J, mark, J->G);
+
 	jsG_markstack(J, mark);
-	if (J->E)
-		jsG_markenvironment(J, mark, J->E);
+	jsG_markenvironment(J, mark, J->E);
 
 	prevnextenv = &J->gcenv;
 	for (env = J->gcenv; env; env = nextenv) {

@@ -1,7 +1,7 @@
 #include "jsi.h"
 #include "jsparse.h"
 #include "jscompile.h"
-#include "jsobject.h"
+#include "jsvalue.h"
 
 #include <assert.h>
 
@@ -29,16 +29,16 @@ static const char *opname[] = {
 
 const char *jsP_aststring(js_AstType type)
 {
-	if (type < 0 || type > nelem(astname))
+	if (type > nelem(astname))
 		return "<unknown>";
 	return astname[type];
 }
 
-const char *jsC_opcodestring(int type)
+const char *jsC_opcodestring(int opcode)
 {
-	if (type < 0 || type > nelem(opname))
+	if (opcode < 0 || opcode > nelem(opname))
 		return "<unknown>";
-	return opname[type];
+	return opname[opcode];
 }
 
 static inline void pc(int c)

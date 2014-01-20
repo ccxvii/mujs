@@ -56,7 +56,12 @@ void js_pushliteral(js_State *J, const char *v);
 
 void js_newobject(js_State *J);
 void js_newarray(js_State *J);
+void js_newboolean(js_State *J, int v);
+void js_newnumber(js_State *J, double v);
+void js_newstring(js_State *J, const char *v);
+void js_newerror(js_State *J, const char *message);
 void js_newcfunction(js_State *J, js_CFunction fun, int length);
+void js_newcconstructor(js_State *J, js_CFunction fun, js_CFunction con);
 
 int js_isundefined(js_State *J, int idx);
 int js_isnull(js_State *J, int idx);

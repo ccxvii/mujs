@@ -1,6 +1,6 @@
 #include "jsi.h"
 #include "jscompile.h"
-#include "jsobject.h"
+#include "jsvalue.h"
 #include "jsbuiltin.h"
 
 static int jsB_new_Function(js_State *J, int n) { return 0; }
@@ -91,19 +91,12 @@ void jsB_initfunction(js_State *J)
 	J->Function_prototype->u.c.function = jsB_Function_prototype;
 	J->Function_prototype->u.c.constructor = NULL;
 
-	js_pushobject(J, jsR_newcconstructor(J, jsB_Function, jsB_new_Function));
+	js_pushobject(J, J->Function_prototype);
 	{
-		jsB_propn(J, "length", 1);
-
-		js_pushobject(J, J->Function_prototype);
-		{
-			js_copy(J, -2);
-			js_setproperty(J, -2, "constructor");
-			jsB_propf(J, "toString", Fp_toString, 2);
-			jsB_propf(J, "apply", Fp_apply, 2);
-			jsB_propf(J, "call", Fp_call, 1);
-		}
-		js_setproperty(J, -2, "prototype");
+		jsB_propf(J, "toString", Fp_toString, 2);
+		jsB_propf(J, "apply", Fp_apply, 2);
+		jsB_propf(J, "call", Fp_call, 1);
 	}
+	js_newcconstructor(J, jsB_Function, jsB_new_Function);
 	js_setglobal(J, "Function");
 }

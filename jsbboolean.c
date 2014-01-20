@@ -1,10 +1,10 @@
 #include "jsi.h"
-#include "jsobject.h"
+#include "jsvalue.h"
 #include "jsbuiltin.h"
 
 static int jsB_new_Boolean(js_State *J, int n)
 {
-	js_pushobject(J, jsR_newboolean(J, js_toboolean(J, 0)));
+	js_newboolean(J, js_toboolean(J, 0));
 	return 1;
 }
 
@@ -34,17 +34,11 @@ void jsB_initboolean(js_State *J)
 {
 	J->Boolean_prototype->u.boolean = 0;
 
-	js_pushobject(J, jsR_newcconstructor(J, jsB_Boolean, jsB_new_Boolean));
+	js_pushobject(J, J->Boolean_prototype);
 	{
-		jsB_propn(J, "length", 1);
-		js_pushobject(J, J->Boolean_prototype);
-		{
-			js_copy(J, -2);
-			js_setproperty(J, -2, "constructor");
-			jsB_propf(J, "toString", Bp_toString, 0);
-			jsB_propf(J, "valueOf", Bp_valueOf, 0);
-		}
-		js_setproperty(J, -2, "prototype");
+		jsB_propf(J, "toString", Bp_toString, 0);
+		jsB_propf(J, "valueOf", Bp_valueOf, 0);
 	}
+	js_newcconstructor(J, jsB_Boolean, jsB_new_Boolean);
 	js_setglobal(J, "Boolean");
 }

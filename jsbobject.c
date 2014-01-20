@@ -1,5 +1,5 @@
 #include "jsi.h"
-#include "jsobject.h"
+#include "jsvalue.h"
 #include "jsbuiltin.h"
 
 static int jsB_new_Object(js_State *J, int n)
@@ -51,7 +51,7 @@ static int Op_hasOwnProperty(js_State *J, int n)
 {
 	js_Object *self = js_toobject(J, 0);
 	const char *name = js_tostring(J, 1);
-	js_Property *ref = jsR_getownproperty(J, self, name);
+	js_Property *ref = jsV_getownproperty(J, self, name);
 	js_pushboolean(J, ref != NULL);
 	return 1;
 }
@@ -77,28 +77,22 @@ static int Op_propertyIsEnumerable(js_State *J, int n)
 {
 	js_Object *self = js_toobject(J, 0);
 	const char *name = js_tostring(J, 1);
-	js_Property *ref = jsR_getownproperty(J, self, name);
-	js_pushboolean(J, ref && !ref->dontenum);
+	js_Property *ref = jsV_getownproperty(J, self, name);
+	js_pushboolean(J, ref && !(ref->atts & JS_DONTENUM));
 	return 1;
 }
 
 void jsB_initobject(js_State *J)
 {
-	js_pushobject(J, jsR_newcconstructor(J, jsB_Object, jsB_new_Object));
+	js_pushobject(J, J->Object_prototype);
 	{
-		jsB_propn(J, "length", 1);
-		js_pushobject(J, J->Object_prototype);
-		{
-			js_copy(J, -2);
-			js_setproperty(J, -2, "constructor");
-			jsB_propf(J, "toString", Op_toString, 0);
-			jsB_propf(J, "toLocaleString", Op_toString, 0);
-			jsB_propf(J, "valueOf", Op_valueOf, 0);
-			jsB_propf(J, "hasOwnProperty", Op_hasOwnProperty, 1);
-			jsB_propf(J, "isPrototypeOf", Op_isPrototypeOf, 1);
-			jsB_propf(J, "propertyIsEnumerable", Op_propertyIsEnumerable, 1);
-		}
-		js_setproperty(J, -2, "prototype");
+		jsB_propf(J, "toString", Op_toString, 0);
+		jsB_propf(J, "toLocaleString", Op_toString, 0);
+		jsB_propf(J, "valueOf", Op_valueOf, 0);
+		jsB_propf(J, "hasOwnProperty", Op_hasOwnProperty, 1);
+		jsB_propf(J, "isPrototypeOf", Op_isPrototypeOf, 1);
+		jsB_propf(J, "propertyIsEnumerable", Op_propertyIsEnumerable, 1);
 	}
+	js_newcconstructor(J, jsB_Object, jsB_new_Object);
 	js_setglobal(J, "Object");
 }

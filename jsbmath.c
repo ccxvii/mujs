@@ -1,5 +1,5 @@
 #include "jsi.h"
-#include "jsobject.h"
+#include "jsvalue.h"
 #include "jsbuiltin.h"
 
 static int Math_abs(js_State *J, int nargs) {
@@ -77,7 +77,7 @@ static int Math_min(js_State *J, int nargs)
 
 void jsB_initmath(js_State *J)
 {
-	js_pushobject(J, jsR_newobject(J, JS_CMATH, J->Object_prototype));
+	js_pushobject(J, jsV_newobject(J, JS_CMATH, J->Object_prototype));
 	{
 		jsB_propn(J, "E", M_E);
 		jsB_propn(J, "LN10", M_LN10);

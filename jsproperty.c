@@ -1,5 +1,5 @@
 #include "jsi.h"
-#include "jsobject.h"
+#include "jsvalue.h"
 
 /*
 	Use an AA-tree to quickly look up properties in objects:
@@ -26,9 +26,7 @@ static js_Property *newproperty(js_State *J, const char *name)
 	node->name = js_intern(J, name);
 	node->left = node->right = &sentinel;
 	node->level = 1;
-	node->readonly = 0;
-	node->dontenum = 0;
-	node->dontconf = 0;
+	node->atts = 0;
 	node->value.type = JS_TUNDEFINED;
 	node->value.u.number = 0;
 	return node;
@@ -131,7 +129,7 @@ found:
 	return parent;
 }
 
-js_Object *jsR_newobject(js_State *J, js_Class type, js_Object *prototype)
+js_Object *jsV_newobject(js_State *J, js_Class type, js_Object *prototype)
 {
 	js_Object *obj = calloc(sizeof(js_Object), 1);
 	obj->gcmark = 0;
@@ -145,12 +143,12 @@ js_Object *jsR_newobject(js_State *J, js_Class type, js_Object *prototype)
 	return obj;
 }
 
-js_Property *jsR_getownproperty(js_State *J, js_Object *obj, const char *name)
+js_Property *jsV_getownproperty(js_State *J, js_Object *obj, const char *name)
 {
 	return lookup(obj->properties, name);
 }
 
-js_Property *jsR_getproperty(js_State *J, js_Object *obj, const char *name)
+js_Property *jsV_getproperty(js_State *J, js_Object *obj, const char *name)
 {
 	do {
 		js_Property *ref = lookup(obj->properties, name);
@@ -161,14 +159,14 @@ js_Property *jsR_getproperty(js_State *J, js_Object *obj, const char *name)
 	return NULL;
 }
 
-js_Property *jsR_setproperty(js_State *J, js_Object *obj, const char *name)
+js_Property *jsV_setproperty(js_State *J, js_Object *obj, const char *name)
 {
 	js_Property *result;
 	obj->properties = insert(J, obj->properties, name, &result);
 	return result;
 }
 
-js_Property *jsR_nextproperty(js_State *J, js_Object *obj, const char *name)
+js_Property *jsV_nextproperty(js_State *J, js_Object *obj, const char *name)
 {
 	if (!name)
 		return lookupfirst(obj->properties);

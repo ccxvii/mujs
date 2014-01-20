@@ -1,6 +1,6 @@
 #include "jsi.h"
 #include "jscompile.h"
-#include "jsobject.h"
+#include "jsvalue.h"
 #include "jsrun.h"
 
 static void jsR_run(js_State *J, js_Function *F);
@@ -145,42 +145,42 @@ js_Value js_tovalue(js_State *J, int idx)
 
 int js_toboolean(js_State *J, int idx)
 {
-	return jsR_toboolean(J, stackidx(J, idx));
+	return jsV_toboolean(J, stackidx(J, idx));
 }
 
 double js_tonumber(js_State *J, int idx)
 {
-	return jsR_tonumber(J, stackidx(J, idx));
+	return jsV_tonumber(J, stackidx(J, idx));
 }
 
 double js_tointeger(js_State *J, int idx)
 {
-	return tointeger(jsR_tonumber(J, stackidx(J, idx)));
+	return tointeger(jsV_tonumber(J, stackidx(J, idx)));
 }
 
 int js_toint32(js_State *J, int idx)
 {
-	return toint32(jsR_tonumber(J, stackidx(J, idx)));
+	return toint32(jsV_tonumber(J, stackidx(J, idx)));
 }
 
 unsigned int js_touint32(js_State *J, int idx)
 {
-	return touint32(jsR_tonumber(J, stackidx(J, idx)));
+	return touint32(jsV_tonumber(J, stackidx(J, idx)));
 }
 
 const char *js_tostring(js_State *J, int idx)
 {
-	return jsR_tostring(J, stackidx(J, idx));
+	return jsV_tostring(J, stackidx(J, idx));
 }
 
 js_Object *js_toobject(js_State *J, int idx)
 {
-	return jsR_toobject(J, stackidx(J, idx));
+	return jsV_toobject(J, stackidx(J, idx));
 }
 
 js_Value js_toprimitive(js_State *J, int idx, int hint)
 {
-	return jsR_toprimitive(J, stackidx(J, idx), hint);
+	return jsV_toprimitive(J, stackidx(J, idx), hint);
 }
 
 /* Stack manipulation */
@@ -256,7 +256,7 @@ void js_rot(js_State *J, int n)
 
 void js_getglobal(js_State *J, const char *name)
 {
-	js_Property *ref = jsR_getproperty(J, J->G, name);
+	js_Property *ref = jsV_getproperty(J, J->G, name);
 	if (ref)
 		js_pushvalue(J, ref->value);
 	else
@@ -265,7 +265,7 @@ void js_getglobal(js_State *J, const char *name)
 
 void js_setglobal(js_State *J, const char *name)
 {
-	js_Property *ref = jsR_setproperty(J, J->G, name);
+	js_Property *ref = jsV_setproperty(J, J->G, name);
 	if (ref)
 		ref->value = js_tovalue(J, -1);
 	js_pop(J, 1);
@@ -274,7 +274,7 @@ void js_setglobal(js_State *J, const char *name)
 void js_getownproperty(js_State *J, int idx, const char *name)
 {
 	js_Object *obj = js_toobject(J, idx);
-	js_Property *ref = jsR_getownproperty(J, obj, name);
+	js_Property *ref = jsV_getownproperty(J, obj, name);
 	if (ref)
 		js_pushvalue(J, ref->value);
 	else
@@ -284,7 +284,7 @@ void js_getownproperty(js_State *J, int idx, const char *name)
 void js_getproperty(js_State *J, int idx, const char *name)
 {
 	js_Object *obj = js_toobject(J, idx);
-	js_Property *ref = jsR_getproperty(J, obj, name);
+	js_Property *ref = jsV_getproperty(J, obj, name);
 	if (ref)
 		js_pushvalue(J, ref->value);
 	else
@@ -294,7 +294,7 @@ void js_getproperty(js_State *J, int idx, const char *name)
 void js_setproperty(js_State *J, int idx, const char *name)
 {
 	js_Object *obj = js_toobject(J, idx);
-	js_Property *ref = jsR_setproperty(J, obj, name);
+	js_Property *ref = jsV_setproperty(J, obj, name);
 	if (ref)
 		ref->value = js_tovalue(J, -1);
 	js_pop(J, 1);
@@ -303,7 +303,7 @@ void js_setproperty(js_State *J, int idx, const char *name)
 int js_nextproperty(js_State *J, int idx)
 {
 	js_Object *obj = js_toobject(J, idx);
-	js_Property *ref = jsR_nextproperty(J, obj, js_tostring(J, -1));
+	js_Property *ref = jsV_nextproperty(J, obj, js_tostring(J, -1));
 	js_pop(J, 1);
 	if (ref) {
 		js_pushliteral(J, ref->name);
@@ -330,14 +330,14 @@ js_Environment *jsR_newenvironment(js_State *J, js_Object *vars, js_Environment 
 
 static js_Property *js_decvar(js_State *J, const char *name)
 {
-	return jsR_setproperty(J, J->E->variables, name);
+	return jsV_setproperty(J, J->E->variables, name);
 }
 
 static js_Property *js_getvar(js_State *J, const char *name)
 {
 	js_Environment *E = J->E;
 	do {
-		js_Property *ref = jsR_getproperty(J, E->variables, name);
+		js_Property *ref = jsV_getproperty(J, E->variables, name);
 		if (ref)
 			return ref;
 		E = E->outer;
@@ -349,12 +349,12 @@ static js_Property *js_setvar(js_State *J, const char *name)
 {
 	js_Environment *E = J->E;
 	do {
-		js_Property *ref = jsR_getproperty(J, E->variables, name);
+		js_Property *ref = jsV_getproperty(J, E->variables, name);
 		if (ref)
 			return ref;
 		E = E->outer;
 	} while (E);
-	return jsR_setproperty(J, J->G, name);
+	return jsV_setproperty(J, J->G, name);
 }
 
 /* Function calls */
@@ -366,7 +366,7 @@ static void jsR_callfunction(js_State *J, int n, js_Function *F, js_Environment 
 
 	saveE = J->E;
 
-	J->E = jsR_newenvironment(J, jsR_newobject(J, JS_COBJECT, NULL), scope);
+	J->E = jsR_newenvironment(J, jsV_newobject(J, JS_COBJECT, NULL), scope);
 	for (i = 0; i < n; i++) {
 		js_Property *ref = js_decvar(J, F->params[i]);
 		if (i < n)
@@ -439,7 +439,7 @@ void js_construct(js_State *J, int n)
 	js_pop(J, 1);
 
 	/* create a new object with above prototype, and shift it into the 'this' slot */
-	js_pushobject(J, jsR_newobject(J, JS_COBJECT, prototype));
+	js_pushobject(J, jsV_newobject(J, JS_COBJECT, prototype));
 	if (n > 0)
 		js_rot(J, n + 1);
 
@@ -585,7 +585,7 @@ static void jsR_run(js_State *J, js_Function *F)
 		case OP_IN:
 			str = js_tostring(J, -2);
 			obj = js_toobject(J, -1);
-			ref = jsR_getproperty(J, obj, str);
+			ref = jsV_getproperty(J, obj, str);
 			js_pop(J, 2);
 			js_pushboolean(J, ref != NULL);
 			break;
@@ -596,7 +596,7 @@ static void jsR_run(js_State *J, js_Function *F)
 			js_getproperty(J, -1, str);
 
 			obj = js_toobject(J, -2);
-			ref = jsR_getproperty(J, obj, str);
+			ref = jsV_getproperty(J, obj, str);
 			js_pop(J, 2);
 			if (ref)
 				js_pushvalue(J, ref->value);
@@ -607,7 +607,7 @@ static void jsR_run(js_State *J, js_Function *F)
 		case OP_SETPROP:
 			obj = js_toobject(J, -3);
 			str = js_tostring(J, -2);
-			ref = jsR_setproperty(J, obj, str);
+			ref = jsV_setproperty(J, obj, str);
 			if (ref)
 				ref->value = js_tovalue(J, -1);
 			js_rot3pop2(J);
@@ -622,10 +622,10 @@ static void jsR_run(js_State *J, js_Function *F)
 			else
 				str = js_tostring(J, -1);
 
-			ref = jsR_nextproperty(J, obj, str);
+			ref = jsV_nextproperty(J, obj, str);
 			if (!ref && obj->prototype) {
 				obj = obj->prototype;
-				ref = jsR_nextproperty(J, obj, NULL);
+				ref = jsV_nextproperty(J, obj, NULL);
 			}
 
 			js_pop(J, 2);

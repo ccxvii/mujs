@@ -1,11 +1,11 @@
 #include "jsi.h"
-#include "jsobject.h"
+#include "jsvalue.h"
 #include "jsbuiltin.h"
 #include "jsutf.h"
 
 static int jsB_new_String(js_State *J, int n)
 {
-	js_pushobject(J, jsR_newstring(J, n > 0 ? js_tostring(J, 0) : ""));
+	js_newstring(J, n > 0 ? js_tostring(J, 0) : "");
 	return 1;
 }
 
@@ -93,21 +93,15 @@ void jsB_initstring(js_State *J)
 {
 	J->String_prototype->u.string = "";
 
-	js_pushobject(J, jsR_newcconstructor(J, jsB_String, jsB_new_String));
+	js_pushobject(J, J->String_prototype);
 	{
-		jsB_propn(J, "length", 1);
-
-		js_pushobject(J, J->String_prototype);
-		{
-			js_copy(J, -2);
-			js_setproperty(J, -2, "constructor");
-			jsB_propf(J, "toString", Sp_toString, 0);
-			jsB_propf(J, "valueOf", Sp_valueOf, 0);
-			jsB_propf(J, "charAt", Sp_charAt, 1);
-			jsB_propf(J, "charCodeAt", Sp_charCodeAt, 1);
-		}
-		js_setproperty(J, -2, "prototype");
-
+		jsB_propf(J, "toString", Sp_toString, 0);
+		jsB_propf(J, "valueOf", Sp_valueOf, 0);
+		jsB_propf(J, "charAt", Sp_charAt, 1);
+		jsB_propf(J, "charCodeAt", Sp_charCodeAt, 1);
+	}
+	js_newcconstructor(J, jsB_String, jsB_new_String);
+	{
 		jsB_propf(J, "fromCharCode", S_fromCharCode, 1);
 	}
 	js_setglobal(J, "String");

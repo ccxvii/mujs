@@ -35,13 +35,9 @@ JS_NORETURN void jsR_throwSyntaxError(js_State *J, const char *message);
 JS_NORETURN void jsR_throwTypeError(js_State *J, const char *message);
 JS_NORETURN void jsR_throwURIError(js_State *J, const char *message);
 
-js_Object *jsR_newcconstructor(js_State *J, js_CFunction cfunction, js_CFunction cconstructor);
-
-const char *jsR_stringfromnumber(js_State *J, double number);
-double jsR_numberfromstring(js_State *J, const char *string);
-
 void js_newfunction(js_State *J, js_Function *function, js_Environment *scope);
 void js_newscript(js_State *J, js_Function *function);
+
 void js_dup(js_State *J);
 void js_rot(js_State *J, int n);
 void js_rot2(js_State *J);
