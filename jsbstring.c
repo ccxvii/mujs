@@ -3,19 +3,19 @@
 #include "jsbuiltin.h"
 #include "jsutf.h"
 
-static int jsB_new_String(js_State *J, int n)
+static int jsB_new_String(js_State *J, int argc)
 {
-	js_newstring(J, n > 0 ? js_tostring(J, 0) : "");
+	js_newstring(J, argc > 0 ? js_tostring(J, 1) : "");
 	return 1;
 }
 
-static int jsB_String(js_State *J, int n)
+static int jsB_String(js_State *J, int argc)
 {
-	js_pushliteral(J, n > 0 ? js_tostring(J, 1) : "");
+	js_pushliteral(J, argc > 0 ? js_tostring(J, 1) : "");
 	return 1;
 }
 
-static int Sp_toString(js_State *J, int n)
+static int Sp_toString(js_State *J, int argc)
 {
 	js_Object *self = js_toobject(J, 0);
 	if (self->type != JS_CSTRING) js_typeerror(J, "not a string");
@@ -23,7 +23,7 @@ static int Sp_toString(js_State *J, int n)
 	return 1;
 }
 
-static int Sp_valueOf(js_State *J, int n)
+static int Sp_valueOf(js_State *J, int argc)
 {
 	js_Object *self = js_toobject(J, 0);
 	if (self->type != JS_CSTRING) js_typeerror(J, "not a string");
@@ -46,7 +46,7 @@ static inline Rune runeAt(const char *s, int i)
 	return rune;
 }
 
-static int Sp_charAt(js_State *J, int n)
+static int Sp_charAt(js_State *J, int argc)
 {
 	char buf[UTFmax + 1];
 	const char *s = js_tostring(J, 0);
@@ -61,7 +61,7 @@ static int Sp_charAt(js_State *J, int n)
 	return 1;
 }
 
-static int Sp_charCodeAt(js_State *J, int n)
+static int Sp_charCodeAt(js_State *J, int argc)
 {
 	const char *s = js_tostring(J, 0);
 	int pos = js_tointeger(J, 1);
@@ -73,13 +73,13 @@ static int Sp_charCodeAt(js_State *J, int n)
 	return 1;
 }
 
-static int S_fromCharCode(js_State *J, int n)
+static int S_fromCharCode(js_State *J, int argc)
 {
 	int i;
 	Rune c;
-	char *s = malloc(n * UTFmax + 1), *p = s;
+	char *s = malloc(argc * UTFmax + 1), *p = s;
 	// TODO: guard malloc with try/catch
-	for (i = 0; i < n; i++) {
+	for (i = 0; i <= argc; ++i) {
 		c = js_tointeger(J, i + 1); // TODO: ToUInt16()
 		p += runetochar(p, &c);
 	}
@@ -99,6 +99,18 @@ void jsB_initstring(js_State *J)
 		jsB_propf(J, "valueOf", Sp_valueOf, 0);
 		jsB_propf(J, "charAt", Sp_charAt, 1);
 		jsB_propf(J, "charCodeAt", Sp_charCodeAt, 1);
+		//jsB_propf(J, "concat", Sp_concat, 1);
+		//jsB_propf(J, "indexOf", Sp_indexOf, 1);
+		//jsB_propf(J, "lastIndexOf", Sp_lastIndexOf, 1);
+		//jsB_propf(J, "localeCompare", Sp_localeCompare, 1);
+		//jsB_propf(J, "slice", Sp_slice, 2);
+		// match (uses regexp)
+		// replace (uses regexp)
+		// search (uses regexp)
+		// split (uses regexp)
+		//jsB_propf(J, "substring", Sp_substring, 2);
+		//jsB_propf(J, "toLowerCase", Sp_toLowerCase, 0);
+		//jsB_propf(J, "toUpperCase", Sp_toUpperCase, 0);
 	}
 	js_newcconstructor(J, jsB_String, jsB_new_String);
 	{

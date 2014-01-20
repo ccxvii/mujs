@@ -3,16 +3,16 @@
 #include "jsvalue.h"
 #include "jsbuiltin.h"
 
-static int jsB_new_Function(js_State *J, int n) { return 0; }
-static int jsB_Function(js_State *J, int n) { return 0; }
+static int jsB_new_Function(js_State *J, int argc) { return 0; }
+static int jsB_Function(js_State *J, int argc) { return 0; }
 
-static int jsB_Function_prototype(js_State *J, int n)
+static int jsB_Function_prototype(js_State *J, int argc)
 {
 	js_pushundefined(J);
 	return 1;
 }
 
-static int Fp_toString(js_State *J, int nargs)
+static int Fp_toString(js_State *J, int argc)
 {
 	js_Object *self = js_toobject(J, 0);
 	char *s;
@@ -45,9 +45,9 @@ static int Fp_toString(js_State *J, int nargs)
 	return 1;
 }
 
-static int Fp_apply(js_State *J, int n)
+static int Fp_apply(js_State *J, int argc)
 {
-	int i, argc;
+	int i, n;
 	char name[20];
 
 	if (!js_iscallable(J, 0))
@@ -57,19 +57,19 @@ static int Fp_apply(js_State *J, int n)
 	js_copy(J, 1);
 
 	js_getproperty(J, 2, "length");
-	argc = js_tonumber(J, -1);
+	n = js_tonumber(J, -1);
 	js_pop(J, 1);
 
-	for (i = 0; i < argc; ++i) {
+	for (i = 0; i < n; ++i) {
 		sprintf(name, "%d", i);
 		js_getproperty(J, 2, name);
 	}
 
-	js_call(J, argc);
+	js_call(J, n);
 	return 1;
 }
 
-static int Fp_call(js_State *J, int n)
+static int Fp_call(js_State *J, int argc)
 {
 	int i;
 
@@ -78,11 +78,10 @@ static int Fp_call(js_State *J, int n)
 
 	js_copy(J, 0);
 	js_copy(J, 1);
+	for (i = 2; i <= argc; ++i)
+		js_copy(J, i);
 
-	for (i = 1; i < n; ++i)
-		js_copy(J, i + 1);
-
-	js_call(J, n - 1);
+	js_call(J, argc - 1);
 	return 1;
 }
 

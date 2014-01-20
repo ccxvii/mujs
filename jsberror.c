@@ -5,7 +5,7 @@
 #define QQ(X) #X
 #define Q(X) QQ(X)
 
-static int Ep_toString(js_State *J, int n)
+static int Ep_toString(js_State *J, int argc)
 {
 	js_getproperty(J, 0, "name");
 	js_pushliteral(J, ": ");
@@ -16,17 +16,9 @@ static int Ep_toString(js_State *J, int n)
 }
 
 #define DECL(NAME) \
-	static int jsB_new_##NAME(js_State *J, int n) { \
+	static int jsB_##NAME(js_State *J, int argc) { \
 		js_pushobject(J, jsV_newobject(J, JS_CERROR, J->NAME##_prototype)); \
-		if (n > 0) { \
-			js_pushstring(J, js_tostring(J, 0)); \
-			js_setproperty(J, -2, "message"); \
-		} \
-		return 1; \
-	} \
-	static int jsB_##NAME(js_State *J, int n) { \
-		js_pushobject(J, jsV_newobject(J, JS_CERROR, J->NAME##_prototype)); \
-		if (n > 1) { \
+		if (argc > 0) { \
 			js_pushstring(J, js_tostring(J, 1)); \
 			js_setproperty(J, -2, "message"); \
 		} \
@@ -49,13 +41,13 @@ void jsB_initerror(js_State *J)
 			jsB_props(J, "message", "an error has occurred");
 			jsB_propf(J, "toString", Ep_toString, 0);
 	}
-	js_newcconstructor(J, jsB_Error, jsB_new_Error);
+	js_newcconstructor(J, jsB_Error, jsB_Error);
 	js_setglobal(J, "Error");
 
 	#define INIT(NAME) \
 		js_pushobject(J, J->NAME##_prototype); \
 		jsB_props(J, "name", Q(NAME)); \
-		js_newcconstructor(J, jsB_##NAME, jsB_new_##NAME); \
+		js_newcconstructor(J, jsB_##NAME, jsB_##NAME); \
 		js_setglobal(J, Q(NAME));
 
 	INIT(EvalError);

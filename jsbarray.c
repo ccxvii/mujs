@@ -2,10 +2,10 @@
 #include "jsvalue.h"
 #include "jsbuiltin.h"
 
-static int jsB_Array(js_State *J, int n) { return 0; }
-static int jsB_new_Array(js_State *J, int n) { return 0; }
+static int jsB_Array(js_State *J, int argc) { return 0; }
+static int jsB_new_Array(js_State *J, int argc) { return 0; }
 
-static int A_isArray(js_State *J, int n)
+static int A_isArray(js_State *J, int argc)
 {
 	if (js_isobject(J, 1)) {
 		js_Object *T = js_toobject(J, 1);

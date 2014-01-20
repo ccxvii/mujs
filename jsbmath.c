@@ -2,60 +2,60 @@
 #include "jsvalue.h"
 #include "jsbuiltin.h"
 
-static int Math_abs(js_State *J, int nargs) {
+static int Math_abs(js_State *J, int argc) {
 	return js_pushnumber(J, abs(js_tonumber(J, 1))), 1;
 }
-static int Math_acos(js_State *J, int nargs) {
+static int Math_acos(js_State *J, int argc) {
 	return js_pushnumber(J, acos(js_tonumber(J, 1))), 1;
 }
-static int Math_asin(js_State *J, int nargs) {
+static int Math_asin(js_State *J, int argc) {
 	return js_pushnumber(J, asin(js_tonumber(J, 1))), 1;
 }
-static int Math_atan(js_State *J, int nargs) {
+static int Math_atan(js_State *J, int argc) {
 	return js_pushnumber(J, atan(js_tonumber(J, 1))), 1;
 }
-static int Math_atan2(js_State *J, int nargs) {
+static int Math_atan2(js_State *J, int argc) {
 	return js_pushnumber(J, atan2(js_tonumber(J, 1), js_tonumber(J, 2))), 1;
 }
-static int Math_ceil(js_State *J, int nargs) {
+static int Math_ceil(js_State *J, int argc) {
 	return js_pushnumber(J, ceil(js_tonumber(J, 1))), 1;
 }
-static int Math_cos(js_State *J, int nargs) {
+static int Math_cos(js_State *J, int argc) {
 	return js_pushnumber(J, cos(js_tonumber(J, 1))), 1;
 }
-static int Math_exp(js_State *J, int nargs) {
+static int Math_exp(js_State *J, int argc) {
 	return js_pushnumber(J, exp(js_tonumber(J, 1))), 1;
 }
-static int Math_floor(js_State *J, int nargs) {
+static int Math_floor(js_State *J, int argc) {
 	return js_pushnumber(J, floor(js_tonumber(J, 1))), 1;
 }
-static int Math_log(js_State *J, int nargs) {
+static int Math_log(js_State *J, int argc) {
 	return js_pushnumber(J, log(js_tonumber(J, 1))), 1;
 }
-static int Math_pow(js_State *J, int nargs) {
+static int Math_pow(js_State *J, int argc) {
 	return js_pushnumber(J, pow(js_tonumber(J, 1), js_tonumber(J, 2))), 1;
 }
-static int Math_random(js_State *J, int nargs) {
+static int Math_random(js_State *J, int argc) {
 	return js_pushnumber(J, (double)rand() / (RAND_MAX - 1)), 1;
 }
-static int Math_round(js_State *J, int nargs) {
+static int Math_round(js_State *J, int argc) {
 	return js_pushnumber(J, round(js_tonumber(J, 1))), 1;
 }
-static int Math_sin(js_State *J, int nargs) {
+static int Math_sin(js_State *J, int argc) {
 	return js_pushnumber(J, sin(js_tonumber(J, 1))), 1;
 }
-static int Math_sqrt(js_State *J, int nargs) {
+static int Math_sqrt(js_State *J, int argc) {
 	return js_pushnumber(J, sqrt(js_tonumber(J, 1))), 1;
 }
-static int Math_tan(js_State *J, int nargs) {
+static int Math_tan(js_State *J, int argc) {
 	return js_pushnumber(J, tan(js_tonumber(J, 1))), 1;
 }
 
-static int Math_max(js_State *J, int nargs)
+static int Math_max(js_State *J, int argc)
 {
 	double n = js_tonumber(J, 1);
 	int i;
-	for (i = 2; i < nargs; i++) {
+	for (i = 2; i <= argc; ++i) {
 		double m = js_tonumber(J, i);
 		n = n > m ? n : m;
 	}
@@ -63,11 +63,11 @@ static int Math_max(js_State *J, int nargs)
 	return 1;
 }
 
-static int Math_min(js_State *J, int nargs)
+static int Math_min(js_State *J, int argc)
 {
 	double n = js_tonumber(J, 1);
 	int i;
-	for (i = 2; i < nargs; i++) {
+	for (i = 2; i <= argc; ++i) {
 		double m = js_tonumber(J, i);
 		n = n < m ? n : m;
 	}

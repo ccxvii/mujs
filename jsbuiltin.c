@@ -5,7 +5,7 @@
 static int jsB_print(js_State *J, int argc)
 {
 	int i;
-	for (i = 1; i < argc; ++i) {
+	for (i = 1; i <= argc; ++i) {
 		const char *s = js_tostring(J, i);
 		if (i > 1) putchar(' ');
 		fputs(s, stdout);

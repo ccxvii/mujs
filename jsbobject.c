@@ -2,25 +2,25 @@
 #include "jsvalue.h"
 #include "jsbuiltin.h"
 
-static int jsB_new_Object(js_State *J, int n)
+static int jsB_new_Object(js_State *J, int argc)
 {
-	if (n == 0 || js_isundefined(J, 0) || js_isnull(J, 0))
-		js_newobject(J);
-	else
-		js_pushobject(J, js_toobject(J, 0));
-	return 1;
-}
-
-static int jsB_Object(js_State *J, int n)
-{
-	if (n == 0 || js_isundefined(J, 1) || js_isnull(J, 1))
+	if (argc == 0 || js_isundefined(J, 1) || js_isnull(J, 1))
 		js_newobject(J);
 	else
 		js_pushobject(J, js_toobject(J, 1));
 	return 1;
 }
 
-static int Op_toString(js_State *J, int n)
+static int jsB_Object(js_State *J, int argc)
+{
+	if (argc == 0 || js_isundefined(J, 1) || js_isnull(J, 1))
+		js_newobject(J);
+	else
+		js_pushobject(J, js_toobject(J, 1));
+	return 1;
+}
+
+static int Op_toString(js_State *J, int argc)
 {
 	js_Object *self = js_toobject(J, 0);
 	switch (self->type) {
@@ -41,13 +41,13 @@ static int Op_toString(js_State *J, int n)
 	return 1;
 }
 
-static int Op_valueOf(js_State *J, int n)
+static int Op_valueOf(js_State *J, int argc)
 {
 	/* return the 'this' object */
 	return 1;
 }
 
-static int Op_hasOwnProperty(js_State *J, int n)
+static int Op_hasOwnProperty(js_State *J, int argc)
 {
 	js_Object *self = js_toobject(J, 0);
 	const char *name = js_tostring(J, 1);
@@ -56,7 +56,7 @@ static int Op_hasOwnProperty(js_State *J, int n)
 	return 1;
 }
 
-static int Op_isPrototypeOf(js_State *J, int n)
+static int Op_isPrototypeOf(js_State *J, int argc)
 {
 	js_Object *self = js_toobject(J, 0);
 	if (js_isobject(J, 1)) {
@@ -73,7 +73,7 @@ static int Op_isPrototypeOf(js_State *J, int n)
 	return 1;
 }
 
-static int Op_propertyIsEnumerable(js_State *J, int n)
+static int Op_propertyIsEnumerable(js_State *J, int argc)
 {
 	js_Object *self = js_toobject(J, 0);
 	const char *name = js_tostring(J, 1);

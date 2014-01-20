@@ -188,6 +188,10 @@ js_Value js_toprimitive(js_State *J, int idx, int hint)
 void js_pop(js_State *J, int n)
 {
 	TOP -= n;
+	if (TOP < BOT) {
+		TOP = BOT;
+		js_error(J, "stack underflow!");
+	}
 }
 
 void js_copy(js_State *J, int idx)
@@ -389,7 +393,7 @@ static void jsR_callscript(js_State *J, int n, js_Function *F)
 
 static void jsR_callcfunction(js_State *J, int n, js_CFunction F)
 {
-	int rv = F(J, n + 1);
+	int rv = F(J, n);
 	if (rv) {
 		js_Value v = js_tovalue(J, -1);
 		TOP = --BOT; /* pop down to below function */
@@ -422,10 +426,13 @@ void js_construct(js_State *J, int n)
 	js_Object *prototype;
 	js_Object *newobj;
 
-	/* built-in constructors create their own objects */
+	/* built-in constructors create their own objects, give them a 'null' this */
 	if (obj->type == JS_CCFUNCTION && obj->u.c.constructor) {
 		int savebot = BOT;
-		BOT = TOP - n;
+		js_pushnull(J);
+		if (n > 0)
+			js_rot(J, n + 1);
+		BOT = TOP - n - 1;
 		jsR_callcfunction(J, n, obj->u.c.constructor);
 		BOT = savebot;
 		return;
