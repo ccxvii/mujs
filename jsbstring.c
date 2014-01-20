@@ -18,7 +18,7 @@ static int jsB_String(js_State *J, int n)
 static int Sp_toString(js_State *J, int n)
 {
 	js_Object *self = js_toobject(J, 0);
-	if (self->type != JS_CSTRING) jsR_throwTypeError(J, "not a string");
+	if (self->type != JS_CSTRING) js_typeerror(J, "not a string");
 	js_pushliteral(J, self->u.string);
 	return 1;
 }
@@ -26,7 +26,7 @@ static int Sp_toString(js_State *J, int n)
 static int Sp_valueOf(js_State *J, int n)
 {
 	js_Object *self = js_toobject(J, 0);
-	if (self->type != JS_CSTRING) jsR_throwTypeError(J, "not a string");
+	if (self->type != JS_CSTRING) js_typeerror(J, "not a string");
 	js_pushliteral(J, self->u.string);
 	return 1;
 }

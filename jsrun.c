@@ -412,7 +412,7 @@ void js_call(js_State *J, int n)
 	else if (obj->type == JS_CCFUNCTION)
 		jsR_callcfunction(J, n, obj->u.c.function);
 	else
-		jsR_throwTypeError(J, "not a function");
+		js_typeerror(J, "not a function");
 	BOT = savebot;
 }
 
@@ -571,7 +571,7 @@ static void jsR_run(js_State *J, js_Function *F)
 			if (ref)
 				js_pushvalue(J, ref->value);
 			else
-				jsR_throwReferenceError(J, str);
+				js_referenceerror(J, "%s", str);
 			break;
 
 		case OP_SETVAR:

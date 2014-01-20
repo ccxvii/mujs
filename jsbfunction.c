@@ -19,7 +19,7 @@ static int Fp_toString(js_State *J, int nargs)
 	int i, n;
 
 	if (!js_iscallable(J, 0))
-		jsR_throwTypeError(J, "not a function");
+		js_typeerror(J, "not a function");
 
 	if (self->type == JS_CFUNCTION || self->type == JS_CSCRIPT) {
 		js_Function *F = self->u.f.function;
@@ -51,7 +51,7 @@ static int Fp_apply(js_State *J, int n)
 	char name[20];
 
 	if (!js_iscallable(J, 0))
-		jsR_throwTypeError(J, "not a function");
+		js_typeerror(J, "not a function");
 
 	js_copy(J, 0);
 	js_copy(J, 1);
@@ -74,7 +74,7 @@ static int Fp_call(js_State *J, int n)
 	int i;
 
 	if (!js_iscallable(J, 0))
-		jsR_throwTypeError(J, "not a function");
+		js_typeerror(J, "not a function");
 
 	js_copy(J, 0);
 	js_copy(J, 1);

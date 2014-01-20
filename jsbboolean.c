@@ -17,7 +17,7 @@ static int jsB_Boolean(js_State *J, int n)
 static int Bp_toString(js_State *J, int n)
 {
 	js_Object *self = js_toobject(J, 0);
-	if (self->type != JS_CBOOLEAN) jsR_throwTypeError(J, "not a boolean");
+	if (self->type != JS_CBOOLEAN) js_typeerror(J, "not a boolean");
 	js_pushliteral(J, self->u.boolean ? "true" : "false");
 	return 1;
 }
@@ -25,7 +25,7 @@ static int Bp_toString(js_State *J, int n)
 static int Bp_valueOf(js_State *J, int n)
 {
 	js_Object *self = js_toobject(J, 0);
-	if (self->type != JS_CBOOLEAN) jsR_throwTypeError(J, "not a boolean");
+	if (self->type != JS_CBOOLEAN) js_typeerror(J, "not a boolean");
 	js_pushboolean(J, self->u.boolean);
 	return 1;
 }

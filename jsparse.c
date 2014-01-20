@@ -40,7 +40,8 @@ static void jsP_error(js_State *J, const char *fmt, ...)
 	snprintf(buf, 256, "%s:%d: ", J->filename, J->lexline);
 	strcat(buf, msgbuf);
 
-	jsR_throwSyntaxError(J, buf);
+	js_newsyntaxerror(J, buf);
+	js_throw(J);
 }
 
 static void jsP_warning(js_State *J, const char *fmt, ...)

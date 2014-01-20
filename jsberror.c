@@ -2,6 +2,9 @@
 #include "jsvalue.h"
 #include "jsbuiltin.h"
 
+#define QQ(X) #X
+#define Q(X) QQ(X)
+
 static int Ep_toString(js_State *J, int n)
 {
 	js_getproperty(J, 0, "name");
@@ -11,9 +14,6 @@ static int Ep_toString(js_State *J, int n)
 	js_concat(J);
 	return 1;
 }
-
-#define STRSTR(X) #X
-#define STR(X) STRSTR(X)
 
 #define DECL(NAME) \
 	static int jsB_new_##NAME(js_State *J, int n) { \
@@ -32,22 +32,6 @@ static int Ep_toString(js_State *J, int n)
 		} \
 		return 1; \
 	} \
-	static void jsB_init##NAME(js_State *J) { \
-		js_pushobject(J, J->NAME##_prototype); \
-		{ \
-			jsB_props(J, "name", STR(NAME)); \
-			jsB_props(J, "message", "an error has occurred"); \
-			jsB_propf(J, "toString", Ep_toString, 0); \
-		} \
-		js_newcconstructor(J, jsB_##NAME, jsB_new_##NAME); \
-		js_setglobal(J, STR(NAME)); \
-	} \
-	void jsR_throw##NAME(js_State *J, const char *message) { \
-		js_pushobject(J, jsV_newobject(J, JS_CERROR, J->NAME##_prototype)); \
-		js_pushstring(J, message); \
-		js_setproperty(J, -2, "message"); \
-		js_throw(J); \
-	} \
 
 DECL(Error);
 DECL(EvalError);
@@ -59,21 +43,25 @@ DECL(URIError);
 
 void jsB_initerror(js_State *J)
 {
-	jsB_initError(J);
-	jsB_initEvalError(J);
-	jsB_initRangeError(J);
-	jsB_initReferenceError(J);
-	jsB_initSyntaxError(J);
-	jsB_initTypeError(J);
-	jsB_initURIError(J);
-}
+	js_pushobject(J, J->Error_prototype);
+	{
+			jsB_props(J, "name", "Error");
+			jsB_props(J, "message", "an error has occurred");
+			jsB_propf(J, "toString", Ep_toString, 0);
+	}
+	js_newcconstructor(J, jsB_Error, jsB_new_Error);
+	js_setglobal(J, "Error");
 
-void js_error(js_State *J, const char *fmt, ...)
-{
-	va_list ap;
-	char buf[256];
-	va_start(ap, fmt);
-	vsnprintf(buf, sizeof buf, fmt, ap);
-	va_end(ap);
-	jsR_throwError(J, buf);
+	#define INIT(NAME) \
+		js_pushobject(J, J->NAME##_prototype); \
+		jsB_props(J, "name", Q(NAME)); \
+		js_newcconstructor(J, jsB_##NAME, jsB_new_##NAME); \
+		js_setglobal(J, Q(NAME));
+
+	INIT(EvalError);
+	INIT(RangeError);
+	INIT(ReferenceError);
+	INIT(SyntaxError);
+	INIT(TypeError);
+	INIT(URIError);
 }

@@ -27,14 +27,6 @@ typedef struct js_StringNode js_StringNode;
 void jsS_dumpstrings(js_State *J);
 void jsS_freestrings(js_State *J);
 
-JS_NORETURN void jsR_throwError(js_State *J, const char *message);
-JS_NORETURN void jsR_throwEvalError(js_State *J, const char *message);
-JS_NORETURN void jsR_throwRangeError(js_State *J, const char *message);
-JS_NORETURN void jsR_throwReferenceError(js_State *J, const char *message);
-JS_NORETURN void jsR_throwSyntaxError(js_State *J, const char *message);
-JS_NORETURN void jsR_throwTypeError(js_State *J, const char *message);
-JS_NORETURN void jsR_throwURIError(js_State *J, const char *message);
-
 void js_newfunction(js_State *J, js_Function *function, js_Environment *scope);
 void js_newscript(js_State *J, js_Function *function);
 

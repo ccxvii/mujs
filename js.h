@@ -18,9 +18,6 @@ void js_gc(js_State *J, int report);
 
 const char *js_intern(js_State *J, const char *s);
 
-/* Push a new Error object with the formatted message and throw it */
-JS_NORETURN void js_error(js_State *J, const char *fmt, ...) JS_PRINTFLIKE(2,3);
-
 /* Property attribute flags */
 enum {
 	JS_READONLY = 1,
@@ -28,6 +25,21 @@ enum {
 	JS_DONTDELETE = 4,
 };
 
+void js_newerror(js_State *J, const char *message);
+void js_newevalerror(js_State *J, const char *message);
+void js_newrangeerror(js_State *J, const char *message);
+void js_newreferenceerror(js_State *J, const char *message);
+void js_newsyntaxerror(js_State *J, const char *message);
+void js_newtypeerror(js_State *J, const char *message);
+void js_newurierror(js_State *J, const char *message);
+
+JS_NORETURN void js_error(js_State *J, const char *fmt, ...) JS_PRINTFLIKE(2,3);
+JS_NORETURN void js_evalerror(js_State *J, const char *fmt, ...) JS_PRINTFLIKE(2,3);
+JS_NORETURN void js_rangeerror(js_State *J, const char *fmt, ...) JS_PRINTFLIKE(2,3);
+JS_NORETURN void js_referenceerror(js_State *J, const char *fmt, ...) JS_PRINTFLIKE(2,3);
+JS_NORETURN void js_syntaxerror(js_State *J, const char *fmt, ...) JS_PRINTFLIKE(2,3);
+JS_NORETURN void js_typeerror(js_State *J, const char *fmt, ...) JS_PRINTFLIKE(2,3);
+JS_NORETURN void js_urierror(js_State *J, const char *fmt, ...) JS_PRINTFLIKE(2,3);
 JS_NORETURN void js_throw(js_State *J);
 
 void js_loadstring(js_State *J, const char *filename, const char *source);

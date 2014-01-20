@@ -6,11 +6,28 @@
 
 #define JF js_State *J, js_Function *F
 
-JS_NORETURN int jsC_error(js_State *J, js_Ast *node, const char *fmt, ...);
+JS_NORETURN int jsC_error(js_State *J, js_Ast *node, const char *fmt, ...) JS_PRINTFLIKE(3,4);
 
 static void cfunbody(JF, js_Ast *name, js_Ast *params, js_Ast *body);
 static void cexp(JF, js_Ast *exp);
 static void cstmlist(JF, js_Ast *list);
+
+int jsC_error(js_State *J, js_Ast *node, const char *fmt, ...)
+{
+	va_list ap;
+	char buf[512];
+	char msgbuf[256];
+
+	va_start(ap, fmt);
+	vsnprintf(msgbuf, 256, fmt, ap);
+	va_end(ap);
+
+	snprintf(buf, 256, "%s:%d: ", J->filename, node->line);
+	strcat(buf, msgbuf);
+
+	js_newsyntaxerror(J, buf);
+	js_throw(J);
+}
 
 static js_Function *newfun(js_State *J, js_Ast *name, js_Ast *params, js_Ast *body)
 {
@@ -736,22 +753,6 @@ static void cfunbody(JF, js_Ast *name, js_Ast *params, js_Ast *body)
 
 	emit(J, F, OP_UNDEF);
 	emit(J, F, OP_RETURN);
-}
-
-int jsC_error(js_State *J, js_Ast *node, const char *fmt, ...)
-{
-	va_list ap;
-	char buf[512];
-	char msgbuf[256];
-
-	va_start(ap, fmt);
-	vsnprintf(msgbuf, 256, fmt, ap);
-	va_end(ap);
-
-	snprintf(buf, 256, "%s:%d: ", J->filename, node->line);
-	strcat(buf, msgbuf);
-
-	jsR_throwSyntaxError(J, buf);
 }
 
 js_Function *jsC_compile(js_State *J, js_Ast *prog)
