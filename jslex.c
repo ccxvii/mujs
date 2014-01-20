@@ -1,9 +1,26 @@
-#include "js.h"
+#include "jsi.h"
 #include "jslex.h"
-#include "jsstate.h"
 #include "jsutf.h"
 
 #define nelem(a) (sizeof (a) / sizeof (a)[0])
+
+JS_NORETURN static int jsY_error(js_State *J, const char *fmt, ...) JS_PRINTFLIKE(2,3);
+
+static int jsY_error(js_State *J, const char *fmt, ...)
+{
+	va_list ap;
+	char buf[512];
+	char msgbuf[256];
+
+	va_start(ap, fmt);
+	vsnprintf(msgbuf, 256, fmt, ap);
+	va_end(ap);
+
+	snprintf(buf, 256, "%s:%d: ", J->filename, J->lexline);
+	strcat(buf, msgbuf);
+
+	jsR_throwSyntaxError(J, buf);
+}
 
 static const char *tokenstring[] = {
 	"(end-of-file)",
@@ -48,7 +65,7 @@ static const char *tokenstring[] = {
 	"'void'", "'while'", "'with'",
 };
 
-const char *jsP_tokenstring(int token)
+const char *jsY_tokenstring(int token)
 {
 	if (token >= 0 && token < nelem(tokenstring))
 		if (tokenstring[token])
@@ -135,7 +152,7 @@ static inline int tohex(int c)
 #define PEEK (J->lexchar)
 #define NEXT() next(J)
 #define ACCEPT(x) (PEEK == x ? (NEXT(), 1) : 0)
-#define EXPECT(x) (ACCEPT(x) || (jsP_error(J, "expected '%c'", x), 0))
+#define EXPECT(x) (ACCEPT(x) || (jsY_error(J, "expected '%c'", x), 0))
 
 static void next(js_State *J)
 {
@@ -164,33 +181,33 @@ static void unescape(js_State *J)
 			return;
 		}
 error:
-		jsP_error(J, "unexpected escape sequence");
+		jsY_error(J, "unexpected escape sequence");
 	}
 }
 
 static void textinit(js_State *J)
 {
-	if (!J->buf.text) {
-		J->buf.cap = 4096;
-		J->buf.text = malloc(J->buf.cap);
+	if (!J->lexbuf.text) {
+		J->lexbuf.cap = 4096;
+		J->lexbuf.text = malloc(J->lexbuf.cap);
 	}
-	J->buf.len = 0;
+	J->lexbuf.len = 0;
 }
 
 static inline void textpush(js_State *J, Rune c)
 {
 	int n = runelen(c);
-	if (J->buf.len + n > J->buf.cap) {
-		J->buf.cap = J->buf.cap * 2;
-		J->buf.text = realloc(J->buf.text, J->buf.cap);
+	if (J->lexbuf.len + n > J->lexbuf.cap) {
+		J->lexbuf.cap = J->lexbuf.cap * 2;
+		J->lexbuf.text = realloc(J->lexbuf.text, J->lexbuf.cap);
 	}
-	J->buf.len += runetochar(J->buf.text + J->buf.len, &c);
+	J->lexbuf.len += runetochar(J->lexbuf.text + J->lexbuf.len, &c);
 }
 
 static inline char *textend(js_State *J)
 {
 	textpush(J, 0);
-	return J->buf.text;
+	return J->lexbuf.text;
 }
 
 static inline void lexlinecomment(js_State *J)
@@ -218,7 +235,7 @@ static inline double lexhex(js_State *J)
 {
 	double n = 0;
 	if (!ishex(PEEK))
-		return jsP_error(J, "malformed hexadecimal number");
+		return jsY_error(J, "malformed hexadecimal number");
 	while (ishex(PEEK)) {
 		n = n * 16 + tohex(PEEK);
 		NEXT();
@@ -230,7 +247,7 @@ static inline double lexinteger(js_State *J)
 {
 	double n = 0;
 	if (!isdec(PEEK))
-		return jsP_error(J, "malformed number");
+		return jsY_error(J, "malformed number");
 	while (isdec(PEEK)) {
 		n = n * 10 + (PEEK - '0');
 		NEXT();
@@ -272,7 +289,7 @@ static inline int lexnumber(js_State *J)
 			return TK_NUMBER;
 		}
 		if (isdec(PEEK))
-			return jsP_error(J, "number with leading zero");
+			return jsY_error(J, "number with leading zero");
 		n = 0;
 		if (ACCEPT('.'))
 			n += lexfraction(J);
@@ -290,7 +307,7 @@ static inline int lexnumber(js_State *J)
 	}
 
 	if (isidentifierstart(PEEK))
-		return jsP_error(J, "number with letter suffix");
+		return jsY_error(J, "number with letter suffix");
 
 	J->number = n;
 	return TK_NUMBER;
@@ -346,10 +363,10 @@ static inline int lexstring(js_State *J)
 
 	while (PEEK != q) {
 		if (PEEK == 0 || PEEK == '\n')
-			return jsP_error(J, "string not terminated");
+			return jsY_error(J, "string not terminated");
 		if (ACCEPT('\\')) {
 			if (lexescape(J))
-				return jsP_error(J, "malformed escape sequence");
+				return jsY_error(J, "malformed escape sequence");
 		} else {
 			textpush(J, PEEK);
 			NEXT();
@@ -387,7 +404,6 @@ static int lexregexp(js_State *J)
 {
 	const char *s;
 	int g, m, i;
-	int c;
 
 	/* already consumed initial '/' */
 
@@ -396,11 +412,11 @@ static int lexregexp(js_State *J)
 	/* regexp body */
 	while (PEEK != '/') {
 		if (PEEK == 0 || PEEK == '\n') {
-			return jsP_error(J, "regular expression not terminated");
+			return jsY_error(J, "regular expression not terminated");
 		} else if (ACCEPT('\\')) {
 			textpush(J, '\\');
 			if (PEEK == 0 || PEEK == '\n')
-				return jsP_error(J, "regular expression not terminated");
+				return jsY_error(J, "regular expression not terminated");
 			textpush(J, PEEK);
 			NEXT();
 		} else {
@@ -415,16 +431,15 @@ static int lexregexp(js_State *J)
 	/* regexp flags */
 	g = i = m = 0;
 
-	c = PEEK;
 	while (isidentifierpart(PEEK)) {
 		if (ACCEPT('g')) ++g;
 		else if (ACCEPT('i')) ++i;
 		else if (ACCEPT('m')) ++m;
-		else return jsP_error(J, "illegal flag in regular expression: %c", PEEK);
+		else return jsY_error(J, "illegal flag in regular expression: %c", PEEK);
 	}
 
 	if (g > 1 || i > 1 || m > 1)
-		return jsP_error(J, "duplicated flag in regular expression");
+		return jsY_error(J, "duplicated flag in regular expression");
 
 	J->text = js_intern(J, s);
 	J->number = 0;
@@ -471,7 +486,7 @@ static int lex(js_State *J)
 				continue;
 			} else if (ACCEPT('*')) {
 				if (lexcomment(J))
-					return jsP_error(J, "multi-line comment not terminated");
+					return jsY_error(J, "multi-line comment not terminated");
 				continue;
 			} else if (isregexpcontext(J->lasttoken)) {
 				return lexregexp(J);
@@ -621,16 +636,16 @@ static int lex(js_State *J)
 
 			textend(J);
 
-			return findkeyword(J, J->buf.text);
+			return findkeyword(J, J->lexbuf.text);
 		}
 
 		if (PEEK >= 0x20 && PEEK <= 0x7E)
-			return jsP_error(J, "unexpected character: '%c'", PEEK);
-		return jsP_error(J, "unexpected character: \\u%04X", PEEK);
+			return jsY_error(J, "unexpected character: '%c'", PEEK);
+		return jsY_error(J, "unexpected character: \\u%04X", PEEK);
 	}
 }
 
-void jsP_initlex(js_State *J, const char *filename, const char *source)
+void jsY_initlex(js_State *J, const char *filename, const char *source)
 {
 	J->filename = filename;
 	J->source = source;
@@ -639,7 +654,7 @@ void jsP_initlex(js_State *J, const char *filename, const char *source)
 	next(J); /* load first lookahead character */
 }
 
-int jsP_lex(js_State *J)
+int jsY_lex(js_State *J)
 {
 	return J->lasttoken = lex(J);
 }

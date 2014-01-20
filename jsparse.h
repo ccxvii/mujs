@@ -1,7 +1,9 @@
 #ifndef js_parse_h
 #define js_parse_h
 
-enum
+typedef enum js_AstType js_AstType;
+
+enum js_AstType
 {
 	AST_LIST,
 	AST_FUNDEC,

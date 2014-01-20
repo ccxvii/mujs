@@ -1,7 +1,6 @@
-#include "js.h"
+#include "jsi.h"
 #include "jsobject.h"
-#include "jsrun.h"
-#include "jsstate.h"
+#include "jsbuiltin.h"
 
 static int jsB_Array(js_State *J, int n) { return 0; }
 static int jsB_new_Array(js_State *J, int n) { return 0; }

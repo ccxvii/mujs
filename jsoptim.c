@@ -1,4 +1,4 @@
-#include "js.h"
+#include "jsi.h"
 #include "jsparse.h"
 
 static inline int i32(double d)

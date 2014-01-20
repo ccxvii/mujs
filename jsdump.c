@@ -1,4 +1,4 @@
-#include "js.h"
+#include "jsi.h"
 #include "jsparse.h"
 #include "jscompile.h"
 #include "jsobject.h"

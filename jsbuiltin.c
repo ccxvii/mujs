@@ -1,7 +1,6 @@
-#include "js.h"
+#include "jsi.h"
 #include "jsobject.h"
-#include "jsrun.h"
-#include "jsstate.h"
+#include "jsbuiltin.h"
 
 static int jsB_print(js_State *J, int argc)
 {
@@ -26,7 +25,7 @@ static int jsB_eval(js_State *J, int argc)
 {
 	if (!js_isstring(J, -1))
 		return 1;
-	jsR_loadscript(J, "(eval)", js_tostring(J, -1));
+	js_loadstring(J, "(eval)", js_tostring(J, -1));
 	js_copy(J, 0);
 	js_call(J, 0);
 	return 1;

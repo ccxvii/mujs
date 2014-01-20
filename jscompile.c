@@ -1,7 +1,6 @@
-#include "js.h"
+#include "jsi.h"
 #include "jsparse.h"
 #include "jscompile.h"
-#include "jsstate.h"
 
 #define cexp js_cexp /* collision with math.h */
 

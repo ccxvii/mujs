@@ -1,11 +1,27 @@
-#include "js.h"
+#include "jsi.h"
+#include "jsparse.h"
+#include "jscompile.h"
 #include "jsobject.h"
 #include "jsrun.h"
-#include "jsstate.h"
+#include "jsbuiltin.h"
 
-void js_loadstring(js_State *J, const char *source)
+void js_loadstring(js_State *J, const char *filename, const char *source)
 {
-	jsR_loadscript(J, "(string)", source);
+	js_Ast *P;
+	js_Function *F;
+
+	if (js_try(J)) {
+		jsP_freeparse(J);
+		js_throw(J);
+	}
+
+	P = jsP_parse(J, filename, source);
+	jsP_optimize(J, P);
+	F = jsC_compile(J, P);
+	jsP_freeparse(J);
+	js_newscript(J, F);
+
+	js_endtry(J);
 }
 
 void js_loadfile(js_State *J, const char *filename)
@@ -47,7 +63,7 @@ void js_loadfile(js_State *J, const char *filename)
 		js_throw(J);
 	}
 
-	jsR_loadscript(J, filename, s);
+	js_loadstring(J, filename, s);
 
 	free(s);
 	fclose(f);
@@ -60,7 +76,7 @@ int js_dostring(js_State *J, const char *source)
 		fprintf(stderr, "libjs: %s\n", js_tostring(J, -1));
 		return 1;
 	}
-	js_loadstring(J, source);
+	js_loadstring(J, "(string)", source);
 	js_pushglobal(J);
 	js_call(J, 0);
 	js_pop(J, 1);
@@ -86,6 +102,8 @@ js_State *js_newstate(void)
 {
 	js_State *J = malloc(sizeof *J);
 	memset(J, 0, sizeof(*J));
+
+	J->stack = malloc(JS_STACKSIZE * sizeof *J->stack);
 
 	J->gcmark = 1;
 

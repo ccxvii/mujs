@@ -1,15 +1,14 @@
-#include "js.h"
+#include "jsi.h"
 #include "jsobject.h"
-#include "jsrun.h"
-#include "jsstate.h"
+#include "jsbuiltin.h"
 
 static int Ep_toString(js_State *J, int n)
 {
 	js_getproperty(J, 0, "name");
 	js_pushliteral(J, ": ");
-	jsR_concat(J);
+	js_concat(J);
 	js_getproperty(J, 0, "message");
-	jsR_concat(J);
+	js_concat(J);
 	return 1;
 }
 

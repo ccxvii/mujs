@@ -1,6 +1,5 @@
-#include "js.h"
+#include "jsi.h"
 #include "jsobject.h"
-#include "jsrun.h"
 
 const char *jsR_stringfromnumber(js_State *J, double n)
 {
@@ -139,7 +138,7 @@ js_Object *jsR_toobject(js_State *J, const js_Value *v)
 	jsR_throwTypeError(J, "cannot convert value to object");
 }
 
-void jsR_concat(js_State *J)
+void js_concat(js_State *J)
 {
 	js_Value va = js_toprimitive(J, -2, JS_HNONE);
 	js_Value vb = js_toprimitive(J, -1, JS_HNONE);
@@ -160,7 +159,7 @@ void jsR_concat(js_State *J)
 	}
 }
 
-int jsR_compare(js_State *J)
+int js_compare(js_State *J)
 {
 	js_Value va = js_toprimitive(J, -2, JS_HNUMBER);
 	js_Value vb = js_toprimitive(J, -1, JS_HNUMBER);
@@ -174,7 +173,7 @@ int jsR_compare(js_State *J)
 	}
 }
 
-int jsR_equal(js_State *J)
+int js_equal(js_State *J)
 {
 	js_Value va = js_tovalue(J, -2);
 	js_Value vb = js_tovalue(J, -1);
@@ -211,7 +210,7 @@ retry:
 	return 0;
 }
 
-int jsR_strictequal(js_State *J)
+int js_strictequal(js_State *J)
 {
 	js_Value va = js_tovalue(J, -2);
 	js_Value vb = js_tovalue(J, -1);

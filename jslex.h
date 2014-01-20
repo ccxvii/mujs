@@ -66,12 +66,9 @@ enum
 	TK_WITH,
 };
 
-const char *jsP_tokenstring(int token);
+const char *jsY_tokenstring(int token);
 
-void jsP_initlex(js_State *J, const char *filename, const char *source);
-int jsP_lex(js_State *J);
-
-JS_NORETURN int jsP_error(js_State *J, const char *fmt, ...);
-void jsP_warning(js_State *J, const char *fmt, ...);
+void jsY_initlex(js_State *J, const char *filename, const char *source);
+int jsY_lex(js_State *J);
 
 #endif

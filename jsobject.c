@@ -1,8 +1,7 @@
-#include "js.h"
+#include "jsi.h"
 #include "jscompile.h"
 #include "jsobject.h"
 #include "jsrun.h"
-#include "jsstate.h"
 #include "jsutf.h"
 
 static js_Object *jsR_newfunction(js_State *J, js_Function *function, js_Environment *scope)

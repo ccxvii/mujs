@@ -1,7 +1,6 @@
-#include "js.h"
+#include "jsi.h"
 #include "jsobject.h"
-#include "jsrun.h"
-#include "jsstate.h"
+#include "jsbuiltin.h"
 
 static int Math_abs(js_State *J, int nargs) {
 	return js_pushnumber(J, abs(js_tonumber(J, 1))), 1;

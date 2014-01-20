@@ -1,86 +1,93 @@
 #ifndef js_h
 #define js_h
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stddef.h>
-#include <stdarg.h>
-#include <string.h>
-#include <setjmp.h>
-#include <math.h>
-#include <float.h>
-
-/* noreturn is a GCC extension */
-#ifdef __GNUC__
-#define JS_NORETURN __attribute__((noreturn))
-#else
-#ifdef _MSC_VER
-#define JS_NORETURN __declspec(noreturn)
-#else
-#define JS_NORETURN
-#endif
-#endif
-
-/* GCC can do type checking of printf strings */
-#ifndef __printflike
-#if __GNUC__ > 2 || __GNUC__ == 2 && __GNUC_MINOR__ >= 7
-#define __printflike(fmtarg, firstvararg) \
-	__attribute__((__format__ (__printf__, fmtarg, firstvararg)))
-#else
-#define __printflike(fmtarg, firstvararg)
-#endif
-#endif
+#include "jsconf.h"
 
 typedef struct js_State js_State;
+typedef int (*js_CFunction)(js_State *J, int argc);
 
-#define JS_REGEXP_G 1
-#define JS_REGEXP_I 2
-#define JS_REGEXP_M 4
+/* Basic functions */
 
 js_State *js_newstate(void);
-void js_close(js_State *J);
+void js_freestate(js_State *J);
 
-void js_loadstring(js_State *J, const char *source);
-void js_loadfile(js_State *J, const char *filename);
 int js_dostring(js_State *J, const char *source);
 int js_dofile(js_State *J, const char *filename);
 
 void js_gc(js_State *J, int report);
 
-/* binding API: TODO: move from jsrun.h */
-
-typedef int (*js_CFunction)(js_State *J, int argc);
-
-/* private */
-
-typedef struct js_Ast js_Ast;
-typedef struct js_Environment js_Environment;
-typedef struct js_Function js_Function;
-typedef struct js_Object js_Object;
-typedef struct js_StringNode js_StringNode;
-
 const char *js_intern(js_State *J, const char *s);
-void js_printstrings(js_State *J);
-void js_freestrings(js_State *J);
 
-void jsB_initobject(js_State *J);
-void jsB_initarray(js_State *J);
-void jsB_initfunction(js_State *J);
-void jsB_initboolean(js_State *J);
-void jsB_initnumber(js_State *J);
-void jsB_initstring(js_State *J);
-void jsB_initerror(js_State *J);
-void jsB_initmath(js_State *J);
+/* Push a new Error object with the formatted message and throw it */
+JS_NORETURN void js_error(js_State *J, const char *fmt, ...) JS_PRINTFLIKE(2,3);
+
+/* Property attribute flags */
+enum {
+	JS_READONLY = 1,
+	JS_DONTENUM = 2,
+	JS_DONTDELETE = 4,
+};
 
 JS_NORETURN void js_throw(js_State *J);
-JS_NORETURN void js_error(js_State *J, const char *fmt, ...) __printflike(2,3);
 
-JS_NORETURN void jsR_throwError(js_State *J, const char *message);
-JS_NORETURN void jsR_throwEvalError(js_State *J, const char *message);
-JS_NORETURN void jsR_throwRangeError(js_State *J, const char *message);
-JS_NORETURN void jsR_throwReferenceError(js_State *J, const char *message);
-JS_NORETURN void jsR_throwSyntaxError(js_State *J, const char *message);
-JS_NORETURN void jsR_throwTypeError(js_State *J, const char *message);
-JS_NORETURN void jsR_throwURIError(js_State *J, const char *message);
+void js_loadstring(js_State *J, const char *filename, const char *source);
+void js_loadfile(js_State *J, const char *filename);
+
+void js_call(js_State *J, int n);
+void js_construct(js_State *J, int n);
+
+void js_getglobal(js_State *J, const char *name);
+void js_setglobal(js_State *J, const char *name);
+
+void js_getownproperty(js_State *J, int idx, const char *name);
+void js_getproperty(js_State *J, int idx, const char *name);
+void js_setproperty(js_State *J, int idx, const char *name);
+void js_cfgproperty(js_State *J, int idx, const char *name, int atts);
+void js_delproperty(js_State *J, int idx, const char *name);
+int js_nextproperty(js_State *J, int idx);
+
+void js_pushglobal(js_State *J);
+void js_pushundefined(js_State *J);
+void js_pushnull(js_State *J);
+void js_pushboolean(js_State *J, int v);
+void js_pushnumber(js_State *J, double v);
+void js_pushstring(js_State *J, const char *v);
+void js_pushliteral(js_State *J, const char *v);
+
+void js_newobject(js_State *J);
+void js_newarray(js_State *J);
+void js_newcfunction(js_State *J, js_CFunction fun, int length);
+
+int js_isundefined(js_State *J, int idx);
+int js_isnull(js_State *J, int idx);
+int js_isboolean(js_State *J, int idx);
+int js_isnumber(js_State *J, int idx);
+int js_isstring(js_State *J, int idx);
+int js_isprimitive(js_State *J, int idx);
+int js_isobject(js_State *J, int idx);
+int js_iscallable(js_State *J, int idx);
+
+int js_toboolean(js_State *J, int idx);
+double js_tonumber(js_State *J, int idx);
+const char *js_tostring(js_State *J, int idx);
+
+double js_tointeger(js_State *J, int idx);
+int js_toint32(js_State *J, int idx);
+unsigned int js_touint32(js_State *J, int idx);
+short js_toint16(js_State *J, int idx);
+unsigned short js_touint16(js_State *J, int idx);
+
+int js_gettop(js_State *J);
+void js_settop(js_State *J, int idx);
+void js_pop(js_State *J, int n);
+void js_copy(js_State *J, int idx);
+void js_remove(js_State *J, int idx);
+void js_insert(js_State *J, int idx);
+void js_replace(js_State* J, int idx);
+
+void js_concat(js_State *J);
+int js_compare(js_State *J);
+int js_equal(js_State *J);
+int js_strictequal(js_State *J);
 
 #endif

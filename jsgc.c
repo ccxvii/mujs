@@ -1,8 +1,7 @@
-#include "js.h"
+#include "jsi.h"
 #include "jscompile.h"
 #include "jsobject.h"
 #include "jsrun.h"
-#include "jsstate.h"
 
 static void jsG_markobject(js_State *J, int mark, js_Object *obj);
 
@@ -147,7 +146,7 @@ void js_gc(js_State *J, int report)
 			genv, nenv, gfun, nfun, gobj, nobj);
 }
 
-void js_close(js_State *J)
+void js_freestate(js_State *J)
 {
 	js_Function *fun, *nextfun;
 	js_Object *obj, *nextobj;
@@ -160,8 +159,9 @@ void js_close(js_State *J)
 	for (obj = J->gcobj; obj; obj = nextobj)
 		nextobj = obj->gcnext, jsG_freeobject(J, obj);
 
-	js_freestrings(J);
+	jsS_freestrings(J);
 
-	free(J->buf.text);
+	free(J->lexbuf.text);
+	free(J->stack);
 	free(J);
 }

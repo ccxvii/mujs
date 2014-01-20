@@ -2,9 +2,8 @@
 #define js_object_h
 
 typedef enum js_Type js_Type;
-typedef struct js_Value js_Value;
-
 typedef enum js_Class js_Class;
+
 typedef struct js_Property js_Property;
 
 enum js_Type {
@@ -29,12 +28,6 @@ enum js_Class {
 	JS_CREGEXP,
 	JS_CDATE,
 	JS_CMATH,
-};
-
-enum {
-	JS_HNONE,
-	JS_HNUMBER,
-	JS_HSTRING,
 };
 
 struct js_Value
@@ -79,6 +72,13 @@ struct js_Property
 	js_Value value;
 };
 
+js_Value js_tovalue(js_State *J, int idx);
+js_Value js_toprimitive(js_State *J, int idx, int hint);
+js_Object *js_toobject(js_State *J, int idx);
+
+void js_pushvalue(js_State *J, js_Value v);
+void js_pushobject(js_State *J, js_Object *v);
+
 /* jsvalue.c */
 int jsR_toboolean(js_State *J, const js_Value *v);
 double jsR_tonumber(js_State *J, const js_Value *v);
@@ -104,7 +104,5 @@ js_Object *js_toobject(js_State *J, int idx);
 
 void js_dumpobject(js_State *J, js_Object *obj);
 void js_dumpvalue(js_State *J, js_Value v);
-
-JS_NORETURN void jsR_error(js_State *J, const char *fmt, ...);
 
 #endif

@@ -1,9 +1,7 @@
-#include "js.h"
-#include "jsobject.h"
-#include "jsparse.h"
+#include "jsi.h"
 #include "jscompile.h"
+#include "jsobject.h"
 #include "jsrun.h"
-#include "jsstate.h"
 
 static void jsR_run(js_State *J, js_Function *F);
 
@@ -42,7 +40,7 @@ static inline unsigned int touint32(double n)
 #define TOP (J->top)
 #define BOT (J->bot)
 
-static void js_pushvalue(js_State *J, js_Value v)
+void js_pushvalue(js_State *J, js_Value v)
 {
 	STACK[TOP] = v;
 	++TOP;
@@ -127,7 +125,7 @@ int js_iscallable(js_State *J, int idx)
 	return 0;
 }
 
-const char *js_typeof(js_State *J, int idx)
+static const char *js_typeof(js_State *J, int idx)
 {
 	switch (stackidx(J, idx)->type) {
 	case JS_TUNDEFINED: return "undefined";
@@ -708,7 +706,7 @@ static void jsR_run(js_State *J, js_Function *F)
 		/* Additive operators */
 
 		case OP_ADD:
-			jsR_concat(J);
+			js_concat(J);
 			break;
 
 		case OP_SUB:
@@ -743,19 +741,19 @@ static void jsR_run(js_State *J, js_Function *F)
 
 		/* Relational operators */
 
-		case OP_LT: b = jsR_compare(J); js_pushboolean(J, b < 0); break;
-		case OP_GT: b = jsR_compare(J); js_pushboolean(J, b > 0); break;
-		case OP_LE: b = jsR_compare(J); js_pushboolean(J, b <= 0); break;
-		case OP_GE: b = jsR_compare(J); js_pushboolean(J, b >= 0); break;
+		case OP_LT: b = js_compare(J); js_pushboolean(J, b < 0); break;
+		case OP_GT: b = js_compare(J); js_pushboolean(J, b > 0); break;
+		case OP_LE: b = js_compare(J); js_pushboolean(J, b <= 0); break;
+		case OP_GE: b = js_compare(J); js_pushboolean(J, b >= 0); break;
 
 		// OP_INSTANCEOF
 
 		/* Equality */
 
-		case OP_EQ: b = jsR_equal(J); js_pushboolean(J, b); break;
-		case OP_NE: b = jsR_equal(J); js_pushboolean(J, !b); break;
-		case OP_STRICTEQ: b = jsR_strictequal(J); js_pushboolean(J, b); break;
-		case OP_STRICTNE: b = jsR_strictequal(J); js_pushboolean(J, !b); break;
+		case OP_EQ: b = js_equal(J); js_pushboolean(J, b); break;
+		case OP_NE: b = js_equal(J); js_pushboolean(J, !b); break;
+		case OP_STRICTEQ: b = js_strictequal(J); js_pushboolean(J, b); break;
+		case OP_STRICTNE: b = js_strictequal(J); js_pushboolean(J, !b); break;
 
 		/* Binary bitwise operators */
 
@@ -813,23 +811,4 @@ static void jsR_run(js_State *J, js_Function *F)
 			js_error(J, "illegal instruction: %d (pc=%d)", opcode, (int)(pc - F->code - 1));
 		}
 	}
-}
-
-void jsR_loadscript(js_State *J, const char *filename, const char *source)
-{
-	js_Ast *P;
-	js_Function *F;
-
-	if (js_try(J)) {
-		jsP_freeparse(J);
-		js_throw(J);
-	}
-
-	P = jsP_parse(J, filename, source);
-	jsP_optimize(J, P);
-	F = jsC_compile(J, P);
-	jsP_freeparse(J);
-	js_newscript(J, F);
-
-	js_endtry(J);
 }

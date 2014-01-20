@@ -1,6 +1,5 @@
-#include "js.h"
+#include "jsi.h"
 #include "jsobject.h"
-#include "jsstate.h"
 
 /*
 	Use an AA-tree to quickly look up properties in objects:

@@ -13,7 +13,7 @@ main(int argc, char **argv)
 		js_gc(J, 1);
 	}
 
-	js_close(J);
+	js_freestate(J);
 
 	return 0;
 }

@@ -1,5 +1,4 @@
-#include "js.h"
-#include "jsstate.h"
+#include "jsi.h"
 
 /* Use an AA-tree to quickly look up interned strings. */
 
@@ -66,26 +65,26 @@ static js_StringNode *insert(js_StringNode *node, const char *string, const char
 	return newstringnode(string, result);
 }
 
-static void printstringnode(js_StringNode *node, int level)
+static void dumpstringnode(js_StringNode *node, int level)
 {
 	int i;
 	if (node->left != &sentinel)
-		printstringnode(node->left, level + 1);
+		dumpstringnode(node->left, level + 1);
 	printf("%d: ", node->level);
 	for (i = 0; i < level; ++i)
 		putchar('\t');
 	printf("'%s'\n", node->string);
 	if (node->right != &sentinel)
-		printstringnode(node->right, level + 1);
+		dumpstringnode(node->right, level + 1);
 }
 
-void js_printstrings(js_State *J)
+void jsS_dumpstrings(js_State *J)
 {
 	js_StringNode *root = J->strings;
-	printf("--- string dump ---\n");
+	printf("interned strings {\n");
 	if (root && root != &sentinel)
-		printstringnode(root, 0);
-	printf("---\n");
+		dumpstringnode(root, 1);
+	printf("}\n");
 }
 
 static void js_freestringnode(js_State *J, js_StringNode *node)
@@ -95,7 +94,7 @@ static void js_freestringnode(js_State *J, js_StringNode *node)
 	free(node);
 }
 
-void js_freestrings(js_State *J)
+void jsS_freestrings(js_State *J)
 {
 	if (J->strings && J->strings != &sentinel)
 		js_freestringnode(J, J->strings);

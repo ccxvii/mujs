@@ -1,7 +1,6 @@
-#include "js.h"
+#include "jsi.h"
 #include "jslex.h"
 #include "jsparse.h"
-#include "jsstate.h"
 
 #define nelem(a) (sizeof (a) / sizeof (a)[0])
 
@@ -18,13 +17,41 @@
 #define STM3(x,a,b,c)	jsP_newnode(J, STM_ ## x, a, b, c, 0)
 #define STM4(x,a,b,c,d)	jsP_newnode(J, STM_ ## x, a, b, c, d)
 
-#define TOKSTR		jsP_tokenstring(J->lookahead)
+#define TOKSTR		jsY_tokenstring(J->lookahead)
 
 static js_Ast *expression(js_State *J, int notin);
 static js_Ast *assignment(js_State *J, int notin);
 static js_Ast *memberexp(js_State *J);
 static js_Ast *statement(js_State *J);
 static js_Ast *funbody(js_State *J);
+
+JS_NORETURN static void jsP_error(js_State *J, const char *fmt, ...) JS_PRINTFLIKE(2,3);
+
+static void jsP_error(js_State *J, const char *fmt, ...)
+{
+	va_list ap;
+	char buf[512];
+	char msgbuf[256];
+
+	va_start(ap, fmt);
+	vsnprintf(msgbuf, 256, fmt, ap);
+	va_end(ap);
+
+	snprintf(buf, 256, "%s:%d: ", J->filename, J->lexline);
+	strcat(buf, msgbuf);
+
+	jsR_throwSyntaxError(J, buf);
+}
+
+static void jsP_warning(js_State *J, const char *fmt, ...)
+{
+	va_list ap;
+	fprintf(stderr, "%s:%d: warning: ", J->filename, J->lexline);
+	va_start(ap, fmt);
+	vfprintf(stderr, fmt, ap);
+	va_end(ap);
+	fprintf(stderr, "\n");
+}
 
 js_Ast *jsP_newnode(js_State *J, int type, js_Ast *a, js_Ast *b, js_Ast *c, js_Ast *d)
 {
@@ -74,7 +101,7 @@ void jsP_freeparse(js_State *J)
 
 static inline void next(js_State *J)
 {
-	J->lookahead = jsP_lex(J);
+	J->lookahead = jsY_lex(J);
 }
 
 static inline int accept(js_State *J, int t)
@@ -90,7 +117,7 @@ static inline void expect(js_State *J, int t)
 {
 	if (accept(J, t))
 		return;
-	jsP_error(J, "unexpected token: %s (expected %s)", TOKSTR, jsP_tokenstring(t));
+	jsP_error(J, "unexpected token: %s (expected %s)", TOKSTR, jsY_tokenstring(t));
 }
 
 static void semicolon(js_State *J)
@@ -838,38 +865,11 @@ static js_Ast *funbody(js_State *J)
 	return a;
 }
 
-void jsP_warning(js_State *J, const char *fmt, ...)
-{
-	va_list ap;
-
-	fprintf(stderr, "%s:%d: warning: ", J->filename, J->lexline);
-	va_start(ap, fmt);
-	vfprintf(stderr, fmt, ap);
-	va_end(ap);
-	fprintf(stderr, "\n");
-}
-
-int jsP_error(js_State *J, const char *fmt, ...)
-{
-	va_list ap;
-	char buf[512];
-	char msgbuf[256];
-
-	va_start(ap, fmt);
-	vsnprintf(msgbuf, 256, fmt, ap);
-	va_end(ap);
-
-	snprintf(buf, 256, "%s:%d: ", J->filename, J->lexline);
-	strcat(buf, msgbuf);
-
-	jsR_throwSyntaxError(J, buf);
-}
-
 js_Ast *jsP_parse(js_State *J, const char *filename, const char *source)
 {
 	js_Ast *p, *last;
 
-	jsP_initlex(J, filename, source);
+	jsY_initlex(J, filename, source);
 
 	next(J);
 	p = script(J);

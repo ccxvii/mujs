@@ -1,4 +1,3 @@
-#include "js.h"
 #include "jsutf.h"
 
 #define bsearch jsU_bsearch

@@ -1,8 +1,7 @@
-#include "js.h"
+#include "jsi.h"
 #include "jscompile.h"
 #include "jsobject.h"
-#include "jsrun.h"
-#include "jsstate.h"
+#include "jsbuiltin.h"
 
 static int jsB_new_Function(js_State *J, int n) { return 0; }
 static int jsB_Function(js_State *J, int n) { return 0; }
