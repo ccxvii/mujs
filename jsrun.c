@@ -420,6 +420,7 @@ void js_construct(js_State *J, int n)
 {
 	js_Object *obj = js_toobject(J, -n - 1);
 	js_Object *prototype;
+	js_Object *newobj;
 
 	/* built-in constructors create their own objects */
 	if (obj->type == JS_CCFUNCTION && obj->u.c.constructor) {
@@ -439,12 +440,19 @@ void js_construct(js_State *J, int n)
 	js_pop(J, 1);
 
 	/* create a new object with above prototype, and shift it into the 'this' slot */
-	js_pushobject(J, jsV_newobject(J, JS_COBJECT, prototype));
+	newobj = jsV_newobject(J, JS_COBJECT, prototype);
+	js_pushobject(J, newobj);
 	if (n > 0)
 		js_rot(J, n + 1);
 
 	/* call the function */
 	js_call(J, n);
+
+	/* if result is not an object, return the original object we created */
+	if (!js_isobject(J, -1)) {
+		js_pop(J, 1);
+		js_pushobject(J, newobj);
+	}
 }
 
 /* Exceptions */
