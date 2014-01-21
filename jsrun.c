@@ -793,6 +793,18 @@ static void jsR_run(js_State *J, js_Function *F)
 			js_pushnumber(J, toint32(x) | toint32(y));
 			break;
 
+		/* With */
+
+		case OP_WITH:
+			obj = js_toobject(J, -1);
+			J->E = jsR_newenvironment(J, obj, J->E);
+			js_pop(J, 1);
+			break;
+
+		case OP_ENDWITH:
+			J->E = J->E->outer;
+			break;
+
 		/* Branching */
 
 		case OP_DEBUGGER:
