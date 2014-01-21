@@ -294,7 +294,7 @@ int js_compare(js_State *J)
 	js_Value vb = js_toprimitive(J, -1, JS_HNUMBER);
 	js_pop(J, 2);
 	if (va.type == JS_TSTRING && vb.type == JS_TSTRING) {
-		return strcmp(va.u.string, va.u.string);
+		return strcmp(va.u.string, vb.u.string);
 	} else {
 		double x = jsV_tonumber(J, &va);
 		double y = jsV_tonumber(J, &vb);

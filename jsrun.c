@@ -251,7 +251,7 @@ void js_rot(js_State *J, int n)
 {
 	int i;
 	js_Value tmp = STACK[TOP-1];
-	for (i = 1; i <= n; i++)
+	for (i = 1; i <= n; ++i)
 		STACK[TOP-i] = STACK[TOP-i-1];
 	STACK[TOP-i] = tmp;
 }
@@ -371,7 +371,7 @@ static void jsR_callfunction(js_State *J, int n, js_Function *F, js_Environment 
 	saveE = J->E;
 
 	J->E = jsR_newenvironment(J, jsV_newobject(J, JS_COBJECT, NULL), scope);
-	for (i = 0; i < n; i++) {
+	for (i = 0; i < F->numparams; ++i) {
 		js_Property *ref = js_decvar(J, F->params[i]);
 		if (i < n)
 			ref->value = js_tovalue(J, i + 1);

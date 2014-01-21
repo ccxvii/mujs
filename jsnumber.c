@@ -70,7 +70,7 @@ void jsB_initnumber(js_State *J)
 	js_pushobject(J, J->Number_prototype);
 	{
 		jsB_propf(J, "valueOf", Np_valueOf, 0);
-		jsB_propf(J, "toString", Np_toString, 0);
+		jsB_propf(J, "toString", Np_toString, 1);
 		jsB_propf(J, "toLocaleString", Np_toString, 0);
 		jsB_propf(J, "toFixed", Np_toFixed, 1);
 		jsB_propf(J, "toExponential", Np_toExponential, 1);
