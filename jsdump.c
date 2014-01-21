@@ -685,22 +685,22 @@ void js_dumpvalue(js_State *J, js_Value v)
 	case JS_TSTRING: printf("'%s'", v.u.string); break;
 	case JS_TOBJECT:
 		switch (v.u.object->type) {
-		case JS_COBJECT: printf("object(%p)", v.u.object); break;
-		case JS_CARRAY: printf("array(%p)", v.u.object); break;
+		case JS_COBJECT: printf("[Object %p]", v.u.object); break;
+		case JS_CARRAY: printf("[Array %p]", v.u.object); break;
 		case JS_CFUNCTION:
-			printf("function(%p, %s, %s:%d)",
+			printf("[Function %p, %s, %s:%d]",
 				v.u.object,
 				v.u.object->u.f.function->name,
 				v.u.object->u.f.function->filename,
 				v.u.object->u.f.function->line);
 			break;
-		case JS_CSCRIPT: printf("script(%s)", v.u.object->u.f.function->filename); break;
-		case JS_CCFUNCTION: printf("cfunction(%p)", v.u.object->u.c.function); break;
-		case JS_CBOOLEAN: printf("boolean(%d)", v.u.object->u.boolean); break;
-		case JS_CNUMBER: printf("number(%g)", v.u.object->u.number); break;
-		case JS_CSTRING: printf("string('%s')", v.u.object->u.string); break;
-		case JS_CERROR: printf("error()"); break;
-		default: printf("<unknown %p>", v.u.object); break;
+		case JS_CSCRIPT: printf("[Function %s]", v.u.object->u.f.function->filename); break;
+		case JS_CCFUNCTION: printf("[Function %p]", v.u.object->u.c.function); break;
+		case JS_CBOOLEAN: printf("[Boolean %d]", v.u.object->u.boolean); break;
+		case JS_CNUMBER: printf("[Number %g]", v.u.object->u.number); break;
+		case JS_CSTRING: printf("[String'%s']", v.u.object->u.string); break;
+		case JS_CERROR: printf("[Error %s]", v.u.object->u.string); break;
+		default: printf("[Object %p]", v.u.object); break;
 		}
 		break;
 	}

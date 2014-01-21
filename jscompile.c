@@ -39,7 +39,7 @@ static js_Function *newfun(js_State *J, js_Ast *name, js_Ast *params, js_Ast *bo
 	++J->gccounter;
 
 	F->filename = js_intern(J, J->filename);
-	F->line = name ? name->line : params ? params->line : body->line;
+	F->line = name ? name->line : params ? params->line : body ? body->line : 1;
 
 	cfunbody(J, F, name, params, body);
 

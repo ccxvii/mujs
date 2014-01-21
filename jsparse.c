@@ -950,7 +950,8 @@ js_Ast *jsP_parse(js_State *J, const char *filename, const char *source)
 	next(J);
 	p = script(J);
 
-	jsP_foldconst(p);
+	if (p)
+		jsP_foldconst(p);
 
 	/* patch up global and eval code to return value of last expression */
 	last = p;

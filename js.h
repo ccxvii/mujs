@@ -10,7 +10,7 @@ typedef int (*js_CFunction)(js_State *J, int argc);
 /* Basic functions */
 js_State *js_newstate(void);
 void js_freestate(js_State *J);
-int js_dostring(js_State *J, const char *source);
+int js_dostring(js_State *J, const char *source, int report);
 int js_dofile(js_State *J, const char *filename);
 void js_gc(js_State *J, int report);
 

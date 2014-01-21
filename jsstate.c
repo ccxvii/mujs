@@ -69,7 +69,7 @@ void js_loadfile(js_State *J, const char *filename)
 	js_endtry(J);
 }
 
-int js_dostring(js_State *J, const char *source)
+int js_dostring(js_State *J, const char *source, int report)
 {
 	if (js_try(J)) {
 		fprintf(stderr, "libjs: %s\n", js_tostring(J, -1));
@@ -78,6 +78,8 @@ int js_dostring(js_State *J, const char *source)
 	js_loadstring(J, "(string)", source);
 	js_pushglobal(J);
 	js_call(J, 0);
+	if (report)
+		printf("%s\n", js_tostring(J, -1));
 	js_pop(J, 1);
 	js_endtry(J);
 	return 0;
