@@ -4,19 +4,29 @@
 #include "jsconf.h"
 
 typedef struct js_State js_State;
+
 typedef int (*js_CFunction)(js_State *J, int argc);
 
 /* Basic functions */
-
 js_State *js_newstate(void);
 void js_freestate(js_State *J);
-
 int js_dostring(js_State *J, const char *source);
 int js_dofile(js_State *J, const char *filename);
-
 void js_gc(js_State *J, int report);
 
-const char *js_intern(js_State *J, const char *s);
+/* RegExp flags */
+enum {
+	JS_REGEXP_G = 1,
+	JS_REGEXP_I = 2,
+	JS_REGEXP_M = 4,
+};
+
+/* Hint to ToPrimitive() */
+enum {
+	JS_HNONE,
+	JS_HNUMBER,
+	JS_HSTRING
+};
 
 /* Property attribute flags */
 enum {

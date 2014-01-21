@@ -16,7 +16,6 @@ void js_loadstring(js_State *J, const char *filename, const char *source)
 	}
 
 	P = jsP_parse(J, filename, source);
-	jsP_optimize(J, P);
 	F = jsC_compile(J, P);
 	jsP_freeparse(J);
 	js_newscript(J, F);

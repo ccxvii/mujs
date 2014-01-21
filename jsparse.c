@@ -54,7 +54,7 @@ static void jsP_warning(js_State *J, const char *fmt, ...)
 	fprintf(stderr, "\n");
 }
 
-js_Ast *jsP_newnode(js_State *J, int type, js_Ast *a, js_Ast *b, js_Ast *c, js_Ast *d)
+static js_Ast *jsP_newnode(js_State *J, int type, js_Ast *a, js_Ast *b, js_Ast *c, js_Ast *d)
 {
 	js_Ast *node = malloc(sizeof(js_Ast));
 
@@ -73,14 +73,14 @@ js_Ast *jsP_newnode(js_State *J, int type, js_Ast *a, js_Ast *b, js_Ast *c, js_A
 	return node;
 }
 
-js_Ast *jsP_newstrnode(js_State *J, int type, const char *s)
+static js_Ast *jsP_newstrnode(js_State *J, int type, const char *s)
 {
 	js_Ast *node = jsP_newnode(J, type, 0, 0, 0, 0);
 	node->string = s;
 	return node;
 }
 
-js_Ast *jsP_newnumnode(js_State *J, int type, double n)
+static js_Ast *jsP_newnumnode(js_State *J, int type, double n)
 {
 	js_Ast *node = jsP_newnode(J, type, 0, 0, 0, 0);
 	node->number = n;
@@ -866,6 +866,81 @@ static js_Ast *funbody(js_State *J)
 	return a;
 }
 
+/* Constant folding */
+
+static inline int toint32(double d)
+{
+	double two32 = 4294967296.0;
+	double two31 = 2147483648.0;
+
+	if (!isfinite(d) || d == 0)
+		return 0;
+
+	d = fmod(d, two32);
+	d = d >= 0 ? floor(d) : ceil(d) + two32;
+	if (d >= two31)
+		return d - two32;
+	else
+		return d;
+}
+
+static inline unsigned int touint32(double d)
+{
+	return toint32(d);
+}
+
+static int jsP_setnumnode(js_Ast *node, double x)
+{
+	node->type = AST_NUMBER;
+	node->number = x;
+	node->a = node->b = node->c = node->d = NULL;
+	return 1;
+}
+
+static int jsP_foldconst(js_Ast *node)
+{
+	double x, y;
+	int a, b;
+
+	if (node->type == AST_NUMBER)
+		return 1;
+
+	a = node->a ? jsP_foldconst(node->a) : 0;
+	b = node->b ? jsP_foldconst(node->b) : 0;
+	if (node->c) jsP_foldconst(node->c);
+	if (node->d) jsP_foldconst(node->d);
+
+	if (a) {
+		x = node->a->number;
+		switch (node->type) {
+		case EXP_NEG: return jsP_setnumnode(node, -x);
+		case EXP_POS: return jsP_setnumnode(node, x);
+		case EXP_BITNOT: return jsP_setnumnode(node, ~toint32(x));
+		}
+
+		if (b) {
+			y = node->b->number;
+			switch (node->type) {
+			case EXP_MUL: return jsP_setnumnode(node, x * y);
+			case EXP_DIV: return jsP_setnumnode(node, x / y);
+			case EXP_MOD: return jsP_setnumnode(node, fmod(x, y));
+			case EXP_ADD: return jsP_setnumnode(node, x + y);
+			case EXP_SUB: return jsP_setnumnode(node, x - y);
+			case EXP_SHL: return jsP_setnumnode(node, toint32(x) << (touint32(y) & 0x1F));
+			case EXP_SHR: return jsP_setnumnode(node, toint32(x) >> (touint32(y) & 0x1F));
+			case EXP_USHR: return jsP_setnumnode(node, touint32(x) >> (touint32(y) & 0x1F));
+			case EXP_BITAND: return jsP_setnumnode(node, toint32(x) & toint32(y));
+			case EXP_BITXOR: return jsP_setnumnode(node, toint32(x) ^ toint32(y));
+			case EXP_BITOR: return jsP_setnumnode(node, toint32(x) | toint32(y));
+			}
+		}
+	}
+
+	return 0;
+}
+
+/* Main entry point */
+
 js_Ast *jsP_parse(js_State *J, const char *filename, const char *source)
 {
 	js_Ast *p, *last;
@@ -874,6 +949,8 @@ js_Ast *jsP_parse(js_State *J, const char *filename, const char *source)
 
 	next(J);
 	p = script(J);
+
+	jsP_foldconst(p);
 
 	/* patch up global and eval code to return value of last expression */
 	last = p;

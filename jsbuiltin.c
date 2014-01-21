@@ -1,24 +1,30 @@
 #include "jsi.h"
+#include "jscompile.h"
 #include "jsvalue.h"
 #include "jsbuiltin.h"
 
-static int jsB_print(js_State *J, int argc)
+static void jsB_globalf(js_State *J, const char *name, js_CFunction cfun, int n)
 {
-	int i;
-	for (i = 1; i <= argc; ++i) {
-		const char *s = js_tostring(J, i);
-		if (i > 1) putchar(' ');
-		fputs(s, stdout);
-	}
-	putchar('\n');
-	return 0;
+	js_newcfunction(J, cfun, n);
+	js_setglobal(J, name);
 }
 
-static int jsB_collectGarbage(js_State *J, int argc)
+void jsB_propf(js_State *J, const char *name, js_CFunction cfun, int n)
 {
-	int report = js_toboolean(J, 1);
-	js_gc(J, report);
-	return 0;
+	js_newcfunction(J, cfun, n);
+	js_setproperty(J, -2, name);
+}
+
+void jsB_propn(js_State *J, const char *name, double number)
+{
+	js_pushnumber(J, number);
+	js_setproperty(J, -2, name);
+}
+
+void jsB_props(js_State *J, const char *name, const char *string)
+{
+	js_pushliteral(J, string);
+	js_setproperty(J, -2, name);
 }
 
 static int jsB_eval(js_State *J, int argc)
@@ -60,28 +66,23 @@ static int jsB_isFinite(js_State *J, int argc)
 	return 1;
 }
 
-static void jsB_globalf(js_State *J, const char *name, js_CFunction cfun, int n)
+static int jsB_print(js_State *J, int argc)
 {
-	js_newcfunction(J, cfun, n);
-	js_setglobal(J, name);
+	int i;
+	for (i = 1; i <= argc; ++i) {
+		const char *s = js_tostring(J, i);
+		if (i > 1) putchar(' ');
+		fputs(s, stdout);
+	}
+	putchar('\n');
+	return 0;
 }
 
-void jsB_propf(js_State *J, const char *name, js_CFunction cfun, int n)
+static int jsB_collectGarbage(js_State *J, int argc)
 {
-	js_newcfunction(J, cfun, n);
-	js_setproperty(J, -2, name);
-}
-
-void jsB_propn(js_State *J, const char *name, double number)
-{
-	js_pushnumber(J, number);
-	js_setproperty(J, -2, name);
-}
-
-void jsB_props(js_State *J, const char *name, const char *string)
-{
-	js_pushliteral(J, string);
-	js_setproperty(J, -2, name);
+	int report = js_toboolean(J, 1);
+	js_gc(J, report);
+	return 0;
 }
 
 void jsB_init(js_State *J)
@@ -111,7 +112,6 @@ void jsB_init(js_State *J)
 	jsB_initnumber(J);
 	jsB_initstring(J);
 	jsB_initerror(J);
-
 	jsB_initmath(J);
 
 	/* Initialize the global object */

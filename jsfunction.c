@@ -3,8 +3,10 @@
 #include "jsvalue.h"
 #include "jsbuiltin.h"
 
-static int jsB_new_Function(js_State *J, int argc) { return 0; }
-static int jsB_Function(js_State *J, int argc) { return 0; }
+static int jsB_Function(js_State *J, int argc)
+{
+	return 0;
+}
 
 static int jsB_Function_prototype(js_State *J, int argc)
 {
@@ -96,6 +98,6 @@ void jsB_initfunction(js_State *J)
 		jsB_propf(J, "apply", Fp_apply, 2);
 		jsB_propf(J, "call", Fp_call, 1);
 	}
-	js_newcconstructor(J, jsB_Function, jsB_new_Function);
+	js_newcconstructor(J, jsB_Function, jsB_Function);
 	js_setglobal(J, "Function");
 }

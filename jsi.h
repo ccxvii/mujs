@@ -12,20 +12,21 @@
 #include <math.h>
 #include <float.h>
 
-enum { JS_REGEXP_G = 1, JS_REGEXP_I = 2, JS_REGEXP_M = 4 }; /* RegExp flags */
-
-enum { JS_HNONE, JS_HNUMBER, JS_HSTRING }; /* Hint to ToPrimitive() */
-
 typedef struct js_Value js_Value;
 typedef struct js_Object js_Object;
-
 typedef struct js_Ast js_Ast;
 typedef struct js_Function js_Function;
 typedef struct js_Environment js_Environment;
-
 typedef struct js_StringNode js_StringNode;
+typedef struct js_Jumpbuf js_Jumpbuf;
+
+/* String interning */
+
+const char *js_intern(js_State *J, const char *s);
 void jsS_dumpstrings(js_State *J);
 void jsS_freestrings(js_State *J);
+
+/* Private stack functions */
 
 void js_newfunction(js_State *J, js_Function *function, js_Environment *scope);
 void js_newscript(js_State *J, js_Function *function);
@@ -36,8 +37,6 @@ void js_rot2(js_State *J);
 void js_rot3(js_State *J);
 
 /* Exception handling */
-
-typedef struct js_Jumpbuf js_Jumpbuf;
 
 struct js_Jumpbuf
 {
