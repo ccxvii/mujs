@@ -4,9 +4,9 @@
 
 #define nelem(a) (sizeof (a) / sizeof (a)[0])
 
-JS_NORETURN static int jsY_error(js_State *J, const char *fmt, ...) JS_PRINTFLIKE(2,3);
+JS_NORETURN static void jsY_error(js_State *J, const char *fmt, ...) JS_PRINTFLIKE(2,3);
 
-static int jsY_error(js_State *J, const char *fmt, ...)
+static void jsY_error(js_State *J, const char *fmt, ...)
 {
 	va_list ap;
 	char buf[512];
@@ -236,7 +236,7 @@ static inline double lexhex(js_State *J)
 {
 	double n = 0;
 	if (!ishex(PEEK))
-		return jsY_error(J, "malformed hexadecimal number");
+		jsY_error(J, "malformed hexadecimal number");
 	while (ishex(PEEK)) {
 		n = n * 16 + tohex(PEEK);
 		NEXT();
@@ -248,7 +248,7 @@ static inline double lexinteger(js_State *J)
 {
 	double n = 0;
 	if (!isdec(PEEK))
-		return jsY_error(J, "malformed number");
+		jsY_error(J, "malformed number");
 	while (isdec(PEEK)) {
 		n = n * 10 + (PEEK - '0');
 		NEXT();
@@ -290,7 +290,7 @@ static inline int lexnumber(js_State *J)
 			return TK_NUMBER;
 		}
 		if (isdec(PEEK))
-			return jsY_error(J, "number with leading zero");
+			jsY_error(J, "number with leading zero");
 		n = 0;
 		if (ACCEPT('.'))
 			n += lexfraction(J);
@@ -308,7 +308,7 @@ static inline int lexnumber(js_State *J)
 	}
 
 	if (isidentifierstart(PEEK))
-		return jsY_error(J, "number with letter suffix");
+		jsY_error(J, "number with letter suffix");
 
 	J->number = n;
 	return TK_NUMBER;
@@ -364,10 +364,10 @@ static inline int lexstring(js_State *J)
 
 	while (PEEK != q) {
 		if (PEEK == 0 || PEEK == '\n')
-			return jsY_error(J, "string not terminated");
+			jsY_error(J, "string not terminated");
 		if (ACCEPT('\\')) {
 			if (lexescape(J))
-				return jsY_error(J, "malformed escape sequence");
+				jsY_error(J, "malformed escape sequence");
 		} else {
 			textpush(J, PEEK);
 			NEXT();
@@ -413,11 +413,11 @@ static int lexregexp(js_State *J)
 	/* regexp body */
 	while (PEEK != '/') {
 		if (PEEK == 0 || PEEK == '\n') {
-			return jsY_error(J, "regular expression not terminated");
+			jsY_error(J, "regular expression not terminated");
 		} else if (ACCEPT('\\')) {
 			textpush(J, '\\');
 			if (PEEK == 0 || PEEK == '\n')
-				return jsY_error(J, "regular expression not terminated");
+				jsY_error(J, "regular expression not terminated");
 			textpush(J, PEEK);
 			NEXT();
 		} else {
@@ -436,11 +436,11 @@ static int lexregexp(js_State *J)
 		if (ACCEPT('g')) ++g;
 		else if (ACCEPT('i')) ++i;
 		else if (ACCEPT('m')) ++m;
-		else return jsY_error(J, "illegal flag in regular expression: %c", PEEK);
+		else jsY_error(J, "illegal flag in regular expression: %c", PEEK);
 	}
 
 	if (g > 1 || i > 1 || m > 1)
-		return jsY_error(J, "duplicated flag in regular expression");
+		jsY_error(J, "duplicated flag in regular expression");
 
 	J->text = js_intern(J, s);
 	J->number = 0;
@@ -487,7 +487,7 @@ static int lex(js_State *J)
 				continue;
 			} else if (ACCEPT('*')) {
 				if (lexcomment(J))
-					return jsY_error(J, "multi-line comment not terminated");
+					jsY_error(J, "multi-line comment not terminated");
 				continue;
 			} else if (isregexpcontext(J->lasttoken)) {
 				return lexregexp(J);
@@ -641,8 +641,8 @@ static int lex(js_State *J)
 		}
 
 		if (PEEK >= 0x20 && PEEK <= 0x7E)
-			return jsY_error(J, "unexpected character: '%c'", PEEK);
-		return jsY_error(J, "unexpected character: \\u%04X", PEEK);
+			jsY_error(J, "unexpected character: '%c'", PEEK);
+		jsY_error(J, "unexpected character: \\u%04X", PEEK);
 	}
 }
 
