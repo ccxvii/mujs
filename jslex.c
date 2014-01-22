@@ -81,7 +81,7 @@ static const char *keywords[] = {
 	"true", "try", "typeof", "var", "void", "while", "with",
 };
 
-static inline int findword(const char *s, const char **list, int num)
+int jsY_findword(const char *s, const char **list, int num)
 {
 	int l = 0;
 	int r = num - 1;
@@ -100,7 +100,7 @@ static inline int findword(const char *s, const char **list, int num)
 
 static inline int findkeyword(js_State *J, const char *s)
 {
-	int i = findword(s, keywords, nelem(keywords));
+	int i = jsY_findword(s, keywords, nelem(keywords));
 	if (i >= 0) {
 		J->text = keywords[i];
 		return TK_BREAK + i; /* first keyword + i */
@@ -151,11 +151,11 @@ static inline int tohex(int c)
 }
 
 #define PEEK (J->lexchar)
-#define NEXT() next(J)
+#define NEXT() jsY_next(J)
 #define ACCEPT(x) (PEEK == x ? (NEXT(), 1) : 0)
 #define EXPECT(x) (ACCEPT(x) || (jsY_error(J, "expected '%c'", x), 0))
 
-static void next(js_State *J)
+static void jsY_next(js_State *J)
 {
 	Rune c;
 	J->source += chartorune(&c, J->source);
@@ -652,7 +652,7 @@ void jsY_initlex(js_State *J, const char *filename, const char *source)
 	J->source = source;
 	J->line = 1;
 	J->lasttoken = 0;
-	next(J); /* load first lookahead character */
+	NEXT(); /* load first lookahead character */
 }
 
 int jsY_lex(js_State *J)

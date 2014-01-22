@@ -5,35 +5,6 @@
 
 static void jsR_run(js_State *J, js_Function *F);
 
-static inline double tointeger(double n)
-{
-	double sign = n < 0 ? -1 : 1;
-	if (isnan(n)) return 0;
-	if (n == 0 || isinf(n)) return n;
-	return sign * floor(abs(n));
-}
-
-static inline int toint32(double n)
-{
-	double two32 = 4294967296.0;
-	double two31 = 2147483648.0;
-
-	if (!isfinite(n) || n == 0)
-		return 0;
-
-	n = fmod(n, two32);
-	n = n >= 0 ? floor(n) : ceil(n) + two32;
-	if (n >= two31)
-		return n - two32;
-	else
-		return n;
-}
-
-static inline unsigned int touint32(double n)
-{
-	return toint32(n);
-}
-
 /* Push values on stack */
 
 #define STACK (J->stack)
@@ -155,17 +126,17 @@ double js_tonumber(js_State *J, int idx)
 
 double js_tointeger(js_State *J, int idx)
 {
-	return tointeger(jsV_tonumber(J, stackidx(J, idx)));
+	return jsV_numbertointeger(jsV_tonumber(J, stackidx(J, idx)));
 }
 
 int js_toint32(js_State *J, int idx)
 {
-	return toint32(jsV_tonumber(J, stackidx(J, idx)));
+	return jsV_numbertoint32(jsV_tonumber(J, stackidx(J, idx)));
 }
 
 unsigned int js_touint32(js_State *J, int idx)
 {
-	return touint32(jsV_tonumber(J, stackidx(J, idx)));
+	return jsV_numbertouint32(jsV_tonumber(J, stackidx(J, idx)));
 }
 
 const char *js_tostring(js_State *J, int idx)
@@ -534,6 +505,8 @@ static void jsR_run(js_State *J, js_Function *F)
 	js_Object *obj;
 	js_Property *ref;
 	double x, y;
+	unsigned int ux, uy;
+	int ix, iy;
 	int b;
 
 	while (1) {
@@ -684,9 +657,9 @@ static void jsR_run(js_State *J, js_Function *F)
 			break;
 
 		case OP_BITNOT:
-			x = js_tonumber(J, -1);
+			ix = js_toint32(J, -1);
 			js_pop(J, 1);
-			js_pushnumber(J, ~toint32(x));
+			js_pushnumber(J, ~ix);
 			break;
 
 		case OP_LOGNOT:
@@ -734,24 +707,24 @@ static void jsR_run(js_State *J, js_Function *F)
 		/* Shift operators */
 
 		case OP_SHL:
-			x = js_tonumber(J, -2);
-			y = js_tonumber(J, -1);
+			ix = js_toint32(J, -2);
+			uy = js_touint32(J, -1);
 			js_pop(J, 2);
-			js_pushnumber(J, toint32(x) << (touint32(y) & 0x1F));
+			js_pushnumber(J, ix << (uy & 0x1F));
 			break;
 
 		case OP_SHR:
-			x = js_tonumber(J, -2);
-			y = js_tonumber(J, -1);
+			ix = js_toint32(J, -2);
+			uy = js_touint32(J, -1);
 			js_pop(J, 2);
-			js_pushnumber(J, toint32(x) >> (touint32(y) & 0x1F)); break;
+			js_pushnumber(J, ix >> (uy & 0x1F)); break;
 			break;
 
 		case OP_USHR:
-			x = js_tonumber(J, -2);
-			y = js_tonumber(J, -1);
+			ux = js_touint32(J, -2);
+			uy = js_touint32(J, -1);
 			js_pop(J, 2);
-			js_pushnumber(J, touint32(x) >> (touint32(y) & 0x1F)); break;
+			js_pushnumber(J, ux >> (uy & 0x1F)); break;
 			break;
 
 		/* Relational operators */
@@ -773,24 +746,24 @@ static void jsR_run(js_State *J, js_Function *F)
 		/* Binary bitwise operators */
 
 		case OP_BITAND:
-			x = js_tonumber(J, -2);
-			y = js_tonumber(J, -1);
+			ix = js_toint32(J, -2);
+			iy = js_toint32(J, -1);
 			js_pop(J, 2);
-			js_pushnumber(J, toint32(x) & toint32(y));
+			js_pushnumber(J, ix & iy);
 			break;
 
 		case OP_BITXOR:
-			x = js_tonumber(J, -2);
-			y = js_tonumber(J, -1);
+			ix = js_toint32(J, -2);
+			iy = js_toint32(J, -1);
 			js_pop(J, 2);
-			js_pushnumber(J, toint32(x) ^ toint32(y));
+			js_pushnumber(J, ix ^ iy);
 			break;
 
 		case OP_BITOR:
-			x = js_tonumber(J, -2);
-			y = js_tonumber(J, -1);
+			ix = js_toint32(J, -2);
+			iy = js_toint32(J, -1);
 			js_pop(J, 2);
-			js_pushnumber(J, toint32(x) | toint32(y));
+			js_pushnumber(J, ix | iy);
 			break;
 
 		/* With */

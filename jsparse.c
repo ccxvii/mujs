@@ -134,23 +134,6 @@ static void semicolon(js_State *J)
 
 /* Literals */
 
-static inline int findword(const char *s, const char **list, int num)
-{
-	int l = 0;
-	int r = num - 1;
-	while (l <= r) {
-		int m = (l + r) >> 1;
-		int c = strcmp(s, list[m]);
-		if (c < 0)
-			r = m - 1;
-		else if (c > 0)
-			l = m + 1;
-		else
-			return m;
-	}
-	return -1;
-}
-
 static const char *futurewords[] = {
 	"class", "const", "enum", "export", "extends", "import", "super",
 };
@@ -162,9 +145,9 @@ static const char *strictfuturewords[] = {
 
 static void checkfutureword(js_State *J, const char *s)
 {
-	if (findword(s, futurewords, nelem(futurewords)) >= 0)
+	if (jsY_findword(s, futurewords, nelem(futurewords)) >= 0)
 		jsP_error(J, "'%s' is a future reserved word", s);
-	if (J->strict && findword(s, strictfuturewords, nelem(strictfuturewords)) >= 0)
+	if (J->strict && jsY_findword(s, strictfuturewords, nelem(strictfuturewords)) >= 0)
 		jsP_error(J, "'%s' is a strict mode future reserved word", s);
 }
 

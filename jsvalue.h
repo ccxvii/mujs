@@ -86,6 +86,9 @@ const char *jsV_tostring(js_State *J, const js_Value *v);
 js_Object *jsV_toobject(js_State *J, const js_Value *v);
 js_Value jsV_toprimitive(js_State *J, const js_Value *v, int preferred);
 
+double jsV_numbertointeger(double n);
+int jsV_numbertoint32(double n);
+unsigned int jsV_numbertouint32(double n);
 const char *jsV_numbertostring(js_State *J, double number);
 double jsV_stringtonumber(js_State *J, const char *string);
 

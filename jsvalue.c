@@ -3,6 +3,35 @@
 #include "jsvalue.h"
 #include "jsutf.h"
 
+double jsV_numbertointeger(double n)
+{
+	double sign = n < 0 ? -1 : 1;
+	if (isnan(n)) return 0;
+	if (n == 0 || isinf(n)) return n;
+	return sign * floor(abs(n));
+}
+
+int jsV_numbertoint32(double n)
+{
+	double two32 = 4294967296.0;
+	double two31 = 2147483648.0;
+
+	if (!isfinite(n) || n == 0)
+		return 0;
+
+	n = fmod(n, two32);
+	n = n >= 0 ? floor(n) : ceil(n) + two32;
+	if (n >= two31)
+		return n - two32;
+	else
+		return n;
+}
+
+unsigned int jsV_numbertouint32(double n)
+{
+	return jsV_numbertoint32(n);
+}
+
 /* obj.toString() */
 static int jsV_toString(js_State *J, js_Object *obj)
 {

@@ -39,7 +39,6 @@ void js_newfunction(js_State *J, js_Function *function, js_Environment *scope);
 void js_newscript(js_State *J, js_Function *function);
 
 void js_dup(js_State *J);
-void js_rot(js_State *J, int n);
 void js_rot2(js_State *J);
 void js_rot3(js_State *J);
 
