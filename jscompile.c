@@ -786,18 +786,26 @@ static void cstm(JF, js_Ast *stm)
 		if (stm->type == STM_FOR_VAR) {
 			cvarinit(J, F, stm->a);
 		} else {
-			cexp(J, F, stm->a);
-			emit(J, F, OP_POP);
+			if (stm->a) {
+				cexp(J, F, stm->a);
+				emit(J, F, OP_POP);
+			}
 		}
 		loop = here(J, F);
-		cexp(J, F, stm->b);
-		end = jump(J, F, OP_JFALSE);
+		if (stm->b) {
+			cexp(J, F, stm->b);
+			end = jump(J, F, OP_JFALSE);
+		}
 		cstm(J, F, stm->d);
 		cont = here(J, F);
-		cexp(J, F, stm->c);
-		emit(J, F, OP_POP);
+		if (stm->c) {
+			cexp(J, F, stm->c);
+			emit(J, F, OP_POP);
+		}
 		jumpto(J, F, OP_JUMP, loop);
-		label(J, F, end);
+		if (stm->b)
+			label(J, F, end);
+		printf("labeling for statement: %d %d\n", cont, here(J,F));
 		labelexit(J, F, stm, stm->d, STM_CONTINUE, cont);
 		labelexit(J, F, stm, stm->d, STM_BREAK, here(J, F));
 		break;
