@@ -66,6 +66,13 @@ static js_Ast *jsP_newnode(js_State *J, int type, js_Ast *a, js_Ast *b, js_Ast *
 	node->d = d;
 	node->number = 0;
 	node->string = NULL;
+	node->inst = 0;
+
+	node->parent = NULL;
+	if (a) a->parent = node;
+	if (b) b->parent = node;
+	if (c) c->parent = node;
+	if (d) d->parent = node;
 
 	node->gcnext = J->gcast;
 	J->gcast = node;

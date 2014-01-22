@@ -146,6 +146,11 @@ static void label(JF, int inst)
 	F->code[inst] = F->codelen;
 }
 
+static void labelto(JF, int inst, int addr)
+{
+	F->code[inst] = addr;
+}
+
 /* Expressions */
 
 static void cunary(JF, js_Ast *exp, int opcode)
@@ -551,6 +556,22 @@ static void cexp(JF, js_Ast *exp)
 	}
 }
 
+/* Patch break and continue statements */
+
+static void labelexit(JF, js_Ast *top, js_Ast *node, js_AstType T, int addr)
+{
+	if (node->type == T) {
+		// TODO: check if top is our real target
+		if (F->code[node->inst] == 0)
+			labelto(J, F, node->inst, addr);
+	} else if (node->type >= STM_BLOCK || node->type == AST_LIST) {
+		if (node->a) labelexit(J, F, top, node->a, T, addr);
+		if (node->b) labelexit(J, F, top, node->b, T, addr);
+		if (node->c) labelexit(J, F, top, node->c, T, addr);
+		if (node->d) labelexit(J, F, top, node->d, T, addr);
+	}
+}
+
 /* Statements */
 
 static void cstm(JF, js_Ast *stm)
@@ -563,6 +584,8 @@ static void cstm(JF, js_Ast *stm)
 
 	case STM_BLOCK:
 		cstmlist(J, F, stm->a);
+		if (stm->parent && stm->parent->type == STM_LABEL)
+			labelexit(J, F, stm, stm->a, STM_BREAK, here(J, F));
 		break;
 
 	case STM_NOP:
@@ -594,6 +617,8 @@ static void cstm(JF, js_Ast *stm)
 		cstm(J, F, stm->a);
 		cexp(J, F, stm->b);
 		jumpto(J, F, OP_JTRUE, loop);
+		labelexit(J, F, stm, stm->a, STM_CONTINUE, loop);
+		labelexit(J, F, stm, stm->a, STM_BREAK, here(J, F));
 		break;
 
 	case STM_WHILE:
@@ -603,6 +628,8 @@ static void cstm(JF, js_Ast *stm)
 		cstm(J, F, stm->b);
 		jumpto(J, F, OP_JUMP, loop);
 		label(J, F, end);
+		labelexit(J, F, stm, stm->b, STM_CONTINUE, loop);
+		labelexit(J, F, stm, stm->b, STM_BREAK, here(J, F));
 		break;
 
 	case STM_FOR:
@@ -621,6 +648,8 @@ static void cstm(JF, js_Ast *stm)
 		emit(J, F, OP_POP);
 		jumpto(J, F, OP_JUMP, loop);
 		label(J, F, end);
+		labelexit(J, F, stm, stm->d, STM_CONTINUE, loop);
+		labelexit(J, F, stm, stm->d, STM_BREAK, here(J, F));
 		break;
 
 	case STM_FOR_IN:
@@ -640,11 +669,19 @@ static void cstm(JF, js_Ast *stm)
 		cstm(J, F, stm->c);
 		jumpto(J, F, OP_JUMP, loop);
 		label(J, F, end);
+		labelexit(J, F, stm, stm->c, STM_CONTINUE, loop);
+		labelexit(J, F, stm, stm->c, STM_BREAK, here(J, F));
 		break;
 
 	// label
-	// break
-	// continue
+
+	case STM_BREAK:
+		stm->inst = jump(J, F, OP_JUMP);
+		break;
+
+	case STM_CONTINUE:
+		stm->inst = jump(J, F, OP_JUMP);
+		break;
 
 	case STM_RETURN:
 		if (stm->a)
