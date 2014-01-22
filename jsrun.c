@@ -400,7 +400,7 @@ void js_call(js_State *J, int n)
 	else if (obj->type == JS_CCFUNCTION)
 		jsR_callcfunction(J, n, obj->u.c.function);
 	else
-		js_typeerror(J, "not a function");
+		js_typeerror(J, "call: not a function");
 	BOT = savebot;
 }
 
@@ -451,7 +451,7 @@ void js_construct(js_State *J, int n)
 void js_savetry(js_State *J, short *pc)
 {
 	if (J->trylen == JS_TRYLIMIT)
-		js_error(J, "exception stack overflow");
+		js_error(J, "try: exception stack overflow");
 	J->trybuf[J->trylen].E = J->E;
 	J->trybuf[J->trylen].top = J->top;
 	J->trybuf[J->trylen].bot = J->bot;
@@ -512,7 +512,8 @@ static void jsR_run(js_State *J, js_Function *F)
 	const char **ST = F->strtab;
 	short *pcstart = F->code;
 	short *pc = F->code;
-	int opcode, offset;
+	js_OpCode opcode;
+	int offset;
 
 	const char *str;
 	js_Object *obj;
@@ -574,7 +575,7 @@ static void jsR_run(js_State *J, js_Function *F)
 			if (ref)
 				js_pushvalue(J, ref->value);
 			else
-				js_referenceerror(J, "%s", str);
+				js_referenceerror(J, "%s is not defined", str);
 			break;
 
 		case OP_SETVAR:
@@ -749,7 +750,9 @@ static void jsR_run(js_State *J, js_Function *F)
 		case OP_LE: b = js_compare(J); js_pushboolean(J, b <= 0); break;
 		case OP_GE: b = js_compare(J); js_pushboolean(J, b >= 0); break;
 
-		// OP_INSTANCEOF
+		case OP_INSTANCEOF:
+			js_instanceof(J);
+			break;
 
 		/* Equality */
 

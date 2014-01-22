@@ -1,7 +1,9 @@
 #ifndef js_compile_h
 #define js_compile_h
 
-enum
+typedef enum js_OpCode js_OpCode;
+
+enum js_OpCode
 {
 	OP_POP,		/* A -- */
 	OP_POP2,	/* A B -- */

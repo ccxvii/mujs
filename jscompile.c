@@ -201,8 +201,10 @@ static void cobject(JF, js_Ast *list)
 			cexp(J, F, kv->b);
 			emit(J, F, OP_SETPROP);
 			emit(J, F, OP_POP);
+		} else {
+			// TODO: set/get
+			jsC_error(J, kv, "property setters and getters are not implemented");
 		}
-		// TODO: set, get
 		list = list->b;
 	}
 }
