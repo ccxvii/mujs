@@ -684,6 +684,10 @@ void js_dumpvalue(js_State *J, js_Value v)
 	case JS_TNUMBER: printf("%.9g", v.u.number); break;
 	case JS_TSTRING: printf("'%s'", v.u.string); break;
 	case JS_TOBJECT:
+		if (v.u.object == J->G) {
+			printf("[Global]");
+			break;
+		}
 		switch (v.u.object->type) {
 		case JS_COBJECT: printf("[Object %p]", v.u.object); break;
 		case JS_CARRAY: printf("[Array %p]", v.u.object); break;

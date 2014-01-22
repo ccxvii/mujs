@@ -518,10 +518,12 @@ static void jsR_run(js_State *J, js_Function *F)
 		opcode = *pc++;
 		switch (opcode) {
 		case OP_POP: js_pop(J, 1); break;
+		case OP_POP2: js_pop(J, 2); break;
 		case OP_DUP: js_dup(J); break;
 		case OP_DUP2: js_dup2(J); break;
 		case OP_ROT2: js_rot2(J); break;
 		case OP_ROT3: js_rot3(J); break;
+		case OP_ROT3POP2: js_rot3pop2(J); break;
 		case OP_DUP1ROT4: js_dup1rot4(J); break;
 
 		case OP_NUMBER_0: js_pushnumber(J, 0); break;

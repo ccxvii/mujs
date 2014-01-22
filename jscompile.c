@@ -242,8 +242,17 @@ static void cassign(JF, js_Ast *lhs, js_Ast *rhs)
 	}
 }
 
-static void cassignloop(JF, js_Ast *lhs)
+static void cassignforin(JF, js_Ast *stm)
 {
+	js_Ast *lhs = stm->a;
+
+	if (stm->type == STM_FOR_IN_VAR) {
+		if (lhs->b)
+			jsC_error(J, lhs->b, "more than one loop variable in for-in statement");
+		emitstring(J, F, OP_SETVAR, lhs->a->a->string); /* list(var-init(ident)) */
+		return;
+	}
+
 	switch (lhs->type) {
 	case AST_IDENTIFIER:
 		emitstring(J, F, OP_SETVAR, lhs->string);
@@ -261,7 +270,7 @@ static void cassignloop(JF, js_Ast *lhs)
 		emit(J, F, OP_SETPROP);
 		break;
 	default:
-		jsC_error(J, lhs, "invalid l-value in assignment");
+		jsC_error(J, lhs, "invalid l-value in for-in loop assignment");
 		break;
 	}
 }
@@ -616,6 +625,38 @@ static js_Ast *continuetarget(JF, js_Ast *node, const char *label)
 	return NULL;
 }
 
+static js_Ast *returntarget(JF, js_Ast *node)
+{
+	while (node) {
+		if (node->type == AST_FUNDEC || node->type == EXP_FUN)
+			return node;
+		node = node->parent;
+	}
+	return NULL;
+}
+
+/* Emit code to rebalance stack and scopes during an abrupt exit */
+
+static void cexit(JF, js_AstType T, js_Ast *node, js_Ast *target)
+{
+	do {
+		node = node->parent;
+		switch (node->type) {
+		case STM_WITH:
+			emit(J, F, OP_ENDWITH);
+			break;
+		case STM_FOR_IN:
+		case STM_FOR_IN_VAR:
+			/* pop the object and name pair we are iterating over if leaving the loop */
+			if (T == STM_RETURN || T == STM_THROW)
+				emit(J, F, OP_ROT3POP2); /* save the return / exception value */
+			if (T == STM_BREAK)
+				emit(J, F, OP_POP2);
+			break;
+		}
+	} while (node != target);
+}
+
 /* Statements */
 
 static void cstm(JF, js_Ast *stm)
@@ -702,13 +743,7 @@ static void cstm(JF, js_Ast *stm)
 		loop = here(J, F);
 		emit(J, F, OP_NEXTPROP);
 		end = jump(J, F, OP_JFALSE);
-		if (stm->type == STM_FOR_IN_VAR) {
-			if (stm->a->b)
-				jsC_error(J, stm->a->b, "more than one loop variable in for-in statement");
-			emitstring(J, F, OP_SETVAR, stm->a->a->a->string); /* stm(list(var-init(ident))) */
-		} else {
-			cassignloop(J, F, stm->a);
-		}
+		cassignforin(J, F, stm);
 		cstm(J, F, stm->c);
 		jumpto(J, F, OP_JUMP, loop);
 		label(J, F, end);
@@ -740,6 +775,7 @@ static void cstm(JF, js_Ast *stm)
 			if (!stm->target)
 				jsC_error(J, stm, "unlabelled break must be inside loop or switch");
 		}
+		cexit(J, F, STM_BREAK, stm, stm->target);
 		stm->inst = jump(J, F, OP_JUMP);
 		break;
 
@@ -753,6 +789,7 @@ static void cstm(JF, js_Ast *stm)
 			if (!stm->target)
 				jsC_error(J, stm, "continue must be inside loop");
 		}
+		cexit(J, F, STM_CONTINUE, stm, stm->target);
 		stm->inst = jump(J, F, OP_JUMP);
 		break;
 
@@ -761,6 +798,10 @@ static void cstm(JF, js_Ast *stm)
 			cexp(J, F, stm->a);
 		else
 			emit(J, F, OP_UNDEF);
+		stm->target = returntarget(J, F, stm);
+		if (!stm->target)
+			jsC_error(J, stm, "return not in function");
+		cexit(J, F, STM_RETURN, stm, stm->target);
 		emit(J, F, OP_RETURN);
 		break;
 
