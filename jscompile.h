@@ -74,6 +74,7 @@ enum
 
 	OP_THROW,
 	OP_TRY,
+	OP_ENDTRY,
 	OP_CATCH,
 	OP_ENDCATCH,
 	OP_WITH,

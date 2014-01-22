@@ -118,7 +118,7 @@ struct js_Ast
 {
 	int type;
 	int line;
-	js_Ast *parent, *a, *b, *c, *d;
+	js_Ast *parent, *target, *a, *b, *c, *d;
 	double number;
 	const char *string;
 	int inst; /* for patching jumps */

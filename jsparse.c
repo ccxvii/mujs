@@ -80,6 +80,18 @@ static js_Ast *jsP_newnode(js_State *J, int type, js_Ast *a, js_Ast *b, js_Ast *
 	return node;
 }
 
+static js_Ast *jsP_list(js_Ast *head)
+{
+	/* set parent pointers in list nodes */
+	js_Ast *prev = head, *node = head->b;
+	while (node) {
+		node->parent = prev;
+		prev = node;
+		node = node->b;
+	}
+	return head;
+}
+
 static js_Ast *jsP_newstrnode(js_State *J, int type, const char *s)
 {
 	js_Ast *node = jsP_newnode(J, type, 0, 0, 0, 0);
@@ -206,7 +218,7 @@ static js_Ast *arrayliteral(js_State *J)
 		if (J->lookahead != ']')
 			tail = tail->b = LIST(arrayelement(J));
 	}
-	return head;
+	return jsP_list(head);
 }
 
 static js_Ast *propname(js_State *J)
@@ -264,7 +276,7 @@ static js_Ast *objectliteral(js_State *J)
 			break;
 		tail = tail->b = LIST(propassign(J));
 	}
-	return head;
+	return jsP_list(head);
 }
 
 /* Functions */
@@ -278,7 +290,7 @@ static js_Ast *parameters(js_State *J)
 	while (accept(J, ',')) {
 		tail = tail->b = LIST(identifier(J));
 	}
-	return head;
+	return jsP_list(head);
 }
 
 static js_Ast *fundec(js_State *J)
@@ -364,7 +376,7 @@ static js_Ast *arguments(js_State *J)
 	while (accept(J, ',')) {
 		tail = tail->b = LIST(assignment(J, 0));
 	}
-	return head;
+	return jsP_list(head);
 }
 
 static js_Ast *newexp(js_State *J)
@@ -576,7 +588,7 @@ static js_Ast *vardeclist(js_State *J, int notin)
 	head = tail = LIST(vardec(J, notin));
 	while (accept(J, ','))
 		tail = tail->b = LIST(vardec(J, notin));
-	return head;
+	return jsP_list(head);
 }
 
 static js_Ast *statementlist(js_State *J)
@@ -587,7 +599,7 @@ static js_Ast *statementlist(js_State *J)
 	head = tail = LIST(statement(J));
 	while (J->lookahead != '}' && J->lookahead != TK_CASE && J->lookahead != TK_DEFAULT)
 		tail = tail->b = LIST(statement(J));
-	return head;
+	return jsP_list(head);
 }
 
 static js_Ast *caseclause(js_State *J)
@@ -619,7 +631,7 @@ static js_Ast *caselist(js_State *J)
 	head = tail = LIST(caseclause(J));
 	while (J->lookahead != '}')
 		tail = tail->b = LIST(caseclause(J));
-	return head;
+	return jsP_list(head);
 }
 
 static js_Ast *block(js_State *J)
@@ -844,7 +856,7 @@ static js_Ast *script(js_State *J)
 	head = tail = LIST(scriptelement(J));
 	while (J->lookahead != '}' && J->lookahead != 0)
 		tail = tail->b = LIST(scriptelement(J));
-	return head;
+	return jsP_list(head);
 }
 
 static js_Ast *funbody(js_State *J)
