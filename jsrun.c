@@ -344,6 +344,7 @@ static js_Property *js_setvar(js_State *J, const char *name)
 static void jsR_callfunction(js_State *J, int n, js_Function *F, js_Environment *scope)
 {
 	js_Environment *saveE;
+	js_Value v;
 	int i;
 
 	saveE = J->E;
@@ -357,16 +358,21 @@ static void jsR_callfunction(js_State *J, int n, js_Function *F, js_Environment 
 	js_pop(J, n);
 
 	jsR_run(J, F);
-	js_rot3pop2(J);
+	v = js_tovalue(J, -1);
+	TOP = --BOT; /* clear stack */
+	js_pushvalue(J, v);
 
 	J->E = saveE;
 }
 
 static void jsR_callscript(js_State *J, int n, js_Function *F)
 {
+	js_Value v;
 	js_pop(J, n);
 	jsR_run(J, F);
-	js_rot3pop2(J);
+	v = js_tovalue(J, -1);
+	TOP = --BOT; /* clear stack */
+	js_pushvalue(J, v);
 }
 
 static void jsR_callcfunction(js_State *J, int n, js_CFunction F)
@@ -374,10 +380,10 @@ static void jsR_callcfunction(js_State *J, int n, js_CFunction F)
 	int rv = F(J, n);
 	if (rv) {
 		js_Value v = js_tovalue(J, -1);
-		TOP = --BOT; /* pop down to below function */
+		TOP = --BOT; /* clear stack */
 		js_pushvalue(J, v);
 	} else {
-		TOP = --BOT; /* pop down to below function */
+		TOP = --BOT; /* clear stack */
 		js_pushundefined(J);
 	}
 }

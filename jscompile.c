@@ -568,15 +568,23 @@ static void cexp(JF, js_Ast *exp)
 
 /* Patch break and continue statements */
 
-static void labelexit(JF, js_Ast *top, js_Ast *node, js_AstType T, int addr)
+static void addjump(JF, js_AstType type, js_Ast *target, int inst)
 {
-	if (node->type == T && node->target == top) {
-		labelto(J, F, node->inst, addr);
-	} else if (node->type >= STM_BLOCK || node->type == AST_LIST) {
-		if (node->a) labelexit(J, F, top, node->a, T, addr);
-		if (node->b) labelexit(J, F, top, node->b, T, addr);
-		if (node->c) labelexit(J, F, top, node->c, T, addr);
-		if (node->d) labelexit(J, F, top, node->d, T, addr);
+	js_JumpList *jump = malloc(sizeof *jump);
+	jump->type = type;
+	jump->inst = inst;
+	jump->next = target->jumps;
+	target->jumps = jump;
+}
+
+static void labeljumps(JF, js_JumpList *jump, int baddr, int caddr)
+{
+	while (jump) {
+		if (jump->type == STM_BREAK)
+			labelto(J, F, jump->inst, baddr);
+		if (jump->type == STM_CONTINUE)
+			labelto(J, F, jump->inst, caddr);
+		jump = jump->next;
 	}
 }
 
@@ -640,8 +648,9 @@ static js_Ast *returntarget(JF, js_Ast *node)
 
 static void cexit(JF, js_AstType T, js_Ast *node, js_Ast *target)
 {
+	js_Ast *prev;
 	do {
-		node = node->parent;
+		prev = node, node = node->parent;
 		switch (node->type) {
 		case STM_WITH:
 			emit(J, F, OP_ENDWITH);
@@ -653,6 +662,18 @@ static void cexit(JF, js_AstType T, js_Ast *node, js_Ast *target)
 				emit(J, F, OP_ROT3POP2); /* save the return value */
 			if (T == STM_BREAK)
 				emit(J, F, OP_POP2);
+			break;
+		case STM_TRY:
+			/* came from try block */
+			if (prev == node->a) {
+				emit(J, F, OP_ENDTRY);
+				if (node->d) cstm(J, F, node->d); /* finally */
+			}
+			/* came from catch block */
+			if (prev == node->c) {
+				emit(J, F, OP_ENDCATCH);
+				if (node->d) cstm(J, F, node->d); /* finally */
+			}
 			break;
 		}
 	} while (node != target);
@@ -727,6 +748,7 @@ static void ctrycatchfinally(JF, js_Ast *trystm, js_Ast *catchvar, js_Ast *catch
 
 static void cstm(JF, js_Ast *stm)
 {
+	js_Ast *target;
 	int loop, cont, then, end;
 
 	switch (stm->type) {
@@ -766,8 +788,7 @@ static void cstm(JF, js_Ast *stm)
 		cstm(J, F, stm->a);
 		cexp(J, F, stm->b);
 		jumpto(J, F, OP_JTRUE, loop);
-		labelexit(J, F, stm, stm->a, STM_CONTINUE, loop);
-		labelexit(J, F, stm, stm->a, STM_BREAK, here(J, F));
+		labeljumps(J, F, stm->jumps, here(J,F), loop);
 		break;
 
 	case STM_WHILE:
@@ -777,8 +798,7 @@ static void cstm(JF, js_Ast *stm)
 		cstm(J, F, stm->b);
 		jumpto(J, F, OP_JUMP, loop);
 		label(J, F, end);
-		labelexit(J, F, stm, stm->b, STM_CONTINUE, loop);
-		labelexit(J, F, stm, stm->b, STM_BREAK, here(J, F));
+		labeljumps(J, F, stm->jumps, here(J,F), loop);
 		break;
 
 	case STM_FOR:
@@ -806,8 +826,7 @@ static void cstm(JF, js_Ast *stm)
 		if (stm->b)
 			label(J, F, end);
 		printf("labeling for statement: %d %d\n", cont, here(J,F));
-		labelexit(J, F, stm, stm->d, STM_CONTINUE, cont);
-		labelexit(J, F, stm, stm->d, STM_BREAK, here(J, F));
+		labeljumps(J, F, stm->jumps, here(J,F), cont);
 		break;
 
 	case STM_FOR_IN:
@@ -821,8 +840,7 @@ static void cstm(JF, js_Ast *stm)
 		cstm(J, F, stm->c);
 		jumpto(J, F, OP_JUMP, loop);
 		label(J, F, end);
-		labelexit(J, F, stm, stm->c, STM_CONTINUE, loop);
-		labelexit(J, F, stm, stm->c, STM_BREAK, here(J, F));
+		labeljumps(J, F, stm->jumps, here(J,F), loop);
 		break;
 
 	case STM_LABEL:
@@ -831,40 +849,36 @@ static void cstm(JF, js_Ast *stm)
 		while (stm->type == STM_LABEL)
 			stm = stm->b;
 		/* loops and switches have already been labelled */
-		if (!isloop(stm->type) && stm->type != STM_SWITCH) {
-			if (stm->a) labelexit(J, F, stm, stm->a, STM_BREAK, here(J, F));
-			if (stm->b) labelexit(J, F, stm, stm->b, STM_BREAK, here(J, F));
-			if (stm->c) labelexit(J, F, stm, stm->c, STM_BREAK, here(J, F));
-			if (stm->d) labelexit(J, F, stm, stm->d, STM_BREAK, here(J, F));
-		}
+		if (!isloop(stm->type) && stm->type != STM_SWITCH)
+			labeljumps(J, F, stm->jumps, here(J,F), 0);
 		break;
 
 	case STM_BREAK:
 		if (stm->a) {
-			stm->target = breaktarget(J, F, stm, stm->a->string);
-			if (!stm->target)
+			target = breaktarget(J, F, stm, stm->a->string);
+			if (!target)
 				jsC_error(J, stm, "break label not found: %s", stm->a->string);
 		} else {
-			stm->target = breaktarget(J, F, stm, NULL);
-			if (!stm->target)
+			target = breaktarget(J, F, stm, NULL);
+			if (!target)
 				jsC_error(J, stm, "unlabelled break must be inside loop or switch");
 		}
-		cexit(J, F, STM_BREAK, stm, stm->target);
-		stm->inst = jump(J, F, OP_JUMP);
+		cexit(J, F, STM_BREAK, stm, target);
+		addjump(J, F, STM_BREAK, target, jump(J, F, OP_JUMP));
 		break;
 
 	case STM_CONTINUE:
 		if (stm->a) {
-			stm->target = continuetarget(J, F, stm, stm->a->string);
-			if (!stm->target)
+			target = continuetarget(J, F, stm, stm->a->string);
+			if (!target)
 				jsC_error(J, stm, "continue label not found: %s", stm->a->string);
 		} else {
-			stm->target = continuetarget(J, F, stm, NULL);
-			if (!stm->target)
+			target = continuetarget(J, F, stm, NULL);
+			if (!target)
 				jsC_error(J, stm, "continue must be inside loop");
 		}
-		cexit(J, F, STM_CONTINUE, stm, stm->target);
-		stm->inst = jump(J, F, OP_JUMP);
+		cexit(J, F, STM_CONTINUE, stm, target);
+		addjump(J, F, STM_CONTINUE, target, jump(J, F, OP_JUMP));
 		break;
 
 	case STM_RETURN:
@@ -872,10 +886,10 @@ static void cstm(JF, js_Ast *stm)
 			cexp(J, F, stm->a);
 		else
 			emit(J, F, OP_UNDEF);
-		stm->target = returntarget(J, F, stm);
-		if (!stm->target)
+		target = returntarget(J, F, stm);
+		if (!target)
 			jsC_error(J, stm, "return not in function");
-		cexit(J, F, STM_RETURN, stm, stm->target);
+		cexit(J, F, STM_RETURN, stm, target);
 		emit(J, F, OP_RETURN);
 		break;
 

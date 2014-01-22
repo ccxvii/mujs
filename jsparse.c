@@ -66,7 +66,7 @@ static js_Ast *jsP_newnode(js_State *J, int type, js_Ast *a, js_Ast *b, js_Ast *
 	node->d = d;
 	node->number = 0;
 	node->string = NULL;
-	node->inst = 0;
+	node->jumps = NULL;
 
 	node->parent = NULL;
 	if (a) a->parent = node;
@@ -106,11 +106,21 @@ static js_Ast *jsP_newnumnode(js_State *J, int type, double n)
 	return node;
 }
 
+static void jsP_freejumps(js_State *J, js_JumpList *node)
+{
+	while (node) {
+		js_JumpList *next = node->next;
+		free(node);
+		node = next;
+	}
+}
+
 void jsP_freeparse(js_State *J)
 {
 	js_Ast *node = J->gcast;
 	while (node) {
 		js_Ast *next = node->gcnext;
+		jsP_freejumps(J, node->jumps);
 		free(node);
 		node = next;
 	}

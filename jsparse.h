@@ -114,14 +114,23 @@ enum js_AstType
 	STM_DEFAULT,
 };
 
+typedef struct js_JumpList js_JumpList;
+
+struct js_JumpList
+{
+	js_AstType type;
+	int inst;
+	js_JumpList *next;
+};
+
 struct js_Ast
 {
 	int type;
 	int line;
-	js_Ast *parent, *target, *a, *b, *c, *d;
+	js_Ast *parent, *a, *b, *c, *d;
 	double number;
 	const char *string;
-	int inst; /* for patching jumps */
+	js_JumpList *jumps; /* list of break/continue jumps to patch */
 	js_Ast *gcnext; /* next in alloc list */
 };
 
