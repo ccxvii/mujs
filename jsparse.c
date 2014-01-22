@@ -848,13 +848,13 @@ static js_Ast *scriptelement(js_State *J)
 	return statement(J);
 }
 
-static js_Ast *script(js_State *J)
+static js_Ast *script(js_State *J, int terminator)
 {
 	js_Ast *head, *tail;
-	if (J->lookahead == '}' || J->lookahead == 0)
+	if (J->lookahead == terminator)
 		return NULL;
 	head = tail = LIST(scriptelement(J));
-	while (J->lookahead != '}' && J->lookahead != 0)
+	while (J->lookahead != terminator)
 		tail = tail->b = LIST(scriptelement(J));
 	return jsP_list(head);
 }
@@ -863,7 +863,7 @@ static js_Ast *funbody(js_State *J)
 {
 	js_Ast *a;
 	expect(J, '{');
-	a = script(J);
+	a = script(J, '}');
 	expect(J, '}');
 	return a;
 }
@@ -949,7 +949,7 @@ js_Ast *jsP_parse(js_State *J, const char *filename, const char *source)
 
 	jsY_initlex(J, filename, source);
 	next(J);
-	p = script(J);
+	p = script(J, 0);
 	if (p)
 		jsP_foldconst(p);
 
