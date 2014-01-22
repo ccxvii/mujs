@@ -11,6 +11,7 @@ JS_NORETURN int jsC_error(js_State *J, js_Ast *node, const char *fmt, ...) JS_PR
 static void cfunbody(JF, js_Ast *name, js_Ast *params, js_Ast *body);
 static void cexp(JF, js_Ast *exp);
 static void cstmlist(JF, js_Ast *list);
+static void cstm(JF, js_Ast *stm);
 
 int jsC_error(js_State *J, js_Ast *node, const char *fmt, ...)
 {
@@ -648,13 +649,78 @@ static void cexit(JF, js_AstType T, js_Ast *node, js_Ast *target)
 		case STM_FOR_IN:
 		case STM_FOR_IN_VAR:
 			/* pop the object and name pair we are iterating over if leaving the loop */
-			if (T == STM_RETURN || T == STM_THROW)
-				emit(J, F, OP_ROT3POP2); /* save the return / exception value */
+			if (T == STM_RETURN)
+				emit(J, F, OP_ROT3POP2); /* save the return value */
 			if (T == STM_BREAK)
 				emit(J, F, OP_POP2);
 			break;
 		}
 	} while (node != target);
+}
+
+/* Try/catch/finally */
+
+static void ctryfinally(JF, js_Ast *trystm, js_Ast *finallystm)
+{
+	int L1;
+	L1 = jump(J, F, OP_TRY);
+	{
+		/* if we get here, we have caught an exception in the try block */
+		cstm(J, F, finallystm); /* inline finally block */
+		emit(J, F, OP_THROW); /* rethrow exception */
+	}
+	label(J, F, L1);
+	cstm(J, F, trystm);
+	emit(J, F, OP_ENDTRY);
+	cstm(J, F, finallystm);
+}
+
+static void ctrycatch(JF, js_Ast *trystm, js_Ast *catchvar, js_Ast *catchstm)
+{
+	int L1, L2, L3;
+	L1 = jump(J, F, OP_TRY);
+	{
+		/* if we get here, we have caught an exception in the try block */
+		L2 = jump(J, F, OP_CATCH);
+		emit(J, F, addstring(J, F, catchvar->string));
+		{
+			/* if we get here, we have caught an exception in the catch block */
+			emit(J, F, OP_THROW); /* rethrow exception */
+		}
+		label(J, F, L2);
+		cstm(J, F, catchstm);
+		emit(J, F, OP_ENDCATCH);
+		L3 = jump(J, F, OP_JUMP); /* skip past the try block */
+	}
+	label(J, F, L1);
+	cstm(J, F, trystm);
+	emit(J, F, OP_ENDTRY);
+	label(J, F, L3);
+}
+
+static void ctrycatchfinally(JF, js_Ast *trystm, js_Ast *catchvar, js_Ast *catchstm, js_Ast *finallystm)
+{
+	int L1, L2, L3;
+	L1 = jump(J, F, OP_TRY);
+	{
+		/* if we get here, we have caught an exception in the try block */
+		L2 = jump(J, F, OP_CATCH);
+		emit(J, F, addstring(J, F, catchvar->string));
+		{
+			/* if we get here, we have caught an exception in the catch block */
+			cstm(J, F, finallystm); /* inline finally block */
+			emit(J, F, OP_THROW); /* rethrow exception */
+		}
+		label(J, F, L2);
+		cstm(J, F, catchstm);
+		emit(J, F, OP_ENDCATCH);
+		L3 = jump(J, F, OP_JUMP); /* skip past the try block to the finally block */
+	}
+	label(J, F, L1);
+	cstm(J, F, trystm);
+	emit(J, F, OP_ENDTRY);
+	label(J, F, L3);
+	cstm(J, F, finallystm);
 }
 
 /* Statements */
@@ -805,6 +871,11 @@ static void cstm(JF, js_Ast *stm)
 		emit(J, F, OP_RETURN);
 		break;
 
+	case STM_THROW:
+		cexp(J, F, stm->a);
+		emit(J, F, OP_THROW);
+		break;
+
 	case STM_WITH:
 		cexp(J, F, stm->a);
 		emit(J, F, OP_WITH);
@@ -814,12 +885,16 @@ static void cstm(JF, js_Ast *stm)
 
 	// switch
 
-	case STM_THROW:
-		cexp(J, F, stm->a);
-		emit(J, F, OP_THROW);
+	case STM_TRY:
+		if (stm->b && stm->c) {
+			if (stm->d)
+				ctrycatchfinally(J, F, stm->a, stm->b, stm->c, stm->d);
+			else
+				ctrycatch(J, F, stm->a, stm->b, stm->c);
+		} else {
+			ctryfinally(J, F, stm->a, stm->d);
+		}
 		break;
-
-	// try
 
 	case STM_DEBUGGER:
 		emit(J, F, OP_DEBUGGER);

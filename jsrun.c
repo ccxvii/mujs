@@ -201,6 +201,13 @@ void js_rot3(js_State *J)
 	STACK[TOP-3] = tmp;		/* C A B */
 }
 
+void js_rot2pop1(js_State *J)
+{
+	/* A B -> B */
+	STACK[TOP-2] = STACK[TOP-1];
+	--TOP;
+}
+
 void js_rot3pop2(js_State *J)
 {
 	/* A B C -> C */
@@ -766,6 +773,46 @@ static void jsR_run(js_State *J, js_Function *F)
 			iy = js_toint32(J, -1);
 			js_pop(J, 2);
 			js_pushnumber(J, ix | iy);
+			break;
+
+		/* Try and Catch */
+
+		case OP_THROW:
+			js_throw(J);
+			break;
+
+		case OP_TRY:
+			offset = *pc++;
+			if (js_trypc(J, pc)) {
+				pc = J->trybuf[J->trylen].pc;
+			} else {
+				pc = pcstart + offset;
+			}
+			break;
+
+		case OP_ENDTRY:
+			js_endtry(J);
+			break;
+
+		case OP_CATCH:
+			offset = *pc++;
+			str = ST[*pc++];
+			if (js_trypc(J, pc)) {
+				pc = J->trybuf[J->trylen].pc;
+			} else {
+				obj = jsV_newobject(J, JS_COBJECT, NULL);
+				js_pushobject(J, obj);
+				js_rot2(J);
+				js_setproperty(J, -2, str);
+				J->E = jsR_newenvironment(J, obj, J->E);
+				js_pop(J, 1);
+				pc = pcstart + offset;
+			}
+			break;
+
+		case OP_ENDCATCH:
+			js_endtry(J);
+			J->E = J->E->outer;
 			break;
 
 		/* With */

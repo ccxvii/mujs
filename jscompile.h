@@ -75,9 +75,11 @@ enum
 	OP_INSTANCEOF,
 
 	OP_THROW,
-	OP_TRY,
+
+	OP_TRY,		/* -ADDR- /jump/ or -ADDR- <exception> */
 	OP_ENDTRY,
-	OP_CATCH,
+
+	OP_CATCH,	/* -ADDR,S- /jump/ or -ADDR,S- <exception> */
 	OP_ENDCATCH,
 	OP_WITH,
 	OP_ENDWITH,

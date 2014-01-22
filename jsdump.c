@@ -658,7 +658,13 @@ void jsC_dumpfunction(js_State *J, js_Function *F)
 		case OP_JUMP:
 		case OP_JTRUE:
 		case OP_JFALSE:
+		case OP_TRY:
 			printf(" %d", *p++);
+			break;
+		case OP_CATCH:
+			printf(" %d", *p++);
+			pc(' ');
+			ps(F->strtab[*p++]);
 			break;
 		}
 
@@ -698,8 +704,8 @@ void js_dumpvalue(js_State *J, js_Value v)
 				v.u.object->u.f.function->filename,
 				v.u.object->u.f.function->line);
 			break;
-		case JS_CSCRIPT: printf("[Function %s]", v.u.object->u.f.function->filename); break;
-		case JS_CCFUNCTION: printf("[Function %p]", v.u.object->u.c.function); break;
+		case JS_CSCRIPT: printf("[Script %s]", v.u.object->u.f.function->filename); break;
+		case JS_CCFUNCTION: printf("[CFunction %p]", v.u.object->u.c.function); break;
 		case JS_CBOOLEAN: printf("[Boolean %d]", v.u.object->u.boolean); break;
 		case JS_CNUMBER: printf("[Number %g]", v.u.object->u.number); break;
 		case JS_CSTRING: printf("[String'%s']", v.u.object->u.string); break;
