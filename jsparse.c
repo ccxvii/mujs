@@ -945,24 +945,13 @@ static int jsP_foldconst(js_Ast *node)
 
 js_Ast *jsP_parse(js_State *J, const char *filename, const char *source)
 {
-	js_Ast *p, *last;
+	js_Ast *p;
 
 	jsY_initlex(J, filename, source);
-
 	next(J);
 	p = script(J);
-
 	if (p)
 		jsP_foldconst(p);
-
-	/* patch up global and eval code to return value of last expression */
-	last = p;
-	if (last) {
-		while (last->b)
-			last = last->b;
-		if (last->a->type >= AST_IDENTIFIER && last->a->type < STM_BLOCK)
-			last->a = STM1(RETURN, last->a);
-	}
 
 	return p;
 }
