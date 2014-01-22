@@ -744,6 +744,48 @@ static void ctrycatchfinally(JF, js_Ast *trystm, js_Ast *catchvar, js_Ast *catch
 	cstm(J, F, finallystm);
 }
 
+/* Switch */
+
+static void cswitch(JF, js_Ast *ref, js_Ast *head)
+{
+	js_Ast *node, *clause, *def = NULL;
+	int end;
+
+	cexp(J, F, ref);
+
+	/* emit an if-else chain of tests for the case clause expressions */
+	for (node = head; node; node = node->b) {
+		clause = node->a;
+		if (clause->type == STM_DEFAULT) {
+			if (def)
+				jsC_error(J, clause, "more than one default label in switch");
+			def = clause;
+		} else {
+			emit(J, F, OP_DUP);
+			cexp(J, F, clause->a);
+			emit(J, F, OP_STRICTEQ);
+			clause->casejump = jump(J, F, OP_JTRUE);
+		}
+	}
+	if (def)
+		def->casejump = jump(J, F, OP_JUMP);
+	else
+		end = jump(J, F, OP_JUMP);
+
+	/* emit the casue clause bodies */
+	for (node = head; node; node = node->b) {
+		clause = node->a;
+		label(J, F, clause->casejump);
+		if (clause->type == STM_DEFAULT)
+			cstmlist(J, F, clause->a);
+		else
+			cstmlist(J, F, clause->b);
+	}
+
+	if (!def)
+		label(J, F, end);
+}
+
 /* Statements */
 
 static void cstm(JF, js_Ast *stm)
@@ -843,6 +885,11 @@ static void cstm(JF, js_Ast *stm)
 		labeljumps(J, F, stm->jumps, here(J,F), loop);
 		break;
 
+	case STM_SWITCH:
+		cswitch(J, F, stm->a, stm->b);
+		labeljumps(J, F, stm->jumps, here(J,F), 0);
+		break;
+
 	case STM_LABEL:
 		cstm(J, F, stm->b);
 		/* skip consecutive labels */
@@ -904,8 +951,6 @@ static void cstm(JF, js_Ast *stm)
 		cstm(J, F, stm->b);
 		emit(J, F, OP_ENDWITH);
 		break;
-
-	// switch
 
 	case STM_TRY:
 		if (stm->b && stm->c) {

@@ -67,6 +67,7 @@ static js_Ast *jsP_newnode(js_State *J, int type, js_Ast *a, js_Ast *b, js_Ast *
 	node->number = 0;
 	node->string = NULL;
 	node->jumps = NULL;
+	node->casejump = 0;
 
 	node->parent = NULL;
 	if (a) a->parent = node;

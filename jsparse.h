@@ -131,6 +131,7 @@ struct js_Ast
 	double number;
 	const char *string;
 	js_JumpList *jumps; /* list of break/continue jumps to patch */
+	int casejump; /* for switch case clauses */
 	js_Ast *gcnext; /* next in alloc list */
 };
 
