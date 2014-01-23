@@ -85,9 +85,7 @@ void js_setglobal(js_State *J, const char *name);
 void js_getownproperty(js_State *J, int idx, const char *name);
 void js_getproperty(js_State *J, int idx, const char *name);
 void js_setproperty(js_State *J, int idx, const char *name);
-void js_cfgproperty(js_State *J, int idx, const char *name, int atts);
 void js_delproperty(js_State *J, int idx, const char *name);
-int js_nextproperty(js_State *J, int idx);
 
 void js_pushglobal(js_State *J);
 void js_pushundefined(js_State *J);

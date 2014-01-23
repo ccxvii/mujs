@@ -282,19 +282,6 @@ void js_setproperty(js_State *J, int idx, const char *name)
 	js_pop(J, 1);
 }
 
-int js_nextproperty(js_State *J, int idx)
-{
-	js_Object *obj = js_toobject(J, idx);
-	js_Property *ref = jsV_nextproperty(J, obj, js_tostring(J, -1));
-	js_pop(J, 1);
-	if (ref) {
-		js_pushliteral(J, ref->name);
-		js_pushvalue(J, ref->value);
-		return 1;
-	}
-	return 0;
-}
-
 /* Environment records */
 
 js_Environment *jsR_newenvironment(js_State *J, js_Object *vars, js_Environment *outer)
@@ -537,6 +524,7 @@ static void jsR_run(js_State *J, js_Function *F)
 		case OP_DUP2: js_dup2(J); break;
 		case OP_ROT2: js_rot2(J); break;
 		case OP_ROT3: js_rot3(J); break;
+		case OP_ROT2POP1: js_rot2pop1(J); break;
 		case OP_ROT3POP2: js_rot3pop2(J); break;
 		case OP_DUP1ROT4: js_dup1rot4(J); break;
 
@@ -619,25 +607,20 @@ static void jsR_run(js_State *J, js_Function *F)
 
 		// OP_DELPROP
 
-		case OP_NEXTPROP:
-			obj = js_toobject(J, -2);
-			if (js_isundefined(J, -1))
-				str = NULL;
-			else
-				str = js_tostring(J, -1);
+		case OP_ITERATOR:
+			obj = jsV_newiterator(J, js_toobject(J, -1));
+			js_pop(J, 1);
+			js_pushobject(J, obj);
+			break;
 
-			ref = jsV_nextproperty(J, obj, str);
-			if (!ref && obj->prototype) {
-				obj = obj->prototype;
-				ref = jsV_nextproperty(J, obj, NULL);
-			}
-
-			js_pop(J, 2);
-			if (ref) {
-				js_pushobject(J, obj);
-				js_pushliteral(J, ref->name);
+		case OP_NEXTITER:
+			obj = js_toobject(J, -1);
+			str = jsV_nextiterator(J, obj);
+			if (str) {
+				js_pushliteral(J, str);
 				js_pushboolean(J, 1);
 			} else {
+				js_pop(J, 1);
 				js_pushboolean(J, 0);
 			}
 			break;

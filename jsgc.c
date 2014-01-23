@@ -27,10 +27,21 @@ static void jsG_freeproperty(js_State *J, js_Property *node)
 	free(node);
 }
 
+static void jsG_freeiterator(js_State *J, js_Iterator *node)
+{
+	while (node) {
+		js_Iterator *next = node->next;
+		free(node);
+		node = next;
+	}
+}
+
 static void jsG_freeobject(js_State *J, js_Object *obj)
 {
 	if (obj->properties->level)
 		jsG_freeproperty(J, obj->properties);
+	if (obj->type == JS_CITERATOR)
+		jsG_freeiterator(J, obj->u.iterator.head);
 	free(obj);
 }
 

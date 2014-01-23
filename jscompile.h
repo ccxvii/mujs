@@ -11,6 +11,7 @@ enum js_OpCode
 	OP_DUP2,	/* A B -- A B A B */
 	OP_ROT2,	/* A B -- B A */
 	OP_ROT3,	/* A B C -- C A B */
+	OP_ROT2POP1,	/* A B -- B */
 	OP_ROT3POP2,	/* A B C -- C */
 	OP_DUP1ROT4,	/* A B C -- C A B C */
 
@@ -43,7 +44,9 @@ enum js_OpCode
 	OP_GETPROP,	/* <obj> <name> -- <value> */
 	OP_SETPROP,	/* <obj> <name> <value> -- <value> */
 	OP_DELPROP,	/* <obj> <name> -- <success> */
-	OP_NEXTPROP,	/* <obj> <name> -- <obj> <name+1> true || false */
+
+	OP_ITERATOR,	/* <obj> -- <iobj> */
+	OP_NEXTITER,	/* <iobj> -- <iobj> <name> true || false */
 
 	OP_CALL,	/* <closure> <this> <args...> -(numargs)- <returnvalue> */
 	OP_NEW,		/* <closure> <args...> -(numargs)- <returnvalue> */

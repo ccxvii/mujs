@@ -36,6 +36,7 @@ static int Op_toString(js_State *J, int argc)
 	case JS_CREGEXP: js_pushliteral(J, "[object RegExp]"); break;
 	case JS_CDATE: js_pushliteral(J, "[object Date]"); break;
 	case JS_CMATH: js_pushliteral(J, "[object Math]"); break;
+	case JS_CITERATOR: js_pushliteral(J, "[Iterator]"); break;
 	default: return 0;
 	}
 	return 1;

@@ -5,6 +5,7 @@ typedef enum js_Type js_Type;
 typedef enum js_Class js_Class;
 
 typedef struct js_Property js_Property;
+typedef struct js_Iterator js_Iterator;
 
 enum js_Type {
 	JS_TUNDEFINED,
@@ -28,6 +29,7 @@ enum js_Class {
 	JS_CREGEXP,
 	JS_CDATE,
 	JS_CMATH,
+	JS_CITERATOR,
 };
 
 struct js_Value
@@ -58,6 +60,10 @@ struct js_Object
 			js_CFunction function;
 			js_CFunction constructor;
 		} c;
+		struct {
+			js_Iterator *head;
+			js_Iterator *next;
+		} iterator;
 	} u;
 	js_Object *gcnext;
 	int gcmark;
@@ -70,6 +76,12 @@ struct js_Property
 	int level;
 	int atts;
 	js_Value value;
+};
+
+struct js_Iterator
+{
+	const char *name;
+	js_Iterator *next;
 };
 
 /* jsrun.c */
@@ -98,6 +110,9 @@ js_Property *jsV_getownproperty(js_State *J, js_Object *obj, const char *name);
 js_Property *jsV_getproperty(js_State *J, js_Object *obj, const char *name);
 js_Property *jsV_setproperty(js_State *J, js_Object *obj, const char *name);
 js_Property *jsV_nextproperty(js_State *J, js_Object *obj, const char *name);
+
+js_Object *jsV_newiterator(js_State *J, js_Object *obj);
+const char *jsV_nextiterator(js_State *J, js_Object *iobj);
 
 /* jsdump.c */
 void js_dumpobject(js_State *J, js_Object *obj);

@@ -253,24 +253,28 @@ static void cassignforin(JF, js_Ast *stm)
 		if (lhs->b)
 			jsC_error(J, lhs->b, "more than one loop variable in for-in statement");
 		emitstring(J, F, OP_SETVAR, lhs->a->a->string); /* list(var-init(ident)) */
+		emit(J, F, OP_POP);
 		return;
 	}
 
 	switch (lhs->type) {
 	case AST_IDENTIFIER:
 		emitstring(J, F, OP_SETVAR, lhs->string);
+		emit(J, F, OP_POP);
 		break;
 	case EXP_INDEX:
 		cexp(J, F, lhs->a);
 		cexp(J, F, lhs->b);
 		emit(J, F, OP_ROT3);
 		emit(J, F, OP_SETPROP);
+		emit(J, F, OP_POP);
 		break;
 	case EXP_MEMBER:
 		cexp(J, F, lhs->a);
 		emitstring(J, F, OP_STRING, lhs->b->string);
 		emit(J, F, OP_ROT3);
 		emit(J, F, OP_SETPROP);
+		emit(J, F, OP_POP);
 		break;
 	default:
 		jsC_error(J, lhs, "invalid l-value in for-in loop assignment");
@@ -646,11 +650,11 @@ static void cexit(JF, js_AstType T, js_Ast *node, js_Ast *target)
 			break;
 		case STM_FOR_IN:
 		case STM_FOR_IN_VAR:
-			/* pop the object and name pair we are iterating over if leaving the loop */
+			/* pop the iterator if leaving the loop */
 			if (T == STM_RETURN)
-				emit(J, F, OP_ROT3POP2); /* save the return value */
+				emit(J, F, OP_ROT2POP1); /* save the return value */
 			if (T == STM_BREAK)
-				emit(J, F, OP_POP2);
+				emit(J, F, OP_POP);
 			break;
 		case STM_TRY:
 			/* came from try block */
@@ -875,13 +879,15 @@ static void cstm(JF, js_Ast *stm)
 	case STM_FOR_IN:
 	case STM_FOR_IN_VAR:
 		cexp(J, F, stm->b);
-		emit(J, F, OP_UNDEF);
+		emit(J, F, OP_ITERATOR);
 		loop = here(J, F);
-		emit(J, F, OP_NEXTPROP);
-		end = jump(J, F, OP_JFALSE);
-		cassignforin(J, F, stm);
-		cstm(J, F, stm->c);
-		jumpto(J, F, OP_JUMP, loop);
+		{
+			emit(J, F, OP_NEXTITER);
+			end = jump(J, F, OP_JFALSE);
+			cassignforin(J, F, stm);
+			cstm(J, F, stm->c);
+			jumpto(J, F, OP_JUMP, loop);
+		}
 		label(J, F, end);
 		labeljumps(J, F, stm->jumps, here(J,F), loop);
 		break;
