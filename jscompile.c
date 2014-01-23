@@ -197,15 +197,18 @@ static void cobject(JF, js_Ast *list)
 		if (kv->type == EXP_PROP_VAL) {
 			js_Ast *prop = kv->a;
 			emit(J, F, OP_DUP);
-			if (prop->type == AST_IDENTIFIER || prop->type == AST_STRING)
-				emitstring(J, F, OP_STRING, prop->string);
-			else if (prop->type == AST_NUMBER)
+			if (prop->type == AST_IDENTIFIER || prop->type == AST_STRING) {
+				cexp(J, F, kv->b);
+				emitstring(J, F, OP_SETPROPS, prop->string);
+				emit(J, F, OP_POP);
+			} else if (prop->type == AST_NUMBER) {
 				emitnumber(J, F, prop->number);
-			else
+				cexp(J, F, kv->b);
+				emit(J, F, OP_SETPROP);
+				emit(J, F, OP_POP);
+			} else {
 				jsC_error(J, list, "illegal property name in object initializer");
-			cexp(J, F, kv->b);
-			emit(J, F, OP_SETPROP);
-			emit(J, F, OP_POP);
+			}
 		} else {
 			// TODO: set/get
 			jsC_error(J, kv, "property setters and getters are not implemented");
@@ -240,9 +243,8 @@ static void cassign(JF, js_Ast *lhs, js_Ast *rhs)
 		break;
 	case EXP_MEMBER:
 		cexp(J, F, lhs->a);
-		emitstring(J, F, OP_STRING, lhs->b->string);
 		cexp(J, F, rhs);
-		emit(J, F, OP_SETPROP);
+		emitstring(J, F, OP_SETPROPS, lhs->b->string);
 		break;
 	default:
 		jsC_error(J, lhs, "invalid l-value in assignment");
@@ -276,9 +278,8 @@ static void cassignforin(JF, js_Ast *stm)
 		break;
 	case EXP_MEMBER:
 		cexp(J, F, lhs->a);
-		emitstring(J, F, OP_STRING, lhs->b->string);
-		emit(J, F, OP_ROT3);
-		emit(J, F, OP_SETPROP);
+		emit(J, F, OP_ROT2);
+		emitstring(J, F, OP_SETPROPS, lhs->b->string);
 		emit(J, F, OP_POP);
 		break;
 	default:
@@ -303,10 +304,9 @@ static void cassignop1(JF, js_Ast *lhs, int dup)
 		break;
 	case EXP_MEMBER:
 		cexp(J, F, lhs->a);
-		emitstring(J, F, OP_STRING, lhs->b->string);
-		emit(J, F, OP_DUP2);
-		emit(J, F, OP_GETPROP);
-		if (dup) emit(J, F, OP_DUP1ROT4);
+		emit(J, F, OP_DUP);
+		emitstring(J, F, OP_GETPROPS, lhs->b->string);
+		if (dup) emit(J, F, OP_DUP1ROT3);
 		break;
 	default:
 		jsC_error(J, lhs, "invalid l-value in assignment");
@@ -321,9 +321,9 @@ static void cassignop2(JF, js_Ast *lhs)
 		emitstring(J, F, OP_SETVAR, lhs->string);
 		break;
 	case EXP_INDEX:
+		break;
 	case EXP_MEMBER:
-	case EXP_CALL:
-		emit(J, F, OP_SETPROP);
+		emitstring(J, F, OP_SETPROPS, lhs->b->string);
 		break;
 	default:
 		jsC_error(J, lhs, "invalid l-value in assignment");
@@ -352,8 +352,7 @@ static void cdelete(JF, js_Ast *exp)
 		break;
 	case EXP_MEMBER:
 		cexp(J, F, exp->a);
-		emitstring(J, F, OP_STRING, exp->b->string);
-		emit(J, F, OP_DELPROP);
+		emitstring(J, F, OP_DELPROPS, exp->b->string);
 		break;
 	default:
 		jsC_error(J, exp, "invalid l-value in delete expression");
@@ -375,8 +374,7 @@ static void ccall(JF, js_Ast *fun, js_Ast *args)
 	case EXP_MEMBER:
 		cexp(J, F, fun->a);
 		emit(J, F, OP_DUP);
-		emitstring(J, F, OP_STRING, fun->b->string);
-		emit(J, F, OP_GETPROP);
+		emitstring(J, F, OP_GETPROPS, fun->b->string);
 		emit(J, F, OP_ROT2);
 		break;
 	default:
@@ -429,8 +427,7 @@ static void cexp(JF, js_Ast *exp)
 
 	case EXP_MEMBER:
 		cexp(J, F, exp->a);
-		emitstring(J, F, OP_STRING, exp->b->string);
-		emit(J, F, OP_GETPROP);
+		emitstring(J, F, OP_GETPROPS, exp->b->string);
 		break;
 
 	case EXP_CALL:

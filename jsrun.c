@@ -215,6 +215,15 @@ void js_rot3pop2(js_State *J)
 	TOP -= 2;
 }
 
+void js_dup1rot3(js_State *J)
+{
+	/* A B -> B A B */
+	STACK[TOP] = STACK[TOP-1];	/* A B B */
+	STACK[TOP-1] = STACK[TOP-2];	/* A A B */
+	STACK[TOP-2] = STACK[TOP];	/* B A B */
+	++TOP;
+}
+
 void js_dup1rot4(js_State *J)
 {
 	/* A B C -> C A B C */
@@ -526,6 +535,7 @@ static void jsR_run(js_State *J, js_Function *F)
 		case OP_ROT3: js_rot3(J); break;
 		case OP_ROT2POP1: js_rot2pop1(J); break;
 		case OP_ROT3POP2: js_rot3pop2(J); break;
+		case OP_DUP1ROT3: js_dup1rot3(J); break;
 		case OP_DUP1ROT4: js_dup1rot4(J); break;
 
 		case OP_NUMBER_0: js_pushnumber(J, 0); break;
@@ -596,6 +606,19 @@ static void jsR_run(js_State *J, js_Function *F)
 				js_pushundefined(J);
 			break;
 
+		case OP_GETPROPS:
+			str = ST[*pc++];
+			js_getproperty(J, -1, str);
+
+			obj = js_toobject(J, -2);
+			ref = jsV_getproperty(J, obj, str);
+			js_pop(J, 2);
+			if (ref)
+				js_pushvalue(J, ref->value);
+			else
+				js_pushundefined(J);
+			break;
+
 		case OP_SETPROP:
 			obj = js_toobject(J, -3);
 			str = js_tostring(J, -2);
@@ -605,7 +628,17 @@ static void jsR_run(js_State *J, js_Function *F)
 			js_rot3pop2(J);
 			break;
 
+		case OP_SETPROPS:
+			str = ST[*pc++];
+			obj = js_toobject(J, -2);
+			ref = jsV_setproperty(J, obj, str);
+			if (ref)
+				ref->value = js_tovalue(J, -1);
+			js_rot2pop1(J);
+			break;
+
 		// OP_DELPROP
+		// OP_DELPROPS
 
 		case OP_ITERATOR:
 			obj = jsV_newiterator(J, js_toobject(J, -1));
