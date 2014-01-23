@@ -96,6 +96,14 @@ int js_iscallable(js_State *J, int idx)
 	return 0;
 }
 
+int js_isiterator(js_State *J, int idx)
+{
+	const js_Value *v = stackidx(J, idx);
+	if (v->type == JS_TOBJECT)
+		return v->u.object->type == JS_CITERATOR;
+	return 0;
+}
+
 static const char *js_typeof(js_State *J, int idx)
 {
 	switch (stackidx(J, idx)->type) {
@@ -662,17 +670,24 @@ static void jsR_run(js_State *J, js_Function *F)
 		// OP_DELPROPS
 
 		case OP_ITERATOR:
-			obj = jsV_newiterator(J, js_toobject(J, -1));
-			js_pop(J, 1);
-			js_pushobject(J, obj);
+			if (!js_isundefined(J, -1) && !js_isnull(J, -1)) {
+				obj = jsV_newiterator(J, js_toobject(J, -1));
+				js_pop(J, 1);
+				js_pushobject(J, obj);
+			}
 			break;
 
 		case OP_NEXTITER:
-			obj = js_toobject(J, -1);
-			str = jsV_nextiterator(J, obj);
-			if (str) {
-				js_pushliteral(J, str);
-				js_pushboolean(J, 1);
+			if (js_isiterator(J, -1)) {
+				obj = js_toobject(J, -1);
+				str = jsV_nextiterator(J, obj);
+				if (str) {
+					js_pushliteral(J, str);
+					js_pushboolean(J, 1);
+				} else {
+					js_pop(J, 1);
+					js_pushboolean(J, 0);
+				}
 			} else {
 				js_pop(J, 1);
 				js_pushboolean(J, 0);
@@ -782,10 +797,10 @@ static void jsR_run(js_State *J, js_Function *F)
 
 		/* Relational operators */
 
-		case OP_LT: b = js_compare(J); js_pushboolean(J, b < 0); break;
-		case OP_GT: b = js_compare(J); js_pushboolean(J, b > 0); break;
-		case OP_LE: b = js_compare(J); js_pushboolean(J, b <= 0); break;
-		case OP_GE: b = js_compare(J); js_pushboolean(J, b >= 0); break;
+		case OP_LT: b = js_compare(J); js_pop(J, 2); js_pushboolean(J, b < 0); break;
+		case OP_GT: b = js_compare(J); js_pop(J, 2); js_pushboolean(J, b > 0); break;
+		case OP_LE: b = js_compare(J); js_pop(J, 2); js_pushboolean(J, b <= 0); break;
+		case OP_GE: b = js_compare(J); js_pop(J, 2); js_pushboolean(J, b >= 0); break;
 
 		case OP_INSTANCEOF:
 			b = js_instanceof(J);
@@ -795,10 +810,21 @@ static void jsR_run(js_State *J, js_Function *F)
 
 		/* Equality */
 
-		case OP_EQ: b = js_equal(J); js_pushboolean(J, b); break;
-		case OP_NE: b = js_equal(J); js_pushboolean(J, !b); break;
-		case OP_STRICTEQ: b = js_strictequal(J); js_pushboolean(J, b); break;
-		case OP_STRICTNE: b = js_strictequal(J); js_pushboolean(J, !b); break;
+		case OP_EQ: b = js_equal(J); js_pop(J, 2); js_pushboolean(J, b); break;
+		case OP_NE: b = js_equal(J); js_pop(J, 2); js_pushboolean(J, !b); break;
+		case OP_STRICTEQ: b = js_strictequal(J); js_pop(J, 2); js_pushboolean(J, b); break;
+		case OP_STRICTNE: b = js_strictequal(J); js_pop(J, 2); js_pushboolean(J, !b); break;
+
+		case OP_JCASE:
+			offset = *pc++;
+			b = js_strictequal(J);
+			if (b) {
+				js_pop(J, 2);
+				pc = pcstart + offset;
+			} else {
+				js_pop(J, 1);
+			}
+			break;
 
 		/* Binary bitwise operators */
 

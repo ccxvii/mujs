@@ -91,7 +91,7 @@ enum js_AstType
 
 	/* statements */
 	STM_BLOCK,
-	STM_NOP,
+	STM_EMPTY,
 	STM_VAR,
 	STM_IF,
 	STM_DO,

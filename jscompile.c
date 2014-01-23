@@ -756,12 +756,11 @@ static void cswitch(JF, js_Ast *ref, js_Ast *head)
 				jsC_error(J, clause, "more than one default label in switch");
 			def = clause;
 		} else {
-			emit(J, F, OP_DUP);
 			cexp(J, F, clause->a);
-			emit(J, F, OP_STRICTEQ);
-			clause->casejump = jump(J, F, OP_JTRUE);
+			clause->casejump = jump(J, F, OP_JCASE);
 		}
 	}
+	emit(J, F, OP_POP);
 	if (def)
 		def->casejump = jump(J, F, OP_JUMP);
 	else
@@ -809,7 +808,7 @@ static void cstm(JF, js_Ast *stm)
 		cstmlist(J, F, stm->a);
 		break;
 
-	case STM_NOP:
+	case STM_EMPTY:
 		break;
 
 	case STM_VAR:

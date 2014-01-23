@@ -381,7 +381,7 @@ static void pstm(int d, js_Ast *stm)
 		in(d); ps("}");
 		break;
 
-	case STM_NOP:
+	case STM_EMPTY:
 		pc(';');
 		break;
 
@@ -662,6 +662,7 @@ void jsC_dumpfunction(js_State *J, js_Function *F)
 		case OP_JUMP:
 		case OP_JTRUE:
 		case OP_JFALSE:
+		case OP_JCASE:
 		case OP_TRY:
 			printf(" %d", *p++);
 			break;

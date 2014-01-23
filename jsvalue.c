@@ -347,7 +347,7 @@ int js_compare(js_State *J)
 {
 	js_Value va = js_toprimitive(J, -2, JS_HNUMBER);
 	js_Value vb = js_toprimitive(J, -1, JS_HNUMBER);
-	js_pop(J, 2);
+
 	if (va.type == JS_TSTRING && vb.type == JS_TSTRING) {
 		return strcmp(va.u.string, vb.u.string);
 	} else {
@@ -361,7 +361,6 @@ int js_equal(js_State *J)
 {
 	js_Value va = js_tovalue(J, -2);
 	js_Value vb = js_tovalue(J, -1);
-	js_pop(J, 2);
 
 retry:
 	if (va.type == vb.type) {
@@ -398,7 +397,6 @@ int js_strictequal(js_State *J)
 {
 	js_Value va = js_tovalue(J, -2);
 	js_Value vb = js_tovalue(J, -1);
-	js_pop(J, 2);
 
 	if (va.type != vb.type) return 0;
 	if (va.type == JS_TUNDEFINED) return 1;

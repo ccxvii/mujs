@@ -721,7 +721,7 @@ static js_Ast *statement(js_State *J)
 
 	/* empty statement */
 	if (accept(J, ';')) {
-		return STM0(NOP);
+		return STM0(EMPTY);
 	}
 
 	if (accept(J, TK_IF)) {
