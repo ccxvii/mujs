@@ -49,13 +49,18 @@ static js_Function *newfun(js_State *J, js_Ast *name, js_Ast *params, js_Ast *bo
 
 /* Emit opcodes, constants and jumps */
 
-static void emit(JF, int value)
+static void emitraw(JF, int value)
 {
 	if (F->codelen >= F->codecap) {
 		F->codecap = F->codecap ? F->codecap * 2 : 64;
 		F->code = realloc(F->code, F->codecap * sizeof *F->code);
 	}
 	F->code[F->codelen++] = value;
+}
+
+static void emit(JF, int value)
+{
+	emitraw(J, F, value);
 }
 
 static int addfunction(JF, js_Function *value)
@@ -99,7 +104,7 @@ static int addstring(JF, const char *value)
 static void emitfunction(JF, js_Function *fun)
 {
 	emit(J, F, OP_CLOSURE);
-	emit(J, F, addfunction(J, F, fun));
+	emitraw(J, F, addfunction(J, F, fun));
 }
 
 static void emitnumber(JF, double num)
@@ -110,17 +115,17 @@ static void emitnumber(JF, double num)
 		emit(J, F, OP_NUMBER_1);
 	else if (num == (short)num) {
 		emit(J, F, OP_NUMBER_X);
-		emit(J, F, (short)num);
+		emitraw(J, F, (short)num);
 	} else {
 		emit(J, F, OP_NUMBER);
-		emit(J, F, addnumber(J, F, num));
+		emitraw(J, F, addnumber(J, F, num));
 	}
 }
 
 static void emitstring(JF, int opcode, const char *str)
 {
 	emit(J, F, opcode);
-	emit(J, F, addstring(J, F, str));
+	emitraw(J, F, addstring(J, F, str));
 }
 
 static int here(JF)
@@ -132,14 +137,14 @@ static int jump(JF, int opcode)
 {
 	int inst = F->codelen + 1;
 	emit(J, F, opcode);
-	emit(J, F, 0);
+	emitraw(J, F, 0);
 	return inst;
 }
 
 static void jumpto(JF, int opcode, int dest)
 {
 	emit(J, F, opcode);
-	emit(J, F, dest);
+	emitraw(J, F, dest);
 }
 
 static void label(JF, int inst)
@@ -174,7 +179,7 @@ static void carray(JF, js_Ast *list)
 		if (list->a->type != EXP_UNDEF) {
 			emit(J, F, OP_DUP);
 			emit(J, F, OP_NUMBER_X);
-			emit(J, F, i++);
+			emitraw(J, F, i++);
 			cexp(J, F, list->a);
 			emit(J, F, OP_SETPROP);
 			emit(J, F, OP_POP);
@@ -381,7 +386,7 @@ static void ccall(JF, js_Ast *fun, js_Ast *args)
 	}
 	n = cargs(J, F, args);
 	emit(J, F, OP_CALL);
-	emit(J, F, n);
+	emitraw(J, F, n);
 }
 
 static void cexp(JF, js_Ast *exp)
@@ -436,7 +441,7 @@ static void cexp(JF, js_Ast *exp)
 		cexp(J, F, exp->a);
 		n = cargs(J, F, exp->b);
 		emit(J, F, OP_NEW);
-		emit(J, F, n);
+		emitraw(J, F, n);
 		break;
 
 	case EXP_DELETE:
@@ -696,7 +701,7 @@ static void ctrycatch(JF, js_Ast *trystm, js_Ast *catchvar, js_Ast *catchstm)
 	{
 		/* if we get here, we have caught an exception in the try block */
 		L2 = jump(J, F, OP_CATCH);
-		emit(J, F, addstring(J, F, catchvar->string));
+		emitraw(J, F, addstring(J, F, catchvar->string));
 		{
 			/* if we get here, we have caught an exception in the catch block */
 			emit(J, F, OP_THROW); /* rethrow exception */
@@ -719,7 +724,7 @@ static void ctrycatchfinally(JF, js_Ast *trystm, js_Ast *catchvar, js_Ast *catch
 	{
 		/* if we get here, we have caught an exception in the try block */
 		L2 = jump(J, F, OP_CATCH);
-		emit(J, F, addstring(J, F, catchvar->string));
+		emitraw(J, F, addstring(J, F, catchvar->string));
 		{
 			/* if we get here, we have caught an exception in the catch block */
 			cstm(J, F, finallystm); /* inline finally block */
