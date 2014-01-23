@@ -89,8 +89,9 @@ enum js_OpCode
 	OP_TRY,		/* -ADDR- /jump/ or -ADDR- <exception> */
 	OP_ENDTRY,
 
-	OP_CATCH,	/* -ADDR,S- /jump/ or -ADDR,S- <exception> */
+	OP_CATCH,	/* push scope chain with exception variable */
 	OP_ENDCATCH,
+
 	OP_WITH,
 	OP_ENDWITH,
 

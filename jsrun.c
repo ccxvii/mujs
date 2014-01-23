@@ -822,23 +822,16 @@ static void jsR_run(js_State *J, js_Function *F)
 			break;
 
 		case OP_CATCH:
-			offset = *pc++;
 			str = ST[*pc++];
-			if (js_trypc(J, pc)) {
-				pc = J->trybuf[J->trylen].pc;
-			} else {
-				obj = jsV_newobject(J, JS_COBJECT, NULL);
-				js_pushobject(J, obj);
-				js_rot2(J);
-				js_setproperty(J, -2, str);
-				J->E = jsR_newenvironment(J, obj, J->E);
-				js_pop(J, 1);
-				pc = pcstart + offset;
-			}
+			obj = jsV_newobject(J, JS_COBJECT, NULL);
+			js_pushobject(J, obj);
+			js_rot2(J);
+			js_setproperty(J, -2, str);
+			J->E = jsR_newenvironment(J, obj, J->E);
+			js_pop(J, 1);
 			break;
 
 		case OP_ENDCATCH:
-			js_endtry(J);
 			J->E = J->E->outer;
 			break;
 

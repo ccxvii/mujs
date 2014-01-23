@@ -666,8 +666,14 @@ static void cexit(JF, js_AstType T, js_Ast *node, js_Ast *target)
 			}
 			/* came from catch block */
 			if (prev == node->c) {
-				emit(J, F, OP_ENDCATCH);
-				if (node->d) cstm(J, F, node->d); /* finally */
+				/* ... with finally */
+				if (node->d) {
+					emit(J, F, OP_ENDCATCH);
+					emit(J, F, OP_ENDTRY);
+					cstm(J, F, node->d); /* finally */
+				} else {
+					emit(J, F, OP_ENDCATCH);
+				}
 			}
 			break;
 		}
@@ -693,25 +699,19 @@ static void ctryfinally(JF, js_Ast *trystm, js_Ast *finallystm)
 
 static void ctrycatch(JF, js_Ast *trystm, js_Ast *catchvar, js_Ast *catchstm)
 {
-	int L1, L2, L3;
+	int L1, L2;
 	L1 = jump(J, F, OP_TRY);
 	{
 		/* if we get here, we have caught an exception in the try block */
-		L2 = jump(J, F, OP_CATCH);
-		emitraw(J, F, addstring(J, F, catchvar->string));
-		{
-			/* if we get here, we have caught an exception in the catch block */
-			emit(J, F, OP_THROW); /* rethrow exception */
-		}
-		label(J, F, L2);
+		emitstring(J, F, OP_CATCH, catchvar->string);
 		cstm(J, F, catchstm);
 		emit(J, F, OP_ENDCATCH);
-		L3 = jump(J, F, OP_JUMP); /* skip past the try block */
+		L2 = jump(J, F, OP_JUMP); /* skip past the try block */
 	}
 	label(J, F, L1);
 	cstm(J, F, trystm);
 	emit(J, F, OP_ENDTRY);
-	label(J, F, L3);
+	label(J, F, L2);
 }
 
 static void ctrycatchfinally(JF, js_Ast *trystm, js_Ast *catchvar, js_Ast *catchstm, js_Ast *finallystm)
@@ -720,14 +720,14 @@ static void ctrycatchfinally(JF, js_Ast *trystm, js_Ast *catchvar, js_Ast *catch
 	L1 = jump(J, F, OP_TRY);
 	{
 		/* if we get here, we have caught an exception in the try block */
-		L2 = jump(J, F, OP_CATCH);
-		emitraw(J, F, addstring(J, F, catchvar->string));
+		L2 = jump(J, F, OP_TRY);
 		{
 			/* if we get here, we have caught an exception in the catch block */
 			cstm(J, F, finallystm); /* inline finally block */
 			emit(J, F, OP_THROW); /* rethrow exception */
 		}
 		label(J, F, L2);
+		emitstring(J, F, OP_CATCH, catchvar->string);
 		cstm(J, F, catchstm);
 		emit(J, F, OP_ENDCATCH);
 		L3 = jump(J, F, OP_JUMP); /* skip past the try block to the finally block */

@@ -651,6 +651,7 @@ void jsC_dumpfunction(js_State *J, js_Function *F)
 		case OP_GETPROPS:
 		case OP_SETPROPS:
 		case OP_DELPROPS:
+		case OP_CATCH:
 			pc(' ');
 			ps(F->strtab[*p++]);
 			break;
@@ -663,11 +664,6 @@ void jsC_dumpfunction(js_State *J, js_Function *F)
 		case OP_JFALSE:
 		case OP_TRY:
 			printf(" %d", *p++);
-			break;
-		case OP_CATCH:
-			printf(" %d", *p++);
-			pc(' ');
-			ps(F->strtab[*p++]);
 			break;
 		}
 
@@ -713,6 +709,7 @@ void js_dumpvalue(js_State *J, js_Value v)
 		case JS_CNUMBER: printf("[Number %g]", v.u.object->u.number); break;
 		case JS_CSTRING: printf("[String'%s']", v.u.object->u.string); break;
 		case JS_CERROR: printf("[Error %s]", v.u.object->u.string); break;
+		case JS_CITERATOR: printf("[Iterator %p]", v.u.object); break;
 		default: printf("[Object %p]", v.u.object); break;
 		}
 		break;
