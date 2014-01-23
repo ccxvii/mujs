@@ -352,19 +352,6 @@ static void cdelete(JF, js_Ast *exp)
 	}
 }
 
-static void cvarinit(JF, js_Ast *list)
-{
-	while (list) {
-		js_Ast *var = list->a;
-		if (var->b) {
-			cexp(J, F, var->b);
-			emitstring(J, F, OP_SETVAR, var->a->string);
-			emit(J, F, OP_POP);
-		}
-		list = list->b;
-	}
-}
-
 static void ccall(JF, js_Ast *fun, js_Ast *args)
 {
 	int n;
@@ -790,6 +777,19 @@ static void cswitch(JF, js_Ast *ref, js_Ast *head)
 
 /* Statements */
 
+static void cvarinit(JF, js_Ast *list)
+{
+	while (list) {
+		js_Ast *var = list->a;
+		if (var->b) {
+			cexp(J, F, var->b);
+			emitstring(J, F, OP_SETVAR, var->a->string);
+			emit(J, F, OP_POP);
+		}
+		list = list->b;
+	}
+}
+
 static void cstm(JF, js_Ast *stm)
 {
 	js_Ast *target;
@@ -869,7 +869,6 @@ static void cstm(JF, js_Ast *stm)
 		jumpto(J, F, OP_JUMP, loop);
 		if (stm->b)
 			label(J, F, end);
-		printf("labeling for statement: %d %d\n", cont, here(J,F));
 		labeljumps(J, F, stm->jumps, here(J,F), cont);
 		break;
 
