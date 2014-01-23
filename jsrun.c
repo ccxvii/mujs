@@ -751,7 +751,9 @@ static void jsR_run(js_State *J, js_Function *F)
 		case OP_GE: b = js_compare(J); js_pushboolean(J, b >= 0); break;
 
 		case OP_INSTANCEOF:
-			js_instanceof(J);
+			b = js_instanceof(J);
+			js_pop(J, 2);
+			js_pushboolean(J, b);
 			break;
 
 		/* Equality */

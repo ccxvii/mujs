@@ -92,8 +92,6 @@ unsigned int jsV_numbertouint32(double n);
 const char *jsV_numbertostring(js_State *J, double number);
 double jsV_stringtonumber(js_State *J, const char *string);
 
-void js_instanceof(js_State *J);
-
 /* jsproperty.c */
 js_Object *jsV_newobject(js_State *J, js_Class type, js_Object *prototype);
 js_Property *jsV_getownproperty(js_State *J, js_Object *obj, const char *name);
