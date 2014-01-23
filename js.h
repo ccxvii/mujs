@@ -81,10 +81,12 @@ void js_construct(js_State *J, int n);
 
 void js_getglobal(js_State *J, const char *name);
 void js_setglobal(js_State *J, const char *name);
+void js_defglobal(js_State *J, const char *name, int atts);
 
 void js_getownproperty(js_State *J, int idx, const char *name);
 void js_getproperty(js_State *J, int idx, const char *name);
 void js_setproperty(js_State *J, int idx, const char *name);
+void js_defproperty(js_State *J, int idx, const char *name, int atts);
 void js_delproperty(js_State *J, int idx, const char *name);
 
 void js_pushglobal(js_State *J);

@@ -24,5 +24,5 @@ void jsB_initarray(js_State *J)
 		/* ECMA-262-5 */
 		jsB_propf(J, "isArray", A_isArray, 1);
 	}
-	js_setglobal(J, "Array");
+	js_defglobal(J, "Array", JS_DONTENUM);
 }

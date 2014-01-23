@@ -116,5 +116,5 @@ void jsB_initstring(js_State *J)
 	{
 		jsB_propf(J, "fromCharCode", S_fromCharCode, 1);
 	}
-	js_setglobal(J, "String");
+	js_defglobal(J, "String", JS_DONTENUM);
 }

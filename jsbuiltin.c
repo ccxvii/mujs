@@ -6,25 +6,25 @@
 static void jsB_globalf(js_State *J, const char *name, js_CFunction cfun, int n)
 {
 	js_newcfunction(J, cfun, n);
-	js_setglobal(J, name);
+	js_defglobal(J, name, JS_DONTENUM);
 }
 
 void jsB_propf(js_State *J, const char *name, js_CFunction cfun, int n)
 {
 	js_newcfunction(J, cfun, n);
-	js_setproperty(J, -2, name);
+	js_defproperty(J, -2, name, JS_DONTENUM);
 }
 
 void jsB_propn(js_State *J, const char *name, double number)
 {
 	js_pushnumber(J, number);
-	js_setproperty(J, -2, name);
+	js_defproperty(J, -2, name, JS_DONTENUM);
 }
 
 void jsB_props(js_State *J, const char *name, const char *string)
 {
 	js_pushliteral(J, string);
-	js_setproperty(J, -2, name);
+	js_defproperty(J, -2, name, JS_DONTENUM);
 }
 
 static int jsB_eval(js_State *J, int argc)
@@ -78,7 +78,7 @@ static int jsB_print(js_State *J, int argc)
 	return 0;
 }
 
-static int jsB_collectGarbage(js_State *J, int argc)
+static int jsB_gc(js_State *J, int argc)
 {
 	int report = js_toboolean(J, 1);
 	js_gc(J, report);
@@ -116,13 +116,13 @@ void jsB_init(js_State *J)
 
 	/* Initialize the global object */
 	js_pushnumber(J, NAN);
-	js_setglobal(J, "NaN");
+	js_defglobal(J, "NaN", JS_READONLY | JS_DONTENUM | JS_DONTDELETE);
 
 	js_pushnumber(J, INFINITY);
-	js_setglobal(J, "Infinity");
+	js_defglobal(J, "Infinity", JS_READONLY | JS_DONTENUM | JS_DONTDELETE);
 
 	js_pushundefined(J);
-	js_setglobal(J, "undefined");
+	js_defglobal(J, "undefined", JS_READONLY | JS_DONTENUM | JS_DONTDELETE);
 
 	jsB_globalf(J, "eval", jsB_eval, 1);
 	jsB_globalf(J, "parseInt", jsB_parseInt, 1);
@@ -130,6 +130,9 @@ void jsB_init(js_State *J)
 	jsB_globalf(J, "isNaN", jsB_isNaN, 1);
 	jsB_globalf(J, "isFinite", jsB_isFinite, 1);
 
-	jsB_globalf(J, "collectGarbage", jsB_collectGarbage, 0);
-	jsB_globalf(J, "print", jsB_print, 0);
+	/* Non-standard */
+	js_newcfunction(J, jsB_gc, 0);
+	js_setglobal(J, "gc");
+	js_newcfunction(J, jsB_print, 1);
+	js_setglobal(J, "print");
 }

@@ -95,5 +95,5 @@ void jsB_initobject(js_State *J)
 		jsB_propf(J, "propertyIsEnumerable", Op_propertyIsEnumerable, 1);
 	}
 	js_newcconstructor(J, jsB_Object, jsB_new_Object);
-	js_setglobal(J, "Object");
+	js_defglobal(J, "Object", JS_DONTENUM);
 }

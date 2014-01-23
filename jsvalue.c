@@ -241,13 +241,13 @@ void js_newfunction(js_State *J, js_Function *fun, js_Environment *scope)
 	js_pushobject(J, obj);
 	{
 		js_pushnumber(J, fun->numparams);
-		js_setproperty(J, -2, "length");
+		js_defproperty(J, -2, "length", JS_READONLY | JS_DONTENUM | JS_DONTDELETE);
 		js_newobject(J);
 		{
 			js_copy(J, -2);
-			js_setproperty(J, -2, "constructor");
+			js_defproperty(J, -2, "constructor", JS_DONTENUM);
 		}
-		js_setproperty(J, -2, "prototype");
+		js_defproperty(J, -2, "prototype", JS_DONTDELETE);
 	}
 }
 
@@ -267,13 +267,13 @@ void js_newcfunction(js_State *J, js_CFunction cfun, int length)
 	js_pushobject(J, obj);
 	{
 		js_pushnumber(J, length);
-		js_setproperty(J, -2, "length");
+		js_defproperty(J, -2, "length", JS_READONLY | JS_DONTENUM | JS_DONTDELETE);
 		js_newobject(J);
 		{
 			js_copy(J, -2);
-			js_setproperty(J, -2, "constructor");
+			js_defproperty(J, -2, "constructor", JS_DONTENUM);
 		}
-		js_setproperty(J, -2, "prototype");
+		js_defproperty(J, -2, "prototype", JS_DONTDELETE);
 	}
 }
 
@@ -286,11 +286,11 @@ void js_newcconstructor(js_State *J, js_CFunction cfun, js_CFunction ccon)
 	js_pushobject(J, obj); /* proto obj */
 	{
 		js_pushnumber(J, 1);
-		js_setproperty(J, -2, "length");
+		js_defproperty(J, -2, "length", JS_READONLY | JS_DONTENUM | JS_DONTDELETE);
 		js_rot2(J); /* obj proto */
 		js_copy(J, -2); /* obj proto obj */
-		js_setproperty(J, -2, "constructor");
-		js_setproperty(J, -2, "prototype");
+		js_defproperty(J, -2, "constructor", JS_DONTENUM);
+		js_defproperty(J, -2, "prototype", JS_READONLY | JS_DONTENUM | JS_DONTDELETE);
 	}
 }
 

@@ -99,5 +99,5 @@ void jsB_initfunction(js_State *J)
 		jsB_propf(J, "call", Fp_call, 1);
 	}
 	js_newcconstructor(J, jsB_Function, jsB_Function);
-	js_setglobal(J, "Function");
+	js_defglobal(J, "Function", JS_DONTENUM);
 }

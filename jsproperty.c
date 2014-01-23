@@ -144,11 +144,13 @@ static js_Iterator *itwalk(js_State *J, js_Iterator *iter, js_Property *prop, js
 {
 	if (prop->right != &sentinel)
 		iter = itwalk(J, iter, prop->right, seen);
-	if (!seen || !jsV_getenumproperty(J, seen, prop->name)) {
-		js_Iterator *head = malloc(sizeof *head);
-		head->name = prop->name;
-		head->next = iter;
-		iter = head;
+	if (!(prop->atts & JS_DONTENUM)) {
+		if (!seen || !jsV_getenumproperty(J, seen, prop->name)) {
+			js_Iterator *head = malloc(sizeof *head);
+			head->name = prop->name;
+			head->next = iter;
+			iter = head;
+		}
 	}
 	if (prop->left != &sentinel)
 		iter = itwalk(J, iter, prop->left, seen);

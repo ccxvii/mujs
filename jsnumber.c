@@ -84,5 +84,5 @@ void jsB_initnumber(js_State *J)
 		jsB_propn(J, "NEGATIVE_INFINITY", -INFINITY);
 		jsB_propn(J, "POSITIVE_INFINITY", INFINITY);
 	}
-	js_setglobal(J, "Number");
+	js_defglobal(J, "Number", JS_DONTENUM);
 }

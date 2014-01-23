@@ -40,5 +40,5 @@ void jsB_initboolean(js_State *J)
 		jsB_propf(J, "valueOf", Bp_valueOf, 0);
 	}
 	js_newcconstructor(J, jsB_Boolean, jsB_new_Boolean);
-	js_setglobal(J, "Boolean");
+	js_defglobal(J, "Boolean", JS_DONTENUM);
 }

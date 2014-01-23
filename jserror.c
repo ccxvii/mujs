@@ -68,13 +68,13 @@ void jsB_initerror(js_State *J)
 			jsB_propf(J, "toString", Ep_toString, 0);
 	}
 	js_newcconstructor(J, jsB_Error, jsB_Error);
-	js_setglobal(J, "Error");
+	js_defglobal(J, "Error", JS_DONTENUM);
 
 	#define IERROR(NAME) \
 		js_pushobject(J, J->NAME##_prototype); \
 		jsB_props(J, "name", Q(NAME)); \
 		js_newcconstructor(J, jsB_##NAME, jsB_##NAME); \
-		js_setglobal(J, Q(NAME));
+		js_defglobal(J, Q(NAME), JS_DONTENUM);
 
 	IERROR(EvalError);
 	IERROR(RangeError);

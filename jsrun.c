@@ -262,6 +262,16 @@ void js_setglobal(js_State *J, const char *name)
 	js_pop(J, 1);
 }
 
+void js_defglobal(js_State *J, const char *name, int atts)
+{
+	js_Property *ref = jsV_setproperty(J, J->G, name);
+	if (ref) {
+		ref->value = js_tovalue(J, -1);
+		ref->atts = atts;
+	}
+	js_pop(J, 1);
+}
+
 void js_getownproperty(js_State *J, int idx, const char *name)
 {
 	js_Object *obj = js_toobject(J, idx);
@@ -288,6 +298,17 @@ void js_setproperty(js_State *J, int idx, const char *name)
 	js_Property *ref = jsV_setproperty(J, obj, name);
 	if (ref)
 		ref->value = js_tovalue(J, -1);
+	js_pop(J, 1);
+}
+
+void js_defproperty(js_State *J, int idx, const char *name, int atts)
+{
+	js_Object *obj = js_toobject(J, idx);
+	js_Property *ref = jsV_setproperty(J, obj, name);
+	if (ref) {
+		ref->value = js_tovalue(J, -1);
+		ref->atts = atts;
+	}
 	js_pop(J, 1);
 }
 
