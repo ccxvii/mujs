@@ -60,10 +60,7 @@ struct js_Object
 			js_CFunction function;
 			js_CFunction constructor;
 		} c;
-		struct {
-			js_Iterator *head;
-			js_Iterator *next;
-		} iterator;
+		js_Iterator *iter;
 	} u;
 	js_Object *gcnext;
 	int gcmark;

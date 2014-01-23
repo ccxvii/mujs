@@ -170,20 +170,23 @@ static js_Iterator *itflatten(js_State *J, js_Object *obj)
 js_Object *jsV_newiterator(js_State *J, js_Object *obj)
 {
 	js_Object *iobj = jsV_newobject(J, JS_CITERATOR, NULL);
-	iobj->u.iterator.head = itflatten(J, obj);
-	iobj->u.iterator.next = iobj->u.iterator.head;
+	iobj->u.iter = itflatten(J, obj);
 	return iobj;
 }
 
 const char *jsV_nextiterator(js_State *J, js_Object *iobj)
 {
-	js_Iterator *result;
+	js_Iterator *iter, *next;
+	const char *name;
 	if (iobj->type != JS_CITERATOR)
 		js_typeerror(J, "not an iterator");
-	result = iobj->u.iterator.next;
-	if (result) {
-		iobj->u.iterator.next = result->next;
-		return result->name;
+	iter = iobj->u.iter;
+	if (iter) {
+		name = iter->name;
+		next = iter->next;
+		free(iter);
+		iobj->u.iter = next;
+		return name;
 	}
 	return NULL;
 }

@@ -41,7 +41,7 @@ static void jsG_freeobject(js_State *J, js_Object *obj)
 	if (obj->properties->level)
 		jsG_freeproperty(J, obj->properties);
 	if (obj->type == JS_CITERATOR)
-		jsG_freeiterator(J, obj->u.iterator.head);
+		jsG_freeiterator(J, obj->u.iter);
 	free(obj);
 }
 
