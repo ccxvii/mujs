@@ -90,6 +90,13 @@ static js_Property *insert(js_State *J, js_Property *node, const char *name, js_
 	return *result = newproperty(J, name);
 }
 
+static js_Property *delete(js_State *J, js_Property *node, const char *name)
+{
+	// TODO
+	return node;
+}
+
+
 js_Object *jsV_newobject(js_State *J, js_Class type, js_Object *prototype)
 {
 	js_Object *obj = calloc(sizeof(js_Object), 1);
@@ -136,6 +143,11 @@ js_Property *jsV_setproperty(js_State *J, js_Object *obj, const char *name)
 	js_Property *result;
 	obj->properties = insert(J, obj->properties, name, &result);
 	return result;
+}
+
+void jsV_delproperty(js_State *J, js_Object *obj, const char *name)
+{
+	obj->properties = delete(J, obj->properties, name);
 }
 
 /* Flatten hierarchy of enumerable properties into an iterator object */
