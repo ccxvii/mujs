@@ -654,10 +654,17 @@ static void cexit(JF, js_AstType T, js_Ast *node, js_Ast *target)
 		case STM_FOR_IN:
 		case STM_FOR_IN_VAR:
 			/* pop the iterator if leaving the loop */
-			if (T == STM_RETURN)
-				emit(J, F, OP_ROT2POP1); /* save the return value */
-			if (T == STM_BREAK)
-				emit(J, F, OP_POP);
+			if (F->script) {
+				if (T == STM_RETURN || T == STM_BREAK || (T == STM_CONTINUE && target != node))
+					emit(J, F, OP_ROT2POP1); /* pop the iterator, save the return or exp value */
+				if (T == STM_CONTINUE)
+					emit(J, F, OP_ROT2); /* put the iterator back on top */
+			} else {
+				if (T == STM_RETURN)
+					emit(J, F, OP_ROT2POP1); /* pop the iterator, save the return value */
+				if (T == STM_BREAK || (T == STM_CONTINUE && target != node))
+					emit(J, F, OP_POP); /* pop the iterator */
+			}
 			break;
 		case STM_TRY:
 			/* came from try block */
@@ -810,6 +817,10 @@ static void cstm(JF, js_Ast *stm)
 		break;
 
 	case STM_EMPTY:
+		if (F->script) {
+			emit(J, F, OP_POP);
+			emit(J, F, OP_UNDEF);
+		}
 		break;
 
 	case STM_VAR:
@@ -887,7 +898,13 @@ static void cstm(JF, js_Ast *stm)
 			emit(J, F, OP_NEXTITER);
 			end = jump(J, F, OP_JFALSE);
 			cassignforin(J, F, stm);
-			cstm(J, F, stm->c);
+			if (F->script) {
+				emit(J, F, OP_ROT2);
+				cstm(J, F, stm->c);
+				emit(J, F, OP_ROT2);
+			} else {
+				cstm(J, F, stm->c);
+			}
 			jumpto(J, F, OP_JUMP, loop);
 		}
 		label(J, F, end);
@@ -977,8 +994,13 @@ static void cstm(JF, js_Ast *stm)
 		break;
 
 	default:
-		cexp(J, F, stm);
-		emit(J, F, OP_POP);
+		if (F->script) {
+			emit(J, F, OP_POP);
+			cexp(J, F, stm);
+		} else {
+			cexp(J, F, stm);
+			emit(J, F, OP_POP);
+		}
 		break;
 	}
 }
@@ -1047,14 +1069,21 @@ static void cfunbody(JF, js_Ast *name, js_Ast *params, js_Ast *body)
 
 	cparams(J, F, params);
 
+	if (F->script)
+		emit(J, F, OP_UNDEF);
+
 	if (body) {
 		cfundecs(J, F, body);
 		cvardecs(J, F, body);
 		cstmlist(J, F, body);
 	}
 
-	emit(J, F, OP_UNDEF);
-	emit(J, F, OP_RETURN);
+	if (F->script) {
+		emit(J, F, OP_RETURN);
+	} else {
+		emit(J, F, OP_UNDEF);
+		emit(J, F, OP_RETURN);
+	}
 }
 
 js_Function *jsC_compile(js_State *J, js_Ast *prog)
