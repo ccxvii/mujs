@@ -48,27 +48,23 @@ static js_Property *lookup(js_Property *node, const char *name)
 
 static inline js_Property *skew(js_Property *node)
 {
-	if (node->level != 0) {
-		if (node->left->level == node->level) {
-			js_Property *save = node;
-			node = node->left;
-			save->left = node->right;
-			node->right = save;
-		}
-		node->right = skew(node->right);
+	if (node->left->level == node->level) {
+		js_Property *temp = node;
+		node = node->left;
+		temp->left = node->right;
+		node->right = temp;
 	}
 	return node;
 }
 
 static inline js_Property *split(js_Property *node)
 {
-	if (node->level != 0 && node->right->right->level == node->level) {
-		js_Property *save = node;
+	if (node->right->right->level == node->level) {
+		js_Property *temp = node;
 		node = node->right;
-		save->right = node->left;
-		node->left = save;
-		node->level++;
-		node->right = split(node->right);
+		temp->right = node->left;
+		node->left = temp;
+		++node->level;
 	}
 	return node;
 }
@@ -92,7 +88,46 @@ static js_Property *insert(js_State *J, js_Property *node, const char *name, js_
 
 static js_Property *delete(js_State *J, js_Property *node, const char *name)
 {
-	// TODO
+	js_Property *temp, *succ;
+
+	if (node != &sentinel) {
+		int c = strcmp(name, node->name);
+		if (c < 0) {
+			node->left = delete(J, node->left, name);
+		} else if (c > 0) {
+			node->right = delete(J, node->right, name);
+		} else {
+			if (node->left == &sentinel) {
+				temp = node;
+				node = node->right;
+				free(temp);
+			} else if (node->right == &sentinel) {
+				temp = node;
+				node = node->left;
+				free(temp);
+			} else {
+				succ = node->right;
+				while (succ->left != &sentinel)
+					succ = succ->left;
+				node->name = succ->name;
+				node->atts = succ->atts;
+				node->value = succ->value;
+				node->right = delete(J, node->right, succ->name);
+			}
+		}
+
+		if (node->left->level < node->level - 1 ||
+			node->right->level < node->level - 1)
+		{
+			if (node->right->level > --node->level)
+				node->right->level = node->level;
+			node = skew(node);
+			node->right = skew(node->right);
+			node->right->right = skew(node->right->right);
+			node = split(node);
+			node->right = split(node->right);
+		}
+	}
 	return node;
 }
 

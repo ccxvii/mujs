@@ -23,27 +23,23 @@ static js_StringNode *jsS_newstringnode(const char *string, const char **result)
 
 static js_StringNode *jsS_skew(js_StringNode *node)
 {
-	if (node->level != 0) {
-		if (node->left->level == node->level) {
-			js_StringNode *save = node;
-			node = node->left;
-			save->left = node->right;
-			node->right = save;
-		}
-		node->right = jsS_skew(node->right);
+	if (node->left->level == node->level) {
+		js_StringNode *temp = node;
+		node = node->left;
+		temp->left = node->right;
+		node->right = temp;
 	}
 	return node;
 }
 
 static js_StringNode *jsS_split(js_StringNode *node)
 {
-	if (node->level != 0 && node->right->right->level == node->level) {
-		js_StringNode *save = node;
+	if (node->right->right->level == node->level) {
+		js_StringNode *temp = node;
 		node = node->right;
-		save->right = node->left;
-		node->left = save;
-		node->level++;
-		node->right = jsS_split(node->right);
+		temp->right = node->left;
+		node->left = temp;
+		++node->level;
 	}
 	return node;
 }

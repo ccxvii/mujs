@@ -762,15 +762,15 @@ static void jsR_run(js_State *J, js_Function *F)
 			break;
 
 		case OP_DELPROP:
-			obj = js_toobject(J, -3);
-			str = js_tostring(J, -2);
+			obj = js_toobject(J, -2);
+			str = js_tostring(J, -1);
 			jsR_delproperty(J, obj, str);
 			js_pop(J, 2);
 			break;
 
 		case OP_DELPROPS:
 			str = ST[*pc++];
-			obj = js_toobject(J, -2);
+			obj = js_toobject(J, -1);
 			jsR_delproperty(J, obj, str);
 			js_pop(J, 1);
 			break;
