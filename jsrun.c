@@ -266,29 +266,39 @@ void js_rot(js_State *J, int n)
 	STACK[TOP-i] = tmp;
 }
 
-/* Registry, global and object property accessors */
+/* Property access that takes care of attributes and getters/setters */
 
-void js_getregistry(js_State *J, const char *name)
+static void jsR_getproperty(js_State *J, js_Object *obj, const char *name)
 {
-	js_Property *ref = jsV_getproperty(J, J->R, name);
+	js_Property *ref = jsV_getproperty(J, obj, name);
 	if (ref)
 		js_pushvalue(J, ref->value);
 	else
 		js_pushundefined(J);
 }
 
-void js_setregistry(js_State *J, const char *name)
+static void jsR_setproperty(js_State *J, js_Object *obj, const char *name, js_Value v)
 {
-	js_Property *ref = jsV_setproperty(J, J->R, name);
-	if (ref)
-		ref->value = js_tovalue(J, -1);
-	js_pop(J, 1);
+	js_Property *ref = jsV_setproperty(J, obj, name);
+	if (ref && !(ref->atts & JS_READONLY))
+		ref->value = v;
 }
 
-void js_delregistry(js_State *J, const char *name)
+static void jsR_defproperty(js_State *J, js_Object *obj, const char *name, js_Value v, int atts)
+{
+	js_Property *ref = jsV_setproperty(J, obj, name);
+	if (ref) {
+		ref->value = v;
+		ref->atts = atts;
+	}
+}
+
+static void jsR_delproperty(js_State *J, js_Object *obj, const char *name)
 {
 	// TODO
 }
+
+/* Registry, global and object property accessors */
 
 const char *js_ref(js_State *J)
 {
@@ -319,71 +329,59 @@ void js_unref(js_State *J, const char *ref)
 	js_delregistry(J, ref);
 }
 
+void js_getregistry(js_State *J, const char *name)
+{
+	jsR_getproperty(J, J->R, name);
+}
+
+void js_setregistry(js_State *J, const char *name)
+{
+	jsR_setproperty(J, J->R, name, js_tovalue(J, -1));
+	js_pop(J, 1);
+}
+
+void js_delregistry(js_State *J, const char *name)
+{
+	jsR_delproperty(J, J->R, name);
+}
+
 void js_getglobal(js_State *J, const char *name)
 {
-	js_Property *ref = jsV_getproperty(J, J->G, name);
-	if (ref)
-		js_pushvalue(J, ref->value);
-	else
-		js_pushundefined(J);
+	jsR_getproperty(J, J->G, name);
 }
 
 void js_setglobal(js_State *J, const char *name)
 {
-	js_Property *ref = jsV_setproperty(J, J->G, name);
-	if (ref)
-		ref->value = js_tovalue(J, -1);
+	jsR_setproperty(J, J->G, name, js_tovalue(J, -1));
 	js_pop(J, 1);
 }
 
 void js_defglobal(js_State *J, const char *name, int atts)
 {
-	js_Property *ref = jsV_setproperty(J, J->G, name);
-	if (ref) {
-		ref->value = js_tovalue(J, -1);
-		ref->atts = atts;
-	}
+	jsR_defproperty(J, J->G, name, js_tovalue(J, -1), atts);
 	js_pop(J, 1);
-}
-
-void js_getownproperty(js_State *J, int idx, const char *name)
-{
-	js_Object *obj = js_toobject(J, idx);
-	js_Property *ref = jsV_getownproperty(J, obj, name);
-	if (ref)
-		js_pushvalue(J, ref->value);
-	else
-		js_pushundefined(J);
 }
 
 void js_getproperty(js_State *J, int idx, const char *name)
 {
-	js_Object *obj = js_toobject(J, idx);
-	js_Property *ref = jsV_getproperty(J, obj, name);
-	if (ref)
-		js_pushvalue(J, ref->value);
-	else
-		js_pushundefined(J);
+	jsR_getproperty(J, js_toobject(J, idx), name);
 }
 
 void js_setproperty(js_State *J, int idx, const char *name)
 {
-	js_Object *obj = js_toobject(J, idx);
-	js_Property *ref = jsV_setproperty(J, obj, name);
-	if (ref)
-		ref->value = js_tovalue(J, -1);
+	jsR_setproperty(J, js_toobject(J, idx), name, js_tovalue(J, -1));
 	js_pop(J, 1);
 }
 
 void js_defproperty(js_State *J, int idx, const char *name, int atts)
 {
-	js_Object *obj = js_toobject(J, idx);
-	js_Property *ref = jsV_setproperty(J, obj, name);
-	if (ref) {
-		ref->value = js_tovalue(J, -1);
-		ref->atts = atts;
-	}
+	jsR_defproperty(J, js_toobject(J, idx), name, js_tovalue(J, -1), atts);
 	js_pop(J, 1);
+}
+
+void js_delproperty(js_State *J, int idx, const char *name)
+{
+	jsR_delproperty(J, js_toobject(J, idx), name);
 }
 
 /* Environment records */
@@ -401,33 +399,40 @@ js_Environment *jsR_newenvironment(js_State *J, js_Object *vars, js_Environment 
 	return E;
 }
 
-static js_Property *js_decvar(js_State *J, const char *name)
+static void js_decvar(js_State *J, const char *name, js_Value v)
 {
-	return jsV_setproperty(J, J->E->variables, name);
+	jsR_setproperty(J, J->E->variables, name, v);
 }
 
-static js_Property *js_getvar(js_State *J, const char *name)
+static void js_getvar(js_State *J, const char *name)
 {
 	js_Environment *E = J->E;
 	do {
 		js_Property *ref = jsV_getproperty(J, E->variables, name);
-		if (ref)
-			return ref;
+		if (ref) {
+			// TODO: use getter
+			js_pushvalue(J, ref->value);
+			return;
+		}
 		E = E->outer;
 	} while (E);
-	return NULL;
+	js_referenceerror(J, "%s is not defined", name);
 }
 
-static js_Property *js_setvar(js_State *J, const char *name)
+static void js_setvar(js_State *J, const char *name)
 {
 	js_Environment *E = J->E;
 	do {
 		js_Property *ref = jsV_getproperty(J, E->variables, name);
-		if (ref)
-			return ref;
+		if (ref) {
+			// TODO: use setter
+			if (!(ref->atts & JS_READONLY))
+				ref->value = js_tovalue(J, -1);
+			return;
+		}
 		E = E->outer;
 	} while (E);
-	return jsV_setproperty(J, J->G, name);
+	jsR_setproperty(J, J->G, name, js_tovalue(J, -1));
 }
 
 /* Function calls */
@@ -442,9 +447,13 @@ static void jsR_callfunction(js_State *J, int n, js_Function *F, js_Environment 
 
 	J->E = jsR_newenvironment(J, jsV_newobject(J, JS_COBJECT, NULL), scope);
 	for (i = 0; i < F->numparams; ++i) {
-		js_Property *ref = js_decvar(J, F->params[i]);
 		if (i < n)
-			ref->value = js_tovalue(J, i + 1);
+			js_decvar(J, F->params[i], js_tovalue(J, i + 1));
+		else {
+			js_pushundefined(J);
+			js_decvar(J, F->params[i], js_tovalue(J, -1));
+			js_pop(J, 1);
+		}
 	}
 	js_pop(J, n);
 
@@ -608,7 +617,6 @@ static void jsR_run(js_State *J, js_Function *F)
 
 	const char *str;
 	js_Object *obj;
-	js_Property *ref;
 	double x, y;
 	unsigned int ux, uy;
 	int ix, iy;
@@ -652,29 +660,22 @@ static void jsR_run(js_State *J, js_Function *F)
 		case OP_GLOBAL: js_pushobject(J, J->G); break;
 
 		case OP_FUNDEC:
-			ref = js_decvar(J, ST[*pc++]);
-			if (ref)
-				ref->value = js_tovalue(J, -1);
+			js_decvar(J, ST[*pc++], js_tovalue(J, -1));
 			js_pop(J, 1);
 			break;
 
 		case OP_VARDEC:
-			ref = js_decvar(J, ST[*pc++]);
+			js_pushundefined(J);
+			js_decvar(J, ST[*pc++], js_tovalue(J, -1));
+			js_pop(J, 1);
 			break;
 
 		case OP_GETVAR:
-			str = ST[*pc++];
-			ref = js_getvar(J, str);
-			if (ref)
-				js_pushvalue(J, ref->value);
-			else
-				js_referenceerror(J, "%s is not defined", str);
+			js_getvar(J, ST[*pc++]);
 			break;
 
 		case OP_SETVAR:
-			ref = js_setvar(J, ST[*pc++]);
-			if (ref)
-				ref->value = js_tovalue(J, -1);
+			js_setvar(J, ST[*pc++]);
 			break;
 
 		// OP_DELVAR
@@ -682,58 +683,52 @@ static void jsR_run(js_State *J, js_Function *F)
 		case OP_IN:
 			str = js_tostring(J, -2);
 			obj = js_toobject(J, -1);
-			ref = jsV_getproperty(J, obj, str);
+			b = jsV_getproperty(J, obj, str) != NULL;
 			js_pop(J, 2);
-			js_pushboolean(J, ref != NULL);
+			js_pushboolean(J, b);
 			break;
 
 		case OP_GETPROP:
 			str = js_tostring(J, -1);
-			js_pop(J, 1);
-			js_getproperty(J, -1, str);
-
 			obj = js_toobject(J, -2);
-			ref = jsV_getproperty(J, obj, str);
-			js_pop(J, 2);
-			if (ref)
-				js_pushvalue(J, ref->value);
-			else
-				js_pushundefined(J);
+			jsR_getproperty(J, obj, str);
+			js_rot3pop2(J);
 			break;
 
 		case OP_GETPROPS:
 			str = ST[*pc++];
-			js_getproperty(J, -1, str);
-
-			obj = js_toobject(J, -2);
-			ref = jsV_getproperty(J, obj, str);
-			js_pop(J, 2);
-			if (ref)
-				js_pushvalue(J, ref->value);
-			else
-				js_pushundefined(J);
+			obj = js_toobject(J, -1);
+			jsR_getproperty(J, obj, str);
+			js_rot2pop1(J);
 			break;
 
 		case OP_SETPROP:
 			obj = js_toobject(J, -3);
 			str = js_tostring(J, -2);
-			ref = jsV_setproperty(J, obj, str);
-			if (ref)
-				ref->value = js_tovalue(J, -1);
+			jsR_setproperty(J, obj, str, js_tovalue(J, -1));
 			js_rot3pop2(J);
 			break;
 
 		case OP_SETPROPS:
 			str = ST[*pc++];
 			obj = js_toobject(J, -2);
-			ref = jsV_setproperty(J, obj, str);
-			if (ref)
-				ref->value = js_tovalue(J, -1);
+			jsR_setproperty(J, obj, str, js_tovalue(J, -1));
 			js_rot2pop1(J);
 			break;
 
-		// OP_DELPROP
-		// OP_DELPROPS
+		case OP_DELPROP:
+			obj = js_toobject(J, -3);
+			str = js_tostring(J, -2);
+			jsR_delproperty(J, obj, str);
+			js_pop(J, 2);
+			break;
+
+		case OP_DELPROPS:
+			str = ST[*pc++];
+			obj = js_toobject(J, -2);
+			jsR_delproperty(J, obj, str);
+			js_pop(J, 1);
+			break;
 
 		case OP_ITERATOR:
 			if (!js_isundefined(J, -1) && !js_isnull(J, -1)) {
