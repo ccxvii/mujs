@@ -79,6 +79,13 @@ void js_loadfile(js_State *J, const char *filename);
 void js_call(js_State *J, int n);
 void js_construct(js_State *J, int n);
 
+const char *js_ref(js_State *J);
+void js_unref(js_State *J, const char *ref);
+
+void js_getregistry(js_State *J, const char *name);
+void js_setregistry(js_State *J, const char *name);
+void js_delregistry(js_State *J, const char *name);
+
 void js_getglobal(js_State *J, const char *name);
 void js_setglobal(js_State *J, const char *name);
 void js_defglobal(js_State *J, const char *name, int atts);

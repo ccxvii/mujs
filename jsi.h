@@ -106,8 +106,10 @@ struct js_State
 	js_Object *TypeError_prototype;
 	js_Object *URIError_prototype;
 
-	js_Object *G;
-	js_Environment *E;
+	int nextref; /* for js_ref use */
+	js_Object *R; /* registry of hidden values */
+	js_Object *G; /* the global object */
+	js_Environment *E; /* current environment scope */
 
 	/* execution stack */
 	int top, bot;

@@ -107,7 +107,9 @@ js_State *js_newstate(void)
 	J->stack = malloc(JS_STACKSIZE * sizeof *J->stack);
 
 	J->gcmark = 1;
+	J->nextref = 0;
 
+	J->R = jsV_newobject(J, JS_COBJECT, NULL);
 	J->G = jsV_newobject(J, JS_COBJECT, NULL);
 	J->E = jsR_newenvironment(J, J->G, NULL);
 

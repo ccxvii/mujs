@@ -251,7 +251,58 @@ void js_rot(js_State *J, int n)
 	STACK[TOP-i] = tmp;
 }
 
-/* Global and object property accessors */
+/* Registry, global and object property accessors */
+
+void js_getregistry(js_State *J, const char *name)
+{
+	js_Property *ref = jsV_getproperty(J, J->R, name);
+	if (ref)
+		js_pushvalue(J, ref->value);
+	else
+		js_pushundefined(J);
+}
+
+void js_setregistry(js_State *J, const char *name)
+{
+	js_Property *ref = jsV_setproperty(J, J->R, name);
+	if (ref)
+		ref->value = js_tovalue(J, -1);
+	js_pop(J, 1);
+}
+
+void js_delregistry(js_State *J, const char *name)
+{
+	// TODO
+}
+
+const char *js_ref(js_State *J)
+{
+	const js_Value *v = stackidx(J, -1);
+	const char *s;
+	char buf[32];
+	switch (v->type) {
+	case JS_TUNDEFINED: s = "_Undefined"; break;
+	case JS_TNULL: s = "_Null"; break;
+	case JS_TBOOLEAN:
+		s = v->u.boolean ? "_True" : "_False";
+		break;
+	case JS_TOBJECT:
+		sprintf(buf, "%p", v->u.object);
+		s = js_intern(J, buf);
+		break;
+	default:
+		sprintf(buf, "%d", J->nextref++);
+		s = js_intern(J, buf);
+		break;
+	}
+	js_setregistry(J, s);
+	return s;
+}
+
+void js_unref(js_State *J, const char *ref)
+{
+	js_delregistry(J, ref);
+}
 
 void js_getglobal(js_State *J, const char *name)
 {

@@ -124,6 +124,7 @@ void js_gc(js_State *J, int report)
 	jsG_markobject(J, mark, J->TypeError_prototype);
 	jsG_markobject(J, mark, J->URIError_prototype);
 
+	jsG_markobject(J, mark, J->R);
 	jsG_markobject(J, mark, J->G);
 
 	jsG_markstack(J, mark);
