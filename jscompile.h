@@ -106,6 +106,7 @@ enum js_OpCode
 struct js_Function
 {
 	const char *name;
+	int script;
 
 	int numparams;
 	const char **params;
