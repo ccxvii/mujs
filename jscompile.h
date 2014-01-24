@@ -18,7 +18,7 @@ enum js_OpCode
 
 	OP_NUMBER_0,	/* -- 0 */
 	OP_NUMBER_1,	/* -- 1 */
-	OP_NUMBER_X,	/* -K- K */
+	OP_NUMBER_N,	/* -K- K */
 
 	OP_NUMBER,	/* -N- <number> */
 	OP_STRING,	/* -S- <string> */
@@ -43,12 +43,16 @@ enum js_OpCode
 
 	OP_IN,		/* <name> <obj> -- <exists?> */
 
+	OP_INITPROP,	/* <obj> <key> <val> -- <obj> */
+	OP_INITPROP_N,	/* <obj> <val> -- <obj> */
+	OP_INITPROP_S,	/* <obj> <val> -- <obj> */
+
 	OP_GETPROP,	/* <obj> <name> -- <value> */
-	OP_GETPROPS,	/* <obj> -S- <value> */
+	OP_GETPROP_S,	/* <obj> -S- <value> */
 	OP_SETPROP,	/* <obj> <name> <value> -- <value> */
-	OP_SETPROPS,	/* <obj> <value> -S- <value> */
+	OP_SETPROP_S,	/* <obj> <value> -S- <value> */
 	OP_DELPROP,	/* <obj> <name> -- <success> */
-	OP_DELPROPS,	/* <obj> -S- <success> */
+	OP_DELPROP_S,	/* <obj> -S- <success> */
 
 	OP_ITERATOR,	/* <obj> -- <iobj> */
 	OP_NEXTITER,	/* <iobj> -- <iobj> <name> true || false */

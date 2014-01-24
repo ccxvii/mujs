@@ -688,7 +688,7 @@ static void jsR_run(js_State *J, js_Function *F)
 
 		case OP_NUMBER_0: js_pushnumber(J, 0); break;
 		case OP_NUMBER_1: js_pushnumber(J, 1); break;
-		case OP_NUMBER_X: js_pushnumber(J, *pc++); break;
+		case OP_NUMBER_N: js_pushnumber(J, *pc++); break;
 		case OP_NUMBER: js_pushnumber(J, NT[*pc++]); break;
 		case OP_STRING: js_pushliteral(J, ST[*pc++]); break;
 
@@ -733,6 +733,28 @@ static void jsR_run(js_State *J, js_Function *F)
 			js_pushboolean(J, b);
 			break;
 
+		case OP_INITPROP:
+			str = js_tostring(J, -2);
+			obj = js_toobject(J, -3);
+			jsR_setproperty(J, obj, str, -1);
+			js_pop(J, 2);
+			break;
+
+		case OP_INITPROP_S:
+			str = ST[*pc++];
+			obj = js_toobject(J, -2);
+			jsR_setproperty(J, obj, str, -1);
+			js_pop(J, 1);
+			break;
+
+		case OP_INITPROP_N:
+			js_pushnumber(J, *pc++);
+			str = js_tostring(J, -2);
+			obj = js_toobject(J, -3);
+			jsR_setproperty(J, obj, str, -1);
+			js_pop(J, 2);
+			break;
+
 		case OP_GETPROP:
 			str = js_tostring(J, -1);
 			obj = js_toobject(J, -2);
@@ -740,7 +762,7 @@ static void jsR_run(js_State *J, js_Function *F)
 			js_rot3pop2(J);
 			break;
 
-		case OP_GETPROPS:
+		case OP_GETPROP_S:
 			str = ST[*pc++];
 			obj = js_toobject(J, -1);
 			jsR_getproperty(J, obj, str);
@@ -748,13 +770,13 @@ static void jsR_run(js_State *J, js_Function *F)
 			break;
 
 		case OP_SETPROP:
-			obj = js_toobject(J, -3);
 			str = js_tostring(J, -2);
+			obj = js_toobject(J, -3);
 			jsR_setproperty(J, obj, str, -1);
 			js_rot3pop2(J);
 			break;
 
-		case OP_SETPROPS:
+		case OP_SETPROP_S:
 			str = ST[*pc++];
 			obj = js_toobject(J, -2);
 			jsR_setproperty(J, obj, str, -1);
@@ -762,13 +784,13 @@ static void jsR_run(js_State *J, js_Function *F)
 			break;
 
 		case OP_DELPROP:
-			obj = js_toobject(J, -2);
 			str = js_tostring(J, -1);
+			obj = js_toobject(J, -2);
 			jsR_delproperty(J, obj, str);
 			js_pop(J, 2);
 			break;
 
-		case OP_DELPROPS:
+		case OP_DELPROP_S:
 			str = ST[*pc++];
 			obj = js_toobject(J, -1);
 			jsR_delproperty(J, obj, str);
