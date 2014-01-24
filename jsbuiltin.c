@@ -66,25 +66,6 @@ static int jsB_isFinite(js_State *J, int argc)
 	return 1;
 }
 
-static int jsB_print(js_State *J, int argc)
-{
-	int i;
-	for (i = 1; i <= argc; ++i) {
-		const char *s = js_tostring(J, i);
-		if (i > 1) putchar(' ');
-		fputs(s, stdout);
-	}
-	putchar('\n');
-	return 0;
-}
-
-static int jsB_gc(js_State *J, int argc)
-{
-	int report = js_toboolean(J, 1);
-	js_gc(J, report);
-	return 0;
-}
-
 void jsB_init(js_State *J)
 {
 	/* Create the prototype objects here, before the constructors */
@@ -129,10 +110,4 @@ void jsB_init(js_State *J)
 	jsB_globalf(J, "parseFloat", jsB_parseFloat, 1);
 	jsB_globalf(J, "isNaN", jsB_isNaN, 1);
 	jsB_globalf(J, "isFinite", jsB_isFinite, 1);
-
-	/* Non-standard */
-	js_newcfunction(J, jsB_gc, 0);
-	js_setglobal(J, "gc");
-	js_newcfunction(J, jsB_print, 1);
-	js_setglobal(J, "print");
 }
