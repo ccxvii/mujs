@@ -30,6 +30,7 @@ enum js_Class {
 	JS_CDATE,
 	JS_CMATH,
 	JS_CITERATOR,
+	JS_CUSERDATA,
 };
 
 struct js_Value
@@ -61,6 +62,10 @@ struct js_Object
 			js_CFunction constructor;
 		} c;
 		js_Iterator *iter;
+		struct {
+			const char *tag;
+			void *data;
+		} user;
 	} u;
 	js_Object *gcnext;
 	int gcmark;

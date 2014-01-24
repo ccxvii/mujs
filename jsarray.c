@@ -19,7 +19,7 @@ static int A_isArray(js_State *J, int argc)
 void jsB_initarray(js_State *J)
 {
 	js_pushobject(J, J->Array_prototype);
-	js_newcconstructor(J, jsB_Array, jsB_new_Array);
+	js_newcconstructor(J, jsB_Array, jsB_new_Array, 1);
 	{
 		/* ECMA-262-5 */
 		jsB_propf(J, "isArray", A_isArray, 1);

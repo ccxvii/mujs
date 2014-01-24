@@ -37,7 +37,14 @@ static int Op_toString(js_State *J, int argc)
 	case JS_CDATE: js_pushliteral(J, "[object Date]"); break;
 	case JS_CMATH: js_pushliteral(J, "[object Math]"); break;
 	case JS_CITERATOR: js_pushliteral(J, "[Iterator]"); break;
-	default: return 0;
+	case JS_CUSERDATA:
+		js_pushliteral(J, "[object ");
+		js_pushliteral(J, self->u.user.tag);
+		js_concat(J);
+		js_pushliteral(J, "]");
+		js_concat(J);
+		break;
+	default: js_pushliteral(J, "[Object unknown]"); break;
 	}
 	return 1;
 }
@@ -94,6 +101,6 @@ void jsB_initobject(js_State *J)
 		jsB_propf(J, "isPrototypeOf", Op_isPrototypeOf, 1);
 		jsB_propf(J, "propertyIsEnumerable", Op_propertyIsEnumerable, 1);
 	}
-	js_newcconstructor(J, jsB_Object, jsB_new_Object);
+	js_newcconstructor(J, jsB_Object, jsB_new_Object, 1);
 	js_defglobal(J, "Object", JS_DONTENUM);
 }

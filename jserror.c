@@ -89,13 +89,13 @@ void jsB_initerror(js_State *J)
 			jsB_props(J, "message", "an error has occurred");
 			jsB_propf(J, "toString", Ep_toString, 0);
 	}
-	js_newcconstructor(J, jsB_Error, jsB_Error);
+	js_newcconstructor(J, jsB_Error, jsB_Error, 1);
 	js_defglobal(J, "Error", JS_DONTENUM);
 
 	#define IERROR(NAME) \
 		js_pushobject(J, J->NAME##_prototype); \
 		jsB_props(J, "name", Q(NAME)); \
-		js_newcconstructor(J, jsB_##NAME, jsB_##NAME); \
+		js_newcconstructor(J, jsB_##NAME, jsB_##NAME, 1); \
 		js_defglobal(J, Q(NAME), JS_DONTENUM);
 
 	IERROR(EvalError);

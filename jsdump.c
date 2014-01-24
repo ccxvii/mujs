@@ -711,6 +711,9 @@ void js_dumpvalue(js_State *J, js_Value v)
 		case JS_CSTRING: printf("[String'%s']", v.u.object->u.string); break;
 		case JS_CERROR: printf("[Error %s]", v.u.object->u.string); break;
 		case JS_CITERATOR: printf("[Iterator %p]", v.u.object); break;
+		case JS_CUSERDATA:
+			printf("[Userdata %s %p]", v.u.object->u.user.tag, v.u.object->u.user.data);
+			break;
 		default: printf("[Object %p]", v.u.object); break;
 		}
 		break;

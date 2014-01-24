@@ -99,8 +99,14 @@ int js_iscallable(js_State *J, int idx)
 int js_isiterator(js_State *J, int idx)
 {
 	const js_Value *v = stackidx(J, idx);
-	if (v->type == JS_TOBJECT)
-		return v->u.object->type == JS_CITERATOR;
+	return v->type == JS_TOBJECT && v->u.object->type == JS_CITERATOR;
+}
+
+int js_isuserdata(js_State *J, const char *tag, int idx)
+{
+	const js_Value *v = stackidx(J, idx);
+	if (v->type == JS_TOBJECT && v->u.object->type == JS_CUSERDATA)
+		return !strcmp(tag, v->u.object->u.user.tag);
 	return 0;
 }
 
@@ -160,6 +166,15 @@ js_Object *js_toobject(js_State *J, int idx)
 js_Value js_toprimitive(js_State *J, int idx, int hint)
 {
 	return jsV_toprimitive(J, stackidx(J, idx), hint);
+}
+
+void *js_touserdata(js_State *J, const char *tag, int idx)
+{
+	const js_Value *v = stackidx(J, idx);
+	if (v->type == JS_TOBJECT && v->u.object->type == JS_CUSERDATA)
+		if (!strcmp(tag, v->u.object->u.user.tag))
+			return v->u.object->u.user.data;
+	js_typeerror(J, "not a %s", tag);
 }
 
 /* Stack manipulation */

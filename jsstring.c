@@ -112,7 +112,7 @@ void jsB_initstring(js_State *J)
 		//jsB_propf(J, "toLowerCase", Sp_toLowerCase, 0);
 		//jsB_propf(J, "toUpperCase", Sp_toUpperCase, 0);
 	}
-	js_newcconstructor(J, jsB_String, jsB_new_String);
+	js_newcconstructor(J, jsB_String, jsB_new_String, 1);
 	{
 		jsB_propf(J, "fromCharCode", S_fromCharCode, 1);
 	}

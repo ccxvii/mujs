@@ -278,20 +278,35 @@ void js_newcfunction(js_State *J, js_CFunction cfun, int length)
 }
 
 /* prototype -- constructor */
-void js_newcconstructor(js_State *J, js_CFunction cfun, js_CFunction ccon)
+void js_newcconstructor(js_State *J, js_CFunction cfun, js_CFunction ccon, int length)
 {
 	js_Object *obj = jsV_newobject(J, JS_CCFUNCTION, J->Function_prototype);
 	obj->u.c.function = cfun;
 	obj->u.c.constructor = ccon;
 	js_pushobject(J, obj); /* proto obj */
 	{
-		js_pushnumber(J, 1);
+		js_pushnumber(J, length);
 		js_defproperty(J, -2, "length", JS_READONLY | JS_DONTENUM | JS_DONTDELETE);
 		js_rot2(J); /* obj proto */
 		js_copy(J, -2); /* obj proto obj */
 		js_defproperty(J, -2, "constructor", JS_DONTENUM);
 		js_defproperty(J, -2, "prototype", JS_READONLY | JS_DONTENUM | JS_DONTDELETE);
 	}
+}
+
+void js_newuserdata(js_State *J, const char *tag, void *data)
+{
+	js_Object *prototype = NULL;
+	js_Object *obj;
+
+	if (js_isobject(J, -1))
+		prototype = js_toobject(J, -1);
+	js_pop(J, 1);
+
+	obj = jsV_newobject(J, JS_CUSERDATA, prototype);
+	obj->u.user.tag = tag;
+	obj->u.user.data = data;
+	js_pushobject(J, obj);
 }
 
 /* Non-trivial operations on values. These are implemented using the stack. */
