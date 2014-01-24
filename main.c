@@ -24,6 +24,7 @@ main(int argc, char **argv)
 			js_dostring(J, line, 1);
 			fputs(PS1, stdout);
 		}
+		putchar('\n');
 		js_gc(J, 1);
 	}
 

@@ -7,11 +7,33 @@
 
 static int Ep_toString(js_State *J, int argc)
 {
+	const char *name = "Error";
+	const char *message = "";
+
+	if (!js_isobject(J, -1))
+		js_typeerror(J, "not an object");
+
 	js_getproperty(J, 0, "name");
-	js_pushliteral(J, ": ");
-	js_concat(J);
+	if (!js_isundefined(J, -1))
+		name = js_tostring(J, -1);
+	js_pop(J, 1);
+
 	js_getproperty(J, 0, "message");
-	js_concat(J);
+	if (!js_isundefined(J, -1))
+		message = js_tostring(J, -1);
+	js_pop(J, 1);
+
+	if (!strcmp(name, ""))
+		js_pushliteral(J, message);
+	else if (!strcmp(message, ""))
+		js_pushliteral(J, name);
+	else {
+		js_pushliteral(J, name);
+		js_pushliteral(J, ": ");
+		js_concat(J);
+		js_pushliteral(J, message);
+		js_concat(J);
+	}
 	return 1;
 }
 
