@@ -77,14 +77,23 @@ static int S_fromCharCode(js_State *J, int argc)
 {
 	int i;
 	Rune c;
-	char *s = malloc(argc * UTFmax + 1), *p = s;
-	// TODO: guard malloc with try/catch
+	char *s, *p;
+
+	s = p = malloc(argc * UTFmax + 1);
+
+	if (js_try(J)) {
+		free(s);
+		js_throw(J);
+	}
+
 	for (i = 1; i <= argc; ++i) {
 		c = js_tointeger(J, i); // TODO: ToUInt16()
 		p += runetochar(p, &c);
 	}
 	*p = 0;
 	js_pushstring(J, s);
+
+	js_endtry(J);
 	free(s);
 	return 1;
 }
