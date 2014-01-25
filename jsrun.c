@@ -773,11 +773,10 @@ static void jsR_run(js_State *J, js_Function *F)
 			break;
 
 		case OP_INITPROP_N:
-			js_pushnumber(J, *pc++);
-			str = js_tostring(J, -2);
-			obj = js_toobject(J, -3);
+			str = jsV_numbertostring(J, *pc++);
+			obj = js_toobject(J, -2);
 			jsR_setproperty(J, obj, str, -1);
-			js_pop(J, 2);
+			js_pop(J, 1);
 			break;
 
 		case OP_GETPROP:
