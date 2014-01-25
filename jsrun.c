@@ -92,7 +92,9 @@ int js_iscallable(js_State *J, int idx)
 {
 	const js_Value *v = stackidx(J, idx);
 	if (v->type == JS_TOBJECT)
-		return v->u.object->type == JS_CFUNCTION || v->u.object->type == JS_CCFUNCTION;
+		return v->u.object->type == JS_CFUNCTION ||
+			v->u.object->type == JS_CSCRIPT ||
+			v->u.object->type == JS_CCFUNCTION;
 	return 0;
 }
 
@@ -557,25 +559,37 @@ static void jsR_callcfunction(js_State *J, int n, js_CFunction F)
 
 void js_call(js_State *J, int n)
 {
-	js_Object *obj = js_toobject(J, -n - 2);
-	int savebot = BOT;
+	js_Object *obj;
+	int savebot;
+
+	if (!js_iscallable(J, -n - 2))
+		js_typeerror(J, "called object is not a function");
+
+	obj = js_toobject(J, -n - 2);
+
+	savebot = BOT;
 	BOT = TOP - n - 1;
+
 	if (obj->type == JS_CFUNCTION)
 		jsR_callfunction(J, n, obj->u.f.function, obj->u.f.scope);
 	else if (obj->type == JS_CSCRIPT)
 		jsR_callscript(J, n, obj->u.f.function);
 	else if (obj->type == JS_CCFUNCTION)
 		jsR_callcfunction(J, n, obj->u.c.function);
-	else
-		js_typeerror(J, "call: not a function");
+
 	BOT = savebot;
 }
 
 void js_construct(js_State *J, int n)
 {
-	js_Object *obj = js_toobject(J, -n - 1);
+	js_Object *obj;
 	js_Object *prototype;
 	js_Object *newobj;
+
+	if (!js_iscallable(J, -n - 1))
+		js_typeerror(J, "called object is not a function");
+
+	obj = js_toobject(J, -n - 1);
 
 	/* built-in constructors create their own objects, give them a 'null' this */
 	if (obj->type == JS_CCFUNCTION && obj->u.c.constructor) {
