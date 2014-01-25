@@ -591,6 +591,11 @@ static int isloop(js_AstType T)
 		T == STM_FOR_IN || T == STM_FOR_IN_VAR;
 }
 
+static int isfun(js_AstType T)
+{
+	return T == AST_FUNDEC || T == EXP_FUN;
+}
+
 static int matchlabel(js_Ast *node, const char *label)
 {
 	while (node && node->type == STM_LABEL) {
@@ -604,6 +609,8 @@ static int matchlabel(js_Ast *node, const char *label)
 static js_Ast *breaktarget(JF, js_Ast *node, const char *label)
 {
 	while (node) {
+		if (isfun(node->type))
+			break;
 		if (!label) {
 			if (isloop(node->type) || node->type == STM_SWITCH)
 				return node;
@@ -619,6 +626,8 @@ static js_Ast *breaktarget(JF, js_Ast *node, const char *label)
 static js_Ast *continuetarget(JF, js_Ast *node, const char *label)
 {
 	while (node) {
+		if (isfun(node->type))
+			break;
 		if (isloop(node->type)) {
 			if (!label)
 				return node;
@@ -633,7 +642,7 @@ static js_Ast *continuetarget(JF, js_Ast *node, const char *label)
 static js_Ast *returntarget(JF, js_Ast *node)
 {
 	while (node) {
-		if (node->type == AST_FUNDEC || node->type == EXP_FUN)
+		if (isfun(node->type))
 			return node;
 		node = node->parent;
 	}
@@ -1049,7 +1058,7 @@ static void cvardecs(JF, js_Ast *node)
 {
 	if (node->type == EXP_VAR) {
 		emitstring(J, F, OP_VARDEC, node->a->string);
-	} else if (node->type != EXP_FUN && node->type != AST_FUNDEC) {
+	} else if (!isfun(node->type)) {
 		if (node->a) cvardecs(J, F, node->a);
 		if (node->b) cvardecs(J, F, node->b);
 		if (node->c) cvardecs(J, F, node->c);
