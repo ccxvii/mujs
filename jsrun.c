@@ -447,7 +447,7 @@ js_Environment *jsR_newenvironment(js_State *J, js_Object *vars, js_Environment 
 
 static void js_decvar(js_State *J, const char *name, int idx)
 {
-	jsR_setproperty(J, J->E->variables, name, idx);
+	jsR_defproperty(J, J->E->variables, name, idx, JS_DONTENUM | JS_DONTDELETE);
 }
 
 static void js_getvar(js_State *J, const char *name)
@@ -485,7 +485,6 @@ static int js_delvar(js_State *J, const char *name)
 {
 	js_Environment *E = J->E;
 	do {
-		// TODO: does delete follow prototype chain?
 		js_Property *ref = jsV_getownproperty(J, E->variables, name);
 		if (ref) {
 			if (ref->atts & JS_DONTDELETE)
