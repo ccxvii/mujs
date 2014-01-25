@@ -98,6 +98,12 @@ int js_iscallable(js_State *J, int idx)
 	return 0;
 }
 
+int js_isarray(js_State *J, int idx)
+{
+	const js_Value *v = stackidx(J, idx);
+	return v->type == JS_TOBJECT && v->u.object->type == JS_CARRAY;
+}
+
 int js_isiterator(js_State *J, int idx)
 {
 	const js_Value *v = stackidx(J, idx);
