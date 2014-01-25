@@ -214,10 +214,16 @@ static js_Iterator *itflatten(js_State *J, js_Object *obj)
 	return iter;
 }
 
-js_Object *jsV_newiterator(js_State *J, js_Object *obj)
+js_Object *jsV_newiterator(js_State *J, js_Object *obj, int own)
 {
 	js_Object *iobj = jsV_newobject(J, JS_CITERATOR, NULL);
-	iobj->u.iter = itflatten(J, obj);
+	if (own) {
+		iobj->u.iter = NULL;
+		if (obj->properties != &sentinel)
+			iobj->u.iter = itwalk(J, iobj->u.iter, obj->properties, NULL);
+	} else {
+		iobj->u.iter = itflatten(J, obj);
+	}
 	return iobj;
 }
 
@@ -245,7 +251,7 @@ void jsV_resizearray(js_State *J, js_Object *obj, unsigned int newlen)
 	const char *s;
 	unsigned int k;
 	if (newlen < obj->u.a.length) {
-		js_Object *it = jsV_newiterator(J, obj);
+		js_Object *it = jsV_newiterator(J, obj, 1);
 		while ((s = jsV_nextiterator(J, it))) {
 			k = jsV_numbertouint32(jsV_stringtonumber(J, s));
 			if (k >= newlen && !strcmp(s, jsV_numbertostring(J, k)))

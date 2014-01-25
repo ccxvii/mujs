@@ -833,7 +833,7 @@ static void jsR_run(js_State *J, js_Function *F)
 
 		case OP_ITERATOR:
 			if (!js_isundefined(J, -1) && !js_isnull(J, -1)) {
-				obj = jsV_newiterator(J, js_toobject(J, -1));
+				obj = jsV_newiterator(J, js_toobject(J, -1), 0);
 				js_pop(J, 1);
 				js_pushobject(J, obj);
 			}
