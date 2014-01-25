@@ -73,6 +73,7 @@ int js_dostring(js_State *J, const char *source, int report)
 {
 	if (js_try(J)) {
 		fprintf(stderr, "libjs: %s\n", js_tostring(J, -1));
+		js_pop(J, 1);
 		return 1;
 	}
 	js_loadstring(J, "(string)", source);
@@ -89,6 +90,7 @@ int js_dofile(js_State *J, const char *filename)
 {
 	if (js_try(J)) {
 		fprintf(stderr, "libjs: %s\n", js_tostring(J, -1));
+		js_pop(J, 1);
 		return 1;
 	}
 	js_loadfile(J, filename);
