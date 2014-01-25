@@ -336,11 +336,16 @@ static void jsR_defproperty(js_State *J, js_Object *obj, const char *name, int i
 	}
 }
 
-static void jsR_delproperty(js_State *J, js_Object *obj, const char *name)
+static int jsR_delproperty(js_State *J, js_Object *obj, const char *name)
 {
+	// TODO: does delete follow prototype chain?
 	js_Property *ref = jsV_getownproperty(J, obj, name);
-	if (ref && !(ref->atts & JS_DONTDELETE))
+	if (ref) {
+		if (ref->atts & JS_DONTDELETE)
+			return 0;
 		jsV_delproperty(J, obj, name);
+	}
+	return 1;
 }
 
 /* Registry, global and object property accessors */
@@ -478,6 +483,23 @@ static void js_setvar(js_State *J, const char *name)
 		E = E->outer;
 	} while (E);
 	jsR_setproperty(J, J->G, name, -1);
+}
+
+static int js_delvar(js_State *J, const char *name)
+{
+	js_Environment *E = J->E;
+	do {
+		// TODO: does delete follow prototype chain?
+		js_Property *ref = jsV_getownproperty(J, E->variables, name);
+		if (ref) {
+			if (ref->atts & JS_DONTDELETE)
+				return 0;
+			jsV_delproperty(J, E->variables, name);
+			return 1;
+		}
+		E = E->outer;
+	} while (E);
+	return jsR_delproperty(J, J->G, name);
 }
 
 /* Function calls */
@@ -723,7 +745,10 @@ static void jsR_run(js_State *J, js_Function *F)
 			js_setvar(J, ST[*pc++]);
 			break;
 
-		// OP_DELVAR
+		case OP_DELVAR:
+			b = js_delvar(J, ST[*pc++]);
+			js_pushboolean(J, b);
+			break;
 
 		case OP_IN:
 			str = js_tostring(J, -2);
@@ -786,15 +811,17 @@ static void jsR_run(js_State *J, js_Function *F)
 		case OP_DELPROP:
 			str = js_tostring(J, -1);
 			obj = js_toobject(J, -2);
-			jsR_delproperty(J, obj, str);
+			b = jsR_delproperty(J, obj, str);
 			js_pop(J, 2);
+			js_pushboolean(J, b);
 			break;
 
 		case OP_DELPROP_S:
 			str = ST[*pc++];
 			obj = js_toobject(J, -1);
-			jsR_delproperty(J, obj, str);
+			b = jsR_delproperty(J, obj, str);
 			js_pop(J, 1);
+			js_pushboolean(J, b);
 			break;
 
 		case OP_ITERATOR:
