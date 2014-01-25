@@ -430,6 +430,11 @@ void js_delproperty(js_State *J, int idx, const char *name)
 	jsR_delproperty(J, js_toobject(J, idx), name);
 }
 
+int js_hasproperty(js_State *J, int idx, const char *name)
+{
+	return !!jsV_getproperty(J, js_toobject(J, idx), name);
+}
+
 /* Environment records */
 
 js_Environment *jsR_newenvironment(js_State *J, js_Object *vars, js_Environment *outer)
@@ -759,8 +764,7 @@ static void jsR_run(js_State *J, js_Function *F)
 
 		case OP_IN:
 			str = js_tostring(J, -2);
-			obj = js_toobject(J, -1);
-			b = jsV_getproperty(J, obj, str) != NULL;
+			b = js_hasproperty(J, -1, str);
 			js_pop(J, 2);
 			js_pushboolean(J, b);
 			break;

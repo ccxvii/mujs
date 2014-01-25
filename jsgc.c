@@ -49,7 +49,7 @@ static void jsG_markfunction(js_State *J, int mark, js_Function *fun)
 {
 	int i;
 	fun->gcmark = mark;
-	for (i = 0; i < fun->funlen; i++)
+	for (i = 0; i < fun->funlen; ++i)
 		if (fun->funtab[i]->gcmark != mark)
 			jsG_markfunction(J, mark, fun->funtab[i]);
 }
