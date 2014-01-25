@@ -237,3 +237,20 @@ const char *jsV_nextiterator(js_State *J, js_Object *iobj)
 	}
 	return NULL;
 }
+
+/* Walk all the properties and delete them one by one for arrays */
+
+void jsV_resizearray(js_State *J, js_Object *obj, unsigned int newlen)
+{
+	const char *s;
+	unsigned int k;
+	if (newlen < obj->u.a.length) {
+		js_Object *it = jsV_newiterator(J, obj);
+		while ((s = jsV_nextiterator(J, it))) {
+			k = jsV_numbertouint32(jsV_stringtonumber(J, s));
+			if (k >= newlen && !strcmp(s, jsV_numbertostring(J, k)))
+				jsV_delproperty(J, obj, s);
+		}
+	}
+	obj->u.a.length = newlen;
+}

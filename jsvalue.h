@@ -120,6 +120,8 @@ void jsV_delproperty(js_State *J, js_Object *obj, const char *name);
 js_Object *jsV_newiterator(js_State *J, js_Object *obj);
 const char *jsV_nextiterator(js_State *J, js_Object *iobj);
 
+void jsV_resizearray(js_State *J, js_Object *obj, unsigned int newlen);
+
 /* jsdump.c */
 void js_dumpobject(js_State *J, js_Object *obj);
 void js_dumpvalue(js_State *J, js_Value v);

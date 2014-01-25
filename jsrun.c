@@ -299,14 +299,9 @@ static void jsR_setproperty(js_State *J, js_Object *obj, const char *name, int i
 		if (!strcmp(name, "length")) {
 			double rawlen = js_tonumber(J, idx);
 			unsigned int newlen = jsV_numbertouint32(rawlen);
-			unsigned int oldlen = obj->u.a.length;
 			if (newlen != rawlen)
 				js_rangeerror(J, "array length");
-			for (k = newlen; k < oldlen; ++k) {
-				sprintf(buf, "%u", k);
-				jsV_delproperty(J, obj, buf);
-			}
-			obj->u.a.length = newlen;
+			jsV_resizearray(J, obj, newlen);
 			return;
 		}
 
@@ -340,7 +335,6 @@ static void jsR_defproperty(js_State *J, js_Object *obj, const char *name, int i
 
 static int jsR_delproperty(js_State *J, js_Object *obj, const char *name)
 {
-	// TODO: does delete follow prototype chain?
 	js_Property *ref = jsV_getownproperty(J, obj, name);
 	if (ref) {
 		if (ref->atts & JS_DONTDELETE)
