@@ -1,7 +1,7 @@
 #include "jsi.h"
 #include "jscompile.h"
 #include "jsvalue.h"
-#include "jsutf.h"
+#include "utf.h"
 
 double jsV_numbertointeger(double n)
 {

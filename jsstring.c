@@ -1,7 +1,7 @@
 #include "jsi.h"
 #include "jsvalue.h"
 #include "jsbuiltin.h"
-#include "jsutf.h"
+#include "utf.h"
 
 static int jsB_new_String(js_State *J, int argc)
 {

@@ -14,9 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "jsutf.h"
-
-#define uchar jsU_uchar
+#include "utf.h"
 
 typedef unsigned char uchar;
 

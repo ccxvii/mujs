@@ -1,4 +1,4 @@
-#include "jsutf.h"
+#include "utf.h"
 
 #define bsearch jsU_bsearch
 #define nelem(a) (sizeof (a) / sizeof (a)[0])

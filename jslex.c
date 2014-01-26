@@ -1,6 +1,6 @@
 #include "jsi.h"
 #include "jslex.h"
-#include "jsutf.h"
+#include "utf.h"
 
 #define nelem(a) (sizeof (a) / sizeof (a)[0])
 
