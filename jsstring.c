@@ -144,12 +144,10 @@ static int Sp_lastIndexOf(js_State *J, int argc)
 {
 	const char *haystack = js_tostring(J, 0);
 	const char *needle = js_tostring(J, 1);
-	int pos = strlen(haystack);
+	int pos = argc > 1 ? js_tointeger(J, 2) : strlen(haystack);
 	int len = strlen(needle);
 	int k = 0, last = -1;
 	Rune rune;
-	if (!js_isundefined(J, 2))
-		pos = js_tointeger(J, 2);
 	while (*haystack && k <= pos) {
 		if (!strncmp(haystack, needle, len))
 			last = k;
@@ -186,7 +184,7 @@ static int Sp_slice(js_State *J, int argc)
 	const char *str = js_tostring(J, 0);
 	int len = utflen(str);
 	int s = js_tointeger(J, 1);
-	int e = !js_isundefined(J, 2) ? js_tointeger(J, 2) : len;
+	int e = argc > 1 ? js_tointeger(J, 2) : len;
 	char *out;
 
 	s = s < 0 ? s + len : s;
@@ -214,7 +212,7 @@ static int Sp_substring(js_State *J, int argc)
 	const char *str = js_tostring(J, 0);
 	int len = utflen(str);
 	int s = js_tointeger(J, 1);
-	int e = !js_isundefined(J, 2) ? js_tointeger(J, 2) : len;
+	int e = argc > 1 ? js_tointeger(J, 2) : len;
 	char *out;
 
 	s = s < 0 ? 0 : s > len ? len : s;

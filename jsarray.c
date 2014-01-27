@@ -2,6 +2,49 @@
 #include "jsvalue.h"
 #include "jsbuiltin.h"
 
+static unsigned int js_getlength(js_State *J, int idx)
+{
+	unsigned int len;
+	js_getproperty(J, idx, "length");
+	len = js_touint32(J, -1);
+	js_pop(J, 1);
+	return len;
+}
+
+static void js_setlength(js_State *J, int idx, unsigned int len)
+{
+	js_pushnumber(J, len);
+	js_setproperty(J, idx, "length");
+}
+
+static int js_hasindex(js_State *J, int idx, unsigned int i)
+{
+	char buf[32];
+	sprintf(buf, "%u", i);
+	return js_hasproperty(J, idx, buf);
+}
+
+static void js_getindex(js_State *J, int idx, unsigned int i)
+{
+	char buf[32];
+	sprintf(buf, "%u", i);
+	js_getproperty(J, idx, buf);
+}
+
+static void js_setindex(js_State *J, int idx, unsigned int i)
+{
+	char buf[32];
+	sprintf(buf, "%u", i);
+	js_setproperty(J, idx, buf);
+}
+
+static void js_delindex(js_State *J, int idx, unsigned int i)
+{
+	char buf[32];
+	sprintf(buf, "%u", i);
+	js_delproperty(J, idx, buf);
+}
+
 static int jsB_new_Array(js_State *J, int argc)
 {
 	int i;
@@ -14,23 +57,21 @@ static int jsB_new_Array(js_State *J, int argc)
 			js_setproperty(J, -2, "length");
 		} else {
 			js_copy(J, 1);
-			js_setproperty(J, -2, "0");
+			js_setindex(J, -2, 0);
 		}
 	} else {
-		char buf[32];
 		for (i = 1; i <= argc; ++i) {
-			sprintf(buf, "%u", i - 1);
 			js_copy(J, i);
-			js_setproperty(J, -2, buf);
+			js_setindex(J, -2, i - 1);
 		}
 	}
+
 	return 1;
 }
 
 static int Ap_concat(js_State *J, int argc)
 {
 	unsigned int n, len, i;
-	char buf[32];
 
 	js_newarray(J);
 	n = 0;
@@ -40,24 +81,19 @@ static int Ap_concat(js_State *J, int argc)
 		if (js_isarray(J, -1)) {
 			unsigned int k = 0;
 
-			js_getproperty(J, -1, "length");
-			len = js_touint32(J, -1);
-			js_pop(J, 1);
+			len = js_getlength(J, -1);
 
 			while (k < len) {
-				sprintf(buf, "%u", k);
-				if (js_hasproperty(J, -1, buf)) {
-					js_getproperty(J, -1, buf);
-					sprintf(buf, "%u", n);
-					js_setproperty(J, -3, buf);
+				if (js_hasindex(J, -1, k)) {
+					js_getindex(J, -1, k);
+					js_setindex(J, -3, n);
 				}
 				++k;
 				++n;
 			}
 			js_pop(J, 1);
 		} else {
-			sprintf(buf, "%u", n);
-			js_setproperty(J, -2, buf);
+			js_setindex(J, -2, n);
 			++n;
 		}
 	}
@@ -68,14 +104,12 @@ static int Ap_concat(js_State *J, int argc)
 static int Ap_join(js_State *J, int argc)
 {
 	char * volatile out = NULL;
-	char buf[32];
-	const char *r, *sep = ",";
-	unsigned int seplen, n;
-	unsigned int k, len;
+	const char *sep = ",";
+	const char *r;
+	unsigned int seplen = 1;
+	unsigned int k, n, len;
 
-	js_getproperty(J, 0, "length");
-	len = js_touint32(J, -1);
-	js_pop(J, 1);
+	len = js_getlength(J, 0);
 
 	if (argc == 1 && !js_isundefined(J, 1)) {
 		sep = js_tostring(J, 1);
@@ -94,8 +128,7 @@ static int Ap_join(js_State *J, int argc)
 
 	n = 1;
 	for (k = 0; k < len; ++k) {
-		sprintf(buf, "%u", k);
-		js_getproperty(J, 0, buf);
+		js_getindex(J, 0, k);
 		if (js_isundefined(J, -1) || js_isnull(J, -1))
 			r = "";
 		else
@@ -116,33 +149,26 @@ static int Ap_join(js_State *J, int argc)
 	}
 
 	js_pushstring(J, out);
-
 	js_endtry(J);
 	free(out);
 	return 1;
 }
 
-
 static int Ap_pop(js_State *J, int argc)
 {
 	unsigned int n;
-	char buf[32];
 
-	js_getproperty(J, 0, "length");
-	n = js_touint32(J, -1);
-	js_pop(J, 1);
+	n = js_getlength(J, 0);
 
 	if (n > 0) {
-		sprintf(buf, "%u", n - 1);
-		js_getproperty(J, 0, buf);
-		js_delproperty(J, 0, buf);
-		js_pushnumber(J, n - 1);
-		js_setproperty(J, 0, "length");
+		js_getindex(J, 0, n - 1);
+		js_delindex(J, 0, n - 1);
+		js_setlength(J, 0, n - 1);
 	} else {
-		js_pushnumber(J, 0);
-		js_setproperty(J, 0, "length");
+		js_setlength(J, 0, 0);
 		js_pushundefined(J);
 	}
+
 	return 1;
 }
 
@@ -150,32 +176,199 @@ static int Ap_push(js_State *J, int argc)
 {
 	unsigned int n;
 	int i;
-	char buf[32];
 
-	js_getproperty(J, 0, "length");
-	n = js_touint32(J, -1);
-	js_pop(J, 1);
+	n = js_getlength(J, 0);
 
-	for (i = 1; i <= argc; ++i) {
-		sprintf(buf, "%u", n);
+	for (i = 1; i <= argc; ++i, ++n) {
 		js_copy(J, i);
-		js_setproperty(J, 0, buf);
-		++n;
+		js_setindex(J, 0, n);
 	}
 
-	js_pushnumber(J, n);
-	js_setproperty(J, 0, "length");
+	js_setlength(J, 0, n);
 
 	js_pushnumber(J, n);
 	return 1;
 }
 
-// reverse
-// shift
-// slice
+static int Ap_reverse(js_State *J, int argc)
+{
+	unsigned int len, middle, lower;
+
+	len = js_getlength(J, 0);
+	middle = len / 2;
+	lower = 0;
+
+	while (lower != middle) {
+		unsigned int upper = len - lower - 1;
+		int haslower = js_hasindex(J, 0, lower);
+		int hasupper = js_hasindex(J, 0, upper);
+		if (haslower && hasupper) {
+			js_getindex(J, 0, lower);
+			js_getindex(J, 0, upper);
+			js_setindex(J, 0, lower);
+			js_setindex(J, 0, upper);
+		} else if (hasupper) {
+			js_getindex(J, 0, upper);
+			js_setindex(J, 0, lower);
+			js_delindex(J, 0, upper);
+		} else if (haslower) {
+			js_getindex(J, 0, lower);
+			js_setindex(J, 0, upper);
+			js_delindex(J, 0, lower);
+		}
+		++lower;
+	}
+
+	js_copy(J, 0);
+	return 1;
+}
+
+static int Ap_shift(js_State *J, int argc)
+{
+	unsigned int k, len;
+
+	len = js_getlength(J, 0);
+
+	if (len == 0) {
+		js_setlength(J, 0, 0);
+		js_pushundefined(J);
+		return 1;
+	}
+
+	js_getindex(J, 0, 0);
+
+	for (k = 1; k < len; ++k) {
+		if (js_hasindex(J, 0, k)) {
+			js_getindex(J, 0, k);
+			js_setindex(J, 0, k - 1);
+		} else {
+			js_delindex(J, 0, k - 1);
+		}
+	}
+
+	js_delindex(J, 0, len - 1);
+	js_setlength(J, 0, len - 1);
+
+	return 1;
+}
+
+static int Ap_slice(js_State *J, int argc)
+{
+	unsigned int len;
+	int s, e, n;
+
+	js_newarray(J);
+
+	len = js_getlength(J, 0);
+	s = js_tointeger(J, 1);
+	e = argc > 1 ? js_tointeger(J, 2) : len;
+
+	if (s < 0) s = s + len;
+	if (e < 0) e = e + len;
+
+	s = s < 0 ? 0 : s > len ? len : s;
+	e = e < 0 ? 0 : e > len ? len : e;
+
+	for (n = 0; s < e; ++s, ++n) {
+		if (js_hasindex(J, 0, s)) {
+			js_getindex(J, 0, s);
+			js_setindex(J, -2, n);
+		}
+	}
+
+	return 1;
+}
+
 // sort
-// splice
-// unshift
+
+static int Ap_splice(js_State *J, int argc)
+{
+	unsigned int len;
+	int start, del, add, k;
+
+	js_newarray(J);
+
+	len = js_getlength(J, 0);
+
+	start = js_tointeger(J, 1);
+	if (start < 0) start = start + len;
+	start = start < 0 ? 0 : start > len ? len : start;
+
+	del = js_tointeger(J, 2);
+	del = del < 0 ? 0 : del > len - start ? len - start : del;
+
+	/* copy deleted items to return array */
+	for (k = 0; k < del; ++k) {
+		if (js_hasindex(J, 0, start + k)) {
+			js_getindex(J, 0, start + k);
+			js_setindex(J, -2, k);
+		}
+	}
+
+	/* shift the tail to resize the hole left by deleted items */
+	add = argc - 2;
+	if (add < del) {
+		for (k = start; k < len - del; ++k) {
+			if (js_hasindex(J, 0, k + del)) {
+				js_getindex(J, 0, k + del);
+				js_setindex(J, 0, k + add);
+			} else {
+				js_delindex(J, 0, k + del);
+			}
+		}
+		for (k = len; k > len - del + add; --k) {
+			js_delindex(J, 0, k - 1);
+		}
+	} else if (add > del) {
+		for (k = len - del; k > start; --k) {
+			if (js_hasindex(J, 0, k + del - 1)) {
+				js_getindex(J, 0, k + del - 1);
+				js_setindex(J, 0, k + add - 1);
+			} else {
+				js_delindex(J, 0, k + add - 1);
+			}
+		}
+	}
+
+	/* copy new items into the hole */
+	for (k = 0; k < add; ++k) {
+		js_copy(J, 3 + k);
+		js_setindex(J, 0, start + k);
+	}
+
+	js_setlength(J, 0, len - del + add);
+
+	return 1;
+}
+
+static int Ap_unshift(js_State *J, int argc)
+{
+	unsigned int k, len;
+	int i;
+
+	len = js_getlength(J, 0);
+
+	for (k = len; k > 0; --k) {
+		int from = k - 1;
+		int to = k + argc - 1;
+		if (js_hasindex(J, 0, from)) {
+			js_getindex(J, 0, from);
+			js_setindex(J, 0, to);
+		} else {
+			js_delindex(J, 0, to);
+		}
+	}
+
+	for (i = 1; i <= argc; ++i) {
+		js_copy(J, i);
+		js_setindex(J, 0, i - 1);
+	}
+
+	js_setlength(J, 0, len + argc);
+
+	js_pushnumber(J, len + argc);
+	return 1;
+}
 
 static int Ap_toString(js_State *J, int argc)
 {
@@ -203,6 +396,11 @@ void jsB_initarray(js_State *J)
 		jsB_propf(J, "join", Ap_join, 1);
 		jsB_propf(J, "pop", Ap_pop, 0);
 		jsB_propf(J, "push", Ap_push, 1);
+		jsB_propf(J, "reverse", Ap_reverse, 0);
+		jsB_propf(J, "shift", Ap_shift, 0);
+		jsB_propf(J, "slice", Ap_slice, 0);
+		jsB_propf(J, "splice", Ap_splice, 0);
+		jsB_propf(J, "unshift", Ap_unshift, 0);
 	}
 	js_newcconstructor(J, jsB_new_Array, jsB_new_Array, 1);
 	{
