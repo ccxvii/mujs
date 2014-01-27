@@ -347,8 +347,13 @@ void js_concat(js_State *J)
 		char *sab = malloc(strlen(sa) + strlen(sb) + 1);
 		strcpy(sab, sa);
 		strcat(sab, sb);
+		if (js_try(J)) {
+			free(sab);
+			js_throw(J);
+		}
 		js_pop(J, 2);
 		js_pushstring(J, sab);
+		js_endtry(J);
 		free(sab);
 	} else {
 		double x = jsV_tonumber(J, &va);
