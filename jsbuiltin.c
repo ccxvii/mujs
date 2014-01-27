@@ -75,6 +75,7 @@ void jsB_init(js_State *J)
 	J->Boolean_prototype = jsV_newobject(J, JS_CBOOLEAN, J->Object_prototype);
 	J->Number_prototype = jsV_newobject(J, JS_CNUMBER, J->Object_prototype);
 	J->String_prototype = jsV_newobject(J, JS_CSTRING, J->Object_prototype);
+	J->Date_prototype = jsV_newobject(J, JS_CDATE, J->Object_prototype);
 
 	/* All the native error types */
 	J->Error_prototype = jsV_newobject(J, JS_CERROR, J->Object_prototype);
@@ -94,6 +95,7 @@ void jsB_init(js_State *J)
 	jsB_initstring(J);
 	jsB_initerror(J);
 	jsB_initmath(J);
+	jsB_initdate(J);
 
 	/* Initialize the global object */
 	js_pushnumber(J, NAN);
