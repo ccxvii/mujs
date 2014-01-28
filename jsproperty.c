@@ -25,6 +25,8 @@ static js_Property *newproperty(js_State *J, const char *name)
 	js_Property *node = malloc(sizeof(js_Property));
 	node->name = js_intern(J, name);
 	node->left = node->right = &sentinel;
+	node->prevp = NULL;
+	node->next = NULL;
 	node->level = 1;
 	node->atts = 0;
 	node->value.type = JS_TUNDEFINED;
@@ -86,6 +88,14 @@ static js_Property *insert(js_State *J, js_Property *node, const char *name, js_
 	return *result = newproperty(J, name);
 }
 
+static void freenode(js_State *J, js_Property *node)
+{
+	if (node->next)
+		node->next->prevp = node->prevp;
+	*node->prevp = node->next;
+	free(node);
+}
+
 static js_Property *delete(js_State *J, js_Property *node, const char *name)
 {
 	js_Property *temp, *succ;
@@ -100,11 +110,11 @@ static js_Property *delete(js_State *J, js_Property *node, const char *name)
 			if (node->left == &sentinel) {
 				temp = node;
 				node = node->right;
-				free(temp);
+				freenode(J, temp);
 			} else if (node->right == &sentinel) {
 				temp = node;
 				node = node->left;
-				free(temp);
+				freenode(J, temp);
 			} else {
 				succ = node->right;
 				while (succ->left != &sentinel)
@@ -162,21 +172,20 @@ js_Property *jsV_getproperty(js_State *J, js_Object *obj, const char *name)
 	return NULL;
 }
 
-static js_Property *jsV_getenumproperty(js_State *J, js_Object *obj, const char *name)
-{
-	do {
-		js_Property *ref = lookup(obj->properties, name);
-		if (ref && !(ref->atts & JS_DONTENUM))
-			return ref;
-		obj = obj->prototype;
-	} while (obj);
-	return NULL;
-}
-
 js_Property *jsV_setproperty(js_State *J, js_Object *obj, const char *name)
 {
 	js_Property *result;
 	obj->properties = insert(J, obj->properties, name, &result);
+	if (!result->prevp) {
+		if (!obj->head) {
+			result->prevp = &obj->head;
+			obj->tail = obj->head = result;
+		} else {
+			result->prevp = &obj->tail->next;
+			obj->tail->next = result;
+			obj->tail = result;
+		}
+	}
 	return result;
 }
 
@@ -187,59 +196,63 @@ void jsV_delproperty(js_State *J, js_Object *obj, const char *name)
 
 /* Flatten hierarchy of enumerable properties into an iterator object */
 
-static js_Iterator *itwalk(js_State *J, js_Iterator *iter, js_Property *prop, js_Object *seen)
+static int itshadow(js_State *J, js_Object *top, js_Object *bot, const char *name)
 {
-	if (prop->right != &sentinel)
-		iter = itwalk(J, iter, prop->right, seen);
-	if (!(prop->atts & JS_DONTENUM)) {
-		if (!seen || !jsV_getenumproperty(J, seen, prop->name)) {
-			js_Iterator *head = malloc(sizeof *head);
-			head->name = prop->name;
-			head->next = iter;
-			iter = head;
-		}
+	while (top != bot) {
+		js_Property *prop = lookup(top->properties, name);
+		if (prop && !(prop->atts & JS_DONTENUM))
+			return 1;
+		top = top->prototype;
 	}
-	if (prop->left != &sentinel)
-		iter = itwalk(J, iter, prop->left, seen);
-	return iter;
+	return 0;
 }
 
-static js_Iterator *itflatten(js_State *J, js_Object *obj)
+static void itwalk(js_State *J, js_Object *io, js_Object *top, int own)
 {
-	js_Iterator *iter = NULL;
-	if (obj->prototype)
-		iter = itflatten(J, obj->prototype);
-	if (obj->properties != &sentinel)
-		iter = itwalk(J, iter, obj->properties, obj->prototype);
-	return iter;
+	js_Object *obj = top;
+	js_Iterator *tail = NULL;
+	while (obj) {
+		js_Property *prop = obj->head;
+		while (prop) {
+			if (!(prop->atts & JS_DONTENUM) && !itshadow(J, top, obj, prop->name)) {
+				js_Iterator *node = malloc(sizeof *node);
+				node->name = prop->name;
+				node->next = NULL;
+				if (!io->u.iter.head) {
+					io->u.iter.head = tail = node;
+				} else {
+					tail->next = node;
+					tail = node;
+				}
+			}
+			prop = prop->next;
+		}
+		if (own)
+			break;
+		obj = obj->prototype;
+	}
 }
 
 js_Object *jsV_newiterator(js_State *J, js_Object *obj, int own)
 {
-	js_Object *iobj = jsV_newobject(J, JS_CITERATOR, NULL);
-	if (own) {
-		iobj->u.iter = NULL;
-		if (obj->properties != &sentinel)
-			iobj->u.iter = itwalk(J, iobj->u.iter, obj->properties, NULL);
-	} else {
-		iobj->u.iter = itflatten(J, obj);
-	}
-	return iobj;
+	js_Object *io = jsV_newobject(J, JS_CITERATOR, NULL);
+	io->u.iter.target = obj;
+	io->u.iter.head = NULL;
+	itwalk(J, io, obj, own);
+	return io;
 }
 
-const char *jsV_nextiterator(js_State *J, js_Object *iobj)
+const char *jsV_nextiterator(js_State *J, js_Object *io)
 {
-	js_Iterator *iter, *next;
-	const char *name;
-	if (iobj->type != JS_CITERATOR)
+	if (io->type != JS_CITERATOR)
 		js_typeerror(J, "not an iterator");
-	iter = iobj->u.iter;
-	if (iter) {
-		name = iter->name;
-		next = iter->next;
-		free(iter);
-		iobj->u.iter = next;
-		return name;
+	while (io->u.iter.head) {
+		js_Iterator *next = io->u.iter.head->next;
+		const char *name = io->u.iter.head->name;
+		free(io->u.iter.head);
+		io->u.iter.head = next;
+		if (jsV_getproperty(J, io->u.iter.target, name))
+			return name;
 	}
 	return NULL;
 }

@@ -48,6 +48,7 @@ struct js_Object
 {
 	js_Class type;
 	js_Property *properties;
+	js_Property *head, *tail; /* for enumeration */
 	js_Object *prototype;
 	union {
 		int boolean;
@@ -64,7 +65,10 @@ struct js_Object
 			js_CFunction function;
 			js_CFunction constructor;
 		} c;
-		js_Iterator *iter;
+		struct {
+			js_Object *target;
+			js_Iterator *head;
+		} iter;
 		struct {
 			const char *tag;
 			void *data;
@@ -78,6 +82,7 @@ struct js_Property
 {
 	const char *name;
 	js_Property *left, *right;
+	js_Property **prevp, *next; /* for enumeration */
 	int level;
 	int atts;
 	js_Value value;
@@ -118,7 +123,7 @@ js_Property *jsV_nextproperty(js_State *J, js_Object *obj, const char *name);
 void jsV_delproperty(js_State *J, js_Object *obj, const char *name);
 
 js_Object *jsV_newiterator(js_State *J, js_Object *obj, int own);
-const char *jsV_nextiterator(js_State *J, js_Object *iobj);
+const char *jsV_nextiterator(js_State *J, js_Object *iter);
 
 void jsV_resizearray(js_State *J, js_Object *obj, unsigned int newlen);
 

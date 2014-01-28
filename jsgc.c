@@ -22,9 +22,11 @@ static void jsG_freefunction(js_State *J, js_Function *fun)
 
 static void jsG_freeproperty(js_State *J, js_Property *node)
 {
-	if (node->left->level) jsG_freeproperty(J, node->left);
-	if (node->right->level) jsG_freeproperty(J, node->right);
-	free(node);
+	while (node) {
+		js_Property *next = node->next;
+		free(node);
+		node = next;
+	}
 }
 
 static void jsG_freeiterator(js_State *J, js_Iterator *node)
@@ -38,10 +40,10 @@ static void jsG_freeiterator(js_State *J, js_Iterator *node)
 
 static void jsG_freeobject(js_State *J, js_Object *obj)
 {
-	if (obj->properties->level)
-		jsG_freeproperty(J, obj->properties);
+	if (obj->head)
+		jsG_freeproperty(J, obj->head);
 	if (obj->type == JS_CITERATOR)
-		jsG_freeiterator(J, obj->u.iter);
+		jsG_freeiterator(J, obj->u.iter.head);
 	free(obj);
 }
 
@@ -79,6 +81,9 @@ static void jsG_markobject(js_State *J, int mark, js_Object *obj)
 		jsG_markproperty(J, mark, obj->properties);
 	if (obj->prototype && obj->prototype->gcmark != mark)
 		jsG_markobject(J, mark, obj->prototype);
+	if (obj->type == JS_CITERATOR) {
+		jsG_markobject(J, mark, obj->u.iter.target);
+	}
 	if (obj->type == JS_CFUNCTION || obj->type == JS_CSCRIPT) {
 		if (obj->u.f.scope && obj->u.f.scope->gcmark != mark)
 			jsG_markenvironment(J, mark, obj->u.f.scope);
