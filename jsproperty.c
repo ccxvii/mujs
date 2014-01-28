@@ -218,7 +218,7 @@ static void itwalk(js_State *J, js_Object *io, js_Object *top, int own)
 				js_Iterator *node = malloc(sizeof *node);
 				node->name = prop->name;
 				node->next = NULL;
-				if (!io->u.iter.head) {
+				if (!tail) {
 					io->u.iter.head = tail = node;
 				} else {
 					tail->next = node;
