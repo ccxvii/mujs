@@ -17,28 +17,28 @@ static void js_setlength(js_State *J, int idx, unsigned int len)
 	js_setproperty(J, idx, "length");
 }
 
-static int js_hasindex(js_State *J, int idx, unsigned int i)
+int js_hasindex(js_State *J, int idx, unsigned int i)
 {
 	char buf[32];
 	sprintf(buf, "%u", i);
 	return js_hasproperty(J, idx, buf);
 }
 
-static void js_getindex(js_State *J, int idx, unsigned int i)
+void js_getindex(js_State *J, int idx, unsigned int i)
 {
 	char buf[32];
 	sprintf(buf, "%u", i);
 	js_getproperty(J, idx, buf);
 }
 
-static void js_setindex(js_State *J, int idx, unsigned int i)
+void js_setindex(js_State *J, int idx, unsigned int i)
 {
 	char buf[32];
 	sprintf(buf, "%u", i);
 	js_setproperty(J, idx, buf);
 }
 
-static void js_delindex(js_State *J, int idx, unsigned int i)
+void js_delindex(js_State *J, int idx, unsigned int i)
 {
 	char buf[32];
 	sprintf(buf, "%u", i);
@@ -76,7 +76,7 @@ static int Ap_concat(js_State *J, int argc)
 	js_newarray(J);
 	n = 0;
 
-	for (i = 0; i <= argc; i++) {
+	for (i = 0; i <= argc; ++i) {
 		js_copy(J, i);
 		if (js_isarray(J, -1)) {
 			unsigned int k = 0;

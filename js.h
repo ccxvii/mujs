@@ -90,11 +90,16 @@ void js_getglobal(js_State *J, const char *name);
 void js_setglobal(js_State *J, const char *name);
 void js_defglobal(js_State *J, const char *name, int atts);
 
+int js_hasproperty(js_State *J, int idx, const char *name);
 void js_getproperty(js_State *J, int idx, const char *name);
 void js_setproperty(js_State *J, int idx, const char *name);
 void js_defproperty(js_State *J, int idx, const char *name, int atts);
 void js_delproperty(js_State *J, int idx, const char *name);
-int js_hasproperty(js_State *J, int idx, const char *name);
+
+int js_hasindex(js_State *J, int idx, unsigned int i);
+void js_getindex(js_State *J, int idx, unsigned int i);
+void js_setindex(js_State *J, int idx, unsigned int i);
+void js_delindex(js_State *J, int idx, unsigned int i);
 
 void js_pushglobal(js_State *J);
 void js_pushundefined(js_State *J);
