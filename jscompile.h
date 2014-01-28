@@ -26,6 +26,7 @@ enum js_OpCode
 
 	OP_NEWARRAY,
 	OP_NEWOBJECT,
+	OP_NEWREGEXP,
 
 	OP_UNDEF,
 	OP_NULL,

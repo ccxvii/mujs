@@ -66,6 +66,10 @@ struct js_Object
 			js_CFunction constructor;
 		} c;
 		struct {
+			void *prog;
+			int flags;
+		} r;
+		struct {
 			js_Object *target;
 			js_Iterator *head;
 		} iter;

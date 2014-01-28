@@ -75,6 +75,7 @@ void jsB_init(js_State *J)
 	J->Boolean_prototype = jsV_newobject(J, JS_CBOOLEAN, J->Object_prototype);
 	J->Number_prototype = jsV_newobject(J, JS_CNUMBER, J->Object_prototype);
 	J->String_prototype = jsV_newobject(J, JS_CSTRING, J->Object_prototype);
+	J->RegExp_prototype = jsV_newobject(J, JS_COBJECT, J->Object_prototype);
 	J->Date_prototype = jsV_newobject(J, JS_CDATE, J->Object_prototype);
 
 	/* All the native error types */
@@ -93,6 +94,7 @@ void jsB_init(js_State *J)
 	jsB_initboolean(J);
 	jsB_initnumber(J);
 	jsB_initstring(J);
+	jsB_initregexp(J);
 	jsB_initerror(J);
 	jsB_initmath(J);
 	jsB_initdate(J);

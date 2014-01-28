@@ -642,6 +642,11 @@ void jsC_dumpfunction(js_State *J, js_Function *F)
 			pc(' ');
 			pstr(F->strtab[*p++]);
 			break;
+		case OP_NEWREGEXP:
+			pc(' ');
+			pregexp(F->strtab[p[0]], p[1]);
+			p += 2;
+			break;
 
 		case OP_FUNDEC:
 		case OP_VARDEC:

@@ -104,6 +104,12 @@ int js_isarray(js_State *J, int idx)
 	return v->type == JS_TOBJECT && v->u.object->type == JS_CARRAY;
 }
 
+int js_isregexp(js_State *J, int idx)
+{
+	const js_Value *v = stackidx(J, idx);
+	return v->type == JS_TOBJECT && v->u.object->type == JS_CREGEXP;
+}
+
 int js_isiterator(js_State *J, int idx)
 {
 	const js_Value *v = stackidx(J, idx);
@@ -174,6 +180,14 @@ js_Object *js_toobject(js_State *J, int idx)
 js_Value js_toprimitive(js_State *J, int idx, int hint)
 {
 	return jsV_toprimitive(J, stackidx(J, idx), hint);
+}
+
+void *js_toregexp(js_State *J, int idx, int *flags)
+{
+	const js_Value *v = stackidx(J, idx);
+	if (v->type == JS_TOBJECT && v->u.object->type == JS_CREGEXP)
+		return *flags = v->u.object->u.r.flags, v->u.object->u.r.prog;
+	js_typeerror(J, "not a regexp");
 }
 
 void *js_touserdata(js_State *J, const char *tag, int idx)
@@ -743,6 +757,7 @@ static void jsR_run(js_State *J, js_Function *F)
 		case OP_CLOSURE: js_newfunction(J, FT[*pc++], J->E); break;
 		case OP_NEWOBJECT: js_newobject(J); break;
 		case OP_NEWARRAY: js_newarray(J); break;
+		case OP_NEWREGEXP: js_newregexp(J, ST[pc[0]], pc[1]); pc += 2; break;
 
 		case OP_UNDEF: js_pushundefined(J); break;
 		case OP_NULL: js_pushnull(J); break;

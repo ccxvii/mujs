@@ -402,6 +402,12 @@ static void cexp(JF, js_Ast *exp)
 	case EXP_FALSE: emit(J, F, OP_FALSE); break;
 	case EXP_THIS: emit(J, F, OP_THIS); break;
 
+	case AST_REGEXP:
+		emit(J, F, OP_NEWREGEXP);
+		emitraw(J, F, addstring(J, F, exp->string));
+		emitraw(J, F, exp->number);
+		break;
+
 	case EXP_OBJECT:
 		emit(J, F, OP_NEWOBJECT);
 		cobject(J, F, exp->a);

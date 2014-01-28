@@ -8,6 +8,7 @@ void jsB_initfunction(js_State *J);
 void jsB_initboolean(js_State *J);
 void jsB_initnumber(js_State *J);
 void jsB_initstring(js_State *J);
+void jsB_initregexp(js_State *J);
 void jsB_initerror(js_State *J);
 void jsB_initmath(js_State *J);
 void jsB_initdate(js_State *J);

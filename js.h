@@ -118,6 +118,7 @@ void js_newerror(js_State *J, const char *message);
 void js_newcfunction(js_State *J, js_CFunction fun, int length);
 void js_newcconstructor(js_State *J, js_CFunction fun, js_CFunction con, int length);
 void js_newuserdata(js_State *J, const char *tag, void *data);
+void js_newregexp(js_State *J, const char *pattern, int flags);
 
 int js_isundefined(js_State *J, int idx);
 int js_isnull(js_State *J, int idx);
@@ -127,6 +128,7 @@ int js_isstring(js_State *J, int idx);
 int js_isprimitive(js_State *J, int idx);
 int js_isobject(js_State *J, int idx);
 int js_isarray(js_State *J, int idx);
+int js_isregexp(js_State *J, int idx);
 int js_iscallable(js_State *J, int idx);
 int js_isuserdata(js_State *J, const char *tag, int idx);
 
