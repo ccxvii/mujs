@@ -276,21 +276,29 @@ void js_rot(js_State *J, int n)
 
 /* Property access that takes care of attributes and getters/setters */
 
-static void jsR_getproperty(js_State *J, js_Object *obj, const char *name)
+static int jsR_hasproperty(js_State *J, js_Object *obj, const char *name)
 {
 	js_Property *ref;
 
 	if (obj->type == JS_CARRAY) {
 		if (!strcmp(name, "length")) {
 			js_pushnumber(J, obj->u.a.length);
-			return;
+			return 1;
 		}
 	}
 
 	ref = jsV_getproperty(J, obj, name);
-	if (ref)
+	if (ref) {
 		js_pushvalue(J, ref->value);
-	else
+		return 1;
+	}
+
+	return 0;
+}
+
+static void jsR_getproperty(js_State *J, js_Object *obj, const char *name)
+{
+	if (!jsR_hasproperty(J, obj, name))
 		js_pushundefined(J);
 }
 
@@ -438,7 +446,7 @@ void js_delproperty(js_State *J, int idx, const char *name)
 
 int js_hasproperty(js_State *J, int idx, const char *name)
 {
-	return !!jsV_getproperty(J, js_toobject(J, idx), name);
+	return jsR_hasproperty(J, js_toobject(J, idx), name);
 }
 
 /* Environment records */
@@ -771,7 +779,7 @@ static void jsR_run(js_State *J, js_Function *F)
 		case OP_IN:
 			str = js_tostring(J, -2);
 			b = js_hasproperty(J, -1, str);
-			js_pop(J, 2);
+			js_pop(J, 2 + b);
 			js_pushboolean(J, b);
 			break;
 

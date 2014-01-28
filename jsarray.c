@@ -84,10 +84,8 @@ static int Ap_concat(js_State *J, int argc)
 			len = js_getlength(J, -1);
 
 			while (k < len) {
-				if (js_hasindex(J, -1, k)) {
-					js_getindex(J, -1, k);
+				if (js_hasindex(J, -1, k))
 					js_setindex(J, -3, n);
-				}
 				++k;
 				++n;
 			}
@@ -203,16 +201,12 @@ static int Ap_reverse(js_State *J, int argc)
 		int haslower = js_hasindex(J, 0, lower);
 		int hasupper = js_hasindex(J, 0, upper);
 		if (haslower && hasupper) {
-			js_getindex(J, 0, lower);
-			js_getindex(J, 0, upper);
 			js_setindex(J, 0, lower);
 			js_setindex(J, 0, upper);
 		} else if (hasupper) {
-			js_getindex(J, 0, upper);
 			js_setindex(J, 0, lower);
 			js_delindex(J, 0, upper);
 		} else if (haslower) {
-			js_getindex(J, 0, lower);
 			js_setindex(J, 0, upper);
 			js_delindex(J, 0, lower);
 		}
@@ -238,12 +232,10 @@ static int Ap_shift(js_State *J, int argc)
 	js_getindex(J, 0, 0);
 
 	for (k = 1; k < len; ++k) {
-		if (js_hasindex(J, 0, k)) {
-			js_getindex(J, 0, k);
+		if (js_hasindex(J, 0, k))
 			js_setindex(J, 0, k - 1);
-		} else {
+		else
 			js_delindex(J, 0, k - 1);
-		}
 	}
 
 	js_delindex(J, 0, len - 1);
@@ -269,12 +261,9 @@ static int Ap_slice(js_State *J, int argc)
 	s = s < 0 ? 0 : s > len ? len : s;
 	e = e < 0 ? 0 : e > len ? len : e;
 
-	for (n = 0; s < e; ++s, ++n) {
-		if (js_hasindex(J, 0, s)) {
-			js_getindex(J, 0, s);
+	for (n = 0; s < e; ++s, ++n)
+		if (js_hasindex(J, 0, s))
 			js_setindex(J, -2, n);
-		}
-	}
 
 	return 1;
 }
@@ -298,35 +287,27 @@ static int Ap_splice(js_State *J, int argc)
 	del = del < 0 ? 0 : del > len - start ? len - start : del;
 
 	/* copy deleted items to return array */
-	for (k = 0; k < del; ++k) {
-		if (js_hasindex(J, 0, start + k)) {
-			js_getindex(J, 0, start + k);
+	for (k = 0; k < del; ++k)
+		if (js_hasindex(J, 0, start + k))
 			js_setindex(J, -2, k);
-		}
-	}
 
 	/* shift the tail to resize the hole left by deleted items */
 	add = argc - 2;
 	if (add < del) {
 		for (k = start; k < len - del; ++k) {
-			if (js_hasindex(J, 0, k + del)) {
-				js_getindex(J, 0, k + del);
+			if (js_hasindex(J, 0, k + del))
 				js_setindex(J, 0, k + add);
-			} else {
+			else
 				js_delindex(J, 0, k + del);
-			}
 		}
-		for (k = len; k > len - del + add; --k) {
+		for (k = len; k > len - del + add; --k)
 			js_delindex(J, 0, k - 1);
-		}
 	} else if (add > del) {
 		for (k = len - del; k > start; --k) {
-			if (js_hasindex(J, 0, k + del - 1)) {
-				js_getindex(J, 0, k + del - 1);
+			if (js_hasindex(J, 0, k + del - 1))
 				js_setindex(J, 0, k + add - 1);
-			} else {
+			else
 				js_delindex(J, 0, k + add - 1);
-			}
 		}
 	}
 
@@ -351,12 +332,10 @@ static int Ap_unshift(js_State *J, int argc)
 	for (k = len; k > 0; --k) {
 		int from = k - 1;
 		int to = k + argc - 1;
-		if (js_hasindex(J, 0, from)) {
-			js_getindex(J, 0, from);
+		if (js_hasindex(J, 0, from))
 			js_setindex(J, 0, to);
-		} else {
+		else
 			js_delindex(J, 0, to);
-		}
 	}
 
 	for (i = 1; i <= argc; ++i) {
