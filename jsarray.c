@@ -268,7 +268,71 @@ static int Ap_slice(js_State *J, int argc)
 	return 1;
 }
 
-// sort
+static int compare(js_State *J, unsigned int x, unsigned int y, int *hasx, int *hasy, int hasfn)
+{
+	const char *sx, *sy;
+	int c;
+
+	*hasx = js_hasindex(J, 0, x);
+	*hasy = js_hasindex(J, 0, y);
+
+	if (*hasx && *hasy) {
+		int unx = js_isundefined(J, -2);
+		int uny = js_isundefined(J, -1);
+		if (unx && uny) return 0;
+		if (unx) return 1;
+		if (uny) return -1;
+
+		if (hasfn) {
+			js_copy(J, 1); /* copy function */
+			js_pushglobal(J); /* set this object */
+			js_copy(J, -4); /* copy x */
+			js_copy(J, -4); /* copy y */
+			js_call(J, 2);
+			c = js_tonumber(J, -1);
+			js_pop(J, 1);
+			return c;
+		}
+
+		sx = js_tostring(J, -2);
+		sy = js_tostring(J, -1);
+		return strcmp(sx, sy);
+	}
+
+	if (*hasx) return -1;
+	if (*hasy) return 1;
+	return 0;
+}
+
+static int Ap_sort(js_State *J, int argc)
+{
+	unsigned int len, i, k;
+	int hasx, hasy, hasfn;
+
+	len = js_getlength(J, 0);
+
+	hasfn = js_iscallable(J, 1);
+
+	for (i = 1; i < len; ++i) {
+		k = i;
+		while (k > 0 && compare(J, k - 1, k, &hasx, &hasy, hasfn) > 0) {
+			if (hasx && hasy) {
+				js_setindex(J, 0, k - 1);
+				js_setindex(J, 0, k);
+			} else if (hasx) {
+				js_delindex(J, 0, k - 1);
+				js_setindex(J, 0, k);
+			} else if (hasy) {
+				js_setindex(J, 0, k - 1);
+				js_delindex(J, 0, k);
+			}
+			--k;
+		}
+	}
+
+	js_copy(J, 0);
+	return 1;
+}
 
 static int Ap_splice(js_State *J, int argc)
 {
@@ -378,6 +442,7 @@ void jsB_initarray(js_State *J)
 		jsB_propf(J, "reverse", Ap_reverse, 0);
 		jsB_propf(J, "shift", Ap_shift, 0);
 		jsB_propf(J, "slice", Ap_slice, 0);
+		jsB_propf(J, "sort", Ap_sort, 1);
 		jsB_propf(J, "splice", Ap_splice, 0);
 		jsB_propf(J, "unshift", Ap_unshift, 0);
 	}
