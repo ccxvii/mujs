@@ -132,7 +132,7 @@ static int DateFromTime(double t)
 
 static int WeekDay(double t)
 {
-    return (Day(t) + 4) % 7;
+	return (Day(t) + 4) % 7;
 }
 
 static double LocalTime(double utc)
