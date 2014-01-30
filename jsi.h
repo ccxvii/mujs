@@ -44,6 +44,8 @@ void js_dup(js_State *J);
 void js_rot2(js_State *J);
 void js_rot3(js_State *J);
 
+int js_RegExp_prototype_exec(js_State *J, int idx, const char *text);
+
 /* Exception handling */
 
 struct js_Jumpbuf

@@ -3,6 +3,8 @@
 #include "jsbuiltin.h"
 #include "utf.h"
 
+#include <regex.h>
+
 static int jsB_new_String(js_State *J, int argc)
 {
 	js_newstring(J, argc > 0 ? js_tostring(J, 1) : "");
@@ -301,6 +303,50 @@ static int S_fromCharCode(js_State *J, int argc)
 	return 1;
 }
 
+static int Sp_match(js_State *J, int argc)
+{
+	const char *text;
+
+	text = js_tostring(J, 0);
+
+	if (js_isregexp(J, 1))
+		js_copy(J, 1);
+	else if (js_isundefined(J, 1))
+		js_newregexp(J, "", 0);
+	else
+		js_newregexp(J, js_tostring(J, 1), 0);
+
+	// TODO: JS_REGEXP_G looping
+
+	return js_RegExp_prototype_exec(J, -1, text);
+}
+
+static int Sp_search(js_State *J, int argc)
+{
+	const char *text;
+	regmatch_t m;
+	regex_t *prog;
+	int flags;
+
+	text = js_tostring(J, 0);
+
+	if (js_isregexp(J, 1))
+		js_copy(J, 1);
+	else if (js_isundefined(J, 1))
+		js_newregexp(J, "", 0);
+	else
+		js_newregexp(J, js_tostring(J, 1), 0);
+
+	prog = js_toregexp(J, -1, &flags);
+
+	if (!regexec(prog, text, 1, &m, 0))
+		js_pushnumber(J, m.rm_so); // TODO: convert to utf-8 index offset
+	else
+		js_pushnumber(J, -1);
+
+	return 1;
+}
+
 void jsB_initstring(js_State *J)
 {
 	J->String_prototype->u.string = "";
@@ -315,10 +361,10 @@ void jsB_initstring(js_State *J)
 		jsB_propf(J, "indexOf", Sp_indexOf, 1);
 		jsB_propf(J, "lastIndexOf", Sp_lastIndexOf, 1);
 		jsB_propf(J, "localeCompare", Sp_localeCompare, 1);
-		jsB_propf(J, "slice", Sp_slice, 2);
-		// match (uses regexp)
+		jsB_propf(J, "match", Sp_match, 1);
 		// replace (uses regexp)
-		// search (uses regexp)
+		jsB_propf(J, "search", Sp_search, 1);
+		jsB_propf(J, "slice", Sp_slice, 2);
 		// split (uses regexp)
 		jsB_propf(J, "substring", Sp_substring, 2);
 		jsB_propf(J, "toLowerCase", Sp_toLowerCase, 0);

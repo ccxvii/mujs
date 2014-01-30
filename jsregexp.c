@@ -2,12 +2,72 @@
 #include "jsvalue.h"
 #include "jsbuiltin.h"
 
+#define nelem(a) (sizeof (a) / sizeof (a)[0])
+
+#include <regex.h>
+
+int js_RegExp_prototype_exec(js_State *J, int idx, const char *text)
+{
+	int flags, opts;
+	regex_t *prog;
+	regmatch_t m[10];
+	char *s;
+	int i, n;
+
+	prog = js_toregexp(J, idx, &flags);
+
+	opts = REG_EXTENDED;
+	if (flags & JS_REGEXP_I) opts |= REG_ICASE;
+	if (flags & JS_REGEXP_M) opts |= REG_NEWLINE;
+
+	if (!regexec(prog, text, nelem(m), m, opts)) {
+		js_newarray(J);
+
+		s = malloc(strlen(text) + 1);
+		if (js_try(J)) {
+			free(s);
+			js_throw(J);
+		}
+
+		for (i = 0; i < nelem(m) && m[i].rm_so >= 0; ++i) {
+			n = m[i].rm_eo - m[i].rm_so;
+			memcpy(s, text + m[i].rm_so, n);
+			s[n] = 0;
+			js_pushstring(J, s);
+			js_setindex(J, -2, i);
+		}
+
+		js_endtry(J);
+		free(s);
+		return 1;
+	}
+
+	js_pushnull(J);
+	return 1;
+}
+
 void js_newregexp(js_State *J, const char *pattern, int flags)
 {
+	char msg[256];
 	js_Object *obj;
+	regex_t *prog;
+	int opts, status;
 
 	obj = jsV_newobject(J, JS_CREGEXP, J->RegExp_prototype);
-	obj->u.r.prog = NULL;
+
+	opts = REG_EXTENDED;
+	if (flags & JS_REGEXP_I) opts |= REG_ICASE;
+	if (flags & JS_REGEXP_M) opts |= REG_NEWLINE;
+
+	prog = malloc(sizeof (regex_t));
+	status = regcomp(prog, pattern, opts);
+	if (status) {
+		free(prog);
+		regerror(status, prog, msg, sizeof msg);
+		js_syntaxerror(J, "%s", msg);
+	}
+
+	obj->u.r.prog = prog;
 	obj->u.r.flags = flags;
 	js_pushobject(J, obj);
 
@@ -106,13 +166,19 @@ static int Rp_toString(js_State *J, int argc)
 
 static int Rp_exec(js_State *J, int argc)
 {
-	js_pushnull(J);
-	return 1;
+	return js_RegExp_prototype_exec(J, 0, js_tostring(J, 1));
 }
 
 static int Rp_test(js_State *J, int argc)
 {
-	js_pushboolean(J, 0);
+	int flags;
+	regex_t *prog;
+	const char *text;
+
+	prog = js_toregexp(J, 0, &flags);
+	text = js_tostring(J, 1);
+
+	js_pushboolean(J, !regexec(prog, text, 0, NULL, 0));
 	return 1;
 }
 
