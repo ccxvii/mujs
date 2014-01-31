@@ -107,6 +107,7 @@ void js_pushnull(js_State *J);
 void js_pushboolean(js_State *J, int v);
 void js_pushnumber(js_State *J, double v);
 void js_pushstring(js_State *J, const char *v);
+void js_pushlstring(js_State *J, const char *v, int n);
 void js_pushliteral(js_State *J, const char *v);
 
 void js_newobject(js_State *J);

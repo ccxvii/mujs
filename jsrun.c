@@ -50,6 +50,27 @@ void js_pushstring(js_State *J, const char *v)
 	++TOP;
 }
 
+void js_pushlstring(js_State *J, const char *v, int n)
+{
+	char buf[256];
+	if (n + 1 < sizeof buf) {
+		memcpy(buf, v, n);
+		buf[n] = 0;
+		js_pushstring(J, buf);
+	} else {
+		char *s = malloc(n + 1);
+		memcpy(s, v, n);
+		s[n] = 0;
+		if (js_try(J)) {
+			free(s);
+			js_throw(J);
+		}
+		js_pushstring(J, s);
+		js_endtry(J);
+		free(s);
+	}
+}
+
 void js_pushliteral(js_State *J, const char *v)
 {
 	STACK[TOP].type = JS_TSTRING;

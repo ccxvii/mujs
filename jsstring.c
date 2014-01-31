@@ -48,7 +48,7 @@ static inline Rune runeAt(const char *s, int i)
 	return rune;
 }
 
-static inline const char *utfindex(const char *s, int i)
+static inline const char *utfidx(const char *s, int i)
 {
 	Rune rune = 0;
 	while (i-- > 0) {
@@ -167,27 +167,13 @@ static int Sp_localeCompare(js_State *J, int argc)
 	return strcmp(a, b);
 }
 
-static char *substr(js_State *J, const char *src, int a, int b)
-{
-	int n = b - a;
-	const char *s = utfindex(src, a);
-	char *dst = malloc(UTFmax * n + 1), *d = dst;
-	while (n--) {
-		Rune rune;
-		s += chartorune(&rune, s);
-		d += runetochar(d, &rune);
-	}
-	*d = 0;
-	return dst;
-}
-
 static int Sp_slice(js_State *J, int argc)
 {
 	const char *str = js_tostring(J, 0);
+	const char *ss, *ee;
 	int len = utflen(str);
 	int s = js_tointeger(J, 1);
 	int e = argc > 1 ? js_tointeger(J, 2) : len;
-	char *out;
 
 	s = s < 0 ? s + len : s;
 	e = e < 0 ? e + len : e;
@@ -195,42 +181,38 @@ static int Sp_slice(js_State *J, int argc)
 	s = s < 0 ? 0 : s > len ? len : s;
 	e = e < 0 ? 0 : e > len ? len : e;
 
-	if (s < e)
-		out = substr(J, str, s, e);
-	else
-		out = substr(J, str, e, s);
-
-	if (js_try(J)) {
-		free(out);
-		js_throw(J);
+	if (s < e) {
+		ss = utfidx(str, s);
+		ee = utfidx(ss, e - s);
+	} else {
+		ss = utfidx(str, e);
+		ee = utfidx(ss, s - e);
 	}
-	js_pushstring(J, out);
-	js_endtry(J);
+
+	js_pushlstring(J, ss, ee - ss);
 	return 1;
 }
 
 static int Sp_substring(js_State *J, int argc)
 {
 	const char *str = js_tostring(J, 0);
+	const char *ss, *ee;
 	int len = utflen(str);
 	int s = js_tointeger(J, 1);
 	int e = argc > 1 ? js_tointeger(J, 2) : len;
-	char *out;
 
 	s = s < 0 ? 0 : s > len ? len : s;
 	e = e < 0 ? 0 : e > len ? len : e;
 
-	if (s < e)
-		out = substr(J, str, s, e);
-	else
-		out = substr(J, str, e, s);
-
-	if (js_try(J)) {
-		free(out);
-		js_throw(J);
+	if (s < e) {
+		ss = utfidx(str, s);
+		ee = utfidx(ss, e - s);
+	} else {
+		ss = utfidx(str, e);
+		ee = utfidx(ss, s - e);
 	}
-	js_pushstring(J, out);
-	js_endtry(J);
+
+	js_pushlstring(J, ss, ee - ss);
 	return 1;
 }
 

@@ -448,7 +448,7 @@ void jsB_initarray(js_State *J)
 	}
 	js_newcconstructor(J, jsB_new_Array, jsB_new_Array, 1);
 	{
-		/* ECMA-262-5 */
+		/* ES5 */
 		jsB_propf(J, "isArray", A_isArray, 1);
 	}
 	js_defglobal(J, "Array", JS_DONTENUM);

@@ -11,8 +11,7 @@ int js_RegExp_prototype_exec(js_State *J, int idx, const char *text)
 	int flags, opts;
 	regex_t *prog;
 	regmatch_t m[10];
-	char *s;
-	int i, n;
+	int i;
 
 	prog = js_toregexp(J, idx, &flags);
 
@@ -22,23 +21,10 @@ int js_RegExp_prototype_exec(js_State *J, int idx, const char *text)
 
 	if (!regexec(prog, text, nelem(m), m, opts)) {
 		js_newarray(J);
-
-		s = malloc(strlen(text) + 1);
-		if (js_try(J)) {
-			free(s);
-			js_throw(J);
-		}
-
 		for (i = 0; i < nelem(m) && m[i].rm_so >= 0; ++i) {
-			n = m[i].rm_eo - m[i].rm_so;
-			memcpy(s, text + m[i].rm_so, n);
-			s[n] = 0;
-			js_pushstring(J, s);
+			js_pushlstring(J, text + m[i].rm_so, m[i].rm_eo - m[i].rm_so);
 			js_setindex(J, -2, i);
 		}
-
-		js_endtry(J);
-		free(s);
 		return 1;
 	}
 
