@@ -5,6 +5,37 @@
 
 #include <regex.h>
 
+#define nelem(a) (sizeof (a) / sizeof (a)[0])
+
+struct sbuffer { int n, m; char s[64]; };
+
+static struct sbuffer *sb_putc(struct sbuffer *sb, int c)
+{
+	if (!sb) {
+		sb = malloc(sizeof *sb);
+		sb->n = 0;
+		sb->m = sizeof sb->s;
+	} else if (sb->n == sb->m) {
+		sb = realloc(sb, (sb->m *= 2) + offsetof(struct sbuffer, s));
+	}
+	sb->s[sb->n++] = c;
+	return sb;
+}
+
+static struct sbuffer *sb_puts(struct sbuffer *sb, const char *s)
+{
+	while (*s)
+		sb = sb_putc(sb, *s++);
+	return sb;
+}
+
+static struct sbuffer *sb_putm(struct sbuffer *sb, const char *s, const char *e)
+{
+	while (s < e)
+		sb = sb_putc(sb, *s++);
+	return sb;
+}
+
 static int jsB_new_String(js_State *J, int argc)
 {
 	js_newstring(J, argc > 0 ? js_tostring(J, 1) : "");
@@ -329,6 +360,159 @@ static int Sp_search(js_State *J, int argc)
 	return 1;
 }
 
+static int Sp_replace_regexp(js_State *J, int argc)
+{
+	const char *source, *s, *r;
+	regmatch_t m[10];
+	regex_t *prog;
+	int flags;
+	struct sbuffer *sb = NULL;
+	int n, x;
+
+	source = js_tostring(J, 0);
+	prog = js_toregexp(J, 1, &flags);
+
+	if (regexec(prog, source, nelem(m), m, 0)) {
+		js_copy(J, 0);
+		return 1;
+	}
+
+loop:
+	s = source + m[0].rm_so;
+	n = m[0].rm_eo - m[0].rm_so;
+
+	if (js_iscallable(J, 2)) {
+		js_copy(J, 2);
+		js_pushglobal(J);
+		for (x = 0; m[x].rm_so >= 0; ++x) /* arg 0..x: substring and subexps that matched */
+			js_pushlstring(J, source + m[x].rm_so, m[x].rm_eo - m[x].rm_so);
+		js_pushnumber(J, s - source); /* arg x+2: offset within search string */
+		js_copy(J, 0); /* arg x+3: search string */
+		js_call(J, 2 + x);
+		r = js_tostring(J, -1);
+		sb = sb_putm(sb, source, s);
+		sb = sb_puts(sb, r);
+		js_pop(J, 1);
+	} else {
+		r = js_tostring(J, 2);
+		sb = sb_putm(sb, source, s);
+		while (*r) {
+			if (*r == '$') {
+				switch (*(++r)) {
+				case '$': sb = sb_putc(sb, '$'); break;
+				case '`': sb = sb_putm(sb, source, s); break;
+				case '\'': sb = sb_puts(sb, s + n); break;
+				case '&':
+					sb = sb_putm(sb, s, s + n);
+					break;
+				case '0': case '1': case '2': case '3': case '4':
+				case '5': case '6': case '7': case '8': case '9':
+					x = *r - '0';
+					if (m[x].rm_so >= 0) {
+						sb = sb_putm(sb, source + m[x].rm_so, source + m[x].rm_eo);
+					} else {
+						sb = sb_putc(sb, '$');
+						sb = sb_putc(sb, '0'+x);
+					}
+					break;
+				default:
+					sb = sb_putc(sb, '$');
+					sb = sb_putc(sb, *r);
+					break;
+				}
+				++r;
+			} else {
+				sb = sb_putc(sb, *r++);
+			}
+		}
+	}
+
+	if (flags & JS_REGEXP_G) {
+		source = source + m[0].rm_eo;
+		if (!regexec(prog, source, nelem(m), m, REG_NOTBOL))
+			goto loop;
+	}
+
+	sb = sb_puts(sb, s + n);
+	sb = sb_putc(sb, 0);
+
+	if (js_try(J)) {
+		free(sb);
+		js_throw(J);
+	}
+	js_pushstring(J, sb ? sb->s : "");
+	js_endtry(J);
+	free(sb);
+	return 1;
+}
+
+static int Sp_replace_string(js_State *J, int argc)
+{
+	const char *source, *needle, *s, *r;
+	struct sbuffer *sb = NULL;
+	int n;
+
+	source = js_tostring(J, 0);
+	needle = js_tostring(J, 1);
+
+	s = strstr(source, needle);
+	if (!s) {
+		js_copy(J, 0);
+		return 1;
+	}
+	n = strlen(needle);
+
+	if (js_iscallable(J, 2)) {
+		js_copy(J, 2);
+		js_pushglobal(J);
+		js_pushlstring(J, s, n); /* arg 1: substring that matched */
+		js_pushnumber(J, s - source); /* arg 2: offset within search string */
+		js_copy(J, 0); /* arg 3: search string */
+		js_call(J, 3);
+		r = js_tostring(J, -1);
+		sb = sb_putm(sb, source, s);
+		sb = sb_puts(sb, r);
+		sb = sb_puts(sb, s + n);
+		sb = sb_putc(sb, 0);
+		js_pop(J, 1);
+	} else {
+		r = js_tostring(J, 2);
+		sb = sb_putm(sb, source, s);
+		while (*r) {
+			if (*r == '$') {
+				switch (*(++r)) {
+				case '$': sb = sb_putc(sb, '$'); break;
+				case '&': sb = sb_putm(sb, s, s + n); break;
+				case '`': sb = sb_putm(sb, source, s); break;
+				case '\'': sb = sb_puts(sb, s + n); break;
+				default: sb = sb_putc(sb, '$'); sb = sb_putc(sb, *r); break;
+				}
+				++r;
+			} else {
+				sb = sb_putc(sb, *r++);
+			}
+		}
+		sb = sb_puts(sb, s + n);
+		sb = sb_putc(sb, 0);
+	}
+
+	if (js_try(J)) {
+		free(sb);
+		js_throw(J);
+	}
+	js_pushstring(J, sb ? sb->s : "");
+	js_endtry(J);
+	free(sb);
+	return 1;
+}
+
+static int Sp_replace(js_State *J, int argc)
+{
+	if (js_isregexp(J, 1))
+		return Sp_replace_regexp(J, argc);
+	return Sp_replace_string(J, argc);
+}
+
 void jsB_initstring(js_State *J)
 {
 	J->String_prototype->u.string = "";
@@ -344,7 +528,7 @@ void jsB_initstring(js_State *J)
 		jsB_propf(J, "lastIndexOf", Sp_lastIndexOf, 1);
 		jsB_propf(J, "localeCompare", Sp_localeCompare, 1);
 		jsB_propf(J, "match", Sp_match, 1);
-		// replace (uses regexp)
+		jsB_propf(J, "replace", Sp_replace, 2);
 		jsB_propf(J, "search", Sp_search, 1);
 		jsB_propf(J, "slice", Sp_slice, 2);
 		// split (uses regexp)
