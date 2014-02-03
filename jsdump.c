@@ -41,6 +41,105 @@ const char *jsC_opcodestring(int opcode)
 	return opname[opcode];
 }
 
+static int prec(js_AstType type)
+{
+	switch (type) {
+	case AST_IDENTIFIER:
+	case AST_NUMBER:
+	case AST_STRING:
+	case AST_REGEXP:
+	case EXP_UNDEF:
+	case EXP_NULL:
+	case EXP_TRUE:
+	case EXP_FALSE:
+	case EXP_THIS:
+	case EXP_ARRAY:
+	case EXP_OBJECT:
+		return 170;
+
+	case EXP_FUN:
+	case EXP_INDEX:
+	case EXP_MEMBER:
+	case EXP_CALL:
+	case EXP_NEW:
+		return 160;
+
+	case EXP_POSTINC:
+	case EXP_POSTDEC:
+		return 150;
+
+	case EXP_DELETE:
+	case EXP_VOID:
+	case EXP_TYPEOF:
+	case EXP_PREINC:
+	case EXP_PREDEC:
+	case EXP_POS:
+	case EXP_NEG:
+	case EXP_BITNOT:
+	case EXP_LOGNOT:
+		return 140;
+
+	case EXP_MOD:
+	case EXP_DIV:
+	case EXP_MUL:
+		return 130;
+
+	case EXP_SUB:
+	case EXP_ADD:
+		return 120;
+
+	case EXP_USHR:
+	case EXP_SHR:
+	case EXP_SHL:
+		return 110;
+
+	case EXP_IN:
+	case EXP_INSTANCEOF:
+	case EXP_GE:
+	case EXP_LE:
+	case EXP_GT:
+	case EXP_LT:
+		return 100;
+
+	case EXP_STRICTNE:
+	case EXP_STRICTEQ:
+	case EXP_NE:
+	case EXP_EQ:
+		return 90;
+
+	case EXP_BITAND: return 80;
+	case EXP_BITXOR: return 70;
+	case EXP_BITOR: return 60;
+	case EXP_LOGAND: return 50;
+	case EXP_LOGOR: return 40;
+
+	case EXP_COND:
+		return 30;
+
+	case EXP_ASS:
+	case EXP_ASS_MUL:
+	case EXP_ASS_DIV:
+	case EXP_ASS_MOD:
+	case EXP_ASS_ADD:
+	case EXP_ASS_SUB:
+	case EXP_ASS_SHL:
+	case EXP_ASS_SHR:
+	case EXP_ASS_USHR:
+	case EXP_ASS_BITAND:
+	case EXP_ASS_BITXOR:
+	case EXP_ASS_BITOR:
+		return 20;
+
+#define COMMA 15
+
+	case EXP_COMMA:
+		return 10;
+
+	default:
+		return 0;
+	}
+}
+
 static inline void pc(int c)
 {
 	putchar(c);
@@ -74,7 +173,7 @@ static void pargs(int d, js_Ast *list)
 {
 	while (list) {
 		assert(list->type == AST_LIST);
-		pexpi(d, 0, list->a);
+		pexpi(d, COMMA, list->a);
 		list = list->b;
 		if (list)
 			ps(", ");
@@ -86,7 +185,7 @@ static void parray(int d, js_Ast *list)
 	ps("[");
 	while (list) {
 		assert(list->type == AST_LIST);
-		pexpi(d, 0, list->a);
+		pexpi(d, COMMA, list->a);
 		list = list->b;
 		if (list)
 			ps(", ");
@@ -102,22 +201,22 @@ static void pobject(int d, js_Ast *list)
 		assert(list->type == AST_LIST);
 		switch (kv->type) {
 		case EXP_PROP_VAL:
-			pexpi(d, 0, kv->a);
+			pexpi(d, COMMA, kv->a);
 			ps(": ");
-			pexpi(d, 0, kv->b);
+			pexpi(d, COMMA, kv->b);
 			break;
 		case EXP_PROP_GET:
 			ps("get ");
-			pexpi(d, 0, kv->a);
+			pexpi(d, COMMA, kv->a);
 			ps("() {\n");
 			pstmlist(d, kv->b);
 			in(d); ps("}");
 			break;
 		case EXP_PROP_SET:
 			ps("set ");
-			pexpi(d, 0, kv->a);
+			pexpi(d, COMMA, kv->a);
 			ps("(");
-			pexpi(d, 0, kv->b);
+			pexpi(d, COMMA, kv->b);
 			ps(") {\n");
 			pstmlist(d, kv->c);
 			in(d); ps("}");
@@ -155,26 +254,30 @@ static void pregexp(const char *prog, int flags)
 	if (flags & JS_REGEXP_M) pc('m');
 }
 
-static void pbin(int d, int i, js_Ast *exp, const char *op)
+static void pbin(int d, int p, js_Ast *exp, const char *op)
 {
-	if (i) pc('(');
-	pexpi(d, 1, exp->a);
+	pexpi(d, p, exp->a);
 	ps(op);
-	pexpi(d, 1, exp->b);
-	if (i) pc(')');
+	pexpi(d, p, exp->b);
 }
 
-static void puna(int d, int i, js_Ast *exp, const char *pre, const char *suf)
+static void puna(int d, int p, js_Ast *exp, const char *pre, const char *suf)
 {
-	if (i) pc('(');
 	ps(pre);
-	pexpi(d, 1, exp->a);
+	pexpi(d, p, exp->a);
 	ps(suf);
-	if (i) pc(')');
 }
 
-static void pexpi(int d, int i, js_Ast *exp)
+static void pexpi(int d, int p, js_Ast *exp)
 {
+	int tp = prec(exp->type);
+	int paren = 0;
+	if (tp < p) {
+		pc('(');
+		paren = 1;
+	}
+	p = tp;
+
 	switch (exp->type) {
 	case AST_IDENTIFIER: ps(exp->string); break;
 	case AST_NUMBER: printf("%.9g", exp->number); break;
@@ -190,105 +293,95 @@ static void pexpi(int d, int i, js_Ast *exp)
 	case EXP_OBJECT: pobject(d, exp->a); break;
 	case EXP_ARRAY: parray(d, exp->a); break;
 
-	case EXP_DELETE: puna(d, i, exp, "delete ", ""); break;
-	case EXP_VOID: puna(d, i, exp, "void ", ""); break;
-	case EXP_TYPEOF: puna(d, i, exp, "typeof ", ""); break;
-	case EXP_PREINC: puna(d, i, exp, "++", ""); break;
-	case EXP_PREDEC: puna(d, i, exp, "--", ""); break;
-	case EXP_POSTINC: puna(d, i, exp, "", "++"); break;
-	case EXP_POSTDEC: puna(d, i, exp, "", "--"); break;
-	case EXP_POS: puna(d, i, exp, "+", ""); break;
-	case EXP_NEG: puna(d, i, exp, "-", ""); break;
-	case EXP_BITNOT: puna(d, i, exp, "~", ""); break;
-	case EXP_LOGNOT: puna(d, i, exp, "!", ""); break;
+	case EXP_DELETE: puna(d, p, exp, "delete ", ""); break;
+	case EXP_VOID: puna(d, p, exp, "void ", ""); break;
+	case EXP_TYPEOF: puna(d, p, exp, "typeof ", ""); break;
+	case EXP_PREINC: puna(d, p, exp, "++", ""); break;
+	case EXP_PREDEC: puna(d, p, exp, "--", ""); break;
+	case EXP_POSTINC: puna(d, p, exp, "", "++"); break;
+	case EXP_POSTDEC: puna(d, p, exp, "", "--"); break;
+	case EXP_POS: puna(d, p, exp, "+", ""); break;
+	case EXP_NEG: puna(d, p, exp, "-", ""); break;
+	case EXP_BITNOT: puna(d, p, exp, "~", ""); break;
+	case EXP_LOGNOT: puna(d, p, exp, "!", ""); break;
 
-	case EXP_LOGOR: pbin(d, i, exp, " || "); break;
-	case EXP_LOGAND: pbin(d, i, exp, " && "); break;
-	case EXP_BITOR: pbin(d, i, exp, " | "); break;
-	case EXP_BITXOR: pbin(d, i, exp, " ^ "); break;
-	case EXP_BITAND: pbin(d, i, exp, " & "); break;
-	case EXP_EQ: pbin(d, i, exp, " == "); break;
-	case EXP_NE: pbin(d, i, exp, " != "); break;
-	case EXP_STRICTEQ: pbin(d, i, exp, " === "); break;
-	case EXP_STRICTNE: pbin(d, i, exp, " !== "); break;
-	case EXP_LT: pbin(d, i, exp, " < "); break;
-	case EXP_GT: pbin(d, i, exp, " > "); break;
-	case EXP_LE: pbin(d, i, exp, " <= "); break;
-	case EXP_GE: pbin(d, i, exp, " >= "); break;
-	case EXP_INSTANCEOF: pbin(d, i, exp, " instanceof "); break;
-	case EXP_IN: pbin(d, i, exp, " in "); break;
-	case EXP_SHL: pbin(d, i, exp, " << "); break;
-	case EXP_SHR: pbin(d, i, exp, " >> "); break;
-	case EXP_USHR: pbin(d, i, exp, " >>> "); break;
-	case EXP_ADD: pbin(d, i, exp, " + "); break;
-	case EXP_SUB: pbin(d, i, exp, " - "); break;
-	case EXP_MUL: pbin(d, i, exp, " * "); break;
-	case EXP_DIV: pbin(d, i, exp, " / "); break;
-	case EXP_MOD: pbin(d, i, exp, " % "); break;
-	case EXP_ASS: pbin(d, i, exp, " = "); break;
-	case EXP_ASS_MUL: pbin(d, i, exp, " *= "); break;
-	case EXP_ASS_DIV: pbin(d, i, exp, " /= "); break;
-	case EXP_ASS_MOD: pbin(d, i, exp, " %= "); break;
-	case EXP_ASS_ADD: pbin(d, i, exp, " += "); break;
-	case EXP_ASS_SUB: pbin(d, i, exp, " -= "); break;
-	case EXP_ASS_SHL: pbin(d, i, exp, " <<= "); break;
-	case EXP_ASS_SHR: pbin(d, i, exp, " >>= "); break;
-	case EXP_ASS_USHR: pbin(d, i, exp, " >>>= "); break;
-	case EXP_ASS_BITAND: pbin(d, i, exp, " &= "); break;
-	case EXP_ASS_BITXOR: pbin(d, i, exp, " ^= "); break;
-	case EXP_ASS_BITOR: pbin(d, i, exp, " |= "); break;
+	case EXP_LOGOR: pbin(d, p, exp, " || "); break;
+	case EXP_LOGAND: pbin(d, p, exp, " && "); break;
+	case EXP_BITOR: pbin(d, p, exp, " | "); break;
+	case EXP_BITXOR: pbin(d, p, exp, " ^ "); break;
+	case EXP_BITAND: pbin(d, p, exp, " & "); break;
+	case EXP_EQ: pbin(d, p, exp, " == "); break;
+	case EXP_NE: pbin(d, p, exp, " != "); break;
+	case EXP_STRICTEQ: pbin(d, p, exp, " === "); break;
+	case EXP_STRICTNE: pbin(d, p, exp, " !== "); break;
+	case EXP_LT: pbin(d, p, exp, " < "); break;
+	case EXP_GT: pbin(d, p, exp, " > "); break;
+	case EXP_LE: pbin(d, p, exp, " <= "); break;
+	case EXP_GE: pbin(d, p, exp, " >= "); break;
+	case EXP_INSTANCEOF: pbin(d, p, exp, " instanceof "); break;
+	case EXP_IN: pbin(d, p, exp, " in "); break;
+	case EXP_SHL: pbin(d, p, exp, " << "); break;
+	case EXP_SHR: pbin(d, p, exp, " >> "); break;
+	case EXP_USHR: pbin(d, p, exp, " >>> "); break;
+	case EXP_ADD: pbin(d, p, exp, " + "); break;
+	case EXP_SUB: pbin(d, p, exp, " - "); break;
+	case EXP_MUL: pbin(d, p, exp, " * "); break;
+	case EXP_DIV: pbin(d, p, exp, " / "); break;
+	case EXP_MOD: pbin(d, p, exp, " % "); break;
+	case EXP_ASS: pbin(d, p, exp, " = "); break;
+	case EXP_ASS_MUL: pbin(d, p, exp, " *= "); break;
+	case EXP_ASS_DIV: pbin(d, p, exp, " /= "); break;
+	case EXP_ASS_MOD: pbin(d, p, exp, " %= "); break;
+	case EXP_ASS_ADD: pbin(d, p, exp, " += "); break;
+	case EXP_ASS_SUB: pbin(d, p, exp, " -= "); break;
+	case EXP_ASS_SHL: pbin(d, p, exp, " <<= "); break;
+	case EXP_ASS_SHR: pbin(d, p, exp, " >>= "); break;
+	case EXP_ASS_USHR: pbin(d, p, exp, " >>>= "); break;
+	case EXP_ASS_BITAND: pbin(d, p, exp, " &= "); break;
+	case EXP_ASS_BITXOR: pbin(d, p, exp, " ^= "); break;
+	case EXP_ASS_BITOR: pbin(d, p, exp, " |= "); break;
 
-	case EXP_COMMA: pbin(d, 1, exp, ", "); break;
+	case EXP_COMMA: pbin(d, p, exp, ", "); break;
 
 	case EXP_COND:
-		if (i) pc('(');
-		pexpi(d, 1, exp->a);
+		pexpi(d, p, exp->a);
 		ps(" ? ");
-		pexpi(d, 1, exp->b);
+		pexpi(d, p, exp->b);
 		ps(" : ");
-		pexpi(d, 1, exp->c);
-		if (i) pc(')');
+		pexpi(d, p, exp->c);
 		break;
 
 	case EXP_INDEX:
-		if (i) pc('(');
-		pexpi(d, 1, exp->a);
+		pexpi(d, p, exp->a);
 		pc('[');
 		pexpi(d, 0, exp->b);
 		pc(']');
-		if (i) pc(')');
 		break;
 
 	case EXP_MEMBER:
-		if (i) pc('(');
-		pexpi(d, 1, exp->a);
+		pexpi(d, p, exp->a);
 		pc('.');
-		pexpi(d, 1, exp->b);
-		if (i) pc(')');
+		pexpi(d, p, exp->b);
 		break;
 
 	case EXP_CALL:
-		if (i) pc('(');
-		pexpi(d, 1, exp->a);
+		pexpi(d, p, exp->a);
 		pc('(');
 		pargs(d, exp->b);
 		pc(')');
-		if (i) pc(')');
 		break;
 
 	case EXP_NEW:
-		if (i) pc('(');
 		ps("new ");
-		pexpi(d, 1, exp->a);
+		pexpi(d, p, exp->a);
 		pc('(');
 		pargs(d, exp->b);
 		pc(')');
-		if (i) pc(')');
 		break;
 
 	case EXP_FUN:
 		ps("(function ");
-		if (exp->a) pexpi(d, 1, exp->a);
+		if (exp->a) pexpi(d, 0, exp->a);
 		pc('(');
 		pargs(d, exp->b);
 		ps(") {\n");
@@ -300,6 +393,8 @@ static void pexpi(int d, int i, js_Ast *exp)
 		ps("<UNKNOWN>");
 		break;
 	}
+
+	if (paren) pc(')');
 }
 
 static void pexp(int d, js_Ast *exp)
@@ -372,7 +467,7 @@ static void pstm(int d, js_Ast *stm)
 	switch (stm->type) {
 	case AST_FUNDEC:
 		ps("function ");
-		pexpi(d, 1, stm->a);
+		pexp(d, stm->a);
 		pc('(');
 		pargs(d, stm->b);
 		ps(")\n");

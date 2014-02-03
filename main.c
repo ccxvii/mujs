@@ -41,7 +41,7 @@ main(int argc, char **argv)
 	if (argc > 1) {
 		for (i = 1; i < argc; ++i) {
 			js_dofile(J, argv[i]);
-			js_gc(J, 1);
+			js_gc(J, 0);
 		}
 	} else {
 		fputs(PS1, stdout);
