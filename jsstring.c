@@ -319,6 +319,10 @@ static int S_fromCharCode(js_State *J, int argc)
 static int Sp_match(js_State *J, int argc)
 {
 	const char *text;
+	regmatch_t m;
+	regex_t *prog;
+	int flags;
+	unsigned int len, a, b, c, e;
 
 	text = js_tostring(J, 0);
 
@@ -329,9 +333,31 @@ static int Sp_match(js_State *J, int argc)
 	else
 		js_newregexp(J, js_tostring(J, 1), 0);
 
-	// TODO: JS_REGEXP_G looping
+	prog = js_toregexp(J, -1, &flags);
+	if (!(flags & JS_REGEXP_G))
+		return js_RegExp_prototype_exec(J, -1, text);
 
-	return js_RegExp_prototype_exec(J, -1, text);
+	js_newarray(J);
+
+	e = strlen(text);
+	len = 0;
+	a = 0;
+	while (a <= e) {
+		if (regexec(prog, text + a, 1, &m, a > 0 ? REG_NOTBOL : 0))
+			break;
+
+		b = a + m.rm_so;
+		c = a + m.rm_eo;
+
+		js_pushlstring(J, text + b, c - b);
+		js_setindex(J, -2, len++);
+
+		a = c;
+		if (c - b == 0)
+			++a;
+	}
+
+	return 1;
 }
 
 static int Sp_search(js_State *J, int argc)
