@@ -380,13 +380,15 @@ static void pexpi(int d, int p, js_Ast *exp)
 		break;
 
 	case EXP_FUN:
-		ps("(function ");
+		if (p == 0) pc('(');
+		ps("function ");
 		if (exp->a) pexpi(d, 0, exp->a);
 		pc('(');
 		pargs(d, exp->b);
 		ps(") {\n");
 		pstmlist(d, exp->c);
-		in(d); ps("})");
+		in(d); pc('}');
+		if (p == 0) pc(')');
 		break;
 
 	default:
@@ -426,7 +428,7 @@ static void pvarlist(int d, js_Ast *list)
 static void pblock(int d, js_Ast *block)
 {
 	assert(block->type == STM_BLOCK);
-	in(d); ps("{\n");
+	ps(" {\n");
 	pstmlist(d, block->a);
 	in(d); pc('}');
 }
@@ -435,8 +437,10 @@ static void pstmh(int d, js_Ast *stm)
 {
 	if (stm->type == STM_BLOCK)
 		pblock(d, stm);
-	else
+	else {
+		nl();
 		pstm(d+1, stm);
+	}
 }
 
 static void pcaselist(int d, js_Ast *list)
@@ -470,8 +474,7 @@ static void pstm(int d, js_Ast *stm)
 		pexp(d, stm->a);
 		pc('(');
 		pargs(d, stm->b);
-		ps(")\n");
-		in(d); ps("{\n");
+		ps(") {\n");
 		pstmlist(d, stm->c);
 		in(d); ps("}");
 		break;
@@ -487,23 +490,23 @@ static void pstm(int d, js_Ast *stm)
 		break;
 
 	case STM_IF:
-		ps("if ("); pexp(d, stm->a); ps(")\n");
+		ps("if ("); pexp(d, stm->a); ps(")");
 		pstmh(d, stm->b);
 		if (stm->c) {
-			nl(); in(d); ps("else\n");
+			nl(); in(d); ps("else");
 			pstmh(d, stm->c);
 		}
 		break;
 
 	case STM_DO:
-		ps("do\n");
+		ps("do");
 		pstmh(d, stm->a);
 		nl();
 		in(d); ps("while ("); pexp(d, stm->b); ps(");");
 		break;
 
 	case STM_WHILE:
-		ps("while ("); pexp(d, stm->a); ps(")\n");
+		ps("while ("); pexp(d, stm->a); ps(")");
 		pstmh(d, stm->b);
 		break;
 
@@ -511,26 +514,26 @@ static void pstm(int d, js_Ast *stm)
 		ps("for (");
 		pexp(d, stm->a); ps("; ");
 		pexp(d, stm->b); ps("; ");
-		pexp(d, stm->c); ps(")\n");
+		pexp(d, stm->c); ps(")");
 		pstmh(d, stm->d);
 		break;
 	case STM_FOR_VAR:
 		ps("for (var ");
 		pvarlist(d, stm->a); ps("; ");
 		pexp(d, stm->b); ps("; ");
-		pexp(d, stm->c); ps(")\n");
+		pexp(d, stm->c); ps(")");
 		pstmh(d, stm->d);
 		break;
 	case STM_FOR_IN:
 		ps("for (");
 		pexp(d, stm->a); ps(" in ");
-		pexp(d, stm->b); ps(")\n");
+		pexp(d, stm->b); ps(")");
 		pstmh(d, stm->c);
 		break;
 	case STM_FOR_IN_VAR:
 		ps("for (var ");
 		pvarlist(d, stm->a); ps(" in ");
-		pexp(d, stm->b); ps(")\n");
+		pexp(d, stm->b); ps(")");
 		pstmh(d, stm->c);
 		break;
 
@@ -559,15 +562,14 @@ static void pstm(int d, js_Ast *stm)
 		break;
 
 	case STM_WITH:
-		ps("with ("); pexp(d, stm->a); ps(")\n");
-		pstm(d, stm->b);
+		ps("with ("); pexp(d, stm->a); ps(")");
+		pstmh(d, stm->b);
 		break;
 
 	case STM_SWITCH:
 		ps("switch (");
 		pexp(d, stm->a);
-		ps(")\n");
-		in(d); ps("{\n");
+		ps(") {\n");
 		pcaselist(d, stm->b);
 		in(d); ps("}");
 		break;
@@ -577,14 +579,14 @@ static void pstm(int d, js_Ast *stm)
 		break;
 
 	case STM_TRY:
-		ps("try\n");
+		ps("try");
 		pstmh(d, stm->a);
 		if (stm->b && stm->c) {
-			nl(); in(d); ps("catch ("); pexp(d, stm->b); ps(")\n");
+			nl(); in(d); ps("catch ("); pexp(d, stm->b); ps(")");
 			pstmh(d, stm->c);
 		}
 		if (stm->d) {
-			nl(); in(d); ps("finally\n");
+			nl(); in(d); ps("finally");
 			pstmh(d, stm->d);
 		}
 		break;
