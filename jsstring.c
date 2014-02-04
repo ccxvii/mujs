@@ -429,10 +429,17 @@ loop:
 
 	if (flags & JS_REGEXP_G) {
 		source = source + m[0].rm_eo;
+		if (n == 0) {
+			if (*source)
+				sb = sb_putc(sb, *source++);
+			else
+				goto end;
+		}
 		if (!regexec(prog, source, nelem(m), m, REG_NOTBOL))
 			goto loop;
 	}
 
+end:
 	sb = sb_puts(sb, s + n);
 	sb = sb_putc(sb, 0);
 

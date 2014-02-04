@@ -19,6 +19,8 @@ int js_RegExp_prototype_exec(js_State *J, int idx, const char *text)
 	if (flags & JS_REGEXP_I) opts |= REG_ICASE;
 	if (flags & JS_REGEXP_M) opts |= REG_NEWLINE;
 
+	// TODO: global and lastIndex
+
 	if (!regexec(prog, text, nelem(m), m, opts)) {
 		js_newarray(J);
 		for (i = 0; i < nelem(m) && m[i].rm_so >= 0; ++i) {
@@ -165,6 +167,8 @@ static int Rp_test(js_State *J, int argc)
 
 	prog = js_toregexp(J, 0, &flags);
 	text = js_tostring(J, 1);
+
+	// TODO: global and lastIndex
 
 	js_pushboolean(J, !regexec(prog, text, 0, NULL, 0));
 	return 1;
