@@ -513,6 +513,119 @@ static int Sp_replace(js_State *J, int argc)
 	return Sp_replace_string(J, argc);
 }
 
+static int Sp_split_regexp(js_State *J, int argc)
+{
+	const char *str = js_tostring(J, 0);
+	unsigned int limit = !js_isundefined(J, 2) ? js_touint32(J, 2) : 1 << 30;
+	regmatch_t m[10];
+	regex_t *prog;
+	int flags;
+	unsigned int len, k, e;
+	unsigned int p, a, b, c;
+
+	prog = js_toregexp(J, 1, &flags);
+
+	js_newarray(J);
+	len = 0;
+
+	e = strlen(str);
+
+	/* splitting the empty string */
+	if (e == 0) {
+		if (regexec(prog, str, nelem(m), m, 0)) {
+			if (len == limit) return 1;
+			js_pushliteral(J, "");
+			js_setindex(J, -2, 0);
+		}
+		return 1;
+	}
+
+	p = a = 0;
+	while (a < e) {
+		if (regexec(prog, str + a, nelem(m), m, a > 0 ? REG_NOTBOL : 0))
+			break; /* no match */
+
+		b = a + m[0].rm_so;
+		c = a + m[0].rm_eo;
+
+		/* empty string at end of last match */
+		if (b == p) {
+			++a;
+			continue;
+		}
+
+		if (len == limit) return 1;
+		js_pushlstring(J, str + p, b - p);
+		js_setindex(J, -2, len++);
+
+		for (k = 1; k < nelem(m) && m[k].rm_so >= 0; ++k) {
+			if (len == limit) return 1;
+			js_pushlstring(J, str + a + m[k].rm_so, m[k].rm_eo - m[k].rm_so);
+			js_setindex(J, -2, len++);
+		}
+
+		a = p = c;
+	}
+
+	if (len == limit) return 1;
+	js_pushstring(J, str + p);
+	js_setindex(J, -2, len);
+
+	return 1;
+}
+
+static int Sp_split_string(js_State *J, int argc)
+{
+	const char *str = js_tostring(J, 0);
+	const char *sep = js_tostring(J, 1);
+	unsigned int limit = !js_isundefined(J, 2) ? js_touint32(J, 2) : 1 << 30;
+	unsigned int i, n;
+
+	js_newarray(J);
+
+	n = strlen(sep);
+
+	/* empty string */
+	if (n == 0) {
+		Rune rune;
+		for (i = 0; *str && i < limit; ++i) {
+			n = chartorune(&rune, str);
+			js_pushlstring(J, str, n);
+			js_setindex(J, -2, i);
+			str += n;
+		}
+		return 1;
+	}
+
+	for (i = 0; str && i < limit; ++i) {
+		const char *s = strstr(str, sep);
+		if (s) {
+			js_pushlstring(J, str, s-str);
+			js_setindex(J, -2, i);
+			str = s + n;
+		} else {
+			js_pushstring(J, str);
+			js_setindex(J, -2, i);
+			str = NULL;
+		}
+	}
+
+	return 1;
+}
+
+static int Sp_split(js_State *J, int argc)
+{
+	if (js_isundefined(J, 1)) {
+		js_newarray(J);
+		js_copy(J, 0);
+		js_setindex(J, -2, 0);
+		return 1;
+	}
+	if (js_isregexp(J, 1))
+		return Sp_split_regexp(J, argc);
+	return Sp_split_string(J, argc);
+}
+
 void jsB_initstring(js_State *J)
 {
 	J->String_prototype->u.string = "";
@@ -531,7 +644,7 @@ void jsB_initstring(js_State *J)
 		jsB_propf(J, "replace", Sp_replace, 2);
 		jsB_propf(J, "search", Sp_search, 1);
 		jsB_propf(J, "slice", Sp_slice, 2);
-		// split (uses regexp)
+		jsB_propf(J, "split", Sp_split, 2);
 		jsB_propf(J, "substring", Sp_substring, 2);
 		jsB_propf(J, "toLowerCase", Sp_toLowerCase, 0);
 		jsB_propf(J, "toLocaleLowerCase", Sp_toLowerCase, 0);

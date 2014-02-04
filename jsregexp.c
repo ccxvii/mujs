@@ -83,8 +83,10 @@ static int jsB_new_RegExp(js_State *J, int argc)
 		js_pop(J, 1);
 	} else if (js_isundefined(J, 1)) {
 		pattern = "";
+		flags = 0;
 	} else {
 		pattern = js_tostring(J, 1);
+		flags = 0;
 	}
 
 	if (argc > 1) {
