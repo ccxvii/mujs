@@ -283,6 +283,7 @@ static inline double lexexponent(js_State *J)
 static inline int lexnumber(js_State *J)
 {
 	double n;
+	double e;
 
 	if (ACCEPT('0')) {
 		if (ACCEPT('x') || ACCEPT('X')) {
@@ -294,18 +295,21 @@ static inline int lexnumber(js_State *J)
 		n = 0;
 		if (ACCEPT('.'))
 			n += lexfraction(J);
-		n *= pow(10, lexexponent(J));
 	} else if (ACCEPT('.')) {
 		if (!isdec(PEEK))
 			return '.';
 		n = lexfraction(J);
-		n *= pow(10, lexexponent(J));
 	} else {
 		n = lexinteger(J);
 		if (ACCEPT('.'))
 			n += lexfraction(J);
-		n *= pow(10, lexexponent(J));
 	}
+
+	e = lexexponent(J);
+	if (e < 0)
+		n /= pow(10, -e);
+	else if (e > 0)
+		n *= pow(10, e);
 
 	if (isidentifierstart(PEEK))
 		jsY_error(J, "number with letter suffix");
