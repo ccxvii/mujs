@@ -336,6 +336,8 @@ static int Sp_match(js_State *J, int argc)
 	if (!(re->flags & JS_REGEXP_G))
 		return js_RegExp_prototype_exec(J, re, text);
 
+	re->last = 0;
+
 	js_newarray(J);
 
 	e = strlen(text);
@@ -399,6 +401,8 @@ static int Sp_replace_regexp(js_State *J, int argc)
 		js_copy(J, 0);
 		return 1;
 	}
+
+	re->last = 0;
 
 loop:
 	s = source + m[0].rm_so;
