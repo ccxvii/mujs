@@ -24,7 +24,6 @@ typedef struct js_Jumpbuf js_Jumpbuf;
 /* Limits */
 
 #define JS_STACKSIZE 256	/* value stack size */
-#define JS_MINSTACK 20		/* at least this much available when entering a function */
 #define JS_TRYLIMIT 64		/* exception stack size */
 #define JS_GCLIMIT 10000	/* run gc cycle every N allocations */
 

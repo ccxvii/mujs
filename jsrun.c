@@ -11,26 +11,40 @@ static void jsR_run(js_State *J, js_Function *F);
 #define TOP (J->top)
 #define BOT (J->bot)
 
+static void js_stackoverflow(js_State *J)
+{
+	STACK[TOP].type = JS_TSTRING;
+	STACK[TOP].u.string = "stack overflow";
+	++TOP;
+	js_throw(J);
+}
+
+#define CHECKSTACK(n) if (TOP + n >= JS_STACKSIZE) js_stackoverflow(J)
+
 void js_pushvalue(js_State *J, js_Value v)
 {
+	CHECKSTACK(1);
 	STACK[TOP] = v;
 	++TOP;
 }
 
 void js_pushundefined(js_State *J)
 {
+	CHECKSTACK(1);
 	STACK[TOP].type = JS_TUNDEFINED;
 	++TOP;
 }
 
 void js_pushnull(js_State *J)
 {
+	CHECKSTACK(1);
 	STACK[TOP].type = JS_TNULL;
 	++TOP;
 }
 
 void js_pushboolean(js_State *J, int v)
 {
+	CHECKSTACK(1);
 	STACK[TOP].type = JS_TBOOLEAN;
 	STACK[TOP].u.boolean = !!v;
 	++TOP;
@@ -38,6 +52,7 @@ void js_pushboolean(js_State *J, int v)
 
 void js_pushnumber(js_State *J, double v)
 {
+	CHECKSTACK(1);
 	STACK[TOP].type = JS_TNUMBER;
 	STACK[TOP].u.number = v;
 	++TOP;
@@ -45,6 +60,7 @@ void js_pushnumber(js_State *J, double v)
 
 void js_pushstring(js_State *J, const char *v)
 {
+	CHECKSTACK(1);
 	STACK[TOP].type = JS_TSTRING;
 	STACK[TOP].u.string = js_intern(J, v);
 	++TOP;
@@ -73,6 +89,7 @@ void js_pushlstring(js_State *J, const char *v, int n)
 
 void js_pushliteral(js_State *J, const char *v)
 {
+	CHECKSTACK(1);
 	STACK[TOP].type = JS_TSTRING;
 	STACK[TOP].u.string = v;
 	++TOP;
@@ -80,6 +97,7 @@ void js_pushliteral(js_State *J, const char *v)
 
 void js_pushobject(js_State *J, js_Object *v)
 {
+	CHECKSTACK(1);
 	STACK[TOP].type = JS_TOBJECT;
 	STACK[TOP].u.object = v;
 	++TOP;
@@ -237,18 +255,21 @@ void js_pop(js_State *J, int n)
 
 void js_copy(js_State *J, int idx)
 {
+	CHECKSTACK(1);
 	STACK[TOP] = *stackidx(J, idx);
 	++TOP;
 }
 
 void js_dup(js_State *J)
 {
+	CHECKSTACK(1);
 	STACK[TOP] = STACK[TOP-1];
 	++TOP;
 }
 
 void js_dup2(js_State *J)
 {
+	CHECKSTACK(2);
 	STACK[TOP] = STACK[TOP-2];
 	STACK[TOP+1] = STACK[TOP-1];
 	TOP += 2;
@@ -287,6 +308,7 @@ void js_rot3pop2(js_State *J)
 
 void js_dup1rot3(js_State *J)
 {
+	CHECKSTACK(1);
 	/* A B -> B A B */
 	STACK[TOP] = STACK[TOP-1];	/* A B B */
 	STACK[TOP-1] = STACK[TOP-2];	/* A A B */
@@ -296,6 +318,7 @@ void js_dup1rot3(js_State *J)
 
 void js_dup1rot4(js_State *J)
 {
+	CHECKSTACK(1);
 	/* A B C -> C A B C */
 	STACK[TOP] = STACK[TOP-1];	/* A B C C */
 	STACK[TOP-1] = STACK[TOP-2];	/* A B B C */
