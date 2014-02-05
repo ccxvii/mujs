@@ -160,7 +160,7 @@ static void jsY_next(js_State *J)
 	Rune c;
 	J->source += chartorune(&c, J->source);
 	/* consume CR LF as one unit */
-	if (c == '\r' && PEEK == '\n')
+	if (c == '\r' && *J->source == '\n')
 		++J->source;
 	if (isnewline(c)) {
 		J->line++;
@@ -464,7 +464,7 @@ static inline int isnlthcontext(int last)
 	}
 }
 
-static int lex(js_State *J)
+static int jsY_lexx(js_State *J)
 {
 	J->newline = 0;
 
@@ -657,5 +657,5 @@ void jsY_initlex(js_State *J, const char *filename, const char *source)
 
 int jsY_lex(js_State *J)
 {
-	return J->lasttoken = lex(J);
+	return J->lasttoken = jsY_lexx(J);
 }
