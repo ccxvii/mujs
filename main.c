@@ -51,7 +51,8 @@ main(int argc, char **argv)
 
 	if (argc > 1) {
 		for (i = 1; i < argc; ++i) {
-			js_dofile(J, argv[i]);
+			if (js_dofile(J, argv[i]))
+				return 1;
 			js_gc(J, 0);
 		}
 	} else {
