@@ -26,5 +26,10 @@ js: build/main.o build/libjs.a
 tags: $(SRCS) main.c $(HDRS)
 	ctags $^
 
+test: js
+	python tests/sputniktests/tools/sputnik.py --tests=tests/sputniktests --command ./js --summary
+
 clean:
 	rm -f opnames.h build/* js
+
+.PHONY: default test clean

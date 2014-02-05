@@ -67,7 +67,8 @@ struct js_Object
 		} c;
 		struct {
 			void *prog;
-			int flags;
+			unsigned short flags;
+			unsigned short last;
 		} r;
 		struct {
 			js_Object *target;
