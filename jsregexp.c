@@ -8,18 +8,28 @@
 
 int js_RegExp_prototype_exec(js_State *J, int idx, const char *text)
 {
-	int flags, opts;
+	js_Object *obj;
+	int flags, opts, last;
 	regex_t *prog;
 	regmatch_t m[10];
 	int i;
 
 	prog = js_toregexp(J, idx, &flags);
+	obj = js_toobject(J, idx);
 
-	opts = REG_EXTENDED;
-	if (flags & JS_REGEXP_I) opts |= REG_ICASE;
-	if (flags & JS_REGEXP_M) opts |= REG_NEWLINE;
-
-	// TODO: global and lastIndex
+	opts = 0;
+	if (flags & JS_REGEXP_G) {
+		last = obj->u.r.last;
+		if (last < 0 || last > strlen(text)) {
+			obj->u.r.last = 0;
+			js_pushnull(J);
+			return 1;
+		}
+		if (last > 0) {
+			text += last;
+			opts |= REG_NOTBOL;
+		}
+	}
 
 	if (!regexec(prog, text, nelem(m), m, opts)) {
 		js_newarray(J);
@@ -27,8 +37,13 @@ int js_RegExp_prototype_exec(js_State *J, int idx, const char *text)
 			js_pushlstring(J, text + m[i].rm_so, m[i].rm_eo - m[i].rm_so);
 			js_setindex(J, -2, i);
 		}
+		if (flags & JS_REGEXP_G)
+			obj->u.r.last = last + m[0].rm_eo;
 		return 1;
 	}
+
+	if (flags & JS_REGEXP_G)
+		obj->u.r.last = 0;
 
 	js_pushnull(J);
 	return 1;
@@ -57,6 +72,7 @@ void js_newregexp(js_State *J, const char *pattern, int flags)
 
 	obj->u.r.prog = prog;
 	obj->u.r.flags = flags;
+	obj->u.r.last = 0;
 	js_pushobject(J, obj);
 
 	js_pushstring(J, pattern);
@@ -161,16 +177,41 @@ static int Rp_exec(js_State *J, int argc)
 
 static int Rp_test(js_State *J, int argc)
 {
-	int flags;
+	int flags, opts, last;
+	js_Object *obj;
+	regmatch_t m[10];
 	regex_t *prog;
 	const char *text;
 
 	prog = js_toregexp(J, 0, &flags);
+	obj = js_toobject(J, 0);
 	text = js_tostring(J, 1);
 
-	// TODO: global and lastIndex
+	opts = 0;
+	if (flags & JS_REGEXP_G) {
+		last = obj->u.r.last;
+		if (last < 0 || last > strlen(text)) {
+			obj->u.r.last = 0;
+			js_pushboolean(J, 0);
+			return 1;
+		}
+		if (last > 0) {
+			text += last;
+			opts |= REG_NOTBOL;
+		}
+	}
 
-	js_pushboolean(J, !regexec(prog, text, 0, NULL, 0));
+	if (!regexec(prog, text, nelem(m), m, opts)) {
+		if (flags & JS_REGEXP_G)
+			obj->u.r.last = last + m[0].rm_eo;
+		js_pushboolean(J, 1);
+		return 1;
+	}
+
+	if (flags & JS_REGEXP_G)
+		obj->u.r.last = 0;
+
+	js_pushboolean(J, 0);
 	return 1;
 }
 
