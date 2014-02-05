@@ -862,9 +862,10 @@ static void cstm(JF, js_Ast *stm)
 	case STM_DO:
 		loop = here(J, F);
 		cstm(J, F, stm->a);
+		cont = here(J, F);
 		cexp(J, F, stm->b);
 		jumpto(J, F, OP_JTRUE, loop);
-		labeljumps(J, F, stm->jumps, here(J,F), loop);
+		labeljumps(J, F, stm->jumps, here(J,F), cont);
 		break;
 
 	case STM_WHILE:
