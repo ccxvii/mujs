@@ -12,6 +12,7 @@
 #include <math.h>
 #include <float.h>
 
+typedef struct js_Regexp js_Regexp;
 typedef struct js_Value js_Value;
 typedef struct js_Object js_Object;
 typedef struct js_Ast js_Ast;
@@ -38,13 +39,13 @@ void jsS_freestrings(js_State *J);
 void js_newfunction(js_State *J, js_Function *function, js_Environment *scope);
 void js_newscript(js_State *J, js_Function *function);
 
-void *js_toregexp(js_State *J, int idx, int *flags);
+js_Regexp *js_toregexp(js_State *J, int idx);
 
 void js_dup(js_State *J);
 void js_rot2(js_State *J);
 void js_rot3(js_State *J);
 
-int js_RegExp_prototype_exec(js_State *J, int idx, const char *text);
+int js_RegExp_prototype_exec(js_State *J, js_Regexp *re, const char *text);
 
 /* Exception handling */
 

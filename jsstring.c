@@ -318,10 +318,9 @@ static int S_fromCharCode(js_State *J, int argc)
 
 static int Sp_match(js_State *J, int argc)
 {
+	js_Regexp *re;
+	regmatch_t m[10];
 	const char *text;
-	regmatch_t m;
-	regex_t *prog;
-	int flags;
 	unsigned int len, a, b, c, e;
 
 	text = js_tostring(J, 0);
@@ -333,9 +332,9 @@ static int Sp_match(js_State *J, int argc)
 	else
 		js_newregexp(J, js_tostring(J, 1), 0);
 
-	prog = js_toregexp(J, -1, &flags);
-	if (!(flags & JS_REGEXP_G))
-		return js_RegExp_prototype_exec(J, -1, text);
+	re = js_toregexp(J, -1);
+	if (!(re->flags & JS_REGEXP_G))
+		return js_RegExp_prototype_exec(J, re, text);
 
 	js_newarray(J);
 
@@ -343,11 +342,11 @@ static int Sp_match(js_State *J, int argc)
 	len = 0;
 	a = 0;
 	while (a <= e) {
-		if (regexec(prog, text + a, 1, &m, a > 0 ? REG_NOTBOL : 0))
+		if (regexec(re->prog, text + a, nelem(m), m, a > 0 ? REG_NOTBOL : 0))
 			break;
 
-		b = a + m.rm_so;
-		c = a + m.rm_eo;
+		b = a + m[0].rm_so;
+		c = a + m[0].rm_eo;
 
 		js_pushlstring(J, text + b, c - b);
 		js_setindex(J, -2, len++);
@@ -362,10 +361,9 @@ static int Sp_match(js_State *J, int argc)
 
 static int Sp_search(js_State *J, int argc)
 {
+	js_Regexp *re;
+	regmatch_t m[10];
 	const char *text;
-	regmatch_t m;
-	regex_t *prog;
-	int flags;
 
 	text = js_tostring(J, 0);
 
@@ -376,10 +374,10 @@ static int Sp_search(js_State *J, int argc)
 	else
 		js_newregexp(J, js_tostring(J, 1), 0);
 
-	prog = js_toregexp(J, -1, &flags);
+	re = js_toregexp(J, -1);
 
-	if (!regexec(prog, text, 1, &m, 0))
-		js_pushnumber(J, m.rm_so); // TODO: convert to utf-8 index offset
+	if (!regexec(re->prog, text, nelem(m), m, 0))
+		js_pushnumber(J, m[0].rm_so); // TODO: convert to utf-8 index offset
 	else
 		js_pushnumber(J, -1);
 
@@ -388,17 +386,16 @@ static int Sp_search(js_State *J, int argc)
 
 static int Sp_replace_regexp(js_State *J, int argc)
 {
-	const char *source, *s, *r;
+	js_Regexp *re;
 	regmatch_t m[10];
-	regex_t *prog;
-	int flags;
+	const char *source, *s, *r;
 	struct sbuffer *sb = NULL;
 	int n, x;
 
 	source = js_tostring(J, 0);
-	prog = js_toregexp(J, 1, &flags);
+	re = js_toregexp(J, 1);
 
-	if (regexec(prog, source, nelem(m), m, 0)) {
+	if (regexec(re->prog, source, nelem(m), m, 0)) {
 		js_copy(J, 0);
 		return 1;
 	}
@@ -453,7 +450,7 @@ loop:
 		}
 	}
 
-	if (flags & JS_REGEXP_G) {
+	if (re->flags & JS_REGEXP_G) {
 		source = source + m[0].rm_eo;
 		if (n == 0) {
 			if (*source)
@@ -461,7 +458,7 @@ loop:
 			else
 				goto end;
 		}
-		if (!regexec(prog, source, nelem(m), m, REG_NOTBOL))
+		if (!regexec(re->prog, source, nelem(m), m, REG_NOTBOL))
 			goto loop;
 	}
 
@@ -548,15 +545,15 @@ static int Sp_replace(js_State *J, int argc)
 
 static int Sp_split_regexp(js_State *J, int argc)
 {
-	const char *str = js_tostring(J, 0);
-	unsigned int limit = !js_isundefined(J, 2) ? js_touint32(J, 2) : 1 << 30;
+	js_Regexp *re;
 	regmatch_t m[10];
-	regex_t *prog;
-	int flags;
-	unsigned int len, k, e;
+	const char *str;
+	unsigned int limit, len, k, e;
 	unsigned int p, a, b, c;
 
-	prog = js_toregexp(J, 1, &flags);
+	str = js_tostring(J, 0);
+	re = js_toregexp(J, 1);
+	limit = !js_isundefined(J, 2) ? js_touint32(J, 2) : 1 << 30;
 
 	js_newarray(J);
 	len = 0;
@@ -565,7 +562,7 @@ static int Sp_split_regexp(js_State *J, int argc)
 
 	/* splitting the empty string */
 	if (e == 0) {
-		if (regexec(prog, str, nelem(m), m, 0)) {
+		if (regexec(re->prog, str, nelem(m), m, 0)) {
 			if (len == limit) return 1;
 			js_pushliteral(J, "");
 			js_setindex(J, -2, 0);
@@ -575,7 +572,7 @@ static int Sp_split_regexp(js_State *J, int argc)
 
 	p = a = 0;
 	while (a < e) {
-		if (regexec(prog, str + a, nelem(m), m, a > 0 ? REG_NOTBOL : 0))
+		if (regexec(re->prog, str + a, nelem(m), m, a > 0 ? REG_NOTBOL : 0))
 			break; /* no match */
 
 		b = a + m[0].rm_so;

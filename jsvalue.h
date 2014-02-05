@@ -44,6 +44,14 @@ struct js_Value
 	} u;
 };
 
+struct js_Regexp
+{
+	void *prog;
+	const char *source;
+	unsigned short flags;
+	unsigned short last;
+};
+
 struct js_Object
 {
 	js_Class type;
@@ -65,11 +73,7 @@ struct js_Object
 			js_CFunction function;
 			js_CFunction constructor;
 		} c;
-		struct {
-			void *prog;
-			unsigned short flags;
-			unsigned short last;
-		} r;
+		js_Regexp r;
 		struct {
 			js_Object *target;
 			js_Iterator *head;

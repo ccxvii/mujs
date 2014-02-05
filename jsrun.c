@@ -207,11 +207,11 @@ js_Value js_toprimitive(js_State *J, int idx, int hint)
 	return jsV_toprimitive(J, stackidx(J, idx), hint);
 }
 
-void *js_toregexp(js_State *J, int idx, int *flags)
+js_Regexp *js_toregexp(js_State *J, int idx)
 {
 	const js_Value *v = stackidx(J, idx);
 	if (v->type == JS_TOBJECT && v->u.object->type == JS_CREGEXP)
-		return *flags = v->u.object->u.r.flags, v->u.object->u.r.prog;
+		return &v->u.object->u.r;
 	js_typeerror(J, "not a regexp");
 }
 
