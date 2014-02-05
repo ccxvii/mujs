@@ -326,6 +326,31 @@ static int jsR_hasproperty(js_State *J, js_Object *obj, const char *name)
 		}
 	}
 
+	// TODO: String array indexing
+
+	if (obj->type == JS_CREGEXP) {
+		if (!strcmp(name, "source")) {
+			js_pushliteral(J, obj->u.r.source);
+			return 1;
+		}
+		if (!strcmp(name, "global")) {
+			js_pushboolean(J, obj->u.r.flags & JS_REGEXP_G);
+			return 1;
+		}
+		if (!strcmp(name, "ignoreCase")) {
+			js_pushboolean(J, obj->u.r.flags & JS_REGEXP_I);
+			return 1;
+		}
+		if (!strcmp(name, "multiline")) {
+			js_pushboolean(J, obj->u.r.flags & JS_REGEXP_M);
+			return 1;
+		}
+		if (!strcmp(name, "lastIndex")) {
+			js_pushnumber(J, obj->u.r.last);
+			return 1;
+		}
+	}
+
 	ref = jsV_getproperty(J, obj, name);
 	if (ref) {
 		js_pushvalue(J, ref->value);
@@ -366,6 +391,19 @@ static void jsR_setproperty(js_State *J, js_Object *obj, const char *name, int i
 		}
 	}
 
+	// TODO: String array indexing
+
+	if (obj->type == JS_CREGEXP) {
+		if (!strcmp(name, "source")) return;
+		if (!strcmp(name, "global")) return;
+		if (!strcmp(name, "ignoreCase")) return;
+		if (!strcmp(name, "multiline")) return;
+		if (!strcmp(name, "lastIndex")) {
+			obj->u.r.last = js_tointeger(J, idx);
+			return;
+		}
+	}
+
 	ref = jsV_setproperty(J, obj, name);
 	if (ref && !(ref->atts & JS_READONLY))
 		ref->value = js_tovalue(J, idx);
@@ -379,6 +417,16 @@ static void jsR_defproperty(js_State *J, js_Object *obj, const char *name, int i
 		if (!strcmp(name, "length"))
 			return;
 
+	// TODO: String array indexing
+
+	if (obj->type == JS_CREGEXP) {
+		if (!strcmp(name, "source")) return;
+		if (!strcmp(name, "global")) return;
+		if (!strcmp(name, "ignoreCase")) return;
+		if (!strcmp(name, "multiline")) return;
+		if (!strcmp(name, "lastIndex")) return;
+	}
+
 	ref = jsV_setproperty(J, obj, name);
 	if (ref) {
 		ref->value = js_tovalue(J, idx);
@@ -388,7 +436,22 @@ static void jsR_defproperty(js_State *J, js_Object *obj, const char *name, int i
 
 static int jsR_delproperty(js_State *J, js_Object *obj, const char *name)
 {
-	js_Property *ref = jsV_getownproperty(J, obj, name);
+	js_Property *ref;
+
+	if (obj->type == JS_CARRAY)
+		if (!strcmp(name, "length")) return 0;
+
+	// TODO: String array indexing
+
+	if (obj->type == JS_CREGEXP) {
+		if (!strcmp(name, "source")) return 0;
+		if (!strcmp(name, "global")) return 0;
+		if (!strcmp(name, "ignoreCase")) return 0;
+		if (!strcmp(name, "multiline")) return 0;
+		if (!strcmp(name, "lastIndex")) return 0;
+	}
+
+	ref = jsV_getownproperty(J, obj, name);
 	if (ref) {
 		if (ref->atts & JS_DONTDELETE)
 			return 0;
