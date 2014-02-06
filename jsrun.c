@@ -252,7 +252,7 @@ void *js_touserdata(js_State *J, const char *tag, int idx)
 static js_Object *jsR_tofunction(js_State *J, int idx)
 {
 	const js_Value *v = stackidx(J, idx);
-	if (v->type == JS_TNULL)
+	if (v->type == JS_TUNDEFINED || v->type == JS_TNULL)
 		return NULL;
 	if (v->type == JS_TOBJECT)
 		if (v->u.object->type == JS_CFUNCTION || v->u.object->type == JS_CCFUNCTION)
@@ -649,8 +649,13 @@ static void js_getvar(js_State *J, const char *name)
 	do {
 		js_Property *ref = jsV_getproperty(J, E->variables, name);
 		if (ref) {
-			// TODO: use getter
-			js_pushvalue(J, ref->value);
+			if (ref->getter) {
+				js_pushobject(J, ref->getter);
+				js_pushobject(J, E->variables);
+				js_call(J, 0);
+			} else {
+				js_pushvalue(J, ref->value);
+			}
 			return;
 		}
 		E = E->outer;
@@ -664,7 +669,14 @@ static void js_setvar(js_State *J, const char *name)
 	do {
 		js_Property *ref = jsV_getproperty(J, E->variables, name);
 		if (ref) {
-			// TODO: use setter
+			if (ref->setter) {
+				js_pushobject(J, ref->setter);
+				js_pushobject(J, E->variables);
+				js_copy(J, -3);
+				js_call(J, 1);
+				js_pop(J, 1);
+				return;
+			}
 			if (!(ref->atts & JS_READONLY))
 				ref->value = js_tovalue(J, -1);
 			return;
