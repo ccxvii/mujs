@@ -262,6 +262,25 @@ static int Sp_toUpperCase(js_State *J, int argc)
 	return 1;
 }
 
+static int iswhite(int c)
+{
+	return c == 0x9 || c == 0xB || c == 0xC || c == 0x20 || c == 0xA0 || c == 0xFEFF ||
+		c == 0xA || c == 0xD || c == 0x2028 || c == 0x2029;
+}
+
+static int Sp_trim(js_State *J, int argc)
+{
+	const char *s, *e;
+	s = js_tostring(J, 0);
+	while (iswhite(*s))
+		++s;
+	e = s + strlen(s);
+	while (e > s && iswhite(e[-1]))
+		--e;
+	js_pushlstring(J, s, e - s);
+	return 1;
+}
+
 static int S_fromCharCode(js_State *J, int argc)
 {
 	int i;
@@ -655,7 +674,9 @@ void jsB_initstring(js_State *J)
 		jsB_propf(J, "toLocaleLowerCase", Sp_toLowerCase, 0);
 		jsB_propf(J, "toUpperCase", Sp_toUpperCase, 0);
 		jsB_propf(J, "toLocaleUpperCase", Sp_toUpperCase, 0);
-		// trim (ES5)
+
+		/* ES5 */
+		jsB_propf(J, "trim", Sp_trim, 0);
 	}
 	js_newcconstructor(J, jsB_String, jsB_new_String, 1);
 	{
