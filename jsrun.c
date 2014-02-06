@@ -612,9 +612,9 @@ void js_delproperty(js_State *J, int idx, const char *name)
 	jsR_delproperty(J, js_toobject(J, idx), name);
 }
 
-void js_defaccessor(js_State *J, int idx, const char *name)
+void js_defaccessor(js_State *J, int idx, const char *name, int atts)
 {
-	jsR_defproperty(J, js_toobject(J, idx), name, 0, NULL, jsR_tofunction(J, -2), jsR_tofunction(J, -1));
+	jsR_defproperty(J, js_toobject(J, idx), name, atts, NULL, jsR_tofunction(J, -2), jsR_tofunction(J, -1));
 	js_pop(J, 2);
 }
 
