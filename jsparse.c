@@ -345,6 +345,7 @@ static js_Ast *primary(js_State *J)
 	js_Ast *a;
 
 	if (J->lookahead == TK_IDENTIFIER) {
+		checkfutureword(J, J->text);
 		a = jsP_newstrnode(J, AST_IDENTIFIER, J->text);
 		next(J);
 		return a;
