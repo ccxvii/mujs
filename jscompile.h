@@ -48,6 +48,9 @@ enum js_OpCode
 	OP_INITPROP_N,	/* <obj> <val> -- <obj> */
 	OP_INITPROP_S,	/* <obj> <val> -- <obj> */
 
+	OP_INITGETTER,	/* <obj> <key> <closure> -- <obj> */
+	OP_INITSETTER,	/* <obj> <key> <closure> -- <obj> */
+
 	OP_GETPROP,	/* <obj> <name> -- <value> */
 	OP_GETPROP_S,	/* <obj> -S- <value> */
 	OP_SETPROP,	/* <obj> <name> <value> -- <value> */

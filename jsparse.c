@@ -259,7 +259,7 @@ static js_Ast *propassign(js_State *J)
 			expect(J, '(');
 			expect(J, ')');
 			body = funbody(J);
-			return EXP2(PROP_GET, name, body);
+			return EXP3(PROP_GET, name, NULL, body);
 		}
 		if (!strcmp(name->string, "set")) {
 			name = propname(J);
@@ -267,7 +267,7 @@ static js_Ast *propassign(js_State *J)
 			arg = identifier(J);
 			expect(J, ')');
 			body = funbody(J);
-			return EXP3(PROP_SET, name, arg, body);
+			return EXP3(PROP_SET, name, LIST(arg), body);
 		}
 	}
 

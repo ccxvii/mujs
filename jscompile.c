@@ -192,8 +192,8 @@ static void cobject(JF, js_Ast *list)
 {
 	while (list) {
 		js_Ast *kv = list->a;
+		js_Ast *prop = kv->a;
 		if (kv->type == EXP_PROP_VAL) {
-			js_Ast *prop = kv->a;
 			if (prop->type == AST_IDENTIFIER || prop->type == AST_STRING) {
 				cexp(J, F, kv->b);
 				emitstring(J, F, OP_INITPROP_S, prop->string);
@@ -211,8 +211,15 @@ static void cobject(JF, js_Ast *list)
 				jsC_error(J, list, "illegal property name in object initializer");
 			}
 		} else {
-			// TODO: set/get
-			jsC_error(J, kv, "property setters and getters are not implemented");
+			if (prop->type == AST_IDENTIFIER || prop->type == AST_STRING)
+				emitstring(J, F, OP_STRING, prop->string);
+			if (prop->type == AST_NUMBER)
+				emitnumber(J, F, prop->number);
+			emitfunction(J, F, newfun(J, NULL, kv->b, kv->c, 0));
+			if (kv->type == EXP_PROP_GET)
+				emit(J, F, OP_INITGETTER);
+			if (kv->type == EXP_PROP_SET)
+				emit(J, F, OP_INITSETTER);
 		}
 		list = list->b;
 	}
@@ -599,7 +606,7 @@ static int isloop(js_AstType T)
 
 static int isfun(js_AstType T)
 {
-	return T == AST_FUNDEC || T == EXP_FUN;
+	return T == AST_FUNDEC || T == EXP_FUN || T == EXP_PROP_GET || T == EXP_PROP_SET;
 }
 
 static int matchlabel(js_Ast *node, const char *label)

@@ -197,14 +197,14 @@ static void pobject(int d, js_Ast *list)
 			ps("get ");
 			pexpi(d, COMMA, kv->a);
 			ps("() {\n");
-			pstmlist(d, kv->b);
+			pstmlist(d, kv->c);
 			in(d); ps("}");
 			break;
 		case EXP_PROP_SET:
 			ps("set ");
 			pexpi(d, COMMA, kv->a);
 			ps("(");
-			pexpi(d, COMMA, kv->b);
+			pargs(d, kv->b);
 			ps(") {\n");
 			pstmlist(d, kv->c);
 			in(d); ps("}");
@@ -639,6 +639,8 @@ static void snode(int d, js_Ast *node)
 	case AST_NUMBER: printf(" %.9g", node->number); break;
 	case STM_BLOCK: afun = sblock; break;
 	case AST_FUNDEC: case EXP_FUN: cfun = sblock; break;
+	case EXP_PROP_GET: cfun = sblock; break;
+	case EXP_PROP_SET: cfun = sblock; break;
 	case STM_SWITCH: bfun = sblock; break;
 	case STM_CASE: bfun = sblock; break;
 	case STM_DEFAULT: afun = sblock; break;
