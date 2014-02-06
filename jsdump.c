@@ -8,19 +8,7 @@
 #define nelem(a) (sizeof (a) / sizeof (a)[0])
 
 static const char *astname[] = {
-	"list", "fundec", "ident", "number", "string", "regexp", "undef",
-	"null", "true", "false", "this", "fun", "array", "object", "prop_val",
-	"prop_get", "prop_set", "index", "member", "call", "new", "delete",
-	"void", "typeof", "preinc", "predec", "postinc", "postdec", "pos",
-	"neg", "bitnot", "lognot", "logor", "logand", "bitor", "bitxor",
-	"bitand", "eq", "ne", "eq3", "ne3", "lt", "gt", "le", "ge",
-	"instanceof", "in", "shl", "shr", "ushr", "add", "sub", "mul", "div",
-	"mod", "cond", "ass", "ass_mul", "ass_div", "ass_mod", "ass_add",
-	"ass_sub", "ass_shl", "ass_shr", "ass_ushr", "ass_bitand",
-	"ass_bitxor", "ass_bitor", "comma", "varexp", "block", "nop", "var",
-	"if", "do_while", "while", "for", "for_var", "for_in", "for_in_var",
-	"continue", "break", "return", "with", "switch", "throw", "try",
-	"debugger", "label", "case", "default",
+#include "astnames.h"
 };
 
 static const char *opname[] = {

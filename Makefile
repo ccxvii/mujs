@@ -15,10 +15,13 @@ build/%.o : %.c $(HDRS)
 build/libjs.a: $(OBJS)
 	ar cru $@ $^
 
-opnames.h : jscompile.h
-	grep 'OP_' jscompile.h | sed 's/OP_/"/;s/,.*/",/' | tr A-Z a-z > opnames.h
+astnames.h : jsparse.h
+	grep '\(AST\|EXP\|STM\)_' jsparse.h | sed 's/^[ \t]*\(AST_\)\?/"/;s/,.*/",/' | tr A-Z a-z > $@
 
-jsdump.c : opnames.h
+opnames.h : jscompile.h
+	grep 'OP_' jscompile.h | sed 's/^[ \t]*OP_/"/;s/,.*/",/' | tr A-Z a-z > $@
+
+jsdump.c : astnames.h opnames.h
 
 js: build/main.o build/libjs.a
 	$(CC) -o $@ $^ -lm
@@ -30,6 +33,6 @@ test: js
 	python tests/sputniktests/tools/sputnik.py --tests=tests/sputniktests --command ./js --summary
 
 clean:
-	rm -f opnames.h build/* js
+	rm -f astnames.h opnames.h build/* js
 
 .PHONY: default test clean
