@@ -74,17 +74,22 @@ static void jsG_markenvironment(js_State *J, int mark, js_Environment *env)
 
 static void jsG_markproperty(js_State *J, int mark, js_Property *node)
 {
-	if (node->left->level) jsG_markproperty(J, mark, node->left);
-	if (node->right->level) jsG_markproperty(J, mark, node->right);
-	if (node->value.type == JS_TOBJECT && node->value.u.object->gcmark != mark)
-		jsG_markobject(J, mark, node->value.u.object);
+	while (node) {
+		if (node->value.type == JS_TOBJECT && node->value.u.object->gcmark != mark)
+			jsG_markobject(J, mark, node->value.u.object);
+		if (node->getter && node->getter->gcmark != mark)
+			jsG_markobject(J, mark, node->getter);
+		if (node->setter && node->setter->gcmark != mark)
+			jsG_markobject(J, mark, node->setter);
+		node = node->next;
+	}
 }
 
 static void jsG_markobject(js_State *J, int mark, js_Object *obj)
 {
 	obj->gcmark = mark;
-	if (obj->properties->level)
-		jsG_markproperty(J, mark, obj->properties);
+	if (obj->head)
+		jsG_markproperty(J, mark, obj->head);
 	if (obj->prototype && obj->prototype->gcmark != mark)
 		jsG_markobject(J, mark, obj->prototype);
 	if (obj->type == JS_CITERATOR) {

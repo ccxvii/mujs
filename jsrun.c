@@ -242,6 +242,15 @@ void *js_touserdata(js_State *J, const char *tag, int idx)
 	js_typeerror(J, "not a %s", tag);
 }
 
+static js_Object *jsR_tofunction(js_State *J, int idx)
+{
+	const js_Value *v = stackidx(J, idx);
+	if (v->type == JS_TOBJECT)
+		if (v->u.object->type == JS_CFUNCTION || v->u.object->type == JS_CCFUNCTION)
+			return v->u.object;
+	js_typeerror(J, "not a function");
+}
+
 /* Stack manipulation */
 
 void js_pop(js_State *J, int n)
@@ -376,7 +385,13 @@ static int jsR_hasproperty(js_State *J, js_Object *obj, const char *name)
 
 	ref = jsV_getproperty(J, obj, name);
 	if (ref) {
-		js_pushvalue(J, ref->value);
+		if (ref->getter) {
+			js_pushobject(J, ref->getter);
+			js_pushobject(J, obj);
+			js_call(J, 0);
+		} else {
+			js_pushvalue(J, ref->value);
+		}
 		return 1;
 	}
 
@@ -389,16 +404,17 @@ static void jsR_getproperty(js_State *J, js_Object *obj, const char *name)
 		js_pushundefined(J);
 }
 
-static void jsR_setproperty(js_State *J, js_Object *obj, const char *name, int idx)
+static void jsR_setproperty(js_State *J, js_Object *obj, const char *name, const js_Value *value)
 {
 	js_Property *ref;
+	int own;
 
 	if (obj->type == JS_CARRAY) {
 		unsigned int k;
 		char buf[32];
 
 		if (!strcmp(name, "length")) {
-			double rawlen = js_tonumber(J, idx);
+			double rawlen = jsV_tonumber(J, value);
 			unsigned int newlen = jsV_numbertouint32(rawlen);
 			if (newlen != rawlen)
 				js_rangeerror(J, "array length");
@@ -422,17 +438,32 @@ static void jsR_setproperty(js_State *J, js_Object *obj, const char *name, int i
 		if (!strcmp(name, "ignoreCase")) return;
 		if (!strcmp(name, "multiline")) return;
 		if (!strcmp(name, "lastIndex")) {
-			obj->u.r.last = js_tointeger(J, idx);
+			obj->u.r.last = jsV_tointeger(J, value);
 			return;
 		}
 	}
 
-	ref = jsV_setproperty(J, obj, name);
-	if (ref && !(ref->atts & JS_READONLY))
-		ref->value = js_tovalue(J, idx);
+	/* First try to find a setter in prototype chain */
+	ref = jsV_getpropertyx(J, obj, name, &own);
+	if (ref && ref->setter) {
+		js_pushobject(J, ref->setter);
+		js_pushobject(J, obj);
+		js_pushvalue(J, *value);
+		js_call(J, 1);
+		js_pop(J, 1);
+		return;
+	}
+
+	/* Property not found on this object, so create one */
+	if (!ref || !own)
+		ref = jsV_setproperty(J, obj, name);
+
+	if (!(ref->atts & JS_READONLY))
+		ref->value = *value;
 }
 
-static void jsR_defproperty(js_State *J, js_Object *obj, const char *name, int idx, int atts)
+static void jsR_defproperty(js_State *J, js_Object *obj, const char *name,
+	int atts, const js_Value *value, js_Object *getter, js_Object *setter)
 {
 	js_Property *ref;
 
@@ -451,10 +482,13 @@ static void jsR_defproperty(js_State *J, js_Object *obj, const char *name, int i
 	}
 
 	ref = jsV_setproperty(J, obj, name);
-	if (ref) {
-		ref->value = js_tovalue(J, idx);
-		ref->atts = atts;
-	}
+	if (value && !(ref->atts & JS_READONLY))
+		ref->value = *value;
+	if (getter && !(ref->atts & JS_DONTDELETE))
+		ref->getter = getter;
+	if (setter && !(ref->atts & JS_DONTDELETE))
+		ref->setter = setter;
+	ref->atts |= atts;
 }
 
 static int jsR_delproperty(js_State *J, js_Object *obj, const char *name)
@@ -521,7 +555,7 @@ void js_getregistry(js_State *J, const char *name)
 
 void js_setregistry(js_State *J, const char *name)
 {
-	jsR_setproperty(J, J->R, name, -1);
+	jsR_setproperty(J, J->R, name, stackidx(J, -1));
 	js_pop(J, 1);
 }
 
@@ -537,13 +571,13 @@ void js_getglobal(js_State *J, const char *name)
 
 void js_setglobal(js_State *J, const char *name)
 {
-	jsR_setproperty(J, J->G, name, -1);
+	jsR_setproperty(J, J->G, name, stackidx(J, -1));
 	js_pop(J, 1);
 }
 
 void js_defglobal(js_State *J, const char *name, int atts)
 {
-	jsR_defproperty(J, J->G, name, -1, atts);
+	jsR_defproperty(J, J->G, name, atts, stackidx(J, -1), NULL, NULL);
 	js_pop(J, 1);
 }
 
@@ -554,13 +588,13 @@ void js_getproperty(js_State *J, int idx, const char *name)
 
 void js_setproperty(js_State *J, int idx, const char *name)
 {
-	jsR_setproperty(J, js_toobject(J, idx), name, -1);
+	jsR_setproperty(J, js_toobject(J, idx), name, stackidx(J, -1));
 	js_pop(J, 1);
 }
 
 void js_defproperty(js_State *J, int idx, const char *name, int atts)
 {
-	jsR_defproperty(J, js_toobject(J, idx), name, -1, atts);
+	jsR_defproperty(J, js_toobject(J, idx), name, atts, stackidx(J, -1), NULL, NULL);
 	js_pop(J, 1);
 }
 
@@ -591,7 +625,7 @@ js_Environment *jsR_newenvironment(js_State *J, js_Object *vars, js_Environment 
 
 static void js_decvar(js_State *J, const char *name, int idx)
 {
-	jsR_defproperty(J, J->E->variables, name, idx, JS_DONTENUM | JS_DONTDELETE);
+	jsR_defproperty(J, J->E->variables, name, JS_DONTENUM | JS_DONTDELETE, stackidx(J, idx), NULL, NULL);
 }
 
 static void js_getvar(js_State *J, const char *name)
@@ -622,7 +656,7 @@ static void js_setvar(js_State *J, const char *name)
 		}
 		E = E->outer;
 	} while (E);
-	jsR_setproperty(J, J->G, name, -1);
+	jsR_setproperty(J, J->G, name, stackidx(J, -1));
 }
 
 static int js_delvar(js_State *J, const char *name)
@@ -909,24 +943,38 @@ static void jsR_run(js_State *J, js_Function *F)
 			js_pushboolean(J, b);
 			break;
 
+		case OP_INITGETTER:
+			obj = js_toobject(J, -3);
+			str = js_tostring(J, -2);
+			jsR_defproperty(J, obj, str, 0, NULL, jsR_tofunction(J, -1), NULL);
+			js_pop(J, 2);
+			break;
+
+		case OP_INITSETTER:
+			obj = js_toobject(J, -3);
+			str = js_tostring(J, -2);
+			jsR_defproperty(J, obj, str, 0, NULL, NULL, jsR_tofunction(J, -1));
+			js_pop(J, 2);
+			break;
+
 		case OP_INITPROP:
 			str = js_tostring(J, -2);
 			obj = js_toobject(J, -3);
-			jsR_setproperty(J, obj, str, -1);
+			jsR_setproperty(J, obj, str, stackidx(J, -1));
 			js_pop(J, 2);
 			break;
 
 		case OP_INITPROP_S:
 			str = ST[*pc++];
 			obj = js_toobject(J, -2);
-			jsR_setproperty(J, obj, str, -1);
+			jsR_setproperty(J, obj, str, stackidx(J, -1));
 			js_pop(J, 1);
 			break;
 
 		case OP_INITPROP_N:
 			str = jsV_numbertostring(J, *pc++);
 			obj = js_toobject(J, -2);
-			jsR_setproperty(J, obj, str, -1);
+			jsR_setproperty(J, obj, str, stackidx(J, -1));
 			js_pop(J, 1);
 			break;
 
@@ -947,14 +995,14 @@ static void jsR_run(js_State *J, js_Function *F)
 		case OP_SETPROP:
 			str = js_tostring(J, -2);
 			obj = js_toobject(J, -3);
-			jsR_setproperty(J, obj, str, -1);
+			jsR_setproperty(J, obj, str, stackidx(J, -1));
 			js_rot3pop2(J);
 			break;
 
 		case OP_SETPROP_S:
 			str = ST[*pc++];
 			obj = js_toobject(J, -2);
-			jsR_setproperty(J, obj, str, -1);
+			jsR_setproperty(J, obj, str, stackidx(J, -1));
 			js_rot2pop1(J);
 			break;
 

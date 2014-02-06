@@ -31,6 +31,8 @@ static js_Property *newproperty(js_State *J, const char *name)
 	node->atts = 0;
 	node->value.type = JS_TUNDEFINED;
 	node->value.u.number = 0;
+	node->getter = NULL;
+	node->setter = NULL;
 	return node;
 }
 
@@ -159,6 +161,19 @@ js_Object *jsV_newobject(js_State *J, js_Class type, js_Object *prototype)
 js_Property *jsV_getownproperty(js_State *J, js_Object *obj, const char *name)
 {
 	return lookup(obj->properties, name);
+}
+
+js_Property *jsV_getpropertyx(js_State *J, js_Object *obj, const char *name, int *own)
+{
+	*own = 1;
+	do {
+		js_Property *ref = lookup(obj->properties, name);
+		if (ref)
+			return ref;
+		obj = obj->prototype;
+		*own = 0;
+	} while (obj);
+	return NULL;
 }
 
 js_Property *jsV_getproperty(js_State *J, js_Object *obj, const char *name)

@@ -135,6 +135,11 @@ double jsV_tonumber(js_State *J, const js_Value *v)
 	return 0;
 }
 
+double jsV_tointeger(js_State *J, const js_Value *v)
+{
+	return jsV_numbertointeger(jsV_tonumber(J, v));
+}
+
 /* ToString() on a number */
 const char *jsV_numbertostring(js_State *J, double n)
 {

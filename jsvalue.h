@@ -95,6 +95,8 @@ struct js_Property
 	int level;
 	int atts;
 	js_Value value;
+	js_Object *getter;
+	js_Object *setter;
 };
 
 struct js_Iterator
@@ -113,6 +115,7 @@ void js_pushobject(js_State *J, js_Object *v);
 /* jsvalue.c */
 int jsV_toboolean(js_State *J, const js_Value *v);
 double jsV_tonumber(js_State *J, const js_Value *v);
+double jsV_tointeger(js_State *J, const js_Value *v);
 const char *jsV_tostring(js_State *J, const js_Value *v);
 js_Object *jsV_toobject(js_State *J, const js_Value *v);
 js_Value jsV_toprimitive(js_State *J, const js_Value *v, int preferred);
@@ -126,6 +129,7 @@ double jsV_stringtonumber(js_State *J, const char *string);
 /* jsproperty.c */
 js_Object *jsV_newobject(js_State *J, js_Class type, js_Object *prototype);
 js_Property *jsV_getownproperty(js_State *J, js_Object *obj, const char *name);
+js_Property *jsV_getpropertyx(js_State *J, js_Object *obj, const char *name, int *own);
 js_Property *jsV_getproperty(js_State *J, js_Object *obj, const char *name);
 js_Property *jsV_setproperty(js_State *J, js_Object *obj, const char *name);
 js_Property *jsV_nextproperty(js_State *J, js_Object *obj, const char *name);
