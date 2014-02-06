@@ -7,35 +7,6 @@
 
 #define nelem(a) (sizeof (a) / sizeof (a)[0])
 
-struct sbuffer { int n, m; char s[64]; };
-
-static struct sbuffer *sb_putc(struct sbuffer *sb, int c)
-{
-	if (!sb) {
-		sb = malloc(sizeof *sb);
-		sb->n = 0;
-		sb->m = sizeof sb->s;
-	} else if (sb->n == sb->m) {
-		sb = realloc(sb, (sb->m *= 2) + offsetof(struct sbuffer, s));
-	}
-	sb->s[sb->n++] = c;
-	return sb;
-}
-
-static struct sbuffer *sb_puts(struct sbuffer *sb, const char *s)
-{
-	while (*s)
-		sb = sb_putc(sb, *s++);
-	return sb;
-}
-
-static struct sbuffer *sb_putm(struct sbuffer *sb, const char *s, const char *e)
-{
-	while (s < e)
-		sb = sb_putc(sb, *s++);
-	return sb;
-}
-
 static int jsB_new_String(js_State *J, int argc)
 {
 	js_newstring(J, argc > 0 ? js_tostring(J, 1) : "");

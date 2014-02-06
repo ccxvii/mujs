@@ -66,6 +66,111 @@ static int jsB_isFinite(js_State *J, int argc)
 	return 1;
 }
 
+static int Encode(js_State *J, const char *str, const char *unescaped)
+{
+	struct sbuffer *sb = NULL;
+
+	static const char *HEX = "0123456789ABCDEF";
+
+	while (*str) {
+		int c = (unsigned char) *str++;
+		if (strchr(unescaped, c))
+			sb = sb_putc(sb, c);
+		else {
+			sb = sb_putc(sb, '%');
+			sb = sb_putc(sb, HEX[(c >> 4) & 0xf]);
+			sb = sb_putc(sb, HEX[c & 0xf]);
+		}
+	}
+	sb = sb_putc(sb, 0);
+
+	if (js_try(J)) {
+		free(sb);
+		js_throw(J);
+	}
+	js_pushstring(J, sb ? sb->s : "");
+	js_endtry(J);
+	free(sb);
+	return 1;
+}
+
+static inline int ishex(int c)
+{
+	return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+}
+
+static inline int tohex(int c)
+{
+	if (c >= '0' && c <= '9') return c - '0';
+	if (c >= 'a' && c <= 'f') return c - 'a' + 0xA;
+	if (c >= 'A' && c <= 'F') return c - 'A' + 0xA;
+	return 0;
+}
+
+static int Decode(js_State *J, const char *str, const char *reserved)
+{
+	struct sbuffer *sb = NULL;
+	int a, b;
+
+	while (*str) {
+		int c = (unsigned char) *str++;
+		if (c != '%')
+			sb = sb_putc(sb, c);
+		else {
+			if (!str[0] || !str[1])
+				js_urierror(J, "truncated escape sequence");
+			a = *str++;
+			b = *str++;
+			if (!ishex(a) || !ishex(b))
+				js_urierror(J, "invalid escape sequence");
+			c = tohex(a) << 4 | tohex(b);
+			if (!strchr(reserved, c))
+				sb = sb_putc(sb, c);
+			else {
+				sb = sb_putc(sb, '%');
+				sb = sb_putc(sb, a);
+				sb = sb_putc(sb, b);
+			}
+		}
+	}
+	sb = sb_putc(sb, 0);
+
+	if (js_try(J)) {
+		free(sb);
+		js_throw(J);
+	}
+	js_pushstring(J, sb ? sb->s : "");
+	js_endtry(J);
+	free(sb);
+	return 1;
+}
+
+#define URIRESERVED ";/?:@&=+$,"
+#define URIALPHA "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+#define URIDIGIT "0123456789"
+#define URIMARK "-_.!~*`()"
+#define URIUNESCAPED URIALPHA URIDIGIT URIMARK
+
+static int jsB_decodeURI(js_State *J, int argc)
+{
+	return Decode(J, js_tostring(J, 1), URIRESERVED "#");
+}
+
+static int jsB_decodeURIComponent(js_State *J, int argc)
+{
+	return Decode(J, js_tostring(J, 1), "");
+}
+
+static int jsB_encodeURI(js_State *J, int argc)
+{
+	return Encode(J, js_tostring(J, 1), URIUNESCAPED URIRESERVED "#");
+}
+
+static int jsB_encodeURIComponent(js_State *J, int argc)
+{
+	return Encode(J, js_tostring(J, 1), URIUNESCAPED);
+}
+
 void jsB_init(js_State *J)
 {
 	/* Create the prototype objects here, before the constructors */
@@ -114,4 +219,9 @@ void jsB_init(js_State *J)
 	jsB_globalf(J, "parseFloat", jsB_parseFloat, 1);
 	jsB_globalf(J, "isNaN", jsB_isNaN, 1);
 	jsB_globalf(J, "isFinite", jsB_isFinite, 1);
+
+	jsB_globalf(J, "decodeURI", jsB_decodeURI, 1);
+	jsB_globalf(J, "decodeURIComponent", jsB_decodeURIComponent, 1);
+	jsB_globalf(J, "encodeURI", jsB_encodeURI, 1);
+	jsB_globalf(J, "encodeURIComponent", jsB_encodeURIComponent, 1);
 }
