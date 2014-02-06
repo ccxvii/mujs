@@ -108,6 +108,13 @@ void js_pushglobal(js_State *J)
 	js_pushobject(J, J->G);
 }
 
+void js_currentfunction(js_State *J)
+{
+	CHECKSTACK(1);
+	STACK[TOP] = STACK[BOT-1];
+	++TOP;
+}
+
 /* Read values from stack */
 
 static const js_Value *stackidx(js_State *J, int idx)
@@ -245,6 +252,8 @@ void *js_touserdata(js_State *J, const char *tag, int idx)
 static js_Object *jsR_tofunction(js_State *J, int idx)
 {
 	const js_Value *v = stackidx(J, idx);
+	if (v->type == JS_TNULL)
+		return NULL;
 	if (v->type == JS_TOBJECT)
 		if (v->u.object->type == JS_CFUNCTION || v->u.object->type == JS_CCFUNCTION)
 			return v->u.object;
@@ -601,6 +610,12 @@ void js_defproperty(js_State *J, int idx, const char *name, int atts)
 void js_delproperty(js_State *J, int idx, const char *name)
 {
 	jsR_delproperty(J, js_toobject(J, idx), name);
+}
+
+void js_defaccessor(js_State *J, int idx, const char *name)
+{
+	jsR_defproperty(J, js_toobject(J, idx), name, 0, NULL, jsR_tofunction(J, -2), jsR_tofunction(J, -1));
+	js_pop(J, 2);
 }
 
 int js_hasproperty(js_State *J, int idx, const char *name)
