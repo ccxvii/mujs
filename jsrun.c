@@ -484,9 +484,9 @@ static void jsR_defproperty(js_State *J, js_Object *obj, const char *name,
 	ref = jsV_setproperty(J, obj, name);
 	if (value && !(ref->atts & JS_READONLY))
 		ref->value = *value;
-	if (getter && !(ref->atts & JS_DONTDELETE))
+	if (getter && !(ref->atts & JS_DONTCONF))
 		ref->getter = getter;
-	if (setter && !(ref->atts & JS_DONTDELETE))
+	if (setter && !(ref->atts & JS_DONTCONF))
 		ref->setter = setter;
 	ref->atts |= atts;
 }
@@ -510,7 +510,7 @@ static int jsR_delproperty(js_State *J, js_Object *obj, const char *name)
 
 	ref = jsV_getownproperty(J, obj, name);
 	if (ref) {
-		if (ref->atts & JS_DONTDELETE)
+		if (ref->atts & JS_DONTCONF)
 			return 0;
 		jsV_delproperty(J, obj, name);
 	}
@@ -625,7 +625,7 @@ js_Environment *jsR_newenvironment(js_State *J, js_Object *vars, js_Environment 
 
 static void js_decvar(js_State *J, const char *name, int idx)
 {
-	jsR_defproperty(J, J->E->variables, name, JS_DONTENUM | JS_DONTDELETE, stackidx(J, idx), NULL, NULL);
+	jsR_defproperty(J, J->E->variables, name, JS_DONTENUM | JS_DONTCONF, stackidx(J, idx), NULL, NULL);
 }
 
 static void js_getvar(js_State *J, const char *name)
@@ -665,7 +665,7 @@ static int js_delvar(js_State *J, const char *name)
 	do {
 		js_Property *ref = jsV_getownproperty(J, E->variables, name);
 		if (ref) {
-			if (ref->atts & JS_DONTDELETE)
+			if (ref->atts & JS_DONTCONF)
 				return 0;
 			jsV_delproperty(J, E->variables, name);
 			return 1;

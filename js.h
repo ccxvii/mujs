@@ -53,7 +53,7 @@ enum {
 enum {
 	JS_READONLY = 1,
 	JS_DONTENUM = 2,
-	JS_DONTDELETE = 4,
+	JS_DONTCONF = 4,
 };
 
 void js_newerror(js_State *J, const char *message);

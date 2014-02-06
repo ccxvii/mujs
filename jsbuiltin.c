@@ -101,13 +101,13 @@ void jsB_init(js_State *J)
 
 	/* Initialize the global object */
 	js_pushnumber(J, NAN);
-	js_defglobal(J, "NaN", JS_READONLY | JS_DONTENUM | JS_DONTDELETE);
+	js_defglobal(J, "NaN", JS_READONLY | JS_DONTENUM | JS_DONTCONF);
 
 	js_pushnumber(J, INFINITY);
-	js_defglobal(J, "Infinity", JS_READONLY | JS_DONTENUM | JS_DONTDELETE);
+	js_defglobal(J, "Infinity", JS_READONLY | JS_DONTENUM | JS_DONTCONF);
 
 	js_pushundefined(J);
-	js_defglobal(J, "undefined", JS_READONLY | JS_DONTENUM | JS_DONTDELETE);
+	js_defglobal(J, "undefined", JS_READONLY | JS_DONTENUM | JS_DONTCONF);
 
 	jsB_globalf(J, "eval", jsB_eval, 1);
 	jsB_globalf(J, "parseInt", jsB_parseInt, 1);
