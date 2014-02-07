@@ -1,11 +1,46 @@
 #include "jsi.h"
+#include "jsparse.h"
 #include "jscompile.h"
 #include "jsvalue.h"
 #include "jsbuiltin.h"
 
 static int jsB_Function(js_State *J, int argc)
 {
-	return 0;
+	const char *source;
+	struct sbuffer *sb;
+	js_Ast *parse;
+	js_Function *fun;
+	int i;
+
+	if (argc == 0)
+		source = "";
+	else {
+		source = js_tostring(J, argc);
+		sb = NULL;
+		if (argc > 1) {
+			for (i = 1; i < argc; ++i) {
+				if (i > 1) sb = sb_putc(sb, ',');
+				sb = sb_puts(sb, js_tostring(J, i));
+			}
+			sb = sb_putc(sb, ')');
+		}
+	}
+
+	if (js_try(J)) {
+		free(sb);
+		jsP_freeparse(J);
+		js_throw(J);
+	}
+
+	parse = jsP_parsefunction(J, "Function", sb->s, source);
+	fun = jsC_compilefunction(J, parse);
+
+	js_endtry(J);
+	free(sb);
+	jsP_freeparse(J);
+
+	js_newfunction(J, fun, J->GE);
+	return 1;
 }
 
 static int jsB_Function_prototype(js_State *J, int argc)

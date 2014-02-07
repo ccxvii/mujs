@@ -1109,6 +1109,11 @@ static void cfunbody(JF, js_Ast *name, js_Ast *params, js_Ast *body)
 	}
 }
 
+js_Function *jsC_compilefunction(js_State *J, js_Ast *prog)
+{
+	return newfun(J, prog->a, prog->b, prog->c, 0);
+}
+
 js_Function *jsC_compile(js_State *J, js_Ast *prog)
 {
 	return newfun(J, NULL, NULL, prog, 1);

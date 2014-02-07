@@ -136,6 +136,7 @@ struct js_Ast
 	js_Ast *gcnext; /* next in alloc list */
 };
 
+js_Ast *jsP_parsefunction(js_State *J, const char *filename, const char *params, const char *body);
 js_Ast *jsP_parse(js_State *J, const char *filename, const char *source);
 void jsP_freeparse(js_State *J);
 

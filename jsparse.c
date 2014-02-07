@@ -967,3 +967,14 @@ js_Ast *jsP_parse(js_State *J, const char *filename, const char *source)
 
 	return p;
 }
+
+js_Ast *jsP_parsefunction(js_State *J, const char *filename, const char *params, const char *body)
+{
+	js_Ast *p = NULL;
+	if (params) {
+		jsY_initlex(J, filename, params);
+		next(J);
+		p = parameters(J);
+	}
+	return EXP3(FUN, NULL, p, jsP_parse(J, filename, body));
+}

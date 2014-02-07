@@ -116,6 +116,7 @@ struct js_State
 	js_Object *R; /* registry of hidden values */
 	js_Object *G; /* the global object */
 	js_Environment *E; /* current environment scope */
+	js_Environment *GE; /* global environment scope (at the root) */
 
 	/* execution stack */
 	int top, bot;

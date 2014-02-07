@@ -138,6 +138,7 @@ struct js_Function
 	int gcmark;
 };
 
+js_Function *jsC_compilefunction(js_State *J, js_Ast *prog);
 js_Function *jsC_compile(js_State *J, js_Ast *prog);
 const char *jsC_opcodestring(int opcode);
 void jsC_dumpfunction(js_State *J, js_Function *fun);
