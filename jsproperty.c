@@ -218,10 +218,14 @@ void jsV_delproperty(js_State *J, js_Object *obj, const char *name)
 
 static int itshadow(js_State *J, js_Object *top, js_Object *bot, const char *name)
 {
+	unsigned int k;
 	while (top != bot) {
 		js_Property *prop = lookup(top->properties, name);
 		if (prop && !(prop->atts & JS_DONTENUM))
 			return 1;
+		if (top->type == JS_CSTRING)
+			if (js_isarrayindex(J, name, &k) && k < top->u.s.length)
+				return 1;
 		top = top->prototype;
 	}
 	return 0;
@@ -231,22 +235,38 @@ static void itwalk(js_State *J, js_Object *io, js_Object *top, int own)
 {
 	js_Object *obj = top;
 	js_Iterator *tail = NULL;
+	char buf[32];
+	unsigned int k;
+
+#define ITADD(x) \
+	js_Iterator *node = malloc(sizeof *node); \
+	node->name = x; \
+	node->next = NULL; \
+	if (!tail) { \
+		io->u.iter.head = tail = node; \
+	} else { \
+		tail->next = node; \
+		tail = node; \
+	}
+
 	while (obj) {
 		js_Property *prop = obj->head;
 		while (prop) {
 			if (!(prop->atts & JS_DONTENUM) && !itshadow(J, top, obj, prop->name)) {
-				js_Iterator *node = malloc(sizeof *node);
-				node->name = prop->name;
-				node->next = NULL;
-				if (!tail) {
-					io->u.iter.head = tail = node;
-				} else {
-					tail->next = node;
-					tail = node;
-				}
+				ITADD(prop->name);
 			}
 			prop = prop->next;
 		}
+
+		if (obj->type == JS_CSTRING) {
+			for (k = 0; k < obj->u.s.length; ++k) {
+				sprintf(buf, "%u", k);
+				if (!itshadow(J, top, obj, buf)) {
+					ITADD(js_intern(J, buf));
+				}
+			}
+		}
+
 		if (own)
 			break;
 		obj = obj->prototype;
@@ -264,6 +284,7 @@ js_Object *jsV_newiterator(js_State *J, js_Object *obj, int own)
 
 const char *jsV_nextiterator(js_State *J, js_Object *io)
 {
+	unsigned int k;
 	if (io->type != JS_CITERATOR)
 		js_typeerror(J, "not an iterator");
 	while (io->u.iter.head) {
@@ -273,6 +294,9 @@ const char *jsV_nextiterator(js_State *J, js_Object *io)
 		io->u.iter.head = next;
 		if (jsV_getproperty(J, io->u.iter.target, name))
 			return name;
+		if (io->u.iter.target->type == JS_CSTRING)
+			if (js_isarrayindex(J, name, &k) && k < io->u.iter.target->u.s.length)
+				return name;
 	}
 	return NULL;
 }

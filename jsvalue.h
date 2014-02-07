@@ -62,7 +62,10 @@ struct js_Object
 	union {
 		int boolean;
 		double number;
-		const char *string;
+		struct {
+			const char *string;
+			unsigned int length;
+		} s;
 		struct {
 			unsigned int length;
 		} a;

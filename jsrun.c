@@ -357,9 +357,18 @@ void js_rot(js_State *J, int n)
 
 /* Property access that takes care of attributes and getters/setters */
 
+int js_isarrayindex(js_State *J, const char *str, unsigned int *idx)
+{
+	char buf[32];
+	*idx = jsV_numbertouint32(jsV_stringtonumber(J, str));
+	sprintf(buf, "%u", *idx);
+	return !strcmp(buf, str);
+}
+
 static int jsR_hasproperty(js_State *J, js_Object *obj, const char *name)
 {
 	js_Property *ref;
+	unsigned int k;
 
 	if (obj->type == JS_CARRAY) {
 		if (!strcmp(name, "length")) {
@@ -368,7 +377,16 @@ static int jsR_hasproperty(js_State *J, js_Object *obj, const char *name)
 		}
 	}
 
-	// TODO: String array indexing
+	if (obj->type == JS_CSTRING) {
+		if (!strcmp(name, "length")) {
+			js_pushnumber(J, obj->u.s.length);
+			return 1;
+		}
+		if (js_isarrayindex(J, name, &k)) {
+			js_pushcharat(J, obj->u.s.string, k);
+			return 1;
+		}
+	}
 
 	if (obj->type == JS_CREGEXP) {
 		if (!strcmp(name, "source")) {
@@ -417,12 +435,10 @@ static void jsR_getproperty(js_State *J, js_Object *obj, const char *name)
 static void jsR_setproperty(js_State *J, js_Object *obj, const char *name, const js_Value *value)
 {
 	js_Property *ref;
+	unsigned int k;
 	int own;
 
 	if (obj->type == JS_CARRAY) {
-		unsigned int k;
-		char buf[32];
-
 		if (!strcmp(name, "length")) {
 			double rawlen = jsV_tonumber(J, value);
 			unsigned int newlen = jsV_numbertouint32(rawlen);
@@ -431,16 +447,18 @@ static void jsR_setproperty(js_State *J, js_Object *obj, const char *name, const
 			jsV_resizearray(J, obj, newlen);
 			return;
 		}
-
-		k = jsV_numbertouint32(jsV_stringtonumber(J, name));
-		if (k >= obj->u.a.length) {
-			sprintf(buf, "%u", k);
-			if (!strcmp(buf, name))
+		if (js_isarrayindex(J, name, &k))
+			if (k >= obj->u.a.length)
 				obj->u.a.length = k + 1;
-		}
 	}
 
-	// TODO: String array indexing
+	if (obj->type == JS_CSTRING) {
+		if (!strcmp(name, "length"))
+			return;
+		if (js_isarrayindex(J, name, &k))
+			if (js_runeat(J, obj->u.s.string, k))
+				return;
+	}
 
 	if (obj->type == JS_CREGEXP) {
 		if (!strcmp(name, "source")) return;
@@ -476,12 +494,19 @@ static void jsR_defproperty(js_State *J, js_Object *obj, const char *name,
 	int atts, const js_Value *value, js_Object *getter, js_Object *setter)
 {
 	js_Property *ref;
+	unsigned int k;
 
 	if (obj->type == JS_CARRAY)
 		if (!strcmp(name, "length"))
 			return;
 
-	// TODO: String array indexing
+	if (obj->type == JS_CSTRING) {
+		if (!strcmp(name, "length"))
+			return;
+		if (js_isarrayindex(J, name, &k))
+			if (js_runeat(J, obj->u.s.string, k))
+				return;
+	}
 
 	if (obj->type == JS_CREGEXP) {
 		if (!strcmp(name, "source")) return;
@@ -506,11 +531,18 @@ static void jsR_defproperty(js_State *J, js_Object *obj, const char *name,
 static int jsR_delproperty(js_State *J, js_Object *obj, const char *name)
 {
 	js_Property *ref;
+	unsigned int k;
 
 	if (obj->type == JS_CARRAY)
 		if (!strcmp(name, "length")) return 0;
 
-	// TODO: String array indexing
+	if (obj->type == JS_CSTRING) {
+		if (!strcmp(name, "length"))
+			return 0;
+		if (js_isarrayindex(J, name, &k))
+			if (js_runeat(J, obj->u.s.string, k))
+				return 0;
+	}
 
 	if (obj->type == JS_CREGEXP) {
 		if (!strcmp(name, "source")) return 0;

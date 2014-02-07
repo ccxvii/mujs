@@ -23,7 +23,7 @@ static int Sp_toString(js_State *J, int argc)
 {
 	js_Object *self = js_toobject(J, 0);
 	if (self->type != JS_CSTRING) js_typeerror(J, "not a string");
-	js_pushliteral(J, self->u.string);
+	js_pushliteral(J, self->u.s.string);
 	return 1;
 }
 
@@ -31,11 +31,11 @@ static int Sp_valueOf(js_State *J, int argc)
 {
 	js_Object *self = js_toobject(J, 0);
 	if (self->type != JS_CSTRING) js_typeerror(J, "not a string");
-	js_pushliteral(J, self->u.string);
+	js_pushliteral(J, self->u.s.string);
 	return 1;
 }
 
-static inline Rune runeAt(const char *s, int i)
+int js_runeat(js_State *J, const char *s, int i)
 {
 	Rune rune = 0;
 	while (i-- >= 0) {
@@ -65,12 +65,24 @@ static inline const char *utfidx(const char *s, int i)
 	return s;
 }
 
+void js_pushcharat(js_State *J, const char *s, int pos)
+{
+	char buf[UTFmax + 1];
+	Rune rune = js_runeat(J, s, pos);
+	if (rune > 0) {
+		buf[runetochar(buf, &rune)] = 0;
+		js_pushstring(J, buf);
+	} else {
+		js_pushundefined(J);
+	}
+}
+
 static int Sp_charAt(js_State *J, int argc)
 {
 	char buf[UTFmax + 1];
 	const char *s = js_tostring(J, 0);
 	int pos = js_tointeger(J, 1);
-	Rune rune = runeAt(s, pos);
+	Rune rune = js_runeat(J, s, pos);
 	if (rune > 0) {
 		buf[runetochar(buf, &rune)] = 0;
 		js_pushstring(J, buf);
@@ -84,7 +96,7 @@ static int Sp_charCodeAt(js_State *J, int argc)
 {
 	const char *s = js_tostring(J, 0);
 	int pos = js_tointeger(J, 1);
-	Rune rune = runeAt(s, pos);
+	Rune rune = js_runeat(J, s, pos);
 	if (rune > 0)
 		js_pushnumber(J, rune);
 	else
@@ -652,7 +664,8 @@ static int Sp_split(js_State *J, int argc)
 
 void jsB_initstring(js_State *J)
 {
-	J->String_prototype->u.string = "";
+	J->String_prototype->u.s.string = "";
+	J->String_prototype->u.s.length = 0;
 
 	js_pushobject(J, J->String_prototype);
 	{

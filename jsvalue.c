@@ -191,14 +191,8 @@ static js_Object *jsV_newnumber(js_State *J, double v)
 static js_Object *jsV_newstring(js_State *J, const char *v)
 {
 	js_Object *obj = jsV_newobject(J, JS_CSTRING, J->String_prototype);
-	obj->u.string = v;
-	{
-		js_Property *ref;
-		ref = jsV_setproperty(J, obj, "length");
-		ref->value.type = JS_TNUMBER;
-		ref->value.u.number = utflen(v);
-		ref->atts = JS_READONLY | JS_DONTENUM | JS_DONTCONF;
-	}
+	obj->u.s.string = v;
+	obj->u.s.length = utflen(v);
 	return obj;
 }
 
