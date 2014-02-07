@@ -14,12 +14,12 @@ static int Ep_toString(js_State *J, int argc)
 		js_typeerror(J, "not an object");
 
 	js_getproperty(J, 0, "name");
-	if (!js_isundefined(J, -1))
+	if (js_isdefined(J, -1))
 		name = js_tostring(J, -1);
 	js_pop(J, 1);
 
 	js_getproperty(J, 0, "message");
-	if (!js_isundefined(J, -1))
+	if (js_isdefined(J, -1))
 		message = js_tostring(J, -1);
 	js_pop(J, 1);
 
@@ -40,7 +40,7 @@ static int Ep_toString(js_State *J, int argc)
 static int jsB_ErrorX(js_State *J, int argc, js_Object *prototype)
 {
 	js_pushobject(J, jsV_newobject(J, JS_CERROR, prototype));
-	if (argc > 0) {
+	if (js_isdefined(J, 1)) {
 		js_pushstring(J, js_tostring(J, 1));
 		js_setproperty(J, -2, "message");
 	}

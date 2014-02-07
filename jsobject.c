@@ -51,7 +51,7 @@ static int Op_toString(js_State *J, int argc)
 
 static int Op_valueOf(js_State *J, int argc)
 {
-	/* return the 'this' object */
+	js_copy(J, 0);
 	return 1;
 }
 
@@ -258,7 +258,7 @@ static int O_create(js_State *J, int argc)
 	obj = jsV_newobject(J, JS_COBJECT, proto);
 	js_pushobject(J, obj);
 
-	if (!js_isundefined(J, 2)) {
+	if (js_isdefined(J, 2)) {
 		if (!js_isobject(J, 2)) js_typeerror(J, "not an object");
 		props = js_toobject(J, 2);
 		for (ref = props->head; ref; ref = ref->next) {

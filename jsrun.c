@@ -126,6 +126,7 @@ static const js_Value *stackidx(js_State *J, int idx)
 	return STACK + idx;
 }
 
+int js_isdefined(js_State *J, int idx) { return stackidx(J, idx)->type != JS_TUNDEFINED; }
 int js_isundefined(js_State *J, int idx) { return stackidx(J, idx)->type == JS_TUNDEFINED; }
 int js_isnull(js_State *J, int idx) { return stackidx(J, idx)->type == JS_TNULL; }
 int js_isboolean(js_State *J, int idx) { return stackidx(J, idx)->type == JS_TBOOLEAN; }

@@ -40,7 +40,7 @@ static int jsB_eval(js_State *J, int argc)
 static int jsB_parseInt(js_State *J, int argc)
 {
 	const char *s = js_tostring(J, 1);
-	double radix = argc > 1 ? js_tonumber(J, 2) : 10;
+	double radix = js_isdefined(J, 2) ? js_tonumber(J, 2) : 10;
 	js_pushnumber(J, strtol(s, NULL, radix == 0 ? 10 : radix));
 	return 1;
 }

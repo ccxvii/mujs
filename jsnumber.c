@@ -4,13 +4,13 @@
 
 static int jsB_new_Number(js_State *J, int argc)
 {
-	js_newnumber(J, argc > 0 ? js_tonumber(J, 1) : 0);
+	js_newnumber(J, js_isdefined(J, 1) ? js_tonumber(J, 1) : 0);
 	return 1;
 }
 
 static int jsB_Number(js_State *J, int argc)
 {
-	js_pushnumber(J, argc > 0 ? js_tonumber(J, 1) : 0);
+	js_pushnumber(J, js_isdefined(J, 1) ? js_tonumber(J, 1) : 0);
 	return 1;
 }
 

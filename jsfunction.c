@@ -12,7 +12,7 @@ static int jsB_Function(js_State *J, int argc)
 	js_Function *fun;
 	int i;
 
-	if (argc == 0)
+	if (js_isundefined(J, 1))
 		source = "";
 	else {
 		source = js_tostring(J, argc);

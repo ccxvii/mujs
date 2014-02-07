@@ -9,13 +9,13 @@
 
 static int jsB_new_String(js_State *J, int argc)
 {
-	js_newstring(J, argc > 0 ? js_tostring(J, 1) : "");
+	js_newstring(J, js_isdefined(J, 1) ? js_tostring(J, 1) : "");
 	return 1;
 }
 
 static int jsB_String(js_State *J, int argc)
 {
-	js_pushliteral(J, argc > 0 ? js_tostring(J, 1) : "");
+	js_pushliteral(J, js_isdefined(J, 1) ? js_tostring(J, 1) : "");
 	return 1;
 }
 
@@ -148,7 +148,7 @@ static int Sp_lastIndexOf(js_State *J, int argc)
 {
 	const char *haystack = js_tostring(J, 0);
 	const char *needle = js_tostring(J, 1);
-	int pos = argc > 1 ? js_tointeger(J, 2) : strlen(haystack);
+	int pos = js_isdefined(J, 2) ? js_tointeger(J, 2) : strlen(haystack);
 	int len = strlen(needle);
 	int k = 0, last = -1;
 	Rune rune;
@@ -175,7 +175,7 @@ static int Sp_slice(js_State *J, int argc)
 	const char *ss, *ee;
 	int len = utflen(str);
 	int s = js_tointeger(J, 1);
-	int e = argc > 1 ? js_tointeger(J, 2) : len;
+	int e = js_isdefined(J, 2) ? js_tointeger(J, 2) : len;
 
 	s = s < 0 ? s + len : s;
 	e = e < 0 ? e + len : e;
@@ -201,7 +201,7 @@ static int Sp_substring(js_State *J, int argc)
 	const char *ss, *ee;
 	int len = utflen(str);
 	int s = js_tointeger(J, 1);
-	int e = argc > 1 ? js_tointeger(J, 2) : len;
+	int e = js_isdefined(J, 2) ? js_tointeger(J, 2) : len;
 
 	s = s < 0 ? 0 : s > len ? len : s;
 	e = e < 0 ? 0 : e > len ? len : e;
@@ -547,7 +547,7 @@ static int Sp_split_regexp(js_State *J, int argc)
 
 	str = js_tostring(J, 0);
 	re = js_toregexp(J, 1);
-	limit = !js_isundefined(J, 2) ? js_touint32(J, 2) : 1 << 30;
+	limit = js_isdefined(J, 2) ? js_touint32(J, 2) : 1 << 30;
 
 	js_newarray(J);
 	len = 0;
@@ -602,7 +602,7 @@ static int Sp_split_string(js_State *J, int argc)
 {
 	const char *str = js_tostring(J, 0);
 	const char *sep = js_tostring(J, 1);
-	unsigned int limit = !js_isundefined(J, 2) ? js_touint32(J, 2) : 1 << 30;
+	unsigned int limit = js_isdefined(J, 2) ? js_touint32(J, 2) : 1 << 30;
 	unsigned int i, n;
 
 	js_newarray(J);

@@ -102,16 +102,19 @@ static int Ap_concat(js_State *J, int argc)
 static int Ap_join(js_State *J, int argc)
 {
 	char * volatile out = NULL;
-	const char *sep = ",";
+	const char *sep;
 	const char *r;
-	unsigned int seplen = 1;
+	unsigned int seplen;
 	unsigned int k, n, len;
 
 	len = js_getlength(J, 0);
 
-	if (argc == 1 && !js_isundefined(J, 1)) {
+	if (js_isdefined(J, 1)) {
 		sep = js_tostring(J, 1);
 		seplen = strlen(sep);
+	} else {
+		sep = ",";
+		seplen = 1;
 	}
 
 	if (len == 0) {
@@ -253,7 +256,7 @@ static int Ap_slice(js_State *J, int argc)
 
 	len = js_getlength(J, 0);
 	s = js_tointeger(J, 1);
-	e = argc > 1 ? js_tointeger(J, 2) : len;
+	e = js_isdefined(J, 2) ? js_tointeger(J, 2) : len;
 
 	if (s < 0) s = s + len;
 	if (e < 0) e = e + len;
@@ -424,7 +427,7 @@ static int Ap_indexOf(js_State *J, int argc)
 	int k, len, from;
 
 	len = js_getlength(J, 0);
-	from = argc > 1 ? js_tointeger(J, 2) : 0;
+	from = js_isdefined(J, 2) ? js_tointeger(J, 2) : 0;
 	if (from < 0) from = len + from;
 	if (from < 0) from = 0;
 
@@ -448,7 +451,7 @@ static int Ap_lastIndexOf(js_State *J, int argc)
 	int k, len, from;
 
 	len = js_getlength(J, 0);
-	from = argc > 1 ? js_tointeger(J, 2) : len;
+	from = js_isdefined(J, 2) ? js_tointeger(J, 2) : len - 1;
 	if (from > len - 1) from = len - 1;
 	if (from < 0) from = len + from;
 
