@@ -29,6 +29,7 @@ enum js_Class {
 	JS_CREGEXP,
 	JS_CDATE,
 	JS_CMATH,
+	JS_CJSON,
 	JS_CITERATOR,
 	JS_CUSERDATA,
 };
