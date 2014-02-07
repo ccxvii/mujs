@@ -419,6 +419,281 @@ static int Ap_toString(js_State *J, int argc)
 	return Ap_join(J, 0);
 }
 
+static int Ap_indexOf(js_State *J, int argc)
+{
+	int k, len, from;
+
+	len = js_getlength(J, 0);
+	from = argc > 1 ? js_tointeger(J, 2) : 0;
+	if (from < 0) from = len + from;
+	if (from < 0) from = 0;
+
+	js_copy(J, 1);
+	for (k = from; k < len; ++k) {
+		if (js_hasindex(J, 0, k)) {
+			if (js_strictequal(J)) {
+				js_pushnumber(J, k);
+				return 1;
+			}
+			js_pop(J, 1);
+		}
+	}
+
+	js_pushnumber(J, -1);
+	return 1;
+}
+
+static int Ap_lastIndexOf(js_State *J, int argc)
+{
+	int k, len, from;
+
+	len = js_getlength(J, 0);
+	from = argc > 1 ? js_tointeger(J, 2) : len;
+	if (from > len - 1) from = len - 1;
+	if (from < 0) from = len + from;
+
+	js_copy(J, 1);
+	for (k = from; k >= 0; --k) {
+		if (js_hasindex(J, 0, k)) {
+			if (js_strictequal(J)) {
+				js_pushnumber(J, k);
+				return 1;
+			}
+			js_pop(J, 1);
+		}
+	}
+
+	js_pushnumber(J, -1);
+	return 1;
+}
+
+static int Ap_every(js_State *J, int argc)
+{
+	int k, len;
+
+	if (!js_iscallable(J, 1))
+		js_typeerror(J, "callback is not a function");
+
+	len = js_getlength(J, 0);
+	for (k = 0; k < len; ++k) {
+		if (js_hasindex(J, 0, k)) {
+			js_copy(J, 1);
+			if (argc > 1)
+				js_copy(J, 2);
+			else
+				js_pushundefined(J);
+			js_copy(J, -3);
+			js_pushnumber(J, k);
+			js_copy(J, 0);
+			js_call(J, 3);
+			if (!js_toboolean(J, -1))
+				return 1;
+			js_pop(J, 2);
+		}
+	}
+
+	js_pushboolean(J, 1);
+	return 1;
+}
+
+static int Ap_some(js_State *J, int argc)
+{
+	int k, len;
+
+	if (!js_iscallable(J, 1))
+		js_typeerror(J, "callback is not a function");
+
+	len = js_getlength(J, 0);
+	for (k = 0; k < len; ++k) {
+		if (js_hasindex(J, 0, k)) {
+			js_copy(J, 1);
+			if (argc > 1)
+				js_copy(J, 2);
+			else
+				js_pushundefined(J);
+			js_copy(J, -3);
+			js_pushnumber(J, k);
+			js_copy(J, 0);
+			js_call(J, 3);
+			if (js_toboolean(J, -1))
+				return 1;
+			js_pop(J, 2);
+		}
+	}
+
+	js_pushboolean(J, 0);
+	return 1;
+}
+
+static int Ap_forEach(js_State *J, int argc)
+{
+	int k, len;
+
+	if (!js_iscallable(J, 1))
+		js_typeerror(J, "callback is not a function");
+
+	len = js_getlength(J, 0);
+	for (k = 0; k < len; ++k) {
+		if (js_hasindex(J, 0, k)) {
+			js_copy(J, 1);
+			if (argc > 1)
+				js_copy(J, 2);
+			else
+				js_pushundefined(J);
+			js_copy(J, -3);
+			js_pushnumber(J, k);
+			js_copy(J, 0);
+			js_call(J, 3);
+			js_pop(J, 2);
+		}
+	}
+
+	return 0;
+}
+
+static int Ap_map(js_State *J, int argc)
+{
+	int k, len;
+
+	if (!js_iscallable(J, 1))
+		js_typeerror(J, "callback is not a function");
+
+	js_newarray(J);
+
+	len = js_getlength(J, 0);
+	for (k = 0; k < len; ++k) {
+		if (js_hasindex(J, 0, k)) {
+			js_copy(J, 1);
+			if (argc > 1)
+				js_copy(J, 2);
+			else
+				js_pushundefined(J);
+			js_copy(J, -3);
+			js_pushnumber(J, k);
+			js_copy(J, 0);
+			js_call(J, 3);
+			js_setindex(J, -3, k);
+			js_pop(J, 1);
+		}
+	}
+
+	return 1;
+}
+
+static int Ap_filter(js_State *J, int argc)
+{
+	int k, to, len;
+
+	if (!js_iscallable(J, 1))
+		js_typeerror(J, "callback is not a function");
+
+	js_newarray(J);
+	to = 0;
+
+	len = js_getlength(J, 0);
+	for (k = 0; k < len; ++k) {
+		if (js_hasindex(J, 0, k)) {
+			js_copy(J, 1);
+			if (argc > 1)
+				js_copy(J, 2);
+			else
+				js_pushundefined(J);
+			js_copy(J, -3);
+			js_pushnumber(J, k);
+			js_copy(J, 0);
+			js_call(J, 3);
+			if (js_toboolean(J, -1)) {
+				js_pop(J, 1);
+				js_setindex(J, -2, to++);
+			} else {
+				js_pop(J, 2);
+			}
+		}
+	}
+
+	return 1;
+}
+
+static int Ap_reduce(js_State *J, int argc)
+{
+	int k, len;
+
+	if (!js_iscallable(J, 1))
+		js_typeerror(J, "callback is not a function");
+
+	len = js_getlength(J, 0);
+	k = 0;
+
+	if (len == 0 && argc < 2)
+		js_typeerror(J, "no initial value");
+
+	/* initial value of accumulator */
+	if (argc >= 2)
+		js_copy(J, 2);
+	else {
+		while (k < len)
+			if (js_hasindex(J, 0, k++))
+				break;
+		if (k == len)
+			js_typeerror(J, "no initial value");
+	}
+
+	while (k < len) {
+		if (js_hasindex(J, 0, k)) {
+			js_copy(J, 1);
+			js_pushundefined(J);
+			js_rot(J, 4); /* accumulator on top */
+			js_rot(J, 4); /* property on top */
+			js_pushnumber(J, k);
+			js_copy(J, 0);
+			js_call(J, 4); /* calculate new accumulator */
+		}
+		++k;
+	}
+
+	return 1; /* return accumulator */
+}
+
+static int Ap_reduceRight(js_State *J, int argc)
+{
+	int k, len;
+
+	if (!js_iscallable(J, 1))
+		js_typeerror(J, "callback is not a function");
+
+	len = js_getlength(J, 0);
+	k = len - 1;
+
+	if (len == 0 && argc < 2)
+		js_typeerror(J, "no initial value");
+
+	/* initial value of accumulator */
+	if (argc >= 2)
+		js_copy(J, 2);
+	else {
+		while (k >= 0)
+			if (js_hasindex(J, 0, k--))
+				break;
+		if (k < 0)
+			js_typeerror(J, "no initial value");
+	}
+
+	while (k >= 0) {
+		if (js_hasindex(J, 0, k)) {
+			js_copy(J, 1);
+			js_pushundefined(J);
+			js_rot(J, 4); /* accumulator on top */
+			js_rot(J, 4); /* property on top */
+			js_pushnumber(J, k);
+			js_copy(J, 0);
+			js_call(J, 4); /* calculate new accumulator */
+		}
+		--k;
+	}
+
+	return 1; /* return accumulator */
+}
+
 static int A_isArray(js_State *J, int argc)
 {
 	if (js_isobject(J, 1)) {
@@ -441,10 +716,21 @@ void jsB_initarray(js_State *J)
 		jsB_propf(J, "push", Ap_push, 1);
 		jsB_propf(J, "reverse", Ap_reverse, 0);
 		jsB_propf(J, "shift", Ap_shift, 0);
-		jsB_propf(J, "slice", Ap_slice, 0);
+		jsB_propf(J, "slice", Ap_slice, 2);
 		jsB_propf(J, "sort", Ap_sort, 1);
-		jsB_propf(J, "splice", Ap_splice, 0);
-		jsB_propf(J, "unshift", Ap_unshift, 0);
+		jsB_propf(J, "splice", Ap_splice, 2);
+		jsB_propf(J, "unshift", Ap_unshift, 1);
+
+		/* ES5 */
+		jsB_propf(J, "indexOf", Ap_indexOf, 1);
+		jsB_propf(J, "lastIndexOf", Ap_lastIndexOf, 1);
+		jsB_propf(J, "every", Ap_every, 1);
+		jsB_propf(J, "some", Ap_some, 1);
+		jsB_propf(J, "forEach", Ap_forEach, 1);
+		jsB_propf(J, "map", Ap_map, 1);
+		jsB_propf(J, "filter", Ap_filter, 1);
+		jsB_propf(J, "reduce", Ap_reduce, 1);
+		jsB_propf(J, "reduceRight", Ap_reduceRight, 1);
 	}
 	js_newcconstructor(J, jsB_new_Array, jsB_new_Array, 1);
 	{
