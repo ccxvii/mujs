@@ -272,6 +272,7 @@ void js_newcfunction(js_State *J, js_CFunction cfun, int length)
 	js_Object *obj = jsV_newobject(J, JS_CCFUNCTION, J->Function_prototype);
 	obj->u.c.function = cfun;
 	obj->u.c.constructor = NULL;
+	obj->u.c.length = length;
 	js_pushobject(J, obj);
 	{
 		js_pushnumber(J, length);

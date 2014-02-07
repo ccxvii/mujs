@@ -744,9 +744,14 @@ static void jsR_callscript(js_State *J, int n, js_Function *F)
 	js_pushvalue(J, v);
 }
 
-static void jsR_callcfunction(js_State *J, int n, js_CFunction F)
+static void jsR_callcfunction(js_State *J, int n, int min, js_CFunction F)
 {
-	int rv = F(J, n);
+	int rv;
+
+	while (min++ < n)
+		js_pushundefined(J);
+
+	rv = F(J, n);
 	if (rv) {
 		js_Value v = js_tovalue(J, -1);
 		TOP = --BOT; /* clear stack */
@@ -775,7 +780,7 @@ void js_call(js_State *J, int n)
 	else if (obj->type == JS_CSCRIPT)
 		jsR_callscript(J, n, obj->u.f.function);
 	else if (obj->type == JS_CCFUNCTION)
-		jsR_callcfunction(J, n, obj->u.c.function);
+		jsR_callcfunction(J, n, obj->u.c.length, obj->u.c.function);
 
 	BOT = savebot;
 }
@@ -798,7 +803,7 @@ void js_construct(js_State *J, int n)
 		if (n > 0)
 			js_rot(J, n + 1);
 		BOT = TOP - n - 1;
-		jsR_callcfunction(J, n, obj->u.c.constructor);
+		jsR_callcfunction(J, n, obj->u.c.length, obj->u.c.constructor);
 		BOT = savebot;
 		return;
 	}
