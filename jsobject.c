@@ -144,6 +144,7 @@ static int O_getOwnPropertyNames(js_State *J, int argc)
 {
 	js_Object *obj;
 	js_Property *ref;
+	unsigned int k;
 	int i;
 
 	if (!js_isobject(J, 1))
@@ -151,10 +152,40 @@ static int O_getOwnPropertyNames(js_State *J, int argc)
 	obj = js_toobject(J, 1);
 
 	js_newarray(J);
+
+	i = 0;
 	for (ref = obj->head; ref; ref = ref->next) {
 		js_pushliteral(J, ref->name);
 		js_setindex(J, -2, i++);
 	}
+
+	if (obj->type == JS_CARRAY) {
+		js_pushliteral(J, "length");
+		js_setindex(J, -2, i++);
+	}
+
+	if (obj->type == JS_CSTRING) {
+		js_pushliteral(J, "length");
+		js_setindex(J, -2, i++);
+		for (k = 0; k < obj->u.s.length; ++k) {
+			js_pushnumber(J, k);
+			js_setindex(J, -2, i++);
+		}
+	}
+
+	if (obj->type == JS_CREGEXP) {
+		js_pushliteral(J, "source");
+		js_setindex(J, -2, i++);
+		js_pushliteral(J, "global");
+		js_setindex(J, -2, i++);
+		js_pushliteral(J, "ignoreCase");
+		js_setindex(J, -2, i++);
+		js_pushliteral(J, "multiline");
+		js_setindex(J, -2, i++);
+		js_pushliteral(J, "lastIndex");
+		js_setindex(J, -2, i++);
+	}
+
 	return 1;
 }
 
@@ -276,6 +307,7 @@ static int O_keys(js_State *J, int argc)
 {
 	js_Object *obj;
 	js_Property *ref;
+	unsigned int k;
 	int i;
 
 	if (!js_isobject(J, 1))
@@ -283,12 +315,22 @@ static int O_keys(js_State *J, int argc)
 	obj = js_toobject(J, 1);
 
 	js_newarray(J);
+
+	i = 0;
 	for (ref = obj->head; ref; ref = ref->next) {
 		if (!(ref->atts & JS_DONTENUM)) {
 			js_pushliteral(J, ref->name);
 			js_setindex(J, -2, i++);
 		}
 	}
+
+	if (obj->type == JS_CSTRING) {
+		for (k = 0; k < obj->u.s.length; ++k) {
+			js_pushnumber(J, k);
+			js_setindex(J, -2, i++);
+		}
+	}
+
 	return 1;
 }
 
