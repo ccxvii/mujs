@@ -467,7 +467,7 @@ static void jsR_setproperty(js_State *J, js_Object *obj, const char *name, const
 	if (!ref || !own)
 		ref = jsV_setproperty(J, obj, name);
 
-	if (!(ref->atts & JS_READONLY))
+	if (ref && !(ref->atts & JS_READONLY))
 		ref->value = *value;
 }
 
@@ -491,13 +491,15 @@ static void jsR_defproperty(js_State *J, js_Object *obj, const char *name,
 	}
 
 	ref = jsV_setproperty(J, obj, name);
-	if (value && !(ref->atts & JS_READONLY))
-		ref->value = *value;
-	if (getter && !(ref->atts & JS_DONTCONF))
-		ref->getter = getter;
-	if (setter && !(ref->atts & JS_DONTCONF))
-		ref->setter = setter;
-	ref->atts |= atts;
+	if (ref) {
+		if (value && !(ref->atts & JS_READONLY))
+			ref->value = *value;
+		if (getter && !(ref->atts & JS_DONTCONF))
+			ref->getter = getter;
+		if (setter && !(ref->atts & JS_DONTCONF))
+			ref->setter = setter;
+		ref->atts |= atts;
+	}
 }
 
 static int jsR_delproperty(js_State *J, js_Object *obj, const char *name)

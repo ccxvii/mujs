@@ -55,6 +55,7 @@ struct js_Regexp
 struct js_Object
 {
 	js_Class type;
+	int extensible;
 	js_Property *properties;
 	js_Property *head, *tail; /* for enumeration */
 	js_Object *prototype;

@@ -292,6 +292,109 @@ static int O_keys(js_State *J, int argc)
 	return 1;
 }
 
+static int O_preventExtensions(js_State *J, int argc)
+{
+	if (!js_isobject(J, 1))
+		js_typeerror(J, "not an object");
+	js_toobject(J, 1)->extensible = 0;
+	js_copy(J, 1);
+	return 1;
+}
+
+static int O_isExtensible(js_State *J, int argc)
+{
+	if (!js_isobject(J, 1))
+		js_typeerror(J, "not an object");
+	js_pushboolean(J, js_toobject(J, 1)->extensible);
+	return 1;
+}
+
+static int O_seal(js_State *J, int argc)
+{
+	js_Object *obj;
+	js_Property *ref;
+
+	if (!js_isobject(J, 1))
+		js_typeerror(J, "not an object");
+
+	obj = js_toobject(J, 1);
+	obj->extensible = 0;
+
+	for (ref = obj->head; ref; ref = ref->next)
+		ref->atts |= JS_DONTCONF;
+
+	js_copy(J, 1);
+	return 1;
+}
+
+static int O_isSealed(js_State *J, int argc)
+{
+	js_Object *obj;
+	js_Property *ref;
+
+	if (!js_isobject(J, 1))
+		js_typeerror(J, "not an object");
+
+	obj = js_toobject(J, 1);
+	if (obj->extensible) {
+		js_pushboolean(J, 0);
+		return 1;
+	}
+
+	for (ref = obj->head; ref; ref = ref->next) {
+		if (!(ref->atts & JS_DONTCONF)) {
+			js_pushboolean(J, 0);
+			return 1;
+		}
+	}
+
+	js_pushboolean(J, 1);
+	return 1;
+}
+
+static int O_freeze(js_State *J, int argc)
+{
+	js_Object *obj;
+	js_Property *ref;
+
+	if (!js_isobject(J, 1))
+		js_typeerror(J, "not an object");
+
+	obj = js_toobject(J, 1);
+	obj->extensible = 0;
+
+	for (ref = obj->head; ref; ref = ref->next)
+		ref->atts |= JS_READONLY | JS_DONTCONF;
+
+	js_copy(J, 1);
+	return 1;
+}
+
+static int O_isFrozen(js_State *J, int argc)
+{
+	js_Object *obj;
+	js_Property *ref;
+
+	if (!js_isobject(J, 1))
+		js_typeerror(J, "not an object");
+
+	obj = js_toobject(J, 1);
+	if (obj->extensible) {
+		js_pushboolean(J, 0);
+		return 1;
+	}
+
+	for (ref = obj->head; ref; ref = ref->next) {
+		if (!(ref->atts & (JS_READONLY | JS_DONTCONF))) {
+			js_pushboolean(J, 0);
+			return 1;
+		}
+	}
+
+	js_pushboolean(J, 1);
+	return 1;
+}
+
 void jsB_initobject(js_State *J)
 {
 	js_pushobject(J, J->Object_prototype);
@@ -312,12 +415,12 @@ void jsB_initobject(js_State *J)
 		jsB_propf(J, "create", O_create, 2);
 		jsB_propf(J, "defineProperty", O_defineProperty, 3);
 		jsB_propf(J, "defineProperties", O_defineProperties, 2);
-		//jsB_propf(J, "seal", O_seal, 1);
-		//jsB_propf(J, "freeze", O_freeze, 1);
-		//jsB_propf(J, "preventExtensions", O_preventExtensions, 1);
-		//jsB_propf(J, "isSealed", O_isSealed, 1);
-		//jsB_propf(J, "isFrozen", O_isFrozen, 1);
-		//jsB_propf(J, "isExtensible", O_isExtensible, 1);
+		jsB_propf(J, "seal", O_seal, 1);
+		jsB_propf(J, "freeze", O_freeze, 1);
+		jsB_propf(J, "preventExtensions", O_preventExtensions, 1);
+		jsB_propf(J, "isSealed", O_isSealed, 1);
+		jsB_propf(J, "isFrozen", O_isFrozen, 1);
+		jsB_propf(J, "isExtensible", O_isExtensible, 1);
 		jsB_propf(J, "keys", O_keys, 1);
 	}
 	js_defglobal(J, "Object", JS_DONTENUM);

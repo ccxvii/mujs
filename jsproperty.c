@@ -155,6 +155,7 @@ js_Object *jsV_newobject(js_State *J, js_Class type, js_Object *prototype)
 	obj->type = type;
 	obj->properties = &sentinel;
 	obj->prototype = prototype;
+	obj->extensible = 1;
 	return obj;
 }
 
@@ -190,6 +191,10 @@ js_Property *jsV_getproperty(js_State *J, js_Object *obj, const char *name)
 js_Property *jsV_setproperty(js_State *J, js_Object *obj, const char *name)
 {
 	js_Property *result;
+
+	if (!obj->extensible)
+		return lookup(obj->properties, name);
+
 	obj->properties = insert(J, obj->properties, name, &result);
 	if (!result->prevp) {
 		if (!obj->head) {
