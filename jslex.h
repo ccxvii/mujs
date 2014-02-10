@@ -71,5 +71,6 @@ int jsY_findword(const char *s, const char **list, int num);
 
 void jsY_initlex(js_State *J, const char *filename, const char *source);
 int jsY_lex(js_State *J);
+int jsY_lexjson(js_State *J);
 
 #endif

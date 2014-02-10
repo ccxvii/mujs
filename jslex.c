@@ -663,3 +663,40 @@ int jsY_lex(js_State *J)
 {
 	return J->lasttoken = jsY_lexx(J);
 }
+
+int jsY_lexjson(js_State *J)
+{
+	while (1) {
+		J->lexline = J->line; /* save location of beginning of token */
+
+		while (iswhite(PEEK) || PEEK == '\n')
+			NEXT();
+
+		if (PEEK >= '0' && PEEK <= '9') {
+			return lexnumber(J);
+		}
+
+		switch (PEEK) {
+		case ',': NEXT(); return ',';
+		case ':': NEXT(); return ':';
+		case '[': NEXT(); return '[';
+		case ']': NEXT(); return ']';
+		case '{': NEXT(); return '{';
+		case '}': NEXT(); return '}';
+
+		case '\'':
+		case '"':
+			return lexstring(J);
+
+		case '.':
+			return lexnumber(J);
+
+		case 0:
+			return 0; /* EOF */
+		}
+
+		if (PEEK >= 0x20 && PEEK <= 0x7E)
+			jsY_error(J, "unexpected character: '%c'", PEEK);
+		jsY_error(J, "unexpected character: \\u%04X", PEEK);
+	}
+}
