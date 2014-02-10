@@ -393,7 +393,7 @@ static int Sp_replace_regexp(js_State *J, int argc)
 	js_Regexp *re;
 	regmatch_t m[10];
 	const char *source, *s, *r;
-	struct sbuffer *sb = NULL;
+	js_Buffer *sb = NULL;
 	int n, x;
 
 	source = js_tostring(J, 0);
@@ -419,39 +419,39 @@ loop:
 		js_copy(J, 0); /* arg x+3: search string */
 		js_call(J, 2 + x);
 		r = js_tostring(J, -1);
-		sb = sb_putm(sb, source, s);
-		sb = sb_puts(sb, r);
+		sb_putm(&sb, source, s);
+		sb_puts(&sb, r);
 		js_pop(J, 1);
 	} else {
 		r = js_tostring(J, 2);
-		sb = sb_putm(sb, source, s);
+		sb_putm(&sb, source, s);
 		while (*r) {
 			if (*r == '$') {
 				switch (*(++r)) {
-				case '$': sb = sb_putc(sb, '$'); break;
-				case '`': sb = sb_putm(sb, source, s); break;
-				case '\'': sb = sb_puts(sb, s + n); break;
+				case '$': sb_putc(&sb, '$'); break;
+				case '`': sb_putm(&sb, source, s); break;
+				case '\'': sb_puts(&sb, s + n); break;
 				case '&':
-					sb = sb_putm(sb, s, s + n);
+					sb_putm(&sb, s, s + n);
 					break;
 				case '0': case '1': case '2': case '3': case '4':
 				case '5': case '6': case '7': case '8': case '9':
 					x = *r - '0';
 					if (m[x].rm_so >= 0) {
-						sb = sb_putm(sb, source + m[x].rm_so, source + m[x].rm_eo);
+						sb_putm(&sb, source + m[x].rm_so, source + m[x].rm_eo);
 					} else {
-						sb = sb_putc(sb, '$');
-						sb = sb_putc(sb, '0'+x);
+						sb_putc(&sb, '$');
+						sb_putc(&sb, '0'+x);
 					}
 					break;
 				default:
-					sb = sb_putc(sb, '$');
-					sb = sb_putc(sb, *r);
+					sb_putc(&sb, '$');
+					sb_putc(&sb, *r);
 					break;
 				}
 				++r;
 			} else {
-				sb = sb_putc(sb, *r++);
+				sb_putc(&sb, *r++);
 			}
 		}
 	}
@@ -460,7 +460,7 @@ loop:
 		source = source + m[0].rm_eo;
 		if (n == 0) {
 			if (*source)
-				sb = sb_putc(sb, *source++);
+				sb_putc(&sb, *source++);
 			else
 				goto end;
 		}
@@ -469,8 +469,8 @@ loop:
 	}
 
 end:
-	sb = sb_puts(sb, s + n);
-	sb = sb_putc(sb, 0);
+	sb_puts(&sb, s + n);
+	sb_putc(&sb, 0);
 
 	if (js_try(J)) {
 		free(sb);
@@ -485,7 +485,7 @@ end:
 static int Sp_replace_string(js_State *J, int argc)
 {
 	const char *source, *needle, *s, *r;
-	struct sbuffer *sb = NULL;
+	js_Buffer *sb = NULL;
 	int n;
 
 	source = js_tostring(J, 0);
@@ -506,30 +506,30 @@ static int Sp_replace_string(js_State *J, int argc)
 		js_copy(J, 0); /* arg 3: search string */
 		js_call(J, 3);
 		r = js_tostring(J, -1);
-		sb = sb_putm(sb, source, s);
-		sb = sb_puts(sb, r);
-		sb = sb_puts(sb, s + n);
-		sb = sb_putc(sb, 0);
+		sb_putm(&sb, source, s);
+		sb_puts(&sb, r);
+		sb_puts(&sb, s + n);
+		sb_putc(&sb, 0);
 		js_pop(J, 1);
 	} else {
 		r = js_tostring(J, 2);
-		sb = sb_putm(sb, source, s);
+		sb_putm(&sb, source, s);
 		while (*r) {
 			if (*r == '$') {
 				switch (*(++r)) {
-				case '$': sb = sb_putc(sb, '$'); break;
-				case '&': sb = sb_putm(sb, s, s + n); break;
-				case '`': sb = sb_putm(sb, source, s); break;
-				case '\'': sb = sb_puts(sb, s + n); break;
-				default: sb = sb_putc(sb, '$'); sb = sb_putc(sb, *r); break;
+				case '$': sb_putc(&sb, '$'); break;
+				case '&': sb_putm(&sb, s, s + n); break;
+				case '`': sb_putm(&sb, source, s); break;
+				case '\'': sb_puts(&sb, s + n); break;
+				default: sb_putc(&sb, '$'); sb_putc(&sb, *r); break;
 				}
 				++r;
 			} else {
-				sb = sb_putc(sb, *r++);
+				sb_putc(&sb, *r++);
 			}
 		}
-		sb = sb_puts(sb, s + n);
-		sb = sb_putc(sb, 0);
+		sb_puts(&sb, s + n);
+		sb_putc(&sb, 0);
 	}
 
 	if (js_try(J)) {

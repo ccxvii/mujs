@@ -68,21 +68,21 @@ static int jsB_isFinite(js_State *J, int argc)
 
 static int Encode(js_State *J, const char *str, const char *unescaped)
 {
-	struct sbuffer *sb = NULL;
+	js_Buffer *sb = NULL;
 
 	static const char *HEX = "0123456789ABCDEF";
 
 	while (*str) {
 		int c = (unsigned char) *str++;
 		if (strchr(unescaped, c))
-			sb = sb_putc(sb, c);
+			sb_putc(&sb, c);
 		else {
-			sb = sb_putc(sb, '%');
-			sb = sb_putc(sb, HEX[(c >> 4) & 0xf]);
-			sb = sb_putc(sb, HEX[c & 0xf]);
+			sb_putc(&sb, '%');
+			sb_putc(&sb, HEX[(c >> 4) & 0xf]);
+			sb_putc(&sb, HEX[c & 0xf]);
 		}
 	}
-	sb = sb_putc(sb, 0);
+	sb_putc(&sb, 0);
 
 	if (js_try(J)) {
 		free(sb);
@@ -109,13 +109,13 @@ static inline int tohex(int c)
 
 static int Decode(js_State *J, const char *str, const char *reserved)
 {
-	struct sbuffer *sb = NULL;
+	js_Buffer *sb = NULL;
 	int a, b;
 
 	while (*str) {
 		int c = (unsigned char) *str++;
 		if (c != '%')
-			sb = sb_putc(sb, c);
+			sb_putc(&sb, c);
 		else {
 			if (!str[0] || !str[1])
 				js_urierror(J, "truncated escape sequence");
@@ -125,15 +125,15 @@ static int Decode(js_State *J, const char *str, const char *reserved)
 				js_urierror(J, "invalid escape sequence");
 			c = tohex(a) << 4 | tohex(b);
 			if (!strchr(reserved, c))
-				sb = sb_putc(sb, c);
+				sb_putc(&sb, c);
 			else {
-				sb = sb_putc(sb, '%');
-				sb = sb_putc(sb, a);
-				sb = sb_putc(sb, b);
+				sb_putc(&sb, '%');
+				sb_putc(&sb, a);
+				sb_putc(&sb, b);
 			}
 		}
 	}
-	sb = sb_putc(sb, 0);
+	sb_putc(&sb, 0);
 
 	if (js_try(J)) {
 		free(sb);

@@ -7,7 +7,7 @@
 static int jsB_Function(js_State *J, int argc)
 {
 	const char *source;
-	struct sbuffer *sb;
+	js_Buffer *sb;
 	js_Ast *parse;
 	js_Function *fun;
 	int i;
@@ -19,10 +19,10 @@ static int jsB_Function(js_State *J, int argc)
 		sb = NULL;
 		if (argc > 1) {
 			for (i = 1; i < argc; ++i) {
-				if (i > 1) sb = sb_putc(sb, ',');
-				sb = sb_puts(sb, js_tostring(J, i));
+				if (i > 1) sb_putc(&sb, ',');
+				sb_puts(&sb, js_tostring(J, i));
 			}
-			sb = sb_putc(sb, ')');
+			sb_putc(&sb, ')');
 		}
 	}
 
