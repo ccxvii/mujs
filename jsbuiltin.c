@@ -200,10 +200,10 @@ void jsB_init(js_State *J)
 	jsB_initnumber(J);
 	jsB_initstring(J);
 	jsB_initregexp(J);
+	jsB_initdate(J);
 	jsB_initerror(J);
 	jsB_initmath(J);
 	jsB_initjson(J);
-	jsB_initdate(J);
 
 	/* Initialize the global object */
 	js_pushnumber(J, NAN);

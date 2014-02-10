@@ -32,14 +32,15 @@ enum js_OpCode
 	OP_NULL,
 	OP_TRUE,
 	OP_FALSE,
+
 	OP_THIS,
 	OP_GLOBAL,
 	OP_CURRENT,	/* currently executing function object */
 
-	OP_INITLOCAL,	/* <value> -N- */
-	OP_GETLOCAL,	/* -N- <value> */
-	OP_SETLOCAL,	/* <value> -N- <value> */
-	OP_DELLOCAL,	/* -N- false */
+	OP_INITLOCAL,	/* <value> -K- */
+	OP_GETLOCAL,	/* -K- <value> */
+	OP_SETLOCAL,	/* <value> -K- <value> */
+	OP_DELLOCAL,	/* -K- false */
 
 	OP_INITVAR,	/* <value> -S- */
 	OP_DEFVAR,	/* -S- */
@@ -64,7 +65,7 @@ enum js_OpCode
 	OP_DELPROP_S,	/* <obj> -S- <success> */
 
 	OP_ITERATOR,	/* <obj> -- <iobj> */
-	OP_NEXTITER,	/* <iobj> -- <iobj> <name> true || false */
+	OP_NEXTITER,	/* <iobj> -- ( <iobj> <name> true | false ) */
 
 	OP_CALL,	/* <closure> <this> <args...> -(numargs)- <returnvalue> */
 	OP_NEW,		/* <closure> <args...> -(numargs)- <returnvalue> */

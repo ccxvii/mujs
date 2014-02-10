@@ -716,20 +716,14 @@ void jsC_dumpfunction(js_State *J, js_Function *F)
 	short *end = F->code + F->codelen;
 	int i;
 
-	printf("function %p %s\n", F, F->name);
+	printf("%s(%d)\n", F->name, F->numparams);
+	if (F->lightweight) printf("\tlightweight\n");
+	if (F->arguments) printf("\targuments\n");
 	printf("\tsource %s:%d\n", F->filename, F->line);
-	printf("\tlightweight:%d\n", F->lightweight);
-	printf("\tparameters:%d\n", F->numparams);
-	printf("\targuments:%d\n", F->arguments);
+	for (i = 0; i < F->funlen; ++i)
+		printf("\tfunction %d %s\n", i, F->funtab[i]->name);
 	for (i = 0; i < F->varlen; ++i)
 		printf("\tlocal %d %s\n", i + 1, F->vartab[i]);
-	for (i = 0; i < F->funlen; ++i)
-		printf("\tfunction %p %s\n", F->funtab[i], F->funtab[i]->name);
-	for (i = 0; i < F->strlen; ++i) {
-		ps("\tstring "); pstr(F->strtab[i]); ps("\n");
-	}
-	for (i = 0; i < F->numlen; ++i)
-		printf("\tnumber %.9g\n", F->numtab[i]);
 
 	printf("{\n");
 	while (p < end) {
@@ -739,9 +733,6 @@ void jsC_dumpfunction(js_State *J, js_Function *F)
 		ps(opname[c]);
 
 		switch (c) {
-		case OP_CLOSURE:
-			printf(" %p", F->funtab[*p++]);
-			break;
 		case OP_NUMBER:
 			printf(" %.9g", F->numtab[*p++]);
 			break;
@@ -769,14 +760,11 @@ void jsC_dumpfunction(js_State *J, js_Function *F)
 			ps(F->strtab[*p++]);
 			break;
 
+		case OP_CLOSURE:
 		case OP_INITLOCAL:
 		case OP_GETLOCAL:
 		case OP_SETLOCAL:
 		case OP_DELLOCAL:
-			printf(" %d (%s)", *p, F->vartab[*p-1]);
-			++p;
-			break;
-
 		case OP_NUMBER_N:
 		case OP_INITPROP_N:
 		case OP_CALL:
@@ -796,6 +784,7 @@ void jsC_dumpfunction(js_State *J, js_Function *F)
 
 	for (i = 0; i < F->funlen; ++i) {
 		if (F->funtab[i] != F) {
+			printf("function %d ", i);
 			jsC_dumpfunction(J, F->funtab[i]);
 		}
 	}

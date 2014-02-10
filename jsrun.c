@@ -980,7 +980,7 @@ void jsR_dumpenvironment(js_State *J, js_Environment *E, int d)
 void js_trap(js_State *J, int pc)
 {
 	js_Function *F = STACK[BOT-1].u.object->u.f.function;
-	printf("trap at %d in ", pc);
+	printf("trap at %d in function ", pc);
 	jsC_dumpfunction(J, F);
 	jsR_dumpstack(J);
 	jsR_dumpenvironment(J, J->E, 0);
