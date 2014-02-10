@@ -42,6 +42,7 @@ static js_Function *newfun(js_State *J, js_Ast *name, js_Ast *params, js_Ast *bo
 	F->filename = js_intern(J, J->filename);
 	F->line = name ? name->line : params ? params->line : body ? body->line : 1;
 	F->script = script;
+	F->name = name ? name->string : "";
 
 	cfunbody(J, F, name, params, body);
 
@@ -102,8 +103,14 @@ static int addstring(JF, const char *value)
 	return F->strlen++;
 }
 
-static void addlocal(JF, const char *name)
+static void addlocal(JF, const char *name, int reuse)
 {
+	if (reuse) {
+		int i;
+		for (i = 0; i < F->varlen; ++i)
+			if (!strcmp(F->vartab[i], name))
+				return;
+	}
 	if (F->varlen >= F->varcap) {
 		F->varcap = F->varcap ? F->varcap * 2 : 16;
 		F->vartab = realloc(F->vartab, F->varcap * sizeof *F->vartab);
@@ -114,9 +121,9 @@ static void addlocal(JF, const char *name)
 static int findlocal(JF, const char *name)
 {
 	int i;
-	for (i = 0; i < F->varlen; ++i)
+	for (i = F->varlen - 1; i >= 0; --i)
 		if (!strcmp(F->vartab[i], name))
-			return i;
+			return i + 1;
 	return -1;
 }
 
@@ -154,7 +161,7 @@ static void emitlocal(JF, int oploc, int opvar, const char *name)
 		i = findlocal(J, F, name);
 		if (i >= 0) {
 			emit(J, F, oploc);
-			emitraw(J, F, i + 1);
+			emitraw(J, F, i);
 			return;
 		}
 	}
@@ -1093,9 +1100,6 @@ static void analyze(JF, js_Ast *node)
 		}
 	}
 
-	if (node->type == EXP_VAR)
-		addlocal(J, F, node->a->string);
-
 	if (node->a) analyze(J, F, node->a);
 	if (node->b) analyze(J, F, node->b);
 	if (node->c) analyze(J, F, node->c);
@@ -1115,18 +1119,27 @@ static void cparams(JF, js_Ast *list)
 {
 	F->numparams = listlength(list);
 	while (list) {
-		addlocal(J, F, list->a->string);
+		addlocal(J, F, list->a->string, 0);
 		list = list->b;
 	}
 }
 
-static void cvardecs(JF)
+static void cvardecs(JF, js_Ast *node)
 {
-	int i;
-	for (i = 0; i < F->varlen; ++i) {
-		emit(J, F, OP_UNDEF);
-		emitstring(J, F, OP_INITVAR, F->vartab[i]);
+	if (isfun(node->type))
+		return; /* stop at inner functions */
+
+	if (node->type == EXP_VAR) {
+		if (F->lightweight)
+			addlocal(J, F, node->a->string, 1);
+		else
+			emitstring(J, F, OP_DEFVAR, node->a->string);
 	}
+
+	if (node->a) cvardecs(J, F, node->a);
+	if (node->b) cvardecs(J, F, node->b);
+	if (node->c) cvardecs(J, F, node->c);
+	if (node->d) cvardecs(J, F, node->d);
 }
 
 static void cfundecs(JF, js_Ast *list)
@@ -1134,7 +1147,6 @@ static void cfundecs(JF, js_Ast *list)
 	while (list) {
 		js_Ast *stm = list->a;
 		if (stm->type == AST_FUNDEC) {
-			addlocal(J, F, stm->a->string);
 			emitfunction(J, F, newfun(J, stm->a, stm->b, stm->c, 0));
 			emitstring(J, F, OP_INITVAR, stm->a->string);
 		}
@@ -1147,31 +1159,24 @@ static void cfunbody(JF, js_Ast *name, js_Ast *params, js_Ast *body)
 	F->lightweight = 1;
 	F->arguments = 0;
 
-	cparams(J, F, params);
-
-	if (name) {
-		F->name = name->string;
-		addlocal(J, F, name->string);
-	} else {
-		F->name = "";
-	}
-
 	if (body)
 		analyze(J, F, body);
 
-	if (!F->lightweight) {
-		cvardecs(J, F);
-		cfundecs(J, F, body);
-	}
+	cparams(J, F, params);
 
 	if (name) {
-		if (F->lightweight)
-			emit(J, F, OP_CURRENT);
-		else
-			emitfunction(J, F, F);
-		emitlocal(J, F, OP_SETLOCAL, OP_SETVAR, name->string);
-		emit(J, F, OP_POP);
+		emit(J, F, OP_CURRENT);
+		if (F->lightweight) {
+			addlocal(J, F, name->string, 0);
+			emit(J, F, OP_INITLOCAL);
+			emitraw(J, F, findlocal(J, F, name->string));
+		} else {
+			emitstring(J, F, OP_INITVAR, name->string);
+		}
 	}
+
+	cvardecs(J, F, body);
+	cfundecs(J, F, body);
 
 	if (F->script) {
 		emit(J, F, OP_UNDEF);
