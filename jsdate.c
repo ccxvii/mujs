@@ -634,6 +634,23 @@ static int Dp_setUTCFullYear(js_State *J, int argc)
 	return js_setdate(J, 0, MakeDate(MakeDay(y, m, d), TimeWithinDay(t)));
 }
 
+static int Dp_toJSON(js_State *J, int argc)
+{
+	js_Object *obj = js_toobject(J, 0);
+	js_Value tv = js_toprimitive(J, 0, JS_HNUMBER);
+	if (tv.type == JS_TNULL && !isfinite(tv.u.number)) {
+		js_pushnull(J);
+		return 1;
+	}
+	js_pushobject(J, obj);
+	js_getproperty(J, -1, "toISOString");
+	if (!js_iscallable(J, -1))
+		js_typeerror(J, "Date.prototype.toJSON: this.toISOString not a function");
+	js_pushobject(J, obj);
+	js_call(J, 0);
+	return 1;
+}
+
 void jsB_initdate(js_State *J)
 {
 	J->Date_prototype->u.number = 0;
@@ -686,6 +703,7 @@ void jsB_initdate(js_State *J)
 
 		/* ES5 */
 		jsB_propf(J, "toISOString", Dp_toISOString, 0);
+		jsB_propf(J, "toJSON", Dp_toJSON, 1);
 	}
 	js_newcconstructor(J, jsB_Date, jsB_new_Date, 1);
 	{
