@@ -194,10 +194,10 @@ static void cobject(JF, js_Ast *list)
 		js_Ast *kv = list->a;
 		js_Ast *prop = kv->a;
 		if (kv->type == EXP_PROP_VAL) {
-			if (prop->type == AST_IDENTIFIER || prop->type == AST_STRING) {
+			if (prop->type == AST_IDENTIFIER || prop->type == EXP_STRING) {
 				cexp(J, F, kv->b);
 				emitstring(J, F, OP_INITPROP_S, prop->string);
-			} else if (prop->type == AST_NUMBER) {
+			} else if (prop->type == EXP_NUMBER) {
 				if (prop->number == (short)prop->number) {
 					cexp(J, F, kv->b);
 					emit(J, F, OP_INITPROP_N);
@@ -211,9 +211,9 @@ static void cobject(JF, js_Ast *list)
 				jsC_error(J, list, "illegal property name in object initializer");
 			}
 		} else {
-			if (prop->type == AST_IDENTIFIER || prop->type == AST_STRING)
+			if (prop->type == AST_IDENTIFIER || prop->type == EXP_STRING)
 				emitstring(J, F, OP_STRING, prop->string);
-			if (prop->type == AST_NUMBER)
+			if (prop->type == EXP_NUMBER)
 				emitnumber(J, F, prop->number);
 			emitfunction(J, F, newfun(J, NULL, kv->b, kv->c, 0));
 			if (kv->type == EXP_PROP_GET)
@@ -239,7 +239,7 @@ static int cargs(JF, js_Ast *list)
 static void cassign(JF, js_Ast *lhs, js_Ast *rhs)
 {
 	switch (lhs->type) {
-	case AST_IDENTIFIER:
+	case EXP_IDENTIFIER:
 		cexp(J, F, rhs);
 		emitstring(J, F, OP_SETVAR, lhs->string);
 		break;
@@ -273,7 +273,7 @@ static void cassignforin(JF, js_Ast *stm)
 	}
 
 	switch (lhs->type) {
-	case AST_IDENTIFIER:
+	case EXP_IDENTIFIER:
 		emitstring(J, F, OP_SETVAR, lhs->string);
 		emit(J, F, OP_POP);
 		break;
@@ -299,7 +299,7 @@ static void cassignforin(JF, js_Ast *stm)
 static void cassignop1(JF, js_Ast *lhs, int dup)
 {
 	switch (lhs->type) {
-	case AST_IDENTIFIER:
+	case EXP_IDENTIFIER:
 		emitstring(J, F, OP_GETVAR, lhs->string);
 		if (dup) emit(J, F, OP_DUP);
 		break;
@@ -325,7 +325,7 @@ static void cassignop1(JF, js_Ast *lhs, int dup)
 static void cassignop2(JF, js_Ast *lhs)
 {
 	switch (lhs->type) {
-	case AST_IDENTIFIER:
+	case EXP_IDENTIFIER:
 		emitstring(J, F, OP_SETVAR, lhs->string);
 		break;
 	case EXP_INDEX:
@@ -350,7 +350,7 @@ static void cassignop(JF, js_Ast *lhs, js_Ast *rhs, int opcode)
 static void cdelete(JF, js_Ast *exp)
 {
 	switch (exp->type) {
-	case AST_IDENTIFIER:
+	case EXP_IDENTIFIER:
 		emitstring(J, F, OP_DELVAR, exp->string);
 		break;
 	case EXP_INDEX:
@@ -401,15 +401,15 @@ static void cexp(JF, js_Ast *exp)
 	int n;
 
 	switch (exp->type) {
-	case AST_STRING: emitstring(J, F, OP_STRING, exp->string); break;
-	case AST_NUMBER: emitnumber(J, F, exp->number); break;
+	case EXP_STRING: emitstring(J, F, OP_STRING, exp->string); break;
+	case EXP_NUMBER: emitnumber(J, F, exp->number); break;
 	case EXP_UNDEF: emit(J, F, OP_UNDEF); break;
 	case EXP_NULL: emit(J, F, OP_NULL); break;
 	case EXP_TRUE: emit(J, F, OP_TRUE); break;
 	case EXP_FALSE: emit(J, F, OP_FALSE); break;
 	case EXP_THIS: emit(J, F, OP_THIS); break;
 
-	case AST_REGEXP:
+	case EXP_REGEXP:
 		emit(J, F, OP_NEWREGEXP);
 		emitraw(J, F, addstring(J, F, exp->string));
 		emitraw(J, F, exp->number);
@@ -429,7 +429,7 @@ static void cexp(JF, js_Ast *exp)
 		emitfunction(J, F, newfun(J, exp->a, exp->b, exp->c, 0));
 		break;
 
-	case AST_IDENTIFIER:
+	case EXP_IDENTIFIER:
 		emitstring(J, F, OP_GETVAR, exp->string);
 		break;
 

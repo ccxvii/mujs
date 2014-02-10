@@ -236,10 +236,10 @@ static js_Ast *propname(js_State *J)
 {
 	js_Ast *name;
 	if (J->lookahead == TK_NUMBER) {
-		name = jsP_newnumnode(J, AST_NUMBER, J->number);
+		name = jsP_newnumnode(J, EXP_NUMBER, J->number);
 		next(J);
 	} else if (J->lookahead == TK_STRING) {
-		name = jsP_newstrnode(J, AST_STRING, J->text);
+		name = jsP_newstrnode(J, EXP_STRING, J->text);
 		next(J);
 	} else {
 		name = identifiername(J);
@@ -346,23 +346,23 @@ static js_Ast *primary(js_State *J)
 
 	if (J->lookahead == TK_IDENTIFIER) {
 		checkfutureword(J, J->text);
-		a = jsP_newstrnode(J, AST_IDENTIFIER, J->text);
+		a = jsP_newstrnode(J, EXP_IDENTIFIER, J->text);
 		next(J);
 		return a;
 	}
 	if (J->lookahead == TK_STRING) {
-		a = jsP_newstrnode(J, AST_STRING, J->text);
+		a = jsP_newstrnode(J, EXP_STRING, J->text);
 		next(J);
 		return a;
 	}
 	if (J->lookahead == TK_REGEXP) {
-		a = jsP_newstrnode(J, AST_REGEXP, J->text);
+		a = jsP_newstrnode(J, EXP_REGEXP, J->text);
 		a->number = J->number;
 		next(J);
 		return a;
 	}
 	if (J->lookahead == TK_NUMBER) {
-		a = jsP_newnumnode(J, AST_NUMBER, J->number);
+		a = jsP_newnumnode(J, EXP_NUMBER, J->number);
 		next(J);
 		return a;
 	}
@@ -834,7 +834,8 @@ static js_Ast *statement(js_State *J)
 	/* labelled statement or expression statement */
 	if (J->lookahead == TK_IDENTIFIER) {
 		a = expression(J, 0);
-		if (a->type == AST_IDENTIFIER && accept(J, ':')) {
+		if (a->type == EXP_IDENTIFIER && accept(J, ':')) {
+			a->type = AST_IDENTIFIER;
 			b = statement(J);
 			return STM2(LABEL, a, b);
 		}
@@ -905,7 +906,7 @@ static inline unsigned int touint32(double d)
 
 static int jsP_setnumnode(js_Ast *node, double x)
 {
-	node->type = AST_NUMBER;
+	node->type = EXP_NUMBER;
 	node->number = x;
 	node->a = node->b = node->c = node->d = NULL;
 	return 1;
@@ -916,7 +917,7 @@ static int jsP_foldconst(js_Ast *node)
 	double x, y;
 	int a, b;
 
-	if (node->type == AST_NUMBER)
+	if (node->type == EXP_NUMBER)
 		return 1;
 
 	a = node->a ? jsP_foldconst(node->a) : 0;

@@ -7,11 +7,12 @@ enum js_AstType
 {
 	AST_LIST,
 	AST_FUNDEC,
-
 	AST_IDENTIFIER,
-	AST_NUMBER,
-	AST_STRING,
-	AST_REGEXP,
+
+	EXP_IDENTIFIER,
+	EXP_NUMBER,
+	EXP_STRING,
+	EXP_REGEXP,
 
 	/* literals */
 	EXP_UNDEF, /* for array elisions */

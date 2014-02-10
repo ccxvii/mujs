@@ -34,10 +34,10 @@ const char *jsC_opcodestring(int opcode)
 static int prec(js_AstType type)
 {
 	switch (type) {
-	case AST_IDENTIFIER:
-	case AST_NUMBER:
-	case AST_STRING:
-	case AST_REGEXP:
+	case EXP_IDENTIFIER:
+	case EXP_NUMBER:
+	case EXP_STRING:
+	case EXP_REGEXP:
 	case EXP_UNDEF:
 	case EXP_NULL:
 	case EXP_TRUE:
@@ -284,10 +284,10 @@ static void pexpi(int d, int p, js_Ast *exp)
 	p = tp;
 
 	switch (exp->type) {
-	case AST_IDENTIFIER: ps(exp->string); break;
-	case AST_NUMBER: printf("%.9g", exp->number); break;
-	case AST_STRING: pstr(exp->string); break;
-	case AST_REGEXP: pregexp(exp->string, exp->number); break;
+	case EXP_IDENTIFIER: ps(exp->string); break;
+	case EXP_NUMBER: printf("%.9g", exp->number); break;
+	case EXP_STRING: pstr(exp->string); break;
+	case EXP_REGEXP: pregexp(exp->string, exp->number); break;
 
 	case EXP_UNDEF: break;
 	case EXP_NULL: ps("null"); break;
@@ -651,9 +651,10 @@ static void snode(int d, js_Ast *node)
 	ps(astname[node->type]);
 	switch (node->type) {
 	case AST_IDENTIFIER: pc(' '); ps(node->string); break;
-	case AST_STRING: pc(' '); pstr(node->string); break;
-	case AST_REGEXP: pc(' '); pregexp(node->string, node->number); break;
-	case AST_NUMBER: printf(" %.9g", node->number); break;
+	case EXP_IDENTIFIER: pc(' '); ps(node->string); break;
+	case EXP_STRING: pc(' '); pstr(node->string); break;
+	case EXP_REGEXP: pc(' '); pregexp(node->string, node->number); break;
+	case EXP_NUMBER: printf(" %.9g", node->number); break;
 	case STM_BLOCK: afun = sblock; break;
 	case AST_FUNDEC: case EXP_FUN: cfun = sblock; break;
 	case EXP_PROP_GET: cfun = sblock; break;
