@@ -34,10 +34,14 @@ enum js_OpCode
 	OP_FALSE,
 	OP_THIS,
 	OP_GLOBAL,
+	OP_CURRENT,	/* currently executing function object */
 
-	OP_FUNDEC,	/* <closure> -S- */
-	OP_VARDEC,	/* -S- */
+	OP_INITLOCAL,	/* <value> -N- */
+	OP_GETLOCAL,	/* -N- <value> */
+	OP_SETLOCAL,	/* <value> -N- <value> */
+	OP_DELLOCAL,	/* -N- false */
 
+	OP_INITVAR,	/* <value> -S- */
 	OP_GETVAR,	/* -S- <value> */
 	OP_SETVAR,	/* <value> -S- <value> */
 	OP_DELVAR,	/* -S- <success> */
@@ -115,9 +119,9 @@ struct js_Function
 {
 	const char *name;
 	int script;
-
+	int lightweight;
+	int arguments;
 	int numparams;
-	const char **params;
 
 	short *code;
 	int codecap, codelen;
@@ -130,6 +134,9 @@ struct js_Function
 
 	const char **strtab;
 	int strcap, strlen;
+
+	const char **vartab;
+	int varcap, varlen;
 
 	const char *filename;
 	int line;

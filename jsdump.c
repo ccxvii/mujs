@@ -716,11 +716,13 @@ void jsC_dumpfunction(js_State *J, js_Function *F)
 	short *end = F->code + F->codelen;
 	int i;
 
-	printf("function %p %s (", F, F->name);
-	for (i = 0; i < F->numparams; ++i)
-		printf("%s%s", i > 0 ? ", " : "", F->params[i]);
-	printf(")\n");
+	printf("function %p %s\n", F, F->name);
 	printf("\tsource %s:%d\n", F->filename, F->line);
+	printf("\tlightweight:%d\n", F->lightweight);
+	printf("\tparameters:%d\n", F->numparams);
+	printf("\targuments:%d\n", F->arguments);
+	for (i = 0; i < F->varlen; ++i)
+		printf("\tlocal %d %s\n", i + 1, F->vartab[i]);
 	for (i = 0; i < F->funlen; ++i)
 		printf("\tfunction %p %s\n", F->funtab[i], F->funtab[i]->name);
 	for (i = 0; i < F->strlen; ++i) {
@@ -753,8 +755,7 @@ void jsC_dumpfunction(js_State *J, js_Function *F)
 			p += 2;
 			break;
 
-		case OP_FUNDEC:
-		case OP_VARDEC:
+		case OP_INITVAR:
 		case OP_GETVAR:
 		case OP_SETVAR:
 		case OP_DELVAR:
@@ -767,6 +768,10 @@ void jsC_dumpfunction(js_State *J, js_Function *F)
 			ps(F->strtab[*p++]);
 			break;
 
+		case OP_INITLOCAL:
+		case OP_GETLOCAL:
+		case OP_SETLOCAL:
+		case OP_DELLOCAL:
 		case OP_NUMBER_N:
 		case OP_INITPROP_N:
 		case OP_CALL:

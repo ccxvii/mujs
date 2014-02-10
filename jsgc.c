@@ -14,10 +14,10 @@ static void jsG_freeenvironment(js_State *J, js_Environment *env)
 
 static void jsG_freefunction(js_State *J, js_Function *fun)
 {
-	free(fun->params);
 	free(fun->funtab);
 	free(fun->numtab);
 	free(fun->strtab);
+	free(fun->vartab);
 	free(fun->code);
 	free(fun);
 }

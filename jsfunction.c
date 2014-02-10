@@ -63,14 +63,14 @@ static int Fp_toString(js_State *J, int argc)
 		n = strlen("function () { ... }");
 		n += strlen(F->name);
 		for (i = 0; i < F->numparams; ++i)
-			n += strlen(F->params[i]) + 1;
+			n += strlen(F->vartab[i]) + 1;
 		s = malloc(n);
 		strcpy(s, "function ");
 		strcat(s, F->name);
 		strcat(s, "(");
 		for (i = 0; i < F->numparams; ++i) {
 			if (i > 0) strcat(s, ",");
-			strcat(s, F->params[i]);
+			strcat(s, F->vartab[i]);
 		}
 		strcat(s, ") { ... }");
 		js_pushstring(J, s);

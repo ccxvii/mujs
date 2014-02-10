@@ -102,6 +102,24 @@ static int addstring(JF, const char *value)
 	return F->strlen++;
 }
 
+static void addlocal(JF, const char *name)
+{
+	if (F->varlen >= F->varcap) {
+		F->varcap = F->varcap ? F->varcap * 2 : 16;
+		F->vartab = realloc(F->vartab, F->varcap * sizeof *F->vartab);
+	}
+	F->vartab[F->varlen++] = name;
+}
+
+static int findlocal(JF, const char *name)
+{
+	int i;
+	for (i = 0; i < F->varlen; ++i)
+		if (!strcmp(F->vartab[i], name))
+			return i;
+	return -1;
+}
+
 static void emitfunction(JF, js_Function *fun)
 {
 	emit(J, F, OP_CLOSURE);
@@ -127,6 +145,20 @@ static void emitstring(JF, int opcode, const char *str)
 {
 	emit(J, F, opcode);
 	emitraw(J, F, addstring(J, F, str));
+}
+
+static void emitlocal(JF, int oploc, int opvar, const char *name)
+{
+	int i;
+	if (F->lightweight) {
+		i = findlocal(J, F, name);
+		if (i >= 0) {
+			emit(J, F, oploc);
+			emitraw(J, F, i + 1);
+			return;
+		}
+	}
+	emitstring(J, F, opvar, name);
 }
 
 static int here(JF)
@@ -241,7 +273,7 @@ static void cassign(JF, js_Ast *lhs, js_Ast *rhs)
 	switch (lhs->type) {
 	case EXP_IDENTIFIER:
 		cexp(J, F, rhs);
-		emitstring(J, F, OP_SETVAR, lhs->string);
+		emitlocal(J, F, OP_SETLOCAL, OP_SETVAR, lhs->string);
 		break;
 	case EXP_INDEX:
 		cexp(J, F, lhs->a);
@@ -267,14 +299,14 @@ static void cassignforin(JF, js_Ast *stm)
 	if (stm->type == STM_FOR_IN_VAR) {
 		if (lhs->b)
 			jsC_error(J, lhs->b, "more than one loop variable in for-in statement");
-		emitstring(J, F, OP_SETVAR, lhs->a->a->string); /* list(var-init(ident)) */
+		emitlocal(J, F, OP_SETLOCAL, OP_SETVAR, lhs->a->a->string); /* list(var-init(ident)) */
 		emit(J, F, OP_POP);
 		return;
 	}
 
 	switch (lhs->type) {
 	case EXP_IDENTIFIER:
-		emitstring(J, F, OP_SETVAR, lhs->string);
+		emitlocal(J, F, OP_SETLOCAL, OP_SETVAR, lhs->string);
 		emit(J, F, OP_POP);
 		break;
 	case EXP_INDEX:
@@ -300,7 +332,7 @@ static void cassignop1(JF, js_Ast *lhs, int dup)
 {
 	switch (lhs->type) {
 	case EXP_IDENTIFIER:
-		emitstring(J, F, OP_GETVAR, lhs->string);
+		emitlocal(J, F, OP_GETLOCAL, OP_GETVAR, lhs->string);
 		if (dup) emit(J, F, OP_DUP);
 		break;
 	case EXP_INDEX:
@@ -326,7 +358,7 @@ static void cassignop2(JF, js_Ast *lhs)
 {
 	switch (lhs->type) {
 	case EXP_IDENTIFIER:
-		emitstring(J, F, OP_SETVAR, lhs->string);
+		emitlocal(J, F, OP_SETLOCAL, OP_SETVAR, lhs->string);
 		break;
 	case EXP_INDEX:
 		break;
@@ -351,7 +383,7 @@ static void cdelete(JF, js_Ast *exp)
 {
 	switch (exp->type) {
 	case EXP_IDENTIFIER:
-		emitstring(J, F, OP_DELVAR, exp->string);
+		emitlocal(J, F, OP_DELLOCAL, OP_DELVAR, exp->string);
 		break;
 	case EXP_INDEX:
 		cexp(J, F, exp->a);
@@ -430,7 +462,7 @@ static void cexp(JF, js_Ast *exp)
 		break;
 
 	case EXP_IDENTIFIER:
-		emitstring(J, F, OP_GETVAR, exp->string);
+		emitlocal(J, F, OP_GETLOCAL, OP_GETVAR, exp->string);
 		break;
 
 	case EXP_INDEX:
@@ -818,7 +850,7 @@ static void cvarinit(JF, js_Ast *list)
 		js_Ast *var = list->a;
 		if (var->b) {
 			cexp(J, F, var->b);
-			emitstring(J, F, OP_SETVAR, var->a->string);
+			emitlocal(J, F, OP_SETLOCAL, OP_SETVAR, var->a->string);
 			emit(J, F, OP_POP);
 		}
 		list = list->b;
@@ -1036,6 +1068,40 @@ static void cstmlist(JF, js_Ast *list)
 	}
 }
 
+/* Analyze */
+
+static void analyze(JF, js_Ast *node)
+{
+	if (isfun(node->type)) {
+		F->lightweight = 0;
+		return; /* don't scan inner functions */
+	}
+
+	if (node->type == STM_WITH) {
+		F->lightweight = 0;
+	}
+
+	if (node->type == EXP_IDENTIFIER) {
+		if (!strcmp(node->string, "arguments")) {
+			F->lightweight = 0;
+			F->arguments = 1;
+		} else if (!strcmp(node->string, "eval")) {
+			/* eval may only be used as a direct function call */
+			if (!node->parent || node->parent->type != EXP_CALL || node->parent->a != node)
+				js_evalerror(J, "%s:%d: illegal use of 'eval'", J->filename, node->line);
+			F->lightweight = 0;
+		}
+	}
+
+	if (node->type == EXP_VAR)
+		addlocal(J, F, node->a->string);
+
+	if (node->a) analyze(J, F, node->a);
+	if (node->b) analyze(J, F, node->b);
+	if (node->c) analyze(J, F, node->c);
+	if (node->d) analyze(J, F, node->d);
+}
+
 /* Declarations and programs */
 
 static int listlength(js_Ast *list)
@@ -1048,11 +1114,18 @@ static int listlength(js_Ast *list)
 static void cparams(JF, js_Ast *list)
 {
 	F->numparams = listlength(list);
-	F->params = malloc(F->numparams * sizeof *F->params);
-	int i = 0;
 	while (list) {
-		F->params[i++] = list->a->string;
+		addlocal(J, F, list->a->string);
 		list = list->b;
+	}
+}
+
+static void cvardecs(JF)
+{
+	int i;
+	for (i = 0; i < F->varlen; ++i) {
+		emit(J, F, OP_UNDEF);
+		emitstring(J, F, OP_INITVAR, F->vartab[i]);
 	}
 }
 
@@ -1061,49 +1134,51 @@ static void cfundecs(JF, js_Ast *list)
 	while (list) {
 		js_Ast *stm = list->a;
 		if (stm->type == AST_FUNDEC) {
+			addlocal(J, F, stm->a->string);
 			emitfunction(J, F, newfun(J, stm->a, stm->b, stm->c, 0));
-			emitstring(J, F, OP_FUNDEC, stm->a->string);
+			emitstring(J, F, OP_INITVAR, stm->a->string);
 		}
 		list = list->b;
 	}
 }
 
-static void cvardecs(JF, js_Ast *node)
-{
-	if (node->type == EXP_VAR) {
-		emitstring(J, F, OP_VARDEC, node->a->string);
-	} else if (!isfun(node->type)) {
-		if (node->a) cvardecs(J, F, node->a);
-		if (node->b) cvardecs(J, F, node->b);
-		if (node->c) cvardecs(J, F, node->c);
-		if (node->d) cvardecs(J, F, node->d);
-	}
-}
-
 static void cfunbody(JF, js_Ast *name, js_Ast *params, js_Ast *body)
 {
+	F->lightweight = 1;
+	F->arguments = 0;
+
+	cparams(J, F, params);
+
 	if (name) {
 		F->name = name->string;
-		emitfunction(J, F, F);
-		emitstring(J, F, OP_FUNDEC, name->string);
+		addlocal(J, F, name->string);
 	} else {
 		F->name = "";
 	}
 
-	cparams(J, F, params);
+	if (body)
+		analyze(J, F, body);
 
-	if (F->script)
-		emit(J, F, OP_UNDEF);
-
-	if (body) {
+	if (!F->lightweight) {
+		cvardecs(J, F);
 		cfundecs(J, F, body);
-		cvardecs(J, F, body);
-		cstmlist(J, F, body);
+	}
+
+	if (name) {
+		if (F->lightweight)
+			emit(J, F, OP_CURRENT);
+		else
+			emitfunction(J, F, F);
+		emitlocal(J, F, OP_SETLOCAL, OP_SETVAR, name->string);
+		emit(J, F, OP_POP);
 	}
 
 	if (F->script) {
+		emit(J, F, OP_UNDEF);
+		cstmlist(J, F, body);
 		emit(J, F, OP_RETURN);
 	} else {
+		cstmlist(J, F, body);
 		emit(J, F, OP_UNDEF);
 		emit(J, F, OP_RETURN);
 	}

@@ -753,6 +753,31 @@ static int js_delvar(js_State *J, const char *name)
 
 /* Function calls */
 
+static void jsR_calllwfunction(js_State *J, int n, js_Function *F, js_Environment *scope)
+{
+	js_Environment *saveE;
+	js_Value v;
+	int i;
+
+	saveE = J->E;
+
+	J->E = scope;
+
+	if (n > F->numparams) {
+		js_pop(J, F->numparams - n);
+		n = F->numparams;
+	}
+	for (i = n; i < F->varlen; ++i)
+		js_pushundefined(J);
+
+	jsR_run(J, F);
+	v = js_tovalue(J, -1);
+	TOP = --BOT; /* clear stack */
+	js_pushvalue(J, v);
+
+	J->E = saveE;
+}
+
 static void jsR_callfunction(js_State *J, int n, js_Function *F, js_Environment *scope)
 {
 	js_Environment *saveE;
@@ -764,10 +789,10 @@ static void jsR_callfunction(js_State *J, int n, js_Function *F, js_Environment 
 	J->E = jsR_newenvironment(J, jsV_newobject(J, JS_COBJECT, NULL), scope);
 	for (i = 0; i < F->numparams; ++i) {
 		if (i < n)
-			js_decvar(J, F->params[i], i + 1);
+			js_decvar(J, F->vartab[i], i + 1);
 		else {
 			js_pushundefined(J);
-			js_decvar(J, F->params[i], -1);
+			js_decvar(J, F->vartab[i], -1);
 			js_pop(J, 1);
 		}
 	}
@@ -822,9 +847,12 @@ void js_call(js_State *J, int n)
 	savebot = BOT;
 	BOT = TOP - n - 1;
 
-	if (obj->type == JS_CFUNCTION)
-		jsR_callfunction(J, n, obj->u.f.function, obj->u.f.scope);
-	else if (obj->type == JS_CSCRIPT)
+	if (obj->type == JS_CFUNCTION) {
+		if (obj->u.f.function->lightweight)
+			jsR_calllwfunction(J, n, obj->u.f.function, obj->u.f.scope);
+		else
+			jsR_callfunction(J, n, obj->u.f.function, obj->u.f.scope);
+	} else if (obj->type == JS_CSCRIPT)
 		jsR_callscript(J, n, obj->u.f.function);
 	else if (obj->type == JS_CCFUNCTION)
 		jsR_callcfunction(J, n, obj->u.c.length, obj->u.c.function);
@@ -992,14 +1020,27 @@ static void jsR_run(js_State *J, js_Function *F)
 
 		case OP_THIS: js_copy(J, 0); break;
 		case OP_GLOBAL: js_pushobject(J, J->G); break;
+		case OP_CURRENT: js_currentfunction(J); break;
 
-		case OP_FUNDEC:
-			js_decvar(J, ST[*pc++], -1);
-			js_pop(J, 1);
+		case OP_INITLOCAL:
+			STACK[BOT + *pc++] = STACK[--TOP];
 			break;
 
-		case OP_VARDEC:
-			js_pushundefined(J);
+		case OP_GETLOCAL:
+			CHECKSTACK(1);
+			STACK[TOP++] = STACK[BOT + *pc++];
+			break;
+
+		case OP_SETLOCAL:
+			STACK[BOT + *pc++] = STACK[TOP-1];
+			break;
+
+		case OP_DELLOCAL:
+			++pc;
+			js_pushboolean(J, 0);
+			break;
+
+		case OP_INITVAR:
 			js_decvar(J, ST[*pc++], -1);
 			js_pop(J, 1);
 			break;
