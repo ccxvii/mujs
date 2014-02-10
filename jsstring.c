@@ -7,6 +7,50 @@
 
 #define nelem(a) (sizeof (a) / sizeof (a)[0])
 
+int js_runeat(js_State *J, const char *s, int i)
+{
+	Rune rune = 0;
+	while (i-- >= 0) {
+		rune = *(unsigned char*)s;
+		if (rune < Runeself) {
+			if (rune == 0)
+				return 0;
+			++s;
+		} else
+			s += chartorune(&rune, s);
+	}
+	return rune;
+}
+
+const char *js_utfidxtoptr(const char *s, int i)
+{
+	Rune rune;
+	while (i-- > 0) {
+		rune = *(unsigned char*)s;
+		if (rune < Runeself) {
+			if (rune == 0)
+				return NULL;
+			++s;
+		} else
+			s += chartorune(&rune, s);
+	}
+	return s;
+}
+
+int js_utfptrtoidx(const char *s, const char *p)
+{
+	Rune rune;
+	int i = 0;
+	while (s < p) {
+		if (*(unsigned char *)s < Runeself)
+			++s;
+		else
+			s += chartorune(&rune, s);
+		++i;
+	}
+	return i;
+}
+
 static int jsB_new_String(js_State *J, int argc)
 {
 	js_newstring(J, js_isdefined(J, 1) ? js_tostring(J, 1) : "");
@@ -33,48 +77,6 @@ static int Sp_valueOf(js_State *J, int argc)
 	if (self->type != JS_CSTRING) js_typeerror(J, "not a string");
 	js_pushliteral(J, self->u.s.string);
 	return 1;
-}
-
-int js_runeat(js_State *J, const char *s, int i)
-{
-	Rune rune = 0;
-	while (i-- >= 0) {
-		rune = *(unsigned char*)s;
-		if (rune < Runeself) {
-			if (rune == 0)
-				return 0;
-			++s;
-		} else
-			s += chartorune(&rune, s);
-	}
-	return rune;
-}
-
-static inline const char *utfidx(const char *s, int i)
-{
-	Rune rune = 0;
-	while (i-- > 0) {
-		rune = *(unsigned char*)s;
-		if (rune < Runeself) {
-			if (rune == 0)
-				return NULL;
-			++s;
-		} else
-			s += chartorune(&rune, s);
-	}
-	return s;
-}
-
-void js_pushcharat(js_State *J, const char *s, int pos)
-{
-	char buf[UTFmax + 1];
-	Rune rune = js_runeat(J, s, pos);
-	if (rune > 0) {
-		buf[runetochar(buf, &rune)] = 0;
-		js_pushstring(J, buf);
-	} else {
-		js_pushundefined(J);
-	}
 }
 
 static int Sp_charAt(js_State *J, int argc)
@@ -196,11 +198,11 @@ static int Sp_slice(js_State *J, int argc)
 	e = e < 0 ? 0 : e > len ? len : e;
 
 	if (s < e) {
-		ss = utfidx(str, s);
-		ee = utfidx(ss, e - s);
+		ss = js_utfidxtoptr(str, s);
+		ee = js_utfidxtoptr(ss, e - s);
 	} else {
-		ss = utfidx(str, e);
-		ee = utfidx(ss, s - e);
+		ss = js_utfidxtoptr(str, e);
+		ee = js_utfidxtoptr(ss, s - e);
 	}
 
 	js_pushlstring(J, ss, ee - ss);
@@ -219,11 +221,11 @@ static int Sp_substring(js_State *J, int argc)
 	e = e < 0 ? 0 : e > len ? len : e;
 
 	if (s < e) {
-		ss = utfidx(str, s);
-		ee = utfidx(ss, e - s);
+		ss = js_utfidxtoptr(str, s);
+		ee = js_utfidxtoptr(ss, e - s);
 	} else {
-		ss = utfidx(str, e);
-		ee = utfidx(ss, s - e);
+		ss = js_utfidxtoptr(str, e);
+		ee = js_utfidxtoptr(ss, s - e);
 	}
 
 	js_pushlstring(J, ss, ee - ss);
@@ -381,7 +383,7 @@ static int Sp_search(js_State *J, int argc)
 	re = js_toregexp(J, -1);
 
 	if (!regexec(re->prog, text, nelem(m), m, 0))
-		js_pushnumber(J, m[0].rm_so); // TODO: convert to utf-8 index offset
+		js_pushnumber(J, js_utfptrtoidx(text, text + m[0].rm_so));
 	else
 		js_pushnumber(J, -1);
 

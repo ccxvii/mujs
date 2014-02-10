@@ -3,6 +3,8 @@
 #include "jsvalue.h"
 #include "jsrun.h"
 
+#include "utf.h"
+
 static void jsR_run(js_State *J, js_Function *F);
 
 /* Push values on stack */
@@ -365,6 +367,18 @@ int js_isarrayindex(js_State *J, const char *str, unsigned int *idx)
 	return !strcmp(buf, str);
 }
 
+static void js_pushrune(js_State *J, Rune rune)
+{
+	char buf[UTFmax + 1];
+	if (rune > 0) {
+		buf[runetochar(buf, &rune)] = 0;
+		js_pushstring(J, buf);
+	} else {
+		js_pushundefined(J);
+	}
+}
+
+
 static int jsR_hasproperty(js_State *J, js_Object *obj, const char *name)
 {
 	js_Property *ref;
@@ -383,7 +397,7 @@ static int jsR_hasproperty(js_State *J, js_Object *obj, const char *name)
 			return 1;
 		}
 		if (js_isarrayindex(J, name, &k)) {
-			js_pushcharat(J, obj->u.s.string, k);
+			js_pushrune(J, js_runeat(J, obj->u.s.string, k));
 			return 1;
 		}
 	}

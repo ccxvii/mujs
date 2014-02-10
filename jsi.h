@@ -41,7 +41,8 @@ void js_newscript(js_State *J, js_Function *function);
 js_Regexp *js_toregexp(js_State *J, int idx);
 int js_isarrayindex(js_State *J, const char *str, unsigned int *idx);
 int js_runeat(js_State *J, const char *s, int i);
-void js_pushcharat(js_State *J, const char *s, int pos);
+int js_utfptrtoidx(const char *s, const char *p);
+const char *js_utfidxtoptr(const char *s, int i);
 
 void js_dup(js_State *J);
 void js_rot2(js_State *J);
