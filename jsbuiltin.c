@@ -29,10 +29,12 @@ void jsB_props(js_State *J, const char *name, const char *string)
 
 static int jsB_eval(js_State *J, int argc)
 {
-	if (!js_isstring(J, -1))
+	if (!js_isstring(J, -1)) {
+		js_copy(J, 1);
 		return 1;
+	}
 	js_loadstring(J, "(eval)", js_tostring(J, -1));
-	js_copy(J, 0);
+	js_pushglobal(J);
 	js_call(J, 0);
 	return 1;
 }
