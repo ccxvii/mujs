@@ -26,6 +26,12 @@ jsdump.c : astnames.h opnames.h
 js: build/main.o build/libjs.a
 	$(CC) -o $@ $^ -lm
 
+libjs.c : $(SRCS)
+	ls $(SRCS) | awk '{print "#include \""$$1"\""}' > $@
+
+jsone: build/main.o build/libjs.o
+	$(CC) -o $@ $^ -lm
+
 tags: $(SRCS) main.c $(HDRS)
 	ctags $^
 
@@ -33,6 +39,6 @@ test: js
 	python tests/sputniktests/tools/sputnik.py --tests=tests/sputniktests --command ./js --summary
 
 clean:
-	rm -f astnames.h opnames.h build/* js
+	rm -f astnames.h opnames.h libjs.c build/* js
 
 .PHONY: default test clean
