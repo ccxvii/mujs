@@ -379,34 +379,44 @@ int js_compare(js_State *J)
 
 int js_equal(js_State *J)
 {
-	js_Value va = js_tovalue(J, -2);
-	js_Value vb = js_tovalue(J, -1);
+	js_Value x = js_tovalue(J, -2);
+	js_Value y = js_tovalue(J, -1);
 
 retry:
-	if (va.type == vb.type) {
-		if (va.type == JS_TUNDEFINED) return 1;
-		if (va.type == JS_TNULL) return 1;
-		if (va.type == JS_TNUMBER) return va.u.number == vb.u.number;
-		if (va.type == JS_TBOOLEAN) return va.u.boolean == vb.u.boolean;
-		if (va.type == JS_TSTRING) return !strcmp(va.u.string, vb.u.string);
-		if (va.type == JS_TOBJECT) return va.u.object == vb.u.object;
+	if (x.type == y.type) {
+		if (x.type == JS_TUNDEFINED) return 1;
+		if (x.type == JS_TNULL) return 1;
+		if (x.type == JS_TNUMBER) return x.u.number == y.u.number;
+		if (x.type == JS_TBOOLEAN) return x.u.boolean == y.u.boolean;
+		if (x.type == JS_TSTRING) return !strcmp(x.u.string, y.u.string);
+		if (x.type == JS_TOBJECT) return x.u.object == y.u.object;
 		return 0;
 	}
 
-	if (va.type == JS_TNULL && vb.type == JS_TUNDEFINED) return 1;
-	if (va.type == JS_TUNDEFINED && vb.type == JS_TNULL) return 1;
+	if (x.type == JS_TNULL && y.type == JS_TUNDEFINED) return 1;
+	if (x.type == JS_TUNDEFINED && y.type == JS_TNULL) return 1;
 
-	if (va.type == JS_TNUMBER && (vb.type == JS_TSTRING || vb.type == JS_TBOOLEAN))
-		return va.u.number == jsV_tonumber(J, &vb);
-	if ((va.type == JS_TSTRING || va.type == JS_TBOOLEAN) && vb.type == JS_TNUMBER)
-		return jsV_tonumber(J, &va) == vb.u.number;
+	if (x.type == JS_TNUMBER && y.type == JS_TSTRING)
+		return x.u.number == jsV_tonumber(J, &y);
+	if (x.type == JS_TSTRING && y.type == JS_TNUMBER)
+		return jsV_tonumber(J, &x) == y.u.number;
 
-	if ((va.type == JS_TSTRING || va.type == JS_TNUMBER) && vb.type == JS_TOBJECT) {
-		vb = jsV_toprimitive(J, &vb, JS_HNONE);
+	if (x.type == JS_TBOOLEAN) {
+		x.type = JS_TNUMBER;
+		x.u.number = x.u.boolean;
 		goto retry;
 	}
-	if (va.type == JS_TOBJECT && (vb.type == JS_TSTRING || vb.type == JS_TNUMBER)) {
-		va = jsV_toprimitive(J, &va, JS_HNONE);
+	if (y.type == JS_TBOOLEAN) {
+		y.type = JS_TNUMBER;
+		y.u.number = y.u.boolean;
+		goto retry;
+	}
+	if ((x.type == JS_TSTRING || x.type == JS_TNUMBER) && y.type == JS_TOBJECT) {
+		y = jsV_toprimitive(J, &y, JS_HNONE);
+		goto retry;
+	}
+	if (x.type == JS_TOBJECT && (y.type == JS_TSTRING || y.type == JS_TNUMBER)) {
+		x = jsV_toprimitive(J, &x, JS_HNONE);
 		goto retry;
 	}
 
