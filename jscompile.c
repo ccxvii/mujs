@@ -500,30 +500,26 @@ static void cexp(JF, js_Ast *exp)
 
 	case EXP_PREINC:
 		cassignop1(J, F, exp->a, 0);
-		emit(J, F, OP_NUMBER_1);
-		emit(J, F, OP_ADD);
+		emit(J, F, OP_INC);
 		cassignop2(J, F, exp->a);
 		break;
 
 	case EXP_PREDEC:
 		cassignop1(J, F, exp->a, 0);
-		emit(J, F, OP_NUMBER_1);
-		emit(J, F, OP_SUB);
+		emit(J, F, OP_DEC);
 		cassignop2(J, F, exp->a);
 		break;
 
 	case EXP_POSTINC:
 		cassignop1(J, F, exp->a, 1);
-		emit(J, F, OP_NUMBER_1);
-		emit(J, F, OP_ADD);
+		emit(J, F, OP_INC);
 		cassignop2(J, F, exp->a);
 		emit(J, F, OP_POP);
 		break;
 
 	case EXP_POSTDEC:
 		cassignop1(J, F, exp->a, 1);
-		emit(J, F, OP_NUMBER_1);
-		emit(J, F, OP_SUB);
+		emit(J, F, OP_DEC);
 		cassignop2(J, F, exp->a);
 		emit(J, F, OP_POP);
 		break;

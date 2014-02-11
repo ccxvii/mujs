@@ -75,6 +75,8 @@ enum js_OpCode
 	OP_NEG,
 	OP_BITNOT,
 	OP_LOGNOT,
+	OP_INC,
+	OP_DEC,
 
 	OP_MUL,
 	OP_DIV,

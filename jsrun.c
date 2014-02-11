@@ -1235,6 +1235,18 @@ static void jsR_run(js_State *J, js_Function *F)
 			js_pushboolean(J, !b);
 			break;
 
+		case OP_INC:
+			x = js_tonumber(J, -1);
+			js_pop(J, 1);
+			js_pushnumber(J, x + 1);
+			break;
+
+		case OP_DEC:
+			x = js_tonumber(J, -1);
+			js_pop(J, 1);
+			js_pushnumber(J, x - 1);
+			break;
+
 		/* Multiplicative operators */
 
 		case OP_MUL:
