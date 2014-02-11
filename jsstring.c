@@ -276,7 +276,7 @@ static int Sp_toUpperCase(js_State *J, int argc)
 	return 1;
 }
 
-static int iswhite(int c)
+static int istrim(int c)
 {
 	return c == 0x9 || c == 0xB || c == 0xC || c == 0x20 || c == 0xA0 || c == 0xFEFF ||
 		c == 0xA || c == 0xD || c == 0x2028 || c == 0x2029;
@@ -286,10 +286,10 @@ static int Sp_trim(js_State *J, int argc)
 {
 	const char *s, *e;
 	s = js_tostring(J, 0);
-	while (iswhite(*s))
+	while (istrim(*s))
 		++s;
 	e = s + strlen(s);
-	while (e > s && iswhite(e[-1]))
+	while (e > s && istrim(e[-1]))
 		--e;
 	js_pushlstring(J, s, e - s);
 	return 1;

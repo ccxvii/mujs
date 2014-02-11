@@ -1,4 +1,5 @@
 #include "jsi.h"
+#include "jslex.h"
 #include "jscompile.h"
 #include "jsvalue.h"
 #include "jsbuiltin.h"
@@ -96,19 +97,6 @@ static int Encode(js_State *J, const char *str, const char *unescaped)
 	return 1;
 }
 
-static inline int ishex(int c)
-{
-	return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
-}
-
-static inline int tohex(int c)
-{
-	if (c >= '0' && c <= '9') return c - '0';
-	if (c >= 'a' && c <= 'f') return c - 'a' + 0xA;
-	if (c >= 'A' && c <= 'F') return c - 'A' + 0xA;
-	return 0;
-}
-
 static int Decode(js_State *J, const char *str, const char *reserved)
 {
 	js_Buffer *sb = NULL;
@@ -123,9 +111,9 @@ static int Decode(js_State *J, const char *str, const char *reserved)
 				js_urierror(J, "truncated escape sequence");
 			a = *str++;
 			b = *str++;
-			if (!ishex(a) || !ishex(b))
+			if (!jsY_ishex(a) || !jsY_ishex(b))
 				js_urierror(J, "invalid escape sequence");
-			c = tohex(a) << 4 | tohex(b);
+			c = jsY_tohex(a) << 4 | jsY_tohex(b);
 			if (!strchr(reserved, c))
 				sb_putc(&sb, c);
 			else {

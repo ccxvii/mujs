@@ -66,6 +66,11 @@ enum
 	TK_WITH,
 };
 
+int jsY_iswhite(int c);
+int jsY_isnewline(int c);
+int jsY_ishex(int c);
+int jsY_tohex(int c);
+
 const char *jsY_tokenstring(int token);
 int jsY_findword(const char *s, const char **list, int num);
 

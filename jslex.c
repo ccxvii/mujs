@@ -98,7 +98,7 @@ int jsY_findword(const char *s, const char **list, int num)
 	return -1;
 }
 
-static inline int findkeyword(js_State *J, const char *s)
+static inline int jsY_findkeyword(js_State *J, const char *s)
 {
 	int i = jsY_findword(s, keywords, nelem(keywords));
 	if (i >= 0) {
@@ -109,44 +109,41 @@ static inline int findkeyword(js_State *J, const char *s)
 	return TK_IDENTIFIER;
 }
 
-static inline int iswhite(int c)
+int jsY_iswhite(int c)
 {
 	return c == 0x9 || c == 0xB || c == 0xC || c == 0x20 || c == 0xA0 || c == 0xFEFF;
 }
 
-static inline int isnewline(c)
+int jsY_isnewline(int c)
 {
 	return c == 0xA || c == 0xD || c == 0x2028 || c == 0x2029;
 }
 
-static inline int isidentifierstart(int c)
+static inline int jsY_isidentifierstart(int c)
 {
 	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '$' || c == '_' || isalpharune(c);
 }
 
-static inline int isidentifierpart(int c)
+static inline int jsY_isidentifierpart(int c)
 {
-	return (c >= '0' && c <= '9') || isidentifierstart(c);
+	return (c >= '0' && c <= '9') || jsY_isidentifierstart(c);
 }
 
-static inline int isdec(int c)
+static inline int jsY_isdec(int c)
 {
 	return (c >= '0' && c <= '9');
 }
 
-static inline int ishex(int c)
+int jsY_ishex(int c)
 {
 	return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
 }
 
-static inline int tohex(int c)
+int jsY_tohex(int c)
 {
-	if (c >= '0' && c <= '9')
-		return c - '0';
-	if (c >= 'a' && c <= 'f')
-		return c - 'a' + 0xA;
-	if (c >= 'A' && c <= 'F')
-		return c - 'A' + 0xA;
+	if (c >= '0' && c <= '9') return c - '0';
+	if (c >= 'a' && c <= 'f') return c - 'a' + 0xA;
+	if (c >= 'A' && c <= 'F') return c - 'A' + 0xA;
 	return 0;
 }
 
@@ -162,22 +159,22 @@ static void jsY_next(js_State *J)
 	/* consume CR LF as one unit */
 	if (c == '\r' && *J->source == '\n')
 		++J->source;
-	if (isnewline(c)) {
+	if (jsY_isnewline(c)) {
 		J->line++;
 		c = '\n';
 	}
 	J->lexchar = c;
 }
 
-static void unescape(js_State *J)
+static void jsY_unescape(js_State *J)
 {
 	if (ACCEPT('\\')) {
 		if (ACCEPT('u')) {
 			int x = 0;
-			if (!ishex(PEEK)) goto error; x |= tohex(PEEK) << 12; NEXT();
-			if (!ishex(PEEK)) goto error; x |= tohex(PEEK) << 8; NEXT();
-			if (!ishex(PEEK)) goto error; x |= tohex(PEEK) << 4; NEXT();
-			if (!ishex(PEEK)) goto error; x |= tohex(PEEK);
+			if (!jsY_ishex(PEEK)) goto error; x |= jsY_tohex(PEEK) << 12; NEXT();
+			if (!jsY_ishex(PEEK)) goto error; x |= jsY_tohex(PEEK) << 8; NEXT();
+			if (!jsY_ishex(PEEK)) goto error; x |= jsY_tohex(PEEK) << 4; NEXT();
+			if (!jsY_ishex(PEEK)) goto error; x |= jsY_tohex(PEEK);
 			J->lexchar = x;
 			return;
 		}
@@ -235,10 +232,10 @@ static inline int lexcomment(js_State *J)
 static inline double lexhex(js_State *J)
 {
 	double n = 0;
-	if (!ishex(PEEK))
+	if (!jsY_ishex(PEEK))
 		jsY_error(J, "malformed hexadecimal number");
-	while (ishex(PEEK)) {
-		n = n * 16 + tohex(PEEK);
+	while (jsY_ishex(PEEK)) {
+		n = n * 16 + jsY_tohex(PEEK);
 		NEXT();
 	}
 	return n;
@@ -247,9 +244,9 @@ static inline double lexhex(js_State *J)
 static inline double lexinteger(js_State *J)
 {
 	double n = 0;
-	if (!isdec(PEEK))
+	if (!jsY_isdec(PEEK))
 		jsY_error(J, "malformed number");
-	while (isdec(PEEK)) {
+	while (jsY_isdec(PEEK)) {
 		n = n * 10 + (PEEK - '0');
 		NEXT();
 	}
@@ -260,7 +257,7 @@ static inline double lexfraction(js_State *J)
 {
 	double n = 0;
 	double d = 1;
-	while (isdec(PEEK)) {
+	while (jsY_isdec(PEEK)) {
 		n = n * 10 + (PEEK - '0');
 		d = d * 10;
 		NEXT();
@@ -290,13 +287,13 @@ static inline int lexnumber(js_State *J)
 			J->number = lexhex(J);
 			return TK_NUMBER;
 		}
-		if (isdec(PEEK))
+		if (jsY_isdec(PEEK))
 			jsY_error(J, "number with leading zero");
 		n = 0;
 		if (ACCEPT('.'))
 			n += lexfraction(J);
 	} else if (ACCEPT('.')) {
-		if (!isdec(PEEK))
+		if (!jsY_isdec(PEEK))
 			return '.';
 		n = lexfraction(J);
 	} else {
@@ -311,7 +308,7 @@ static inline int lexnumber(js_State *J)
 	else if (e > 0)
 		n *= pow(10, e);
 
-	if (isidentifierstart(PEEK))
+	if (jsY_isidentifierstart(PEEK))
 		jsY_error(J, "number with letter suffix");
 
 	J->number = n;
@@ -330,16 +327,16 @@ static inline int lexescape(js_State *J)
 	switch (PEEK) {
 	case 'u':
 		NEXT();
-		if (!ishex(PEEK)) return 1; else { x |= tohex(PEEK) << 12; NEXT(); }
-		if (!ishex(PEEK)) return 1; else { x |= tohex(PEEK) << 8; NEXT(); }
-		if (!ishex(PEEK)) return 1; else { x |= tohex(PEEK) << 4; NEXT(); }
-		if (!ishex(PEEK)) return 1; else { x |= tohex(PEEK); NEXT(); }
+		if (!jsY_ishex(PEEK)) return 1; else { x |= jsY_tohex(PEEK) << 12; NEXT(); }
+		if (!jsY_ishex(PEEK)) return 1; else { x |= jsY_tohex(PEEK) << 8; NEXT(); }
+		if (!jsY_ishex(PEEK)) return 1; else { x |= jsY_tohex(PEEK) << 4; NEXT(); }
+		if (!jsY_ishex(PEEK)) return 1; else { x |= jsY_tohex(PEEK); NEXT(); }
 		textpush(J, x);
 		break;
 	case 'x':
 		NEXT();
-		if (!ishex(PEEK)) return 1; else { x |= tohex(PEEK) << 4; NEXT(); }
-		if (!ishex(PEEK)) return 1; else { x |= tohex(PEEK); NEXT(); }
+		if (!jsY_ishex(PEEK)) return 1; else { x |= jsY_tohex(PEEK) << 4; NEXT(); }
+		if (!jsY_ishex(PEEK)) return 1; else { x |= jsY_tohex(PEEK); NEXT(); }
 		textpush(J, x);
 		break;
 	case '0': textpush(J, 0); NEXT(); break;
@@ -436,7 +433,7 @@ static int lexregexp(js_State *J)
 	/* regexp flags */
 	g = i = m = 0;
 
-	while (isidentifierpart(PEEK)) {
+	while (jsY_isidentifierpart(PEEK)) {
 		if (ACCEPT('g')) ++g;
 		else if (ACCEPT('i')) ++i;
 		else if (ACCEPT('m')) ++m;
@@ -475,7 +472,7 @@ static int jsY_lexx(js_State *J)
 	while (1) {
 		J->lexline = J->line; /* save location of beginning of token */
 
-		while (iswhite(PEEK))
+		while (jsY_iswhite(PEEK))
 			NEXT();
 
 		if (ACCEPT('\n')) {
@@ -626,22 +623,22 @@ static int jsY_lexx(js_State *J)
 		}
 
 		/* Handle \uXXXX escapes in identifiers */
-		unescape(J);
-		if (isidentifierstart(PEEK)) {
+		jsY_unescape(J);
+		if (jsY_isidentifierstart(PEEK)) {
 			textinit(J);
 			textpush(J, PEEK);
 
 			NEXT();
-			unescape(J);
-			while (isidentifierpart(PEEK)) {
+			jsY_unescape(J);
+			while (jsY_isidentifierpart(PEEK)) {
 				textpush(J, PEEK);
 				NEXT();
-				unescape(J);
+				jsY_unescape(J);
 			}
 
 			textend(J);
 
-			return findkeyword(J, J->lexbuf.text);
+			return jsY_findkeyword(J, J->lexbuf.text);
 		}
 
 		if (PEEK >= 0x20 && PEEK <= 0x7E)
@@ -669,7 +666,7 @@ int jsY_lexjson(js_State *J)
 	while (1) {
 		J->lexline = J->line; /* save location of beginning of token */
 
-		while (iswhite(PEEK) || PEEK == '\n')
+		while (jsY_iswhite(PEEK) || PEEK == '\n')
 			NEXT();
 
 		if (PEEK >= '0' && PEEK <= '9') {
