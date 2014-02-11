@@ -1159,6 +1159,9 @@ static void cfunbody(JF, js_Ast *name, js_Ast *params, js_Ast *body)
 	F->lightweight = 1;
 	F->arguments = 0;
 
+	if (F->script)
+		F->lightweight = 0;
+
 	if (body)
 		analyze(J, F, body);
 
@@ -1175,8 +1178,10 @@ static void cfunbody(JF, js_Ast *name, js_Ast *params, js_Ast *body)
 		}
 	}
 
-	cvardecs(J, F, body);
-	cfundecs(J, F, body);
+	if (body) {
+		cvardecs(J, F, body);
+		cfundecs(J, F, body);
+	}
 
 	if (F->script) {
 		emit(J, F, OP_UNDEF);
