@@ -93,10 +93,7 @@ js_Value jsV_toprimitive(js_State *J, const js_Value *v, int preferred)
 			return vv;
 		}
 	}
-
-	vv.type = JS_TSTRING;
-	vv.u.string = "[object]";
-	return vv;
+	js_typeerror(J, "cannot convert object to primitive");
 }
 
 /* ToBoolean() on a value */
