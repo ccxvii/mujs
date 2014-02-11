@@ -1,4 +1,5 @@
 #include "jsi.h"
+#include "jslex.h"
 #include "jscompile.h"
 #include "jsvalue.h"
 #include "utf.h"
@@ -113,8 +114,16 @@ int jsV_toboolean(js_State *J, const js_Value *v)
 /* ToNumber() on a string */
 double jsV_stringtonumber(js_State *J, const char *s)
 {
-	/* TODO: use lexer to parse string grammar */
-	return strtod(s, NULL);
+	char *e;
+	double n;
+	while (jsY_iswhite(*s) || jsY_isnewline(*s)) ++s;
+	if (s[0] == '0' && s[1] == 'x' && s[2] != 0)
+		n = strtol(s + 2, &e, 16);
+	else
+		n = strtod(s, &e);
+	while (jsY_iswhite(*e) || jsY_isnewline(*e)) ++e;
+	if (*e) return NAN;
+	return n;
 }
 
 /* ToNumber() on a value */

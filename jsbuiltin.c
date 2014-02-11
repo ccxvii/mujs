@@ -44,6 +44,7 @@ static int jsB_parseInt(js_State *J, int argc)
 {
 	const char *s = js_tostring(J, 1);
 	double radix = js_isdefined(J, 2) ? js_tonumber(J, 2) : 10;
+	while (jsY_iswhite(*s) || jsY_isnewline(*s)) ++s;
 	js_pushnumber(J, strtol(s, NULL, radix == 0 ? 10 : radix));
 	return 1;
 }
@@ -51,6 +52,7 @@ static int jsB_parseInt(js_State *J, int argc)
 static int jsB_parseFloat(js_State *J, int argc)
 {
 	const char *s = js_tostring(J, 1);
+	while (jsY_iswhite(*s) || jsY_isnewline(*s)) ++s;
 	js_pushnumber(J, strtod(s, NULL));
 	return 1;
 }
