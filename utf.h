@@ -4,36 +4,18 @@
 typedef unsigned short Rune;	/* 16 bits */
 
 #define chartorune	jsU_chartorune
-#define fullrune	jsU_fullrune
+#define runetochar	jsU_runetochar
+#define runelen		jsU_runelen
+#define utflen		jsU_utflen
+
 #define isalpharune	jsU_isalpharune
 #define islowerrune	jsU_islowerrune
 #define isspacerune	jsU_isspacerune
 #define istitlerune	jsU_istitlerune
 #define isupperrune	jsU_isupperrune
-#define runelen		jsU_runelen
-#define runenlen	jsU_runenlen
-#define runestrcat	jsU_runestrcat
-#define runestrchr	jsU_runestrchr
-#define runestrcmp	jsU_runestrcmp
-#define runestrcpy	jsU_runestrcpy
-#define runestrdup	jsU_runestrdup
-#define runestrecpy	jsU_runestrecpy
-#define runestrlen	jsU_runestrlen
-#define runestrncat	jsU_runestrncat
-#define runestrncmp	jsU_runestrncmp
-#define runestrncpy	jsU_runestrncpy
-#define runestrrchr	jsU_runestrrchr
-#define runestrstr	jsU_runestrstr
-#define runetochar	jsU_runetochar
 #define tolowerrune	jsU_tolowerrune
 #define totitlerune	jsU_totitlerune
 #define toupperrune	jsU_toupperrune
-#define utfecpy		jsU_utfecpy
-#define utflen		jsU_utflen
-#define utfnlen		jsU_utfnlen
-#define utfrrune	jsU_utfrrune
-#define utfrune		jsU_utfrune
-#define utfutf		jsU_utfutf
 
 enum
 {
@@ -44,35 +26,17 @@ enum
 };
 
 int		chartorune(Rune *rune, const char *str);
-int		fullrune(const char *str, int n);
+int		runetochar(char *str, const Rune *rune);
+int		runelen(int c);
+int		utflen(const char *s);
+
 int		isalpharune(Rune c);
 int		islowerrune(Rune c);
 int		isspacerune(Rune c);
 int		istitlerune(Rune c);
 int		isupperrune(Rune c);
-int		runelen(long c);
-int		runenlen(const Rune *r, int nrune);
-Rune*		runestrcat(Rune *s1, const Rune *s2);
-Rune*		runestrchr(const Rune *s, Rune c);
-int		runestrcmp(const Rune *s1, const Rune *s2);
-Rune*		runestrcpy(Rune *s1, const Rune *s2);
-Rune*		runestrdup(const Rune *s) ;
-Rune*		runestrecpy(Rune *s1, Rune *es1, const Rune *s2);
-long		runestrlen(const Rune *s);
-Rune*		runestrncat(Rune *s1, const Rune *s2, long n);
-int		runestrncmp(const Rune *s1, const Rune *s2, long n);
-Rune*		runestrncpy(Rune *s1, const Rune *s2, long n);
-Rune*		runestrrchr(const Rune *s, Rune c);
-Rune*		runestrstr(const Rune *s1, const Rune *s2);
-int		runetochar(char *str, const Rune *rune);
 Rune		tolowerrune(Rune c);
 Rune		totitlerune(Rune c);
 Rune		toupperrune(Rune c);
-char*		utfecpy(char *to, char *e, const char *from);
-int		utflen(const char *s);
-int		utfnlen(const char *s, long m);
-char*		utfrrune(const char *s, long c);
-char*		utfrune(const char *s, long c);
-char*		utfutf(const char *s1, const char *s2);
 
 #endif
