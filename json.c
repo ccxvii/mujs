@@ -3,6 +3,8 @@
 #include "jsvalue.h"
 #include "jsbuiltin.h"
 
+#include "utf.h"
+
 static inline void jsonnext(js_State *J)
 {
 	J->lookahead = jsY_lexjson(J);
@@ -100,8 +102,158 @@ static int JSON_parse(js_State *J, int argc)
 	return 1;
 }
 
+static void fmtnum(js_Buffer **sb, double n)
+{
+	if (isnan(n)) sb_puts(sb, "NaN");
+	else if (isinf(n)) sb_puts(sb, n < 0 ? "-Infinity" : "Infinity");
+	else if (n == 0) sb_puts(sb, "0");
+	else {
+		char buf[40];
+		sprintf(buf, "%.17g", n);
+		sb_puts(sb, buf);
+	}
+}
+
+static void fmtstr(js_Buffer **sb, const char *s)
+{
+	static const char *HEX = "0123456789ABCDEF";
+	Rune c;
+	sb_putc(sb, '"');
+	while (*s) {
+		s += chartorune(&c, s);
+		switch (c) {
+		case '"': sb_puts(sb, "\\\""); break;
+		case '\\': sb_puts(sb, "\\\\"); break;
+		case '\b': sb_puts(sb, "\\b"); break;
+		case '\f': sb_puts(sb, "\\f"); break;
+		case '\n': sb_puts(sb, "\\n"); break;
+		case '\r': sb_puts(sb, "\\r"); break;
+		case '\t': sb_puts(sb, "\\t"); break;
+		default:
+			if (c < ' ') {
+				sb_puts(sb, "\\u");
+				sb_putc(sb, HEX[(c>>12)&15]);
+				sb_putc(sb, HEX[(c>>8)&15]);
+				sb_putc(sb, HEX[(c>>4)&15]);
+				sb_putc(sb, HEX[c&15]);
+			} else {
+				sb_putc(sb, c); break;
+			}
+		}
+	}
+	sb_putc(sb, '"');
+}
+
+static int fmtvalue(js_State *J, js_Buffer **sb, const char *key);
+
+static void fmtobject(js_State *J, js_Buffer **sb, js_Object *obj)
+{
+	js_Property *ref;
+	int save;
+	int n = 0;
+
+	sb_putc(sb, '{');
+	for (ref = obj->head; ref; ref = ref->next) {
+		if (ref->atts & JS_DONTENUM)
+			continue;
+		save = (*sb)->n;
+		if (n) sb_putc(sb, ',');
+		fmtstr(sb, ref->name);
+		sb_putc(sb, ':');
+		js_pushvalue(J, ref->value);
+		if (!fmtvalue(J, sb, ref->name))
+			(*sb)->n = save;
+		else
+			++n;
+		js_pop(J, 1);
+	}
+	sb_putc(sb, '}');
+}
+
+static void fmtarray(js_State *J, js_Buffer **sb)
+{
+	unsigned int len, k;
+	char buf[40];
+
+	js_getproperty(J, -1, "length");
+	len = js_touint32(J, -1);
+	js_pop(J, 1);
+
+	sb_putc(sb, '[');
+	for (k = 0; k < len; ++k) {
+		if (k) sb_putc(sb, ',');
+		sprintf(buf, "%u", k);
+		js_getproperty(J, -1, buf);
+		if (!fmtvalue(J, sb, buf))
+			sb_puts(sb, "null");
+		js_pop(J, 1);
+	}
+	sb_putc(sb, ']');
+}
+
+static int fmtvalue(js_State *J, js_Buffer **sb, const char *key)
+{
+	if (js_try(J)) {
+		free(*sb);
+		js_throw(J);
+	}
+	if (js_isobject(J, -1)) {
+		if (js_hasproperty(J, -1, "toJSON")) {
+			if (js_iscallable(J, -1)) {
+				js_copy(J, -2);
+				js_pushliteral(J, key);
+				js_call(J, 1);
+				js_rot2pop1(J);
+			} else {
+				js_pop(J, 1);
+			}
+		}
+	}
+	js_endtry(J);
+
+	// TODO: replacer()
+
+	if (js_isobject(J, -1) && !js_iscallable(J, -1)) {
+		js_Object *obj = js_toobject(J, -1);
+		switch (obj->type) {
+		case JS_CNUMBER: fmtnum(sb, obj->u.number); break;
+		case JS_CSTRING: fmtstr(sb, obj->u.s.string); break;
+		case JS_CBOOLEAN: sb_puts(sb, obj->u.boolean ? "true" : "false"); break;
+		case JS_CARRAY: fmtarray(J, sb); break;
+		default: fmtobject(J, sb, obj); break;
+		}
+	}
+	else if (js_isboolean(J, -1))
+		sb_puts(sb, js_toboolean(J, -1) ? "true" : "false");
+	else if (js_isnumber(J, -1))
+		fmtnum(sb, js_tonumber(J, -1));
+	else if (js_isstring(J, -1))
+		fmtstr(sb, js_tostring(J, -1));
+	else if (js_isnull(J, -1))
+		sb_puts(sb, "null");
+	else
+		return 0;
+
+	return 1;
+}
+
 static int JSON_stringify(js_State *J, int argc)
 {
+	js_Buffer *sb = NULL;
+	if (argc > 0) {
+		js_copy(J, 1);
+		if (fmtvalue(J, &sb, "")) {
+			sb_putc(&sb, 0);
+			if (js_try(J)) {
+				free(sb);
+				js_throw(J);
+			}
+			js_pushstring(J, sb ? sb->s : "");
+			js_endtry(J);
+			free(sb);
+			return 1;
+		}
+	}
 	return 0;
 }
 

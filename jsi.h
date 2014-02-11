@@ -47,6 +47,10 @@ const char *js_utfidxtoptr(const char *s, int i);
 void js_dup(js_State *J);
 void js_rot2(js_State *J);
 void js_rot3(js_State *J);
+void js_rot2pop1(js_State *J);
+void js_rot3pop2(js_State *J);
+void js_dup1rot3(js_State *J);
+void js_dup1rot4(js_State *J);
 
 int js_RegExp_prototype_exec(js_State *J, js_Regexp *re, const char *text);
 
