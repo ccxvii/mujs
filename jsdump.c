@@ -284,6 +284,7 @@ static void pexpi(int d, int p, js_Ast *exp)
 	p = tp;
 
 	switch (exp->type) {
+	case AST_IDENTIFIER: ps(exp->string); break;
 	case EXP_IDENTIFIER: ps(exp->string); break;
 	case EXP_NUMBER: printf("%.9g", exp->number); break;
 	case EXP_STRING: pstr(exp->string); break;

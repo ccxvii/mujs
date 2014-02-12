@@ -265,6 +265,11 @@ static js_Object *jsR_tofunction(js_State *J, int idx)
 
 /* Stack manipulation */
 
+int js_gettop(js_State *J)
+{
+	return TOP - BOT;
+}
+
 void js_pop(js_State *J, int n)
 {
 	TOP -= n;
@@ -838,9 +843,9 @@ static void jsR_callscript(js_State *J, int n, js_Function *F)
 
 static void jsR_callcfunction(js_State *J, int n, int min, js_CFunction F)
 {
-	int rv;
+	int rv, i;
 
-	while (min++ < n)
+	for (i = n; i < min; ++i)
 		js_pushundefined(J);
 
 	rv = F(J, n);
