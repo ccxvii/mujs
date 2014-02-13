@@ -106,7 +106,7 @@ int jsV_toboolean(js_State *J, const js_Value *v)
 	case JS_TBOOLEAN: return v->u.boolean;
 	case JS_TNUMBER: return v->u.number != 0 && !isnan(v->u.number);
 	case JS_TSTRING: return v->u.string[0] != 0;
-	case JS_TOBJECT: return 0;
+	case JS_TOBJECT: return 1;
 	}
 	return 0;
 }
