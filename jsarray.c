@@ -2,7 +2,7 @@
 #include "jsvalue.h"
 #include "jsbuiltin.h"
 
-static unsigned int js_getlength(js_State *J, int idx)
+unsigned int js_getlength(js_State *J, int idx)
 {
 	unsigned int len;
 	js_getproperty(J, idx, "length");
@@ -11,7 +11,7 @@ static unsigned int js_getlength(js_State *J, int idx)
 	return len;
 }
 
-static void js_setlength(js_State *J, int idx, unsigned int len)
+void js_setlength(js_State *J, int idx, unsigned int len)
 {
 	js_pushnumber(J, len);
 	js_setproperty(J, idx, "length");

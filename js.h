@@ -97,6 +97,8 @@ void js_defproperty(js_State *J, int idx, const char *name, int atts);
 void js_delproperty(js_State *J, int idx, const char *name);
 void js_defaccessor(js_State *J, int idx, const char *name, int atts);
 
+unsigned int js_getlength(js_State *J, int idx);
+void js_setlength(js_State *J, int idx, unsigned int len);
 int js_hasindex(js_State *J, int idx, unsigned int i);
 void js_getindex(js_State *J, int idx, unsigned int i);
 void js_setindex(js_State *J, int idx, unsigned int i);
