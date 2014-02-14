@@ -219,7 +219,7 @@ static inline int lexcomment(js_State *J)
 	/* already consumed initial '/' '*' sequence */
 	while (PEEK != 0) {
 		if (ACCEPT('*')) {
-			while (ACCEPT('*'))
+			while (PEEK == '*')
 				NEXT();
 			if (ACCEPT('/'))
 				return 0;
