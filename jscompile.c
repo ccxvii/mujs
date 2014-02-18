@@ -821,10 +821,12 @@ static void cswitch(JF, js_Ast *ref, js_Ast *head)
 		}
 	}
 	emit(J, F, OP_POP);
-	if (def)
+	if (def) {
 		def->casejump = emitjump(J, F, OP_JUMP);
-	else
+		end = 0;
+	} else {
 		end = emitjump(J, F, OP_JUMP);
+	}
 
 	/* emit the casue clause bodies */
 	for (node = head; node; node = node->b) {
@@ -836,7 +838,7 @@ static void cswitch(JF, js_Ast *ref, js_Ast *head)
 			cstmlist(J, F, clause->b);
 	}
 
-	if (!def)
+	if (end)
 		label(J, F, end);
 }
 
@@ -929,6 +931,8 @@ static void cstm(JF, js_Ast *stm)
 		if (stm->b) {
 			cexp(J, F, stm->b);
 			end = emitjump(J, F, OP_JFALSE);
+		} else {
+			end = 0;
 		}
 		cstm(J, F, stm->d);
 		cont = here(J, F);
@@ -937,7 +941,7 @@ static void cstm(JF, js_Ast *stm)
 			emit(J, F, OP_POP);
 		}
 		emitjumpto(J, F, OP_JUMP, loop);
-		if (stm->b)
+		if (end)
 			label(J, F, end);
 		labeljumps(J, F, stm->jumps, here(J,F), cont);
 		break;
