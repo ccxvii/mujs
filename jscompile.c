@@ -173,7 +173,7 @@ static int here(JF)
 	return F->codelen;
 }
 
-static int jump(JF, int opcode)
+static int emitjump(JF, int opcode)
 {
 	int inst = F->codelen + 1;
 	emit(J, F, opcode);
@@ -181,7 +181,7 @@ static int jump(JF, int opcode)
 	return inst;
 }
 
-static void jumpto(JF, int opcode, int dest)
+static void emitjumpto(JF, int opcode, int dest)
 {
 	emit(J, F, opcode);
 	emitraw(J, F, dest);
@@ -580,7 +580,7 @@ static void cexp(JF, js_Ast *exp)
 	case EXP_LOGOR:
 		cexp(J, F, exp->a);
 		emit(J, F, OP_DUP);
-		end = jump(J, F, OP_JTRUE);
+		end = emitjump(J, F, OP_JTRUE);
 		emit(J, F, OP_POP);
 		cexp(J, F, exp->b);
 		label(J, F, end);
@@ -589,7 +589,7 @@ static void cexp(JF, js_Ast *exp)
 	case EXP_LOGAND:
 		cexp(J, F, exp->a);
 		emit(J, F, OP_DUP);
-		end = jump(J, F, OP_JFALSE);
+		end = emitjump(J, F, OP_JFALSE);
 		emit(J, F, OP_POP);
 		cexp(J, F, exp->b);
 		label(J, F, end);
@@ -597,9 +597,9 @@ static void cexp(JF, js_Ast *exp)
 
 	case EXP_COND:
 		cexp(J, F, exp->a);
-		then = jump(J, F, OP_JTRUE);
+		then = emitjump(J, F, OP_JTRUE);
 		cexp(J, F, exp->c);
-		end = jump(J, F, OP_JUMP);
+		end = emitjump(J, F, OP_JUMP);
 		label(J, F, then);
 		cexp(J, F, exp->b);
 		label(J, F, end);
@@ -750,7 +750,7 @@ static void cexit(JF, js_AstType T, js_Ast *node, js_Ast *target)
 static void ctryfinally(JF, js_Ast *trystm, js_Ast *finallystm)
 {
 	int L1;
-	L1 = jump(J, F, OP_TRY);
+	L1 = emitjump(J, F, OP_TRY);
 	{
 		/* if we get here, we have caught an exception in the try block */
 		cstm(J, F, finallystm); /* inline finally block */
@@ -765,13 +765,13 @@ static void ctryfinally(JF, js_Ast *trystm, js_Ast *finallystm)
 static void ctrycatch(JF, js_Ast *trystm, js_Ast *catchvar, js_Ast *catchstm)
 {
 	int L1, L2;
-	L1 = jump(J, F, OP_TRY);
+	L1 = emitjump(J, F, OP_TRY);
 	{
 		/* if we get here, we have caught an exception in the try block */
 		emitstring(J, F, OP_CATCH, catchvar->string);
 		cstm(J, F, catchstm);
 		emit(J, F, OP_ENDCATCH);
-		L2 = jump(J, F, OP_JUMP); /* skip past the try block */
+		L2 = emitjump(J, F, OP_JUMP); /* skip past the try block */
 	}
 	label(J, F, L1);
 	cstm(J, F, trystm);
@@ -782,10 +782,10 @@ static void ctrycatch(JF, js_Ast *trystm, js_Ast *catchvar, js_Ast *catchstm)
 static void ctrycatchfinally(JF, js_Ast *trystm, js_Ast *catchvar, js_Ast *catchstm, js_Ast *finallystm)
 {
 	int L1, L2, L3;
-	L1 = jump(J, F, OP_TRY);
+	L1 = emitjump(J, F, OP_TRY);
 	{
 		/* if we get here, we have caught an exception in the try block */
-		L2 = jump(J, F, OP_TRY);
+		L2 = emitjump(J, F, OP_TRY);
 		{
 			/* if we get here, we have caught an exception in the catch block */
 			cstm(J, F, finallystm); /* inline finally block */
@@ -795,7 +795,7 @@ static void ctrycatchfinally(JF, js_Ast *trystm, js_Ast *catchvar, js_Ast *catch
 		emitstring(J, F, OP_CATCH, catchvar->string);
 		cstm(J, F, catchstm);
 		emit(J, F, OP_ENDCATCH);
-		L3 = jump(J, F, OP_JUMP); /* skip past the try block to the finally block */
+		L3 = emitjump(J, F, OP_JUMP); /* skip past the try block to the finally block */
 	}
 	label(J, F, L1);
 	cstm(J, F, trystm);
@@ -822,14 +822,14 @@ static void cswitch(JF, js_Ast *ref, js_Ast *head)
 			def = clause;
 		} else {
 			cexp(J, F, clause->a);
-			clause->casejump = jump(J, F, OP_JCASE);
+			clause->casejump = emitjump(J, F, OP_JCASE);
 		}
 	}
 	emit(J, F, OP_POP);
 	if (def)
-		def->casejump = jump(J, F, OP_JUMP);
+		def->casejump = emitjump(J, F, OP_JUMP);
 	else
-		end = jump(J, F, OP_JUMP);
+		end = emitjump(J, F, OP_JUMP);
 
 	/* emit the casue clause bodies */
 	for (node = head; node; node = node->b) {
@@ -887,15 +887,15 @@ static void cstm(JF, js_Ast *stm)
 	case STM_IF:
 		if (stm->c) {
 			cexp(J, F, stm->a);
-			then = jump(J, F, OP_JTRUE);
+			then = emitjump(J, F, OP_JTRUE);
 			cstm(J, F, stm->c);
-			end = jump(J, F, OP_JUMP);
+			end = emitjump(J, F, OP_JUMP);
 			label(J, F, then);
 			cstm(J, F, stm->b);
 			label(J, F, end);
 		} else {
 			cexp(J, F, stm->a);
-			end = jump(J, F, OP_JFALSE);
+			end = emitjump(J, F, OP_JFALSE);
 			cstm(J, F, stm->b);
 			label(J, F, end);
 		}
@@ -906,16 +906,16 @@ static void cstm(JF, js_Ast *stm)
 		cstm(J, F, stm->a);
 		cont = here(J, F);
 		cexp(J, F, stm->b);
-		jumpto(J, F, OP_JTRUE, loop);
+		emitjumpto(J, F, OP_JTRUE, loop);
 		labeljumps(J, F, stm->jumps, here(J,F), cont);
 		break;
 
 	case STM_WHILE:
 		loop = here(J, F);
 		cexp(J, F, stm->a);
-		end = jump(J, F, OP_JFALSE);
+		end = emitjump(J, F, OP_JFALSE);
 		cstm(J, F, stm->b);
-		jumpto(J, F, OP_JUMP, loop);
+		emitjumpto(J, F, OP_JUMP, loop);
 		label(J, F, end);
 		labeljumps(J, F, stm->jumps, here(J,F), loop);
 		break;
@@ -933,7 +933,7 @@ static void cstm(JF, js_Ast *stm)
 		loop = here(J, F);
 		if (stm->b) {
 			cexp(J, F, stm->b);
-			end = jump(J, F, OP_JFALSE);
+			end = emitjump(J, F, OP_JFALSE);
 		}
 		cstm(J, F, stm->d);
 		cont = here(J, F);
@@ -941,7 +941,7 @@ static void cstm(JF, js_Ast *stm)
 			cexp(J, F, stm->c);
 			emit(J, F, OP_POP);
 		}
-		jumpto(J, F, OP_JUMP, loop);
+		emitjumpto(J, F, OP_JUMP, loop);
 		if (stm->b)
 			label(J, F, end);
 		labeljumps(J, F, stm->jumps, here(J,F), cont);
@@ -954,7 +954,7 @@ static void cstm(JF, js_Ast *stm)
 		loop = here(J, F);
 		{
 			emit(J, F, OP_NEXTITER);
-			end = jump(J, F, OP_JFALSE);
+			end = emitjump(J, F, OP_JFALSE);
 			cassignforin(J, F, stm);
 			if (F->script) {
 				emit(J, F, OP_ROT2);
@@ -963,7 +963,7 @@ static void cstm(JF, js_Ast *stm)
 			} else {
 				cstm(J, F, stm->c);
 			}
-			jumpto(J, F, OP_JUMP, loop);
+			emitjumpto(J, F, OP_JUMP, loop);
 		}
 		label(J, F, end);
 		labeljumps(J, F, stm->jumps, here(J,F), loop);
@@ -995,7 +995,7 @@ static void cstm(JF, js_Ast *stm)
 				jsC_error(J, stm, "unlabelled break must be inside loop or switch");
 		}
 		cexit(J, F, STM_BREAK, stm, target);
-		addjump(J, F, STM_BREAK, target, jump(J, F, OP_JUMP));
+		addjump(J, F, STM_BREAK, target, emitjump(J, F, OP_JUMP));
 		break;
 
 	case STM_CONTINUE:
@@ -1009,7 +1009,7 @@ static void cstm(JF, js_Ast *stm)
 				jsC_error(J, stm, "continue must be inside loop");
 		}
 		cexit(J, F, STM_CONTINUE, stm, target);
-		addjump(J, F, STM_CONTINUE, target, jump(J, F, OP_JUMP));
+		addjump(J, F, STM_CONTINUE, target, emitjump(J, F, OP_JUMP));
 		break;
 
 	case STM_RETURN:
