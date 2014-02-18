@@ -17,21 +17,21 @@ static const char *opname[] = {
 #include "opnames.h"
 };
 
-const char *jsP_aststring(js_AstType type)
+const char *jsP_aststring(enum js_AstType type)
 {
 	if (type > nelem(astname))
 		return "<unknown>";
 	return astname[type];
 }
 
-const char *jsC_opcodestring(int opcode)
+const char *jsC_opcodestring(enum js_OpCode opcode)
 {
-	if (opcode < 0 || opcode > nelem(opname))
+	if (opcode > nelem(opname))
 		return "<unknown>";
 	return opname[opcode];
 }
 
-static int prec(js_AstType type)
+static int prec(enum js_AstType type)
 {
 	switch (type) {
 	case EXP_IDENTIFIER:

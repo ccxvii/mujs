@@ -594,7 +594,7 @@ const char *js_ref(js_State *J)
 		s = v->u.boolean ? "_True" : "_False";
 		break;
 	case JS_TOBJECT:
-		sprintf(buf, "%p", v->u.object);
+		sprintf(buf, "%p", (void*)v->u.object);
 		s = js_intern(J, buf);
 		break;
 	default:
@@ -998,7 +998,7 @@ static void jsR_run(js_State *J, js_Function *F)
 	const char **ST = F->strtab;
 	short *pcstart = F->code;
 	short *pc = F->code;
-	js_OpCode opcode;
+	enum js_OpCode opcode;
 	int offset;
 
 	const char *str;
@@ -1301,14 +1301,14 @@ static void jsR_run(js_State *J, js_Function *F)
 			ix = js_toint32(J, -2);
 			uy = js_touint32(J, -1);
 			js_pop(J, 2);
-			js_pushnumber(J, ix >> (uy & 0x1F)); break;
+			js_pushnumber(J, ix >> (uy & 0x1F));
 			break;
 
 		case OP_USHR:
 			ux = js_touint32(J, -2);
 			uy = js_touint32(J, -1);
 			js_pop(J, 2);
-			js_pushnumber(J, ux >> (uy & 0x1F)); break;
+			js_pushnumber(J, ux >> (uy & 0x1F));
 			break;
 
 		/* Relational operators */

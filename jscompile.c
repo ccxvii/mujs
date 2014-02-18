@@ -295,7 +295,6 @@ static void cassign(JF, js_Ast *lhs, js_Ast *rhs)
 		break;
 	default:
 		jsC_error(J, lhs, "invalid l-value in assignment");
-		break;
 	}
 }
 
@@ -331,7 +330,6 @@ static void cassignforin(JF, js_Ast *stm)
 		break;
 	default:
 		jsC_error(J, lhs, "invalid l-value in for-in loop assignment");
-		break;
 	}
 }
 
@@ -357,7 +355,6 @@ static void cassignop1(JF, js_Ast *lhs, int dup)
 		break;
 	default:
 		jsC_error(J, lhs, "invalid l-value in assignment");
-		break;
 	}
 }
 
@@ -374,7 +371,6 @@ static void cassignop2(JF, js_Ast *lhs)
 		break;
 	default:
 		jsC_error(J, lhs, "invalid l-value in assignment");
-		break;
 	}
 }
 
@@ -403,7 +399,6 @@ static void cdelete(JF, js_Ast *exp)
 		break;
 	default:
 		jsC_error(J, exp, "invalid l-value in delete expression");
-		break;
 	}
 }
 
@@ -612,7 +607,7 @@ static void cexp(JF, js_Ast *exp)
 
 /* Patch break and continue statements */
 
-static void addjump(JF, js_AstType type, js_Ast *target, int inst)
+static void addjump(JF, enum js_AstType type, js_Ast *target, int inst)
 {
 	js_JumpList *jump = malloc(sizeof *jump);
 	jump->type = type;
@@ -632,14 +627,14 @@ static void labeljumps(JF, js_JumpList *jump, int baddr, int caddr)
 	}
 }
 
-static int isloop(js_AstType T)
+static int isloop(enum js_AstType T)
 {
 	return T == STM_DO || T == STM_WHILE ||
 		T == STM_FOR || T == STM_FOR_VAR ||
 		T == STM_FOR_IN || T == STM_FOR_IN_VAR;
 }
 
-static int isfun(js_AstType T)
+static int isfun(enum js_AstType T)
 {
 	return T == AST_FUNDEC || T == EXP_FUN || T == EXP_PROP_GET || T == EXP_PROP_SET;
 }
@@ -699,7 +694,7 @@ static js_Ast *returntarget(JF, js_Ast *node)
 
 /* Emit code to rebalance stack and scopes during an abrupt exit */
 
-static void cexit(JF, js_AstType T, js_Ast *node, js_Ast *target)
+static void cexit(JF, enum js_AstType T, js_Ast *node, js_Ast *target)
 {
 	js_Ast *prev;
 	do {

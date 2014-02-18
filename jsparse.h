@@ -1,8 +1,6 @@
 #ifndef js_parse_h
 #define js_parse_h
 
-typedef enum js_AstType js_AstType;
-
 enum js_AstType
 {
 	AST_LIST,
@@ -120,7 +118,7 @@ typedef struct js_JumpList js_JumpList;
 
 struct js_JumpList
 {
-	js_AstType type;
+	enum js_AstType type;
 	int inst;
 	js_JumpList *next;
 };
@@ -141,7 +139,7 @@ js_Ast *jsP_parsefunction(js_State *J, const char *filename, const char *params,
 js_Ast *jsP_parse(js_State *J, const char *filename, const char *source);
 void jsP_freeparse(js_State *J);
 
-const char *jsP_aststring(js_AstType type);
+const char *jsP_aststring(enum js_AstType type);
 void jsP_dumpsyntax(js_State *J, js_Ast *prog);
 void jsP_dumplist(js_State *J, js_Ast *prog);
 

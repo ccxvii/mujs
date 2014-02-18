@@ -144,7 +144,7 @@ static js_Property *delete(js_State *J, js_Property *node, const char *name)
 }
 
 
-js_Object *jsV_newobject(js_State *J, js_Class type, js_Object *prototype)
+js_Object *jsV_newobject(js_State *J, enum js_Class type, js_Object *prototype)
 {
 	js_Object *obj = calloc(sizeof(js_Object), 1);
 	obj->gcmark = 0;

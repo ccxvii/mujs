@@ -126,14 +126,14 @@ void jsB_initmath(js_State *J)
 {
 	js_pushobject(J, jsV_newobject(J, JS_CMATH, J->Object_prototype));
 	{
-		jsB_propn(J, "E", M_E);
-		jsB_propn(J, "LN10", M_LN10);
-		jsB_propn(J, "LN2", M_LN2);
-		jsB_propn(J, "LOG2E", M_LOG2E);
-		jsB_propn(J, "LOG10E", M_LOG10E);
-		jsB_propn(J, "PI", M_PI);
-		jsB_propn(J, "SQRT1_2", M_SQRT1_2);
-		jsB_propn(J, "SQRT2", M_SQRT2);
+		jsB_propn(J, "E", 2.7182818284590452354);
+		jsB_propn(J, "LN10", 2.302585092994046);
+		jsB_propn(J, "LN2", 0.6931471805599453);
+		jsB_propn(J, "LOG2E", 1.4426950408889634);
+		jsB_propn(J, "LOG10E", 0.4342944819032518);
+		jsB_propn(J, "PI", 3.1415926535897932);
+		jsB_propn(J, "SQRT1_2", 0.7071067811865476);
+		jsB_propn(J, "SQRT2", 1.4142135623730951);
 
 		jsB_propf(J, "abs", Math_abs, 1);
 		jsB_propf(J, "acos", Math_acos, 1);

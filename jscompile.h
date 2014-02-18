@@ -1,8 +1,6 @@
 #ifndef js_compile_h
 #define js_compile_h
 
-typedef enum js_OpCode js_OpCode;
-
 enum js_OpCode
 {
 	OP_POP,		/* A -- */
@@ -151,7 +149,7 @@ struct js_Function
 
 js_Function *jsC_compilefunction(js_State *J, js_Ast *prog);
 js_Function *jsC_compile(js_State *J, js_Ast *prog);
-const char *jsC_opcodestring(int opcode);
+const char *jsC_opcodestring(enum js_OpCode opcode);
 void jsC_dumpfunction(js_State *J, js_Function *fun);
 
 #endif

@@ -42,7 +42,7 @@ int js_RegExp_prototype_exec(js_State *J, js_Regexp *re, const char *text)
 
 	opts = 0;
 	if (re->flags & JS_REGEXP_G) {
-		if (re->last < 0 || re->last > strlen(text)) {
+		if (re->last > strlen(text)) {
 			re->last = 0;
 			js_pushnull(J);
 			return 1;

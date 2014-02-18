@@ -45,6 +45,7 @@ int js_utfptrtoidx(const char *s, const char *p);
 const char *js_utfidxtoptr(const char *s, int i);
 
 void js_dup(js_State *J);
+void js_dup2(js_State *J);
 void js_rot2(js_State *J);
 void js_rot3(js_State *J);
 void js_rot2pop1(js_State *J);

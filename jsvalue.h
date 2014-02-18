@@ -1,9 +1,6 @@
 #ifndef js_object_h
 #define js_object_h
 
-typedef enum js_Type js_Type;
-typedef enum js_Class js_Class;
-
 typedef struct js_Property js_Property;
 typedef struct js_Iterator js_Iterator;
 
@@ -36,7 +33,7 @@ enum js_Class {
 
 struct js_Value
 {
-	js_Type type;
+	enum js_Type type;
 	union {
 		int boolean;
 		double number;
@@ -55,7 +52,7 @@ struct js_Regexp
 
 struct js_Object
 {
-	js_Class type;
+	enum js_Class type;
 	int extensible;
 	js_Property *properties;
 	js_Property *head, *tail; /* for enumeration */
@@ -133,7 +130,7 @@ const char *jsV_numbertostring(js_State *J, double number);
 double jsV_stringtonumber(js_State *J, const char *string);
 
 /* jsproperty.c */
-js_Object *jsV_newobject(js_State *J, js_Class type, js_Object *prototype);
+js_Object *jsV_newobject(js_State *J, enum js_Class type, js_Object *prototype);
 js_Property *jsV_getownproperty(js_State *J, js_Object *obj, const char *name);
 js_Property *jsV_getpropertyx(js_State *J, js_Object *obj, const char *name, int *own);
 js_Property *jsV_getproperty(js_State *J, js_Object *obj, const char *name);
