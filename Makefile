@@ -1,5 +1,5 @@
-SRCS := $(wildcard js*.c utf*.c)
-HDRS := $(wildcard js*.h utf.h)
+SRCS := $(wildcard js*.c utf*.c regex.c)
+HDRS := $(wildcard js*.h utf.h regex.h)
 OBJS := $(SRCS:%.c=build/%.o)
 
 CFLAGS = -Wall -g

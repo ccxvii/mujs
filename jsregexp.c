@@ -1,17 +1,16 @@
 #include "jsi.h"
 #include "jsvalue.h"
 #include "jsbuiltin.h"
+#include "regex.h"
 
 #define nelem(a) (sizeof (a) / sizeof (a)[0])
 
-#include <regex.h>
-
 void js_newregexp(js_State *J, const char *pattern, int flags)
 {
-	char msg[256];
+	const char *error;
 	js_Object *obj;
-	regex_t *prog;
-	int opts, status;
+	Reprog *prog;
+	int opts;
 
 	obj = jsV_newobject(J, JS_CREGEXP, J->RegExp_prototype);
 
@@ -19,13 +18,9 @@ void js_newregexp(js_State *J, const char *pattern, int flags)
 	if (flags & JS_REGEXP_I) opts |= REG_ICASE;
 	if (flags & JS_REGEXP_M) opts |= REG_NEWLINE;
 
-	prog = malloc(sizeof (regex_t));
-	status = regcomp(prog, pattern, opts);
-	if (status) {
-		free(prog);
-		regerror(status, prog, msg, sizeof msg);
-		js_syntaxerror(J, "%s", msg);
-	}
+	prog = js_regcomp(pattern, opts, &error);
+	if (!prog)
+		js_syntaxerror(J, "regular expression: %s", error);
 
 	obj->u.r.prog = prog;
 	obj->u.r.source = pattern;
@@ -36,7 +31,7 @@ void js_newregexp(js_State *J, const char *pattern, int flags)
 
 int js_RegExp_prototype_exec(js_State *J, js_Regexp *re, const char *text)
 {
-	regmatch_t m[10];
+	Resub m[10];
 	int opts;
 	int i;
 
@@ -53,14 +48,14 @@ int js_RegExp_prototype_exec(js_State *J, js_Regexp *re, const char *text)
 		}
 	}
 
-	if (!regexec(re->prog, text, nelem(m), m, opts)) {
+	if (!js_regexec(re->prog, text, nelem(m), m, opts)) {
 		js_newarray(J);
-		for (i = 0; i < nelem(m) && m[i].rm_so >= 0; ++i) {
-			js_pushlstring(J, text + m[i].rm_so, m[i].rm_eo - m[i].rm_so);
+		for (i = 0; i < nelem(m) && m[i].sp; ++i) {
+			js_pushlstring(J, m[i].sp, m[i].ep - m[i].sp);
 			js_setindex(J, -2, i);
 		}
 		if (re->flags & JS_REGEXP_G)
-			re->last = re->last + m[0].rm_eo;
+			re->last = re->last + (m[0].ep - text);
 		return 1;
 	}
 
@@ -75,7 +70,7 @@ static int Rp_test(js_State *J, int argc)
 {
 	js_Regexp *re;
 	const char *text;
-	regmatch_t m[10];
+	Resub m[10];
 	int opts;
 
 	re = js_toregexp(J, 0);
@@ -94,9 +89,9 @@ static int Rp_test(js_State *J, int argc)
 		}
 	}
 
-	if (!regexec(re->prog, text, nelem(m), m, opts)) {
+	if (!js_regexec(re->prog, text, nelem(m), m, opts)) {
 		if (re->flags & JS_REGEXP_G)
-			re->last = re->last + m[0].rm_eo;
+			re->last = re->last + (m[0].ep - text);
 		js_pushboolean(J, 1);
 		return 1;
 	}

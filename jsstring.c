@@ -2,8 +2,7 @@
 #include "jsvalue.h"
 #include "jsbuiltin.h"
 #include "utf.h"
-
-#include <regex.h>
+#include "regex.h"
 
 #define nelem(a) (sizeof (a) / sizeof (a)[0])
 
@@ -323,9 +322,10 @@ static int S_fromCharCode(js_State *J, int argc)
 static int Sp_match(js_State *J, int argc)
 {
 	js_Regexp *re;
-	regmatch_t m[10];
+	Resub m[10];
 	const char *text;
-	unsigned int len, a, b, c, e;
+	unsigned int len;
+	const char *a, *b, *c, *e;
 
 	text = js_tostring(J, 0);
 
@@ -344,17 +344,17 @@ static int Sp_match(js_State *J, int argc)
 
 	js_newarray(J);
 
-	e = strlen(text);
 	len = 0;
-	a = 0;
+	a = text;
+	e = text + strlen(text);
 	while (a <= e) {
-		if (regexec(re->prog, text + a, nelem(m), m, a > 0 ? REG_NOTBOL : 0))
+		if (js_regexec(re->prog, a, nelem(m), m, a > text ? REG_NOTBOL : 0))
 			break;
 
-		b = a + m[0].rm_so;
-		c = a + m[0].rm_eo;
+		b = m[0].sp;
+		c = m[0].ep;
 
-		js_pushlstring(J, text + b, c - b);
+		js_pushlstring(J, b, c - b);
 		js_setindex(J, -2, len++);
 
 		a = c;
@@ -368,7 +368,7 @@ static int Sp_match(js_State *J, int argc)
 static int Sp_search(js_State *J, int argc)
 {
 	js_Regexp *re;
-	regmatch_t m[10];
+	Resub m[10];
 	const char *text;
 
 	text = js_tostring(J, 0);
@@ -382,8 +382,8 @@ static int Sp_search(js_State *J, int argc)
 
 	re = js_toregexp(J, -1);
 
-	if (!regexec(re->prog, text, nelem(m), m, 0))
-		js_pushnumber(J, js_utfptrtoidx(text, text + m[0].rm_so));
+	if (!js_regexec(re->prog, text, nelem(m), m, 0))
+		js_pushnumber(J, js_utfptrtoidx(text, m[0].sp));
 	else
 		js_pushnumber(J, -1);
 
@@ -393,7 +393,7 @@ static int Sp_search(js_State *J, int argc)
 static int Sp_replace_regexp(js_State *J, int argc)
 {
 	js_Regexp *re;
-	regmatch_t m[10];
+	Resub m[10];
 	const char *source, *s, *r;
 	js_Buffer *sb = NULL;
 	int n, x;
@@ -401,7 +401,7 @@ static int Sp_replace_regexp(js_State *J, int argc)
 	source = js_tostring(J, 0);
 	re = js_toregexp(J, 1);
 
-	if (regexec(re->prog, source, nelem(m), m, 0)) {
+	if (js_regexec(re->prog, source, nelem(m), m, 0)) {
 		js_copy(J, 0);
 		return 1;
 	}
@@ -409,14 +409,14 @@ static int Sp_replace_regexp(js_State *J, int argc)
 	re->last = 0;
 
 loop:
-	s = source + m[0].rm_so;
-	n = m[0].rm_eo - m[0].rm_so;
+	s = m[0].sp;
+	n = m[0].ep - m[0].sp;
 
 	if (js_iscallable(J, 2)) {
 		js_copy(J, 2);
 		js_pushglobal(J);
-		for (x = 0; m[x].rm_so >= 0; ++x) /* arg 0..x: substring and subexps that matched */
-			js_pushlstring(J, source + m[x].rm_so, m[x].rm_eo - m[x].rm_so);
+		for (x = 0; m[x].sp; ++x) /* arg 0..x: substring and subexps that matched */
+			js_pushlstring(J, m[x].sp, m[x].ep - m[x].sp);
 		js_pushnumber(J, s - source); /* arg x+2: offset within search string */
 		js_copy(J, 0); /* arg x+3: search string */
 		js_call(J, 2 + x);
@@ -439,8 +439,8 @@ loop:
 				case '0': case '1': case '2': case '3': case '4':
 				case '5': case '6': case '7': case '8': case '9':
 					x = *r - '0';
-					if (m[x].rm_so >= 0) {
-						sb_putm(&sb, source + m[x].rm_so, source + m[x].rm_eo);
+					if (m[x].sp) {
+						sb_putm(&sb, m[x].sp, m[x].ep);
 					} else {
 						sb_putc(&sb, '$');
 						sb_putc(&sb, '0'+x);
@@ -459,14 +459,14 @@ loop:
 	}
 
 	if (re->flags & JS_REGEXP_G) {
-		source = source + m[0].rm_eo;
+		source = m[0].ep;
 		if (n == 0) {
 			if (*source)
 				sb_putc(&sb, *source++);
 			else
 				goto end;
 		}
-		if (!regexec(re->prog, source, nelem(m), m, REG_NOTBOL))
+		if (!js_regexec(re->prog, source, nelem(m), m, REG_NOTBOL))
 			goto loop;
 	}
 
@@ -554,23 +554,23 @@ static int Sp_replace(js_State *J, int argc)
 static int Sp_split_regexp(js_State *J, int argc)
 {
 	js_Regexp *re;
-	regmatch_t m[10];
-	const char *str;
-	unsigned int limit, len, k, e;
-	unsigned int p, a, b, c;
+	Resub m[10];
+	const char *text;
+	unsigned int limit, len, k;
+	const char *p, *a, *b, *c, *e;
 
-	str = js_tostring(J, 0);
+	text = js_tostring(J, 0);
 	re = js_toregexp(J, 1);
 	limit = js_isdefined(J, 2) ? js_touint32(J, 2) : 1 << 30;
 
 	js_newarray(J);
 	len = 0;
 
-	e = strlen(str);
+	e = text + strlen(text);
 
 	/* splitting the empty string */
 	if (e == 0) {
-		if (regexec(re->prog, str, nelem(m), m, 0)) {
+		if (js_regexec(re->prog, text, nelem(m), m, 0)) {
 			if (len == limit) return 1;
 			js_pushliteral(J, "");
 			js_setindex(J, -2, 0);
@@ -578,13 +578,13 @@ static int Sp_split_regexp(js_State *J, int argc)
 		return 1;
 	}
 
-	p = a = 0;
+	p = a = text;
 	while (a < e) {
-		if (regexec(re->prog, str + a, nelem(m), m, a > 0 ? REG_NOTBOL : 0))
+		if (js_regexec(re->prog, a, nelem(m), m, a > text ? REG_NOTBOL : 0))
 			break; /* no match */
 
-		b = a + m[0].rm_so;
-		c = a + m[0].rm_eo;
+		b = m[0].sp;
+		c = m[0].ep;
 
 		/* empty string at end of last match */
 		if (b == p) {
@@ -593,12 +593,12 @@ static int Sp_split_regexp(js_State *J, int argc)
 		}
 
 		if (len == limit) return 1;
-		js_pushlstring(J, str + p, b - p);
+		js_pushlstring(J, p, b - p);
 		js_setindex(J, -2, len++);
 
-		for (k = 1; k < nelem(m) && m[k].rm_so >= 0; ++k) {
+		for (k = 1; k < nelem(m) && m[k].sp; ++k) {
 			if (len == limit) return 1;
-			js_pushlstring(J, str + a + m[k].rm_so, m[k].rm_eo - m[k].rm_so);
+			js_pushlstring(J, m[k].sp, m[k].ep - m[k].sp);
 			js_setindex(J, -2, len++);
 		}
 
@@ -606,7 +606,7 @@ static int Sp_split_regexp(js_State *J, int argc)
 	}
 
 	if (len == limit) return 1;
-	js_pushstring(J, str + p);
+	js_pushstring(J, p);
 	js_setindex(J, -2, len);
 
 	return 1;

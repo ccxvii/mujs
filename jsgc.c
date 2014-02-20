@@ -3,7 +3,7 @@
 #include "jsvalue.h"
 #include "jsrun.h"
 
-#include <regex.h>
+#include "regex.h"
 
 static void jsG_markobject(js_State *J, int mark, js_Object *obj);
 
@@ -44,10 +44,8 @@ static void jsG_freeobject(js_State *J, js_Object *obj)
 {
 	if (obj->head)
 		jsG_freeproperty(J, obj->head);
-	if (obj->type == JS_CREGEXP) {
-		regfree(obj->u.r.prog);
-		free(obj->u.r.prog);
-	}
+	if (obj->type == JS_CREGEXP)
+		js_regfree(obj->u.r.prog);
 	if (obj->type == JS_CITERATOR)
 		jsG_freeiterator(J, obj->u.iter.head);
 	free(obj);
