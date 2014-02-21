@@ -26,6 +26,9 @@ jsdump.c : astnames.h opnames.h
 js: build/main.o build/libjs.a
 	$(CC) -o $@ $^ -lm
 
+re: regex.c utf.c utftype.c
+	$(CC) $(CFLAGS) -DTEST -o $@ $^
+
 libjs.c : $(SRCS)
 	ls $(SRCS) | awk '{print "#include \""$$1"\""}' > $@
 

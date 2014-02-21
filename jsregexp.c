@@ -14,7 +14,7 @@ void js_newregexp(js_State *J, const char *pattern, int flags)
 
 	obj = jsV_newobject(J, JS_CREGEXP, J->RegExp_prototype);
 
-	opts = REG_EXTENDED;
+	opts = 0;
 	if (flags & JS_REGEXP_I) opts |= REG_ICASE;
 	if (flags & JS_REGEXP_M) opts |= REG_NEWLINE;
 
