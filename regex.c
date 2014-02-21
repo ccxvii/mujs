@@ -772,7 +772,7 @@ void regfree(Reprog *prog)
 /* Match */
 
 struct estate {
-	int icase, newline;
+	int icase, newline, notbol;
 	const char *bol;
 	Resub *m;
 };
@@ -919,10 +919,10 @@ static int match(struct estate *g, Reinst *pc, const char *s)
 				s += n;
 			break;
 		case I_BOL:
-			if (s == g->bol)
+			if (s == g->bol && !g->notbol)
 				break;
 			if (g->newline)
-				if (isnewline(s[-1]))
+				if (s > g->bol && isnewline(s[-1]))
 					break;
 			return 0;
 		case I_EOL:
@@ -933,13 +933,13 @@ static int match(struct estate *g, Reinst *pc, const char *s)
 					break;
 			return 0;
 		case I_WORD:
-			n = !(s == g->bol) && iswordchar(s[-1]);
+			n = s > g->bol && iswordchar(s[-1]);
 			n ^= iswordchar(s[0]);
 			if (n)
 				break;
 			return 0;
 		case I_NWORD:
-			n = !(s == g->bol) && iswordchar(s[-1]);
+			n = s > g->bol && iswordchar(s[-1]);
 			n ^= iswordchar(s[0]);
 			if (!n)
 				break;
@@ -974,7 +974,8 @@ int regexec(Reprog *prog, const char *s, int n, Resub *m, int eflags)
 
 	g.icase = prog->icase;
 	g.newline = prog->newline;
-	g.bol = eflags & REG_NOTBOL ? NULL : s;
+	g.notbol = eflags & REG_NOTBOL;
+	g.bol = s;
 	g.m = m ? m : gm;
 	for (i = 0; i < n; ++i)
 		g.m[i].sp = g.m[i].ep = NULL;
