@@ -36,7 +36,7 @@ struct cstate {
 
 	int lookahead;
 	Rune yychar;
-	Reclass *yycclass;
+	Reclass *yycc;
 	int yymin, yymax;
 
 	const char *error;
@@ -72,39 +72,6 @@ enum {
 	L_COUNT,	/* {M,N} */
 };
 
-static Reclass class_d = {
-	class_d.spans + 2, {
-		'0', '9',
-	}
-};
-
-static Reclass class_s = {
-	class_s.spans + 12, {
-		0x9, 0x9,
-		0xA, 0xD,
-		0x20, 0x20,
-		0xA0, 0xA0,
-		0x2028, 0x2029,
-		0xFEFF, 0xFEFF,
-	}
-};
-
-static Reclass class_w = {
-	class_w.spans + 8, {
-		'0', '9',
-		'A', 'Z',
-		'_', '_',
-		'a', 'z',
-	}
-};
-
-static Reclass *newclass(struct cstate *g)
-{
-	if (g->ncclass >= nelem(g->prog->cclass))
-		die(g, "too many character classes");
-	return &g->prog->cclass[g->ncclass++];
-}
-
 static int hex(struct cstate *g, int c)
 {
 	if (c >= '0' && c <= '9') return c - '0';
@@ -128,7 +95,6 @@ static int nextrune(struct cstate *g)
 		g->source += chartorune(&g->yychar, g->source);
 		switch (g->yychar) {
 		case 0: die(g, "unterminated escape sequence");
-		// case 'b': g->yychar = '\b'; return 0;
 		case 'f': g->yychar = '\f'; return 0;
 		case 'n': g->yychar = '\n'; return 0;
 		case 'r': g->yychar = '\r'; return 0;
@@ -187,16 +153,80 @@ static int lexcount(struct cstate *g)
 	return L_COUNT;
 }
 
+static void newcclass(struct cstate *g)
+{
+	if (g->ncclass >= nelem(g->prog->cclass))
+		die(g, "too many character classes");
+	g->yycc = g->prog->cclass + g->ncclass++;
+	g->yycc->end = g->yycc->spans;
+}
+
+static void addrange(struct cstate *g, Rune a, Rune b)
+{
+	if (a > b)
+		die(g, "invalid character class range");
+	if (g->yycc->end + 2 == g->yycc->spans + nelem(g->yycc->spans))
+		die(g, "too many character class ranges");
+	*g->yycc->end++ = a;
+	*g->yycc->end++ = b;
+}
+
+static void addranges_d(struct cstate *g)
+{
+	addrange(g, '0', '9');
+}
+
+static void addranges_D(struct cstate *g)
+{
+	addrange(g, 0, '0'-1);
+	addrange(g, '9'+1, 0xFFFF);
+}
+
+static void addranges_s(struct cstate *g)
+{
+	addrange(g, 0x9, 0x9);
+	addrange(g, 0xA, 0xD);
+	addrange(g, 0x20, 0x20);
+	addrange(g, 0xA0, 0xA0);
+	addrange(g, 0x2028, 0x2029);
+	addrange(g, 0xFEFF, 0xFEFF);
+}
+
+static void addranges_S(struct cstate *g)
+{
+	addrange(g, 0, 0x9-1);
+	addrange(g, 0x9+1, 0xA-1);
+	addrange(g, 0xD+1, 0x20-1);
+	addrange(g, 0x20+1, 0xA0-1);
+	addrange(g, 0xA0+1, 0x2028-1);
+	addrange(g, 0x2029+1, 0xFEFF-1);
+	addrange(g, 0xFEFF+1, 0xFFFF);
+}
+
+static void addranges_w(struct cstate *g)
+{
+	addrange(g, '0', '9');
+	addrange(g, 'A', 'Z');
+	addrange(g, '_', '_');
+	addrange(g, 'a', 'z');
+}
+
+static void addranges_W(struct cstate *g)
+{
+	addrange(g, 0, '0'-1);
+	addrange(g, '9'+1, 'A'-1);
+	addrange(g, 'Z'+1, '_'-1);
+	addrange(g, '_'+1, 'a'-1);
+	addrange(g, 'z'+1, 0xFFFF);
+}
+
 static int lexclass(struct cstate *g)
 {
 	int type = L_CCLASS;
-	int quoted;
-	Rune *p, *ep;
+	int quoted, havesave, havedash;
 	Rune save;
 
-	g->yycclass = newclass(g);
-	p = g->yycclass->spans;
-	ep = p + nelem(g->yycclass->spans);
+	newcclass(g);
 
 	quoted = nextrune(g);
 	if (!quoted && g->yychar == '^') {
@@ -204,45 +234,65 @@ static int lexclass(struct cstate *g)
 		quoted = nextrune(g);
 	}
 
-	while (p < ep) {
+	havesave = havedash = 0;
+	for (;;) {
 		if (g->yychar == 0)
 			die(g, "unterminated character class");
 		if (!quoted && g->yychar == ']')
 			break;
 
-		save = g->yychar;
-		quoted = nextrune(g);
-
-		// TODO: \d \D \s \S \w \W
-
 		if (!quoted && g->yychar == '-') {
-			quoted = nextrune(g);
-			if (g->yychar == 0)
-				die(g, "unterminated character class");
-			if (!quoted && g->yychar == ']') {
-				*p++ = save;
-				*p++ = save;
-				if (p == ep)
-					die(g, "too many character classes");
-				*p++ = '-';
-				*p++ = '-';
-				break;
+			if (havesave) {
+				if (havedash) {
+					addrange(g, save, '-');
+					havesave = havedash = 0;
+				} else {
+					havedash = 1;
+				}
+			} else {
+				save = '-';
+				havesave = 1;
 			}
-
-			if (g->yychar < save)
-				die(g, "invalid character class range");
-			*p++ = save;
-			*p++ = g->yychar;
-			quoted = nextrune(g);
+		} else if (quoted && strchr("DSWdsw", g->yychar)) {
+			if (havesave) {
+				addrange(g, save, save);
+				if (havedash)
+					addrange(g, '-', '-');
+			}
+			switch (g->yychar) {
+			case 'd': addranges_d(g); break;
+			case 's': addranges_s(g); break;
+			case 'w': addranges_w(g); break;
+			case 'D': addranges_D(g); break;
+			case 'S': addranges_S(g); break;
+			case 'W': addranges_W(g); break;
+			}
+			havesave = havedash = 0;
 		} else {
-			*p++ = save;
-			*p++ = save;
+			if (quoted && g->yychar == 'b')
+				g->yychar = '\b';
+			if (havesave) {
+				if (havedash) {
+					addrange(g, save, g->yychar);
+					havesave = havedash = 0;
+				} else {
+					addrange(g, save, save);
+					save = g->yychar;
+				}
+			} else {
+				save = g->yychar;
+				havesave = 1;
+			}
 		}
-	}
-	if (p == ep)
-		die(g, "too many character classes");
 
-	g->yycclass->end = p;
+		quoted = nextrune(g);
+	}
+
+	if (havesave) {
+		addrange(g, save, save);
+		if (havedash)
+			addrange(g, '-', '-');
+	}
 
 	return type;
 }
@@ -254,12 +304,12 @@ static int lex(struct cstate *g)
 		switch (g->yychar) {
 		case 'b': return L_WORD;
 		case 'B': return L_NWORD;
-		case 'd': g->yycclass = &class_d; return L_CCLASS;
-		case 's': g->yycclass = &class_s; return L_CCLASS;
-		case 'w': g->yycclass = &class_w; return L_CCLASS;
-		case 'D': g->yycclass = &class_d; return L_NCCLASS;
-		case 'S': g->yycclass = &class_s; return L_NCCLASS;
-		case 'W': g->yycclass = &class_w; return L_NCCLASS;
+		case 'd': newcclass(g); addranges_d(g); return L_CCLASS;
+		case 's': newcclass(g); addranges_s(g); return L_CCLASS;
+		case 'w': newcclass(g); addranges_w(g); return L_CCLASS;
+		case 'D': newcclass(g); addranges_d(g); return L_NCCLASS;
+		case 'S': newcclass(g); addranges_s(g); return L_NCCLASS;
+		case 'W': newcclass(g); addranges_w(g); return L_NCCLASS;
 		}
 		if (g->yychar >= '0' && g->yychar <= '9') {
 			g->yychar -= '0';
@@ -384,13 +434,13 @@ static Renode *parseatom(struct cstate *g)
 	}
 	if (g->lookahead == L_CCLASS) {
 		atom = newnode(g, P_CCLASS);
-		atom->cc = g->yycclass;
+		atom->cc = g->yycc;
 		next(g);
 		return atom;
 	}
 	if (g->lookahead == L_NCCLASS) {
 		atom = newnode(g, P_NCCLASS);
-		atom->cc = g->yycclass;
+		atom->cc = g->yycc;
 		next(g);
 		return atom;
 	}
