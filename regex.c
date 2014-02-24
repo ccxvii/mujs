@@ -25,7 +25,7 @@ struct Reclass {
 struct Reprog {
 	Reinst *start, *end;
 	int icase, newline;
-	int ncap;
+	unsigned int ncap;
 	Reclass cclass[16];
 };
 
@@ -35,8 +35,8 @@ struct cstate {
 	int flags;
 
 	const char *source;
-	int ncclass;
-	int ncap;
+	unsigned int ncclass;
+	unsigned int ncap;
 	int nref[10];
 
 	int lookahead;
@@ -1032,7 +1032,7 @@ int regexec(Reprog *prog, const char *s, int n, Resub *m, int eflags)
 	struct estate g;
 	Resub gm[10];
 	Rune c;
-	int i;
+	unsigned int i;
 
 	g.icase = prog->icase;
 	g.newline = prog->newline;

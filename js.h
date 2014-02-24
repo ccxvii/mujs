@@ -26,7 +26,7 @@
 
 typedef struct js_State js_State;
 
-typedef int (*js_CFunction)(js_State *J, int argc);
+typedef int (*js_CFunction)(js_State *J, unsigned int argc);
 
 /* Basic functions */
 js_State *js_newstate(void);
@@ -111,7 +111,7 @@ void js_pushnull(js_State *J);
 void js_pushboolean(js_State *J, int v);
 void js_pushnumber(js_State *J, double v);
 void js_pushstring(js_State *J, const char *v);
-void js_pushlstring(js_State *J, const char *v, int n);
+void js_pushlstring(js_State *J, const char *v, unsigned int n);
 void js_pushliteral(js_State *J, const char *v);
 
 void js_newobject(js_State *J);
@@ -120,8 +120,8 @@ void js_newboolean(js_State *J, int v);
 void js_newnumber(js_State *J, double v);
 void js_newstring(js_State *J, const char *v);
 void js_newerror(js_State *J, const char *message);
-void js_newcfunction(js_State *J, js_CFunction fun, int length);
-void js_newcconstructor(js_State *J, js_CFunction fun, js_CFunction con, int length);
+void js_newcfunction(js_State *J, js_CFunction fun, unsigned int length);
+void js_newcconstructor(js_State *J, js_CFunction fun, js_CFunction con, unsigned int length);
 void js_newuserdata(js_State *J, const char *tag, void *data);
 void js_newregexp(js_State *J, const char *pattern, int flags);
 

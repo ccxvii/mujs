@@ -2,19 +2,19 @@
 #include "jsvalue.h"
 #include "jsbuiltin.h"
 
-static int jsB_new_Number(js_State *J, int argc)
+static int jsB_new_Number(js_State *J, unsigned int argc)
 {
 	js_newnumber(J, js_isdefined(J, 1) ? js_tonumber(J, 1) : 0);
 	return 1;
 }
 
-static int jsB_Number(js_State *J, int argc)
+static int jsB_Number(js_State *J, unsigned int argc)
 {
 	js_pushnumber(J, js_isdefined(J, 1) ? js_tonumber(J, 1) : 0);
 	return 1;
 }
 
-static int Np_valueOf(js_State *J, int argc)
+static int Np_valueOf(js_State *J, unsigned int argc)
 {
 	js_Object *self = js_toobject(J, 0);
 	if (self->type != JS_CNUMBER) js_typeerror(J, "not a number");
@@ -22,7 +22,7 @@ static int Np_valueOf(js_State *J, int argc)
 	return 1;
 }
 
-static int Np_toString(js_State *J, int argc)
+static int Np_toString(js_State *J, unsigned int argc)
 {
 	js_Object *self = js_toobject(J, 0);
 	if (self->type != JS_CNUMBER) js_typeerror(J, "not a number");
@@ -30,7 +30,7 @@ static int Np_toString(js_State *J, int argc)
 	return 1;
 }
 
-static int Np_toFixed(js_State *J, int argc)
+static int Np_toFixed(js_State *J, unsigned int argc)
 {
 	char buf[40];
 	js_Object *self = js_toobject(J, 0);
@@ -41,7 +41,7 @@ static int Np_toFixed(js_State *J, int argc)
 	return 1;
 }
 
-static int Np_toExponential(js_State *J, int argc)
+static int Np_toExponential(js_State *J, unsigned int argc)
 {
 	char buf[40];
 	js_Object *self = js_toobject(J, 0);
@@ -52,7 +52,7 @@ static int Np_toExponential(js_State *J, int argc)
 	return 1;
 }
 
-static int Np_toPrecision(js_State *J, int argc)
+static int Np_toPrecision(js_State *J, unsigned int argc)
 {
 	char buf[40];
 	js_Object *self = js_toobject(J, 0);

@@ -32,8 +32,8 @@ void js_newregexp(js_State *J, const char *pattern, int flags)
 int js_RegExp_prototype_exec(js_State *J, js_Regexp *re, const char *text)
 {
 	Resub m[10];
+	unsigned int i;
 	int opts;
-	int i;
 
 	opts = 0;
 	if (re->flags & JS_REGEXP_G) {
@@ -66,7 +66,7 @@ int js_RegExp_prototype_exec(js_State *J, js_Regexp *re, const char *text)
 	return 1;
 }
 
-static int Rp_test(js_State *J, int argc)
+static int Rp_test(js_State *J, unsigned int argc)
 {
 	js_Regexp *re;
 	const char *text;
@@ -78,7 +78,7 @@ static int Rp_test(js_State *J, int argc)
 
 	opts = 0;
 	if (re->flags & JS_REGEXP_G) {
-		if (re->last < 0 || re->last > strlen(text)) {
+		if (re->last > strlen(text)) {
 			re->last = 0;
 			js_pushboolean(J, 0);
 			return 1;
@@ -103,7 +103,7 @@ static int Rp_test(js_State *J, int argc)
 	return 1;
 }
 
-static int jsB_new_RegExp(js_State *J, int argc)
+static int jsB_new_RegExp(js_State *J, unsigned int argc)
 {
 	js_Regexp *old;
 	const char *pattern;
@@ -145,14 +145,14 @@ static int jsB_new_RegExp(js_State *J, int argc)
 	return 1;
 }
 
-static int jsB_RegExp(js_State *J, int argc)
+static int jsB_RegExp(js_State *J, unsigned int argc)
 {
 	if (js_isregexp(J, 1) && argc == 1)
 		return 1;
 	return jsB_new_RegExp(J, argc);
 }
 
-static int Rp_toString(js_State *J, int argc)
+static int Rp_toString(js_State *J, unsigned int argc)
 {
 	js_Regexp *re;
 	char *out;
@@ -178,7 +178,7 @@ static int Rp_toString(js_State *J, int argc)
 	return 1;
 }
 
-static int Rp_exec(js_State *J, int argc)
+static int Rp_exec(js_State *J, unsigned int argc)
 {
 	return js_RegExp_prototype_exec(J, js_toregexp(J, 0), js_tostring(J, 1));
 }

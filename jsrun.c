@@ -68,7 +68,7 @@ void js_pushstring(js_State *J, const char *v)
 	++TOP;
 }
 
-void js_pushlstring(js_State *J, const char *v, int n)
+void js_pushlstring(js_State *J, const char *v, unsigned int n)
 {
 	char buf[256];
 	if (n + 1 < sizeof buf) {

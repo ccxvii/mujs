@@ -5,7 +5,7 @@
 #define QQ(X) #X
 #define Q(X) QQ(X)
 
-static int Ep_toString(js_State *J, int argc)
+static int Ep_toString(js_State *J, unsigned int argc)
 {
 	const char *name = "Error";
 	const char *message = "";
@@ -37,7 +37,7 @@ static int Ep_toString(js_State *J, int argc)
 	return 1;
 }
 
-static int jsB_ErrorX(js_State *J, int argc, js_Object *prototype)
+static int jsB_ErrorX(js_State *J, unsigned int argc, js_Object *prototype)
 {
 	js_pushobject(J, jsV_newobject(J, JS_CERROR, prototype));
 	if (js_isdefined(J, 1)) {
@@ -55,8 +55,8 @@ static void js_newerrorx(js_State *J, const char *message, js_Object *prototype)
 }
 
 #define DERROR(name, Name) \
-	static int jsB_##Name(js_State *J, int n) { \
-		return jsB_ErrorX(J, n, J->Name##_prototype); \
+	static int jsB_##Name(js_State *J, unsigned int argc) { \
+		return jsB_ErrorX(J, argc, J->Name##_prototype); \
 	} \
 	void js_new##name(js_State *J, const char *s) { \
 		js_newerrorx(J, s, J->Name##_prototype); \

@@ -74,7 +74,7 @@ struct js_Object
 		struct {
 			js_CFunction function;
 			js_CFunction constructor;
-			int length;
+			unsigned int length;
 		} c;
 		js_Regexp r;
 		struct {

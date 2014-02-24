@@ -263,14 +263,14 @@ static int js_setdate(js_State *J, int idx, double t)
 	return 1;
 }
 
-static int D_parse(js_State *J, int argc)
+static int D_parse(js_State *J, unsigned int argc)
 {
 	double t = parseDate(js_tostring(J, 1));
 	js_pushnumber(J, t);
 	return 1;
 }
 
-static int D_UTC(js_State *J, int argc)
+static int D_UTC(js_State *J, unsigned int argc)
 {
 	double y, m, d, H, M, S, ms, t;
 	y = js_tonumber(J, 1);
@@ -287,19 +287,19 @@ static int D_UTC(js_State *J, int argc)
 	return 1;
 }
 
-static int D_now(js_State *J, int argc)
+static int D_now(js_State *J, unsigned int argc)
 {
 	js_pushnumber(J, Now());
 	return 1;
 }
 
-static int jsB_Date(js_State *J, int argc)
+static int jsB_Date(js_State *J, unsigned int argc)
 {
 	js_pushstring(J, fmtlocal(FMT_DATETIME, Now()));
 	return 1;
 }
 
-static int jsB_new_Date(js_State *J, int argc)
+static int jsB_new_Date(js_State *J, unsigned int argc)
 {
 	js_Object *obj;
 	js_Value v;
@@ -334,173 +334,173 @@ static int jsB_new_Date(js_State *J, int argc)
 	return 1;
 }
 
-static int Dp_valueOf(js_State *J, int argc)
+static int Dp_valueOf(js_State *J, unsigned int argc)
 {
 	double t = js_todate(J, 0);
 	js_pushnumber(J, t);
 	return 1;
 }
 
-static int Dp_toString(js_State *J, int argc)
+static int Dp_toString(js_State *J, unsigned int argc)
 {
 	double t = js_todate(J, 0);
 	js_pushstring(J, fmtlocal(FMT_DATETIME, t));
 	return 1;
 }
 
-static int Dp_toDateString(js_State *J, int argc)
+static int Dp_toDateString(js_State *J, unsigned int argc)
 {
 	double t = js_todate(J, 0);
 	js_pushstring(J, fmtlocal(FMT_DATE, t));
 	return 1;
 }
 
-static int Dp_toTimeString(js_State *J, int argc)
+static int Dp_toTimeString(js_State *J, unsigned int argc)
 {
 	double t = js_todate(J, 0);
 	js_pushstring(J, fmtlocal(FMT_TIME, t));
 	return 1;
 }
 
-static int Dp_toUTCString(js_State *J, int argc)
+static int Dp_toUTCString(js_State *J, unsigned int argc)
 {
 	double t = js_todate(J, 0);
 	js_pushstring(J, fmtutc(FMT_DATETIME, t));
 	return 1;
 }
 
-static int Dp_toISOString(js_State *J, int argc)
+static int Dp_toISOString(js_State *J, unsigned int argc)
 {
 	double t = js_todate(J, 0);
 	js_pushstring(J, fmtutc(FMT_DATETIME_ISO, t));
 	return 1;
 }
 
-static int Dp_getFullYear(js_State *J, int argc)
+static int Dp_getFullYear(js_State *J, unsigned int argc)
 {
 	double t = js_todate(J, 0);
 	js_pushnumber(J, YearFromTime(LocalTime(t)));
 	return 1;
 }
 
-static int Dp_getMonth(js_State *J, int argc)
+static int Dp_getMonth(js_State *J, unsigned int argc)
 {
 	double t = js_todate(J, 0);
 	js_pushnumber(J, MonthFromTime(LocalTime(t)));
 	return 1;
 }
 
-static int Dp_getDate(js_State *J, int argc)
+static int Dp_getDate(js_State *J, unsigned int argc)
 {
 	double t = js_todate(J, 0);
 	js_pushnumber(J, DateFromTime(LocalTime(t)));
 	return 1;
 }
 
-static int Dp_getDay(js_State *J, int argc)
+static int Dp_getDay(js_State *J, unsigned int argc)
 {
 	double t = js_todate(J, 0);
 	js_pushnumber(J, WeekDay(LocalTime(t)));
 	return 1;
 }
 
-static int Dp_getHours(js_State *J, int argc)
+static int Dp_getHours(js_State *J, unsigned int argc)
 {
 	double t = js_todate(J, 0);
 	js_pushnumber(J, HourFromTime(LocalTime(t)));
 	return 1;
 }
 
-static int Dp_getMinutes(js_State *J, int argc)
+static int Dp_getMinutes(js_State *J, unsigned int argc)
 {
 	double t = js_todate(J, 0);
 	js_pushnumber(J, MinFromTime(LocalTime(t)));
 	return 1;
 }
 
-static int Dp_getSeconds(js_State *J, int argc)
+static int Dp_getSeconds(js_State *J, unsigned int argc)
 {
 	double t = js_todate(J, 0);
 	js_pushnumber(J, SecFromTime(LocalTime(t)));
 	return 1;
 }
 
-static int Dp_getMilliseconds(js_State *J, int argc)
+static int Dp_getMilliseconds(js_State *J, unsigned int argc)
 {
 	double t = js_todate(J, 0);
 	js_pushnumber(J, msFromTime(LocalTime(t)));
 	return 1;
 }
 
-static int Dp_getUTCFullYear(js_State *J, int argc)
+static int Dp_getUTCFullYear(js_State *J, unsigned int argc)
 {
 	double t = js_todate(J, 0);
 	js_pushnumber(J, YearFromTime(t));
 	return 1;
 }
 
-static int Dp_getUTCMonth(js_State *J, int argc)
+static int Dp_getUTCMonth(js_State *J, unsigned int argc)
 {
 	double t = js_todate(J, 0);
 	js_pushnumber(J, MonthFromTime(t));
 	return 1;
 }
 
-static int Dp_getUTCDate(js_State *J, int argc)
+static int Dp_getUTCDate(js_State *J, unsigned int argc)
 {
 	double t = js_todate(J, 0);
 	js_pushnumber(J, DateFromTime(t));
 	return 1;
 }
 
-static int Dp_getUTCDay(js_State *J, int argc)
+static int Dp_getUTCDay(js_State *J, unsigned int argc)
 {
 	double t = js_todate(J, 0);
 	js_pushnumber(J, WeekDay(t));
 	return 1;
 }
 
-static int Dp_getUTCHours(js_State *J, int argc)
+static int Dp_getUTCHours(js_State *J, unsigned int argc)
 {
 	double t = js_todate(J, 0);
 	js_pushnumber(J, HourFromTime(t));
 	return 1;
 }
 
-static int Dp_getUTCMinutes(js_State *J, int argc)
+static int Dp_getUTCMinutes(js_State *J, unsigned int argc)
 {
 	double t = js_todate(J, 0);
 	js_pushnumber(J, MinFromTime(t));
 	return 1;
 }
 
-static int Dp_getUTCSeconds(js_State *J, int argc)
+static int Dp_getUTCSeconds(js_State *J, unsigned int argc)
 {
 	double t = js_todate(J, 0);
 	js_pushnumber(J, SecFromTime(t));
 	return 1;
 }
 
-static int Dp_getUTCMilliseconds(js_State *J, int argc)
+static int Dp_getUTCMilliseconds(js_State *J, unsigned int argc)
 {
 	double t = js_todate(J, 0);
 	js_pushnumber(J, msFromTime(t));
 	return 1;
 }
 
-static int Dp_getTimezoneOffset(js_State *J, int argc)
+static int Dp_getTimezoneOffset(js_State *J, unsigned int argc)
 {
 	double t = js_todate(J, 0);
 	js_pushnumber(J, (t - LocalTime(t)) / msPerMinute);
 	return 1;
 }
 
-static int Dp_setTime(js_State *J, int argc)
+static int Dp_setTime(js_State *J, unsigned int argc)
 {
 	return js_setdate(J, 0, js_tonumber(J, 1));
 }
 
-static int Dp_setMilliseconds(js_State *J, int argc)
+static int Dp_setMilliseconds(js_State *J, unsigned int argc)
 {
 	double t = LocalTime(js_todate(J, 0));
 	double h = HourFromTime(t);
@@ -510,7 +510,7 @@ static int Dp_setMilliseconds(js_State *J, int argc)
 	return js_setdate(J, 0, UTC(MakeDate(Day(t), MakeTime(h, m, s, ms))));
 }
 
-static int Dp_setSeconds(js_State *J, int argc)
+static int Dp_setSeconds(js_State *J, unsigned int argc)
 {
 	double t = LocalTime(js_todate(J, 0));
 	double h = HourFromTime(t);
@@ -520,7 +520,7 @@ static int Dp_setSeconds(js_State *J, int argc)
 	return js_setdate(J, 0, UTC(MakeDate(Day(t), MakeTime(h, m, s, ms))));
 }
 
-static int Dp_setMinutes(js_State *J, int argc)
+static int Dp_setMinutes(js_State *J, unsigned int argc)
 {
 	double t = LocalTime(js_todate(J, 0));
 	double h = HourFromTime(t);
@@ -530,7 +530,7 @@ static int Dp_setMinutes(js_State *J, int argc)
 	return js_setdate(J, 0, UTC(MakeDate(Day(t), MakeTime(h, m, s, ms))));
 }
 
-static int Dp_setHours(js_State *J, int argc)
+static int Dp_setHours(js_State *J, unsigned int argc)
 {
 	double t = LocalTime(js_todate(J, 0));
 	double h = js_tonumber(J, 1);
@@ -540,7 +540,7 @@ static int Dp_setHours(js_State *J, int argc)
 	return js_setdate(J, 0, UTC(MakeDate(Day(t), MakeTime(h, m, s, ms))));
 }
 
-static int Dp_setDate(js_State *J, int argc)
+static int Dp_setDate(js_State *J, unsigned int argc)
 {
 	double t = LocalTime(js_todate(J, 0));
 	double y = YearFromTime(t);
@@ -549,7 +549,7 @@ static int Dp_setDate(js_State *J, int argc)
 	return js_setdate(J, 0, UTC(MakeDate(MakeDay(y, m, d), TimeWithinDay(t))));
 }
 
-static int Dp_setMonth(js_State *J, int argc)
+static int Dp_setMonth(js_State *J, unsigned int argc)
 {
 	double t = LocalTime(js_todate(J, 0));
 	double y = YearFromTime(t);
@@ -558,7 +558,7 @@ static int Dp_setMonth(js_State *J, int argc)
 	return js_setdate(J, 0, UTC(MakeDate(MakeDay(y, m, d), TimeWithinDay(t))));
 }
 
-static int Dp_setFullYear(js_State *J, int argc)
+static int Dp_setFullYear(js_State *J, unsigned int argc)
 {
 	double t = LocalTime(js_todate(J, 0));
 	double y = js_tonumber(J, 1);
@@ -567,7 +567,7 @@ static int Dp_setFullYear(js_State *J, int argc)
 	return js_setdate(J, 0, UTC(MakeDate(MakeDay(y, m, d), TimeWithinDay(t))));
 }
 
-static int Dp_setUTCMilliseconds(js_State *J, int argc)
+static int Dp_setUTCMilliseconds(js_State *J, unsigned int argc)
 {
 	double t = js_todate(J, 0);
 	double h = HourFromTime(t);
@@ -577,7 +577,7 @@ static int Dp_setUTCMilliseconds(js_State *J, int argc)
 	return js_setdate(J, 0, MakeDate(Day(t), MakeTime(h, m, s, ms)));
 }
 
-static int Dp_setUTCSeconds(js_State *J, int argc)
+static int Dp_setUTCSeconds(js_State *J, unsigned int argc)
 {
 	double t = js_todate(J, 0);
 	double h = HourFromTime(t);
@@ -587,7 +587,7 @@ static int Dp_setUTCSeconds(js_State *J, int argc)
 	return js_setdate(J, 0, MakeDate(Day(t), MakeTime(h, m, s, ms)));
 }
 
-static int Dp_setUTCMinutes(js_State *J, int argc)
+static int Dp_setUTCMinutes(js_State *J, unsigned int argc)
 {
 	double t = js_todate(J, 0);
 	double h = HourFromTime(t);
@@ -597,7 +597,7 @@ static int Dp_setUTCMinutes(js_State *J, int argc)
 	return js_setdate(J, 0, MakeDate(Day(t), MakeTime(h, m, s, ms)));
 }
 
-static int Dp_setUTCHours(js_State *J, int argc)
+static int Dp_setUTCHours(js_State *J, unsigned int argc)
 {
 	double t = js_todate(J, 0);
 	double h = js_tonumber(J, 1);
@@ -607,7 +607,7 @@ static int Dp_setUTCHours(js_State *J, int argc)
 	return js_setdate(J, 0, MakeDate(Day(t), MakeTime(h, m, s, ms)));
 }
 
-static int Dp_setUTCDate(js_State *J, int argc)
+static int Dp_setUTCDate(js_State *J, unsigned int argc)
 {
 	double t = js_todate(J, 0);
 	double y = YearFromTime(t);
@@ -616,7 +616,7 @@ static int Dp_setUTCDate(js_State *J, int argc)
 	return js_setdate(J, 0, MakeDate(MakeDay(y, m, d), TimeWithinDay(t)));
 }
 
-static int Dp_setUTCMonth(js_State *J, int argc)
+static int Dp_setUTCMonth(js_State *J, unsigned int argc)
 {
 	double t = js_todate(J, 0);
 	double y = YearFromTime(t);
@@ -625,7 +625,7 @@ static int Dp_setUTCMonth(js_State *J, int argc)
 	return js_setdate(J, 0, MakeDate(MakeDay(y, m, d), TimeWithinDay(t)));
 }
 
-static int Dp_setUTCFullYear(js_State *J, int argc)
+static int Dp_setUTCFullYear(js_State *J, unsigned int argc)
 {
 	double t = js_todate(J, 0);
 	double y = js_tonumber(J, 1);
@@ -634,7 +634,7 @@ static int Dp_setUTCFullYear(js_State *J, int argc)
 	return js_setdate(J, 0, MakeDate(MakeDay(y, m, d), TimeWithinDay(t)));
 }
 
-static int Dp_toJSON(js_State *J, int argc)
+static int Dp_toJSON(js_State *J, unsigned int argc)
 {
 	js_Object *obj = js_toobject(J, 0);
 	js_Value tv = js_toprimitive(J, 0, JS_HNUMBER);

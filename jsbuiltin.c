@@ -28,7 +28,7 @@ void jsB_props(js_State *J, const char *name, const char *string)
 	js_defproperty(J, -2, name, JS_DONTENUM);
 }
 
-static int jsB_eval(js_State *J, int argc)
+static int jsB_eval(js_State *J, unsigned int argc)
 {
 	if (!js_isstring(J, -1)) {
 		js_copy(J, 1);
@@ -40,7 +40,7 @@ static int jsB_eval(js_State *J, int argc)
 	return 1;
 }
 
-static int jsB_parseInt(js_State *J, int argc)
+static int jsB_parseInt(js_State *J, unsigned int argc)
 {
 	const char *s = js_tostring(J, 1);
 	double radix = js_isdefined(J, 2) ? js_tonumber(J, 2) : 10;
@@ -49,7 +49,7 @@ static int jsB_parseInt(js_State *J, int argc)
 	return 1;
 }
 
-static int jsB_parseFloat(js_State *J, int argc)
+static int jsB_parseFloat(js_State *J, unsigned int argc)
 {
 	const char *s = js_tostring(J, 1);
 	while (jsY_iswhite(*s) || jsY_isnewline(*s)) ++s;
@@ -57,14 +57,14 @@ static int jsB_parseFloat(js_State *J, int argc)
 	return 1;
 }
 
-static int jsB_isNaN(js_State *J, int argc)
+static int jsB_isNaN(js_State *J, unsigned int argc)
 {
 	double n = js_tonumber(J, 1);
 	js_pushboolean(J, isnan(n));
 	return 1;
 }
 
-static int jsB_isFinite(js_State *J, int argc)
+static int jsB_isFinite(js_State *J, unsigned int argc)
 {
 	double n = js_tonumber(J, 1);
 	js_pushboolean(J, isfinite(n));
@@ -143,22 +143,22 @@ static int Decode(js_State *J, const char *str, const char *reserved)
 #define URIMARK "-_.!~*`()"
 #define URIUNESCAPED URIALPHA URIDIGIT URIMARK
 
-static int jsB_decodeURI(js_State *J, int argc)
+static int jsB_decodeURI(js_State *J, unsigned int argc)
 {
 	return Decode(J, js_tostring(J, 1), URIRESERVED "#");
 }
 
-static int jsB_decodeURIComponent(js_State *J, int argc)
+static int jsB_decodeURIComponent(js_State *J, unsigned int argc)
 {
 	return Decode(J, js_tostring(J, 1), "");
 }
 
-static int jsB_encodeURI(js_State *J, int argc)
+static int jsB_encodeURI(js_State *J, unsigned int argc)
 {
 	return Encode(J, js_tostring(J, 1), URIUNESCAPED URIRESERVED "#");
 }
 
-static int jsB_encodeURIComponent(js_State *J, int argc)
+static int jsB_encodeURIComponent(js_State *J, unsigned int argc)
 {
 	return Encode(J, js_tostring(J, 1), URIUNESCAPED);
 }

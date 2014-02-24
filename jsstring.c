@@ -50,19 +50,19 @@ int js_utfptrtoidx(const char *s, const char *p)
 	return i;
 }
 
-static int jsB_new_String(js_State *J, int argc)
+static int jsB_new_String(js_State *J, unsigned int argc)
 {
 	js_newstring(J, js_isdefined(J, 1) ? js_tostring(J, 1) : "");
 	return 1;
 }
 
-static int jsB_String(js_State *J, int argc)
+static int jsB_String(js_State *J, unsigned int argc)
 {
 	js_pushliteral(J, js_isdefined(J, 1) ? js_tostring(J, 1) : "");
 	return 1;
 }
 
-static int Sp_toString(js_State *J, int argc)
+static int Sp_toString(js_State *J, unsigned int argc)
 {
 	js_Object *self = js_toobject(J, 0);
 	if (self->type != JS_CSTRING) js_typeerror(J, "not a string");
@@ -70,7 +70,7 @@ static int Sp_toString(js_State *J, int argc)
 	return 1;
 }
 
-static int Sp_valueOf(js_State *J, int argc)
+static int Sp_valueOf(js_State *J, unsigned int argc)
 {
 	js_Object *self = js_toobject(J, 0);
 	if (self->type != JS_CSTRING) js_typeerror(J, "not a string");
@@ -78,7 +78,7 @@ static int Sp_valueOf(js_State *J, int argc)
 	return 1;
 }
 
-static int Sp_charAt(js_State *J, int argc)
+static int Sp_charAt(js_State *J, unsigned int argc)
 {
 	char buf[UTFmax + 1];
 	const char *s = js_tostring(J, 0);
@@ -93,7 +93,7 @@ static int Sp_charAt(js_State *J, int argc)
 	return 1;
 }
 
-static int Sp_charCodeAt(js_State *J, int argc)
+static int Sp_charCodeAt(js_State *J, unsigned int argc)
 {
 	const char *s = js_tostring(J, 0);
 	int pos = js_tointeger(J, 1);
@@ -105,11 +105,11 @@ static int Sp_charCodeAt(js_State *J, int argc)
 	return 1;
 }
 
-static int Sp_concat(js_State *J, int argc)
+static int Sp_concat(js_State *J, unsigned int argc)
 {
 	char * volatile out;
 	const char *s;
-	int i, n;
+	unsigned int i, n;
 
 	if (argc == 0)
 		return 1;
@@ -137,7 +137,7 @@ static int Sp_concat(js_State *J, int argc)
 	return 1;
 }
 
-static int Sp_indexOf(js_State *J, int argc)
+static int Sp_indexOf(js_State *J, unsigned int argc)
 {
 	const char *haystack = js_tostring(J, 0);
 	const char *needle = js_tostring(J, 1);
@@ -157,7 +157,7 @@ static int Sp_indexOf(js_State *J, int argc)
 	return 1;
 }
 
-static int Sp_lastIndexOf(js_State *J, int argc)
+static int Sp_lastIndexOf(js_State *J, unsigned int argc)
 {
 	const char *haystack = js_tostring(J, 0);
 	const char *needle = js_tostring(J, 1);
@@ -175,14 +175,14 @@ static int Sp_lastIndexOf(js_State *J, int argc)
 	return 1;
 }
 
-static int Sp_localeCompare(js_State *J, int argc)
+static int Sp_localeCompare(js_State *J, unsigned int argc)
 {
 	const char *a = js_tostring(J, 0);
 	const char *b = js_tostring(J, 1);
 	return strcmp(a, b);
 }
 
-static int Sp_slice(js_State *J, int argc)
+static int Sp_slice(js_State *J, unsigned int argc)
 {
 	const char *str = js_tostring(J, 0);
 	const char *ss, *ee;
@@ -208,7 +208,7 @@ static int Sp_slice(js_State *J, int argc)
 	return 1;
 }
 
-static int Sp_substring(js_State *J, int argc)
+static int Sp_substring(js_State *J, unsigned int argc)
 {
 	const char *str = js_tostring(J, 0);
 	const char *ss, *ee;
@@ -231,7 +231,7 @@ static int Sp_substring(js_State *J, int argc)
 	return 1;
 }
 
-static int Sp_toLowerCase(js_State *J, int argc)
+static int Sp_toLowerCase(js_State *J, unsigned int argc)
 {
 	const char *src = js_tostring(J, 0);
 	char *dst = malloc(UTFmax * strlen(src) + 1);
@@ -253,7 +253,7 @@ static int Sp_toLowerCase(js_State *J, int argc)
 	return 1;
 }
 
-static int Sp_toUpperCase(js_State *J, int argc)
+static int Sp_toUpperCase(js_State *J, unsigned int argc)
 {
 	const char *src = js_tostring(J, 0);
 	char *dst = malloc(UTFmax * strlen(src) + 1);
@@ -281,7 +281,7 @@ static int istrim(int c)
 		c == 0xA || c == 0xD || c == 0x2028 || c == 0x2029;
 }
 
-static int Sp_trim(js_State *J, int argc)
+static int Sp_trim(js_State *J, unsigned int argc)
 {
 	const char *s, *e;
 	s = js_tostring(J, 0);
@@ -294,9 +294,9 @@ static int Sp_trim(js_State *J, int argc)
 	return 1;
 }
 
-static int S_fromCharCode(js_State *J, int argc)
+static int S_fromCharCode(js_State *J, unsigned int argc)
 {
-	int i;
+	unsigned int i;
 	Rune c;
 	char *s, *p;
 
@@ -319,7 +319,7 @@ static int S_fromCharCode(js_State *J, int argc)
 	return 1;
 }
 
-static int Sp_match(js_State *J, int argc)
+static int Sp_match(js_State *J, unsigned int argc)
 {
 	js_Regexp *re;
 	Resub m[10];
@@ -365,7 +365,7 @@ static int Sp_match(js_State *J, int argc)
 	return 1;
 }
 
-static int Sp_search(js_State *J, int argc)
+static int Sp_search(js_State *J, unsigned int argc)
 {
 	js_Regexp *re;
 	Resub m[10];
@@ -390,7 +390,7 @@ static int Sp_search(js_State *J, int argc)
 	return 1;
 }
 
-static int Sp_replace_regexp(js_State *J, int argc)
+static int Sp_replace_regexp(js_State *J, unsigned int argc)
 {
 	js_Regexp *re;
 	Resub m[10];
@@ -484,7 +484,7 @@ end:
 	return 1;
 }
 
-static int Sp_replace_string(js_State *J, int argc)
+static int Sp_replace_string(js_State *J, unsigned int argc)
 {
 	const char *source, *needle, *s, *r;
 	js_Buffer *sb = NULL;
@@ -544,14 +544,14 @@ static int Sp_replace_string(js_State *J, int argc)
 	return 1;
 }
 
-static int Sp_replace(js_State *J, int argc)
+static int Sp_replace(js_State *J, unsigned int argc)
 {
 	if (js_isregexp(J, 1))
 		return Sp_replace_regexp(J, argc);
 	return Sp_replace_string(J, argc);
 }
 
-static int Sp_split_regexp(js_State *J, int argc)
+static int Sp_split_regexp(js_State *J, unsigned int argc)
 {
 	js_Regexp *re;
 	Resub m[10];
@@ -612,7 +612,7 @@ static int Sp_split_regexp(js_State *J, int argc)
 	return 1;
 }
 
-static int Sp_split_string(js_State *J, int argc)
+static int Sp_split_string(js_State *J, unsigned int argc)
 {
 	const char *str = js_tostring(J, 0);
 	const char *sep = js_tostring(J, 1);
@@ -651,7 +651,7 @@ static int Sp_split_string(js_State *J, int argc)
 	return 1;
 }
 
-static int Sp_split(js_State *J, int argc)
+static int Sp_split(js_State *J, unsigned int argc)
 {
 	if (js_isundefined(J, 1)) {
 		js_newarray(J);

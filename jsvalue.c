@@ -267,7 +267,7 @@ void js_newscript(js_State *J, js_Function *fun)
 	js_pushobject(J, obj);
 }
 
-void js_newcfunction(js_State *J, js_CFunction cfun, int length)
+void js_newcfunction(js_State *J, js_CFunction cfun, unsigned int length)
 {
 	js_Object *obj = jsV_newobject(J, JS_CCFUNCTION, J->Function_prototype);
 	obj->u.c.function = cfun;
@@ -287,7 +287,7 @@ void js_newcfunction(js_State *J, js_CFunction cfun, int length)
 }
 
 /* prototype -- constructor */
-void js_newcconstructor(js_State *J, js_CFunction cfun, js_CFunction ccon, int length)
+void js_newcconstructor(js_State *J, js_CFunction cfun, js_CFunction ccon, unsigned int length)
 {
 	js_Object *obj = jsV_newobject(J, JS_CCFUNCTION, J->Function_prototype);
 	obj->u.c.function = cfun;

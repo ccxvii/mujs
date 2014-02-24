@@ -68,7 +68,7 @@ static const char *tokenstring[] = {
 
 const char *jsY_tokenstring(int token)
 {
-	if (token >= 0 && token < nelem(tokenstring))
+	if (token >= 0 && token < (int)nelem(tokenstring))
 		if (tokenstring[token])
 			return tokenstring[token];
 	return "<unknown>";

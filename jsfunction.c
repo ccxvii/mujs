@@ -4,13 +4,13 @@
 #include "jsvalue.h"
 #include "jsbuiltin.h"
 
-static int jsB_Function(js_State *J, int argc)
+static int jsB_Function(js_State *J, unsigned int argc)
 {
 	const char *source;
 	js_Buffer *sb;
 	js_Ast *parse;
 	js_Function *fun;
-	int i;
+	unsigned int i;
 
 	if (js_isundefined(J, 1))
 		source = "";
@@ -43,13 +43,13 @@ static int jsB_Function(js_State *J, int argc)
 	return 1;
 }
 
-static int jsB_Function_prototype(js_State *J, int argc)
+static int jsB_Function_prototype(js_State *J, unsigned int argc)
 {
 	js_pushundefined(J);
 	return 1;
 }
 
-static int Fp_toString(js_State *J, int argc)
+static int Fp_toString(js_State *J, unsigned int argc)
 {
 	js_Object *self = js_toobject(J, 0);
 	char *s;
@@ -82,7 +82,7 @@ static int Fp_toString(js_State *J, int argc)
 	return 1;
 }
 
-static int Fp_apply(js_State *J, int argc)
+static int Fp_apply(js_State *J, unsigned int argc)
 {
 	int i, n;
 	char name[20];
@@ -106,9 +106,9 @@ static int Fp_apply(js_State *J, int argc)
 	return 1;
 }
 
-static int Fp_call(js_State *J, int argc)
+static int Fp_call(js_State *J, unsigned int argc)
 {
-	int i;
+	unsigned int i;
 
 	if (!js_iscallable(J, 0))
 		js_typeerror(J, "not a function");
