@@ -45,7 +45,7 @@ void js_delindex(js_State *J, int idx, unsigned int i)
 	js_delproperty(J, idx, buf);
 }
 
-static int jsB_new_Array(js_State *J, unsigned int argc)
+static void jsB_new_Array(js_State *J, unsigned int argc)
 {
 	unsigned int i;
 
@@ -65,11 +65,9 @@ static int jsB_new_Array(js_State *J, unsigned int argc)
 			js_setindex(J, -2, i - 1);
 		}
 	}
-
-	return 1;
 }
 
-static int Ap_concat(js_State *J, unsigned int argc)
+static void Ap_concat(js_State *J, unsigned int argc)
 {
 	unsigned int n, len, i;
 
@@ -95,11 +93,9 @@ static int Ap_concat(js_State *J, unsigned int argc)
 			++n;
 		}
 	}
-
-	return 1;
 }
 
-static int Ap_join(js_State *J, unsigned int argc)
+static void Ap_join(js_State *J, unsigned int argc)
 {
 	char * volatile out = NULL;
 	const char *sep;
@@ -119,7 +115,7 @@ static int Ap_join(js_State *J, unsigned int argc)
 
 	if (len == 0) {
 		js_pushliteral(J, "");
-		return 1;
+		return;
 	}
 
 	if (js_try(J)) {
@@ -152,10 +148,9 @@ static int Ap_join(js_State *J, unsigned int argc)
 	js_pushstring(J, out);
 	js_endtry(J);
 	free(out);
-	return 1;
 }
 
-static int Ap_pop(js_State *J, unsigned int argc)
+static void Ap_pop(js_State *J, unsigned int argc)
 {
 	unsigned int n;
 
@@ -169,11 +164,9 @@ static int Ap_pop(js_State *J, unsigned int argc)
 		js_setlength(J, 0, 0);
 		js_pushundefined(J);
 	}
-
-	return 1;
 }
 
-static int Ap_push(js_State *J, unsigned int argc)
+static void Ap_push(js_State *J, unsigned int argc)
 {
 	unsigned int i, n;
 
@@ -187,10 +180,9 @@ static int Ap_push(js_State *J, unsigned int argc)
 	js_setlength(J, 0, n);
 
 	js_pushnumber(J, n);
-	return 1;
 }
 
-static int Ap_reverse(js_State *J, unsigned int argc)
+static void Ap_reverse(js_State *J, unsigned int argc)
 {
 	unsigned int len, middle, lower;
 
@@ -216,10 +208,9 @@ static int Ap_reverse(js_State *J, unsigned int argc)
 	}
 
 	js_copy(J, 0);
-	return 1;
 }
 
-static int Ap_shift(js_State *J, unsigned int argc)
+static void Ap_shift(js_State *J, unsigned int argc)
 {
 	unsigned int k, len;
 
@@ -228,7 +219,7 @@ static int Ap_shift(js_State *J, unsigned int argc)
 	if (len == 0) {
 		js_setlength(J, 0, 0);
 		js_pushundefined(J);
-		return 1;
+		return;
 	}
 
 	js_getindex(J, 0, 0);
@@ -242,11 +233,9 @@ static int Ap_shift(js_State *J, unsigned int argc)
 
 	js_delindex(J, 0, len - 1);
 	js_setlength(J, 0, len - 1);
-
-	return 1;
 }
 
-static int Ap_slice(js_State *J, unsigned int argc)
+static void Ap_slice(js_State *J, unsigned int argc)
 {
 	unsigned int len, s, e, n;
 	double sv, ev;
@@ -266,8 +255,6 @@ static int Ap_slice(js_State *J, unsigned int argc)
 	for (n = 0; s < e; ++s, ++n)
 		if (js_hasindex(J, 0, s))
 			js_setindex(J, -2, n);
-
-	return 1;
 }
 
 static int compare(js_State *J, unsigned int x, unsigned int y, int *hasx, int *hasy, int hasfn)
@@ -306,7 +293,7 @@ static int compare(js_State *J, unsigned int x, unsigned int y, int *hasx, int *
 	return 0;
 }
 
-static int Ap_sort(js_State *J, unsigned int argc)
+static void Ap_sort(js_State *J, unsigned int argc)
 {
 	unsigned int len, i, k;
 	int hasx, hasy, hasfn;
@@ -333,10 +320,9 @@ static int Ap_sort(js_State *J, unsigned int argc)
 	}
 
 	js_copy(J, 0);
-	return 1;
 }
 
-static int Ap_splice(js_State *J, unsigned int argc)
+static void Ap_splice(js_State *J, unsigned int argc)
 {
 	unsigned int len, start, del, add, k;
 	double f;
@@ -384,11 +370,9 @@ static int Ap_splice(js_State *J, unsigned int argc)
 	}
 
 	js_setlength(J, 0, len - del + add);
-
-	return 1;
 }
 
-static int Ap_unshift(js_State *J, unsigned int argc)
+static void Ap_unshift(js_State *J, unsigned int argc)
 {
 	unsigned int i, k, len;
 
@@ -411,16 +395,15 @@ static int Ap_unshift(js_State *J, unsigned int argc)
 	js_setlength(J, 0, len + argc);
 
 	js_pushnumber(J, len + argc);
-	return 1;
 }
 
-static int Ap_toString(js_State *J, unsigned int argc)
+static void Ap_toString(js_State *J, unsigned int argc)
 {
 	js_pop(J, argc);
 	return Ap_join(J, 0);
 }
 
-static int Ap_indexOf(js_State *J, unsigned int argc)
+static void Ap_indexOf(js_State *J, unsigned int argc)
 {
 	int k, len, from;
 
@@ -434,17 +417,16 @@ static int Ap_indexOf(js_State *J, unsigned int argc)
 		if (js_hasindex(J, 0, k)) {
 			if (js_strictequal(J)) {
 				js_pushnumber(J, k);
-				return 1;
+				return;
 			}
 			js_pop(J, 1);
 		}
 	}
 
 	js_pushnumber(J, -1);
-	return 1;
 }
 
-static int Ap_lastIndexOf(js_State *J, unsigned int argc)
+static void Ap_lastIndexOf(js_State *J, unsigned int argc)
 {
 	int k, len, from;
 
@@ -458,17 +440,16 @@ static int Ap_lastIndexOf(js_State *J, unsigned int argc)
 		if (js_hasindex(J, 0, k)) {
 			if (js_strictequal(J)) {
 				js_pushnumber(J, k);
-				return 1;
+				return;
 			}
 			js_pop(J, 1);
 		}
 	}
 
 	js_pushnumber(J, -1);
-	return 1;
 }
 
-static int Ap_every(js_State *J, unsigned int argc)
+static void Ap_every(js_State *J, unsigned int argc)
 {
 	int k, len;
 
@@ -488,16 +469,15 @@ static int Ap_every(js_State *J, unsigned int argc)
 			js_copy(J, 0);
 			js_call(J, 3);
 			if (!js_toboolean(J, -1))
-				return 1;
+				return;
 			js_pop(J, 2);
 		}
 	}
 
 	js_pushboolean(J, 1);
-	return 1;
 }
 
-static int Ap_some(js_State *J, unsigned int argc)
+static void Ap_some(js_State *J, unsigned int argc)
 {
 	int k, len;
 
@@ -517,16 +497,15 @@ static int Ap_some(js_State *J, unsigned int argc)
 			js_copy(J, 0);
 			js_call(J, 3);
 			if (js_toboolean(J, -1))
-				return 1;
+				return;
 			js_pop(J, 2);
 		}
 	}
 
 	js_pushboolean(J, 0);
-	return 1;
 }
 
-static int Ap_forEach(js_State *J, unsigned int argc)
+static void Ap_forEach(js_State *J, unsigned int argc)
 {
 	int k, len;
 
@@ -549,10 +528,10 @@ static int Ap_forEach(js_State *J, unsigned int argc)
 		}
 	}
 
-	return 0;
+	js_pushundefined(J);
 }
 
-static int Ap_map(js_State *J, unsigned int argc)
+static void Ap_map(js_State *J, unsigned int argc)
 {
 	int k, len;
 
@@ -577,11 +556,9 @@ static int Ap_map(js_State *J, unsigned int argc)
 			js_pop(J, 1);
 		}
 	}
-
-	return 1;
 }
 
-static int Ap_filter(js_State *J, unsigned int argc)
+static void Ap_filter(js_State *J, unsigned int argc)
 {
 	int k, to, len;
 
@@ -611,11 +588,9 @@ static int Ap_filter(js_State *J, unsigned int argc)
 			}
 		}
 	}
-
-	return 1;
 }
 
-static int Ap_reduce(js_State *J, unsigned int argc)
+static void Ap_reduce(js_State *J, unsigned int argc)
 {
 	int k, len;
 
@@ -652,10 +627,10 @@ static int Ap_reduce(js_State *J, unsigned int argc)
 		++k;
 	}
 
-	return 1; /* return accumulator */
+	/* return accumulator */
 }
 
-static int Ap_reduceRight(js_State *J, unsigned int argc)
+static void Ap_reduceRight(js_State *J, unsigned int argc)
 {
 	int k, len;
 
@@ -692,18 +667,17 @@ static int Ap_reduceRight(js_State *J, unsigned int argc)
 		--k;
 	}
 
-	return 1; /* return accumulator */
+	/* return accumulator */
 }
 
-static int A_isArray(js_State *J, unsigned int argc)
+static void A_isArray(js_State *J, unsigned int argc)
 {
 	if (js_isobject(J, 1)) {
 		js_Object *T = js_toobject(J, 1);
 		js_pushboolean(J, T->type == JS_CARRAY);
-		return 1;
+	} else {
+		js_pushboolean(J, 0);
 	}
-	js_pushboolean(J, 0);
-	return 1;
 }
 
 void jsB_initarray(js_State *J)

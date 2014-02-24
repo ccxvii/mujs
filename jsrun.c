@@ -840,22 +840,18 @@ static void jsR_callscript(js_State *J, unsigned int n, js_Function *F)
 	js_pushvalue(J, v);
 }
 
-static void jsR_callcfunction(js_State *J, unsigned int n, int min, js_CFunction F)
+static void jsR_callcfunction(js_State *J, unsigned int n, unsigned int min, js_CFunction F)
 {
-	int rv, i;
+	unsigned int i;
+	js_Value v;
 
 	for (i = n; i < min; ++i)
 		js_pushundefined(J);
 
-	rv = F(J, n);
-	if (rv) {
-		js_Value v = js_tovalue(J, -1);
-		TOP = --BOT; /* clear stack */
-		js_pushvalue(J, v);
-	} else {
-		TOP = --BOT; /* clear stack */
-		js_pushundefined(J);
-	}
+	F(J, n);
+	v = js_tovalue(J, -1);
+	TOP = --BOT; /* clear stack */
+	js_pushvalue(J, v);
 }
 
 void js_call(js_State *J, unsigned int n)

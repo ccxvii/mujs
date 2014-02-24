@@ -4,7 +4,7 @@
 #include "jsvalue.h"
 #include "jsbuiltin.h"
 
-static int jsB_Function(js_State *J, unsigned int argc)
+static void jsB_Function(js_State *J, unsigned int argc)
 {
 	const char *source;
 	js_Buffer *sb;
@@ -40,16 +40,14 @@ static int jsB_Function(js_State *J, unsigned int argc)
 	jsP_freeparse(J);
 
 	js_newfunction(J, fun, J->GE);
-	return 1;
 }
 
-static int jsB_Function_prototype(js_State *J, unsigned int argc)
+static void jsB_Function_prototype(js_State *J, unsigned int argc)
 {
 	js_pushundefined(J);
-	return 1;
 }
 
-static int Fp_toString(js_State *J, unsigned int argc)
+static void Fp_toString(js_State *J, unsigned int argc)
 {
 	js_Object *self = js_toobject(J, 0);
 	char *s;
@@ -78,11 +76,9 @@ static int Fp_toString(js_State *J, unsigned int argc)
 	} else {
 		js_pushliteral(J, "function () { ... }");
 	}
-
-	return 1;
 }
 
-static int Fp_apply(js_State *J, unsigned int argc)
+static void Fp_apply(js_State *J, unsigned int argc)
 {
 	int i, n;
 	char name[20];
@@ -103,10 +99,9 @@ static int Fp_apply(js_State *J, unsigned int argc)
 	}
 
 	js_call(J, n);
-	return 1;
 }
 
-static int Fp_call(js_State *J, unsigned int argc)
+static void Fp_call(js_State *J, unsigned int argc)
 {
 	unsigned int i;
 
@@ -119,7 +114,6 @@ static int Fp_call(js_State *J, unsigned int argc)
 		js_copy(J, i);
 
 	js_call(J, argc - 1);
-	return 1;
 }
 
 void jsB_initfunction(js_State *J)

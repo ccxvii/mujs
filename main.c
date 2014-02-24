@@ -4,22 +4,21 @@
 
 #define PS1 "> "
 
-static int jsB_gc(js_State *J, unsigned int argc)
+static void jsB_gc(js_State *J, unsigned int argc)
 {
 	int report = js_toboolean(J, 1);
 	js_gc(J, report);
-	return 0;
+	js_pushundefined(J);
 }
 
-static int jsB_load(js_State *J, unsigned int argc)
+static void jsB_load(js_State *J, unsigned int argc)
 {
 	const char *filename = js_tostring(J, 1);
 	int rv = js_dofile(J, filename);
 	js_pushboolean(J, !rv);
-	return 1;
 }
 
-static int jsB_print(js_State *J, unsigned int argc)
+static void jsB_print(js_State *J, unsigned int argc)
 {
 	unsigned int i;
 	for (i = 1; i <= argc; ++i) {
@@ -28,7 +27,7 @@ static int jsB_print(js_State *J, unsigned int argc)
 		fputs(s, stdout);
 	}
 	putchar('\n');
-	return 0;
+	js_pushundefined(J);
 }
 
 int

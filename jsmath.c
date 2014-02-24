@@ -2,103 +2,87 @@
 #include "jsvalue.h"
 #include "jsbuiltin.h"
 
-static int Math_abs(js_State *J, unsigned int argc)
+static void Math_abs(js_State *J, unsigned int argc)
 {
 	js_pushnumber(J, abs(js_tonumber(J, 1)));
-	return 1;
 }
 
-static int Math_acos(js_State *J, unsigned int argc)
+static void Math_acos(js_State *J, unsigned int argc)
 {
 	js_pushnumber(J, acos(js_tonumber(J, 1)));
-	return 1;
 }
 
-static int Math_asin(js_State *J, unsigned int argc)
+static void Math_asin(js_State *J, unsigned int argc)
 {
 	js_pushnumber(J, asin(js_tonumber(J, 1)));
-	return 1;
 }
 
-static int Math_atan(js_State *J, unsigned int argc)
+static void Math_atan(js_State *J, unsigned int argc)
 {
 	js_pushnumber(J, atan(js_tonumber(J, 1)));
-	return 1;
 }
 
-static int Math_atan2(js_State *J, unsigned int argc)
+static void Math_atan2(js_State *J, unsigned int argc)
 {
 	js_pushnumber(J, atan2(js_tonumber(J, 1), js_tonumber(J, 2)));
-	return 1;
 }
 
-static int Math_ceil(js_State *J, unsigned int argc)
+static void Math_ceil(js_State *J, unsigned int argc)
 {
 	js_pushnumber(J, ceil(js_tonumber(J, 1)));
-	return 1;
 }
 
-static int Math_cos(js_State *J, unsigned int argc)
+static void Math_cos(js_State *J, unsigned int argc)
 {
 	js_pushnumber(J, cos(js_tonumber(J, 1)));
-	return 1;
 }
 
-static int Math_exp(js_State *J, unsigned int argc)
+static void Math_exp(js_State *J, unsigned int argc)
 {
 	js_pushnumber(J, exp(js_tonumber(J, 1)));
-	return 1;
 }
 
-static int Math_floor(js_State *J, unsigned int argc)
+static void Math_floor(js_State *J, unsigned int argc)
 {
 	js_pushnumber(J, floor(js_tonumber(J, 1)));
-	return 1;
 }
 
-static int Math_log(js_State *J, unsigned int argc)
+static void Math_log(js_State *J, unsigned int argc)
 {
 	js_pushnumber(J, log(js_tonumber(J, 1)));
-	return 1;
 }
 
-static int Math_pow(js_State *J, unsigned int argc)
+static void Math_pow(js_State *J, unsigned int argc)
 {
 	js_pushnumber(J, pow(js_tonumber(J, 1), js_tonumber(J, 2)));
-	return 1;
 }
 
-static int Math_random(js_State *J, unsigned int argc)
+static void Math_random(js_State *J, unsigned int argc)
 {
 	js_pushnumber(J, (double)rand() / (RAND_MAX - 1));
-	return 1;
 }
 
-static int Math_round(js_State *J, unsigned int argc)
+static void Math_round(js_State *J, unsigned int argc)
 {
 	js_pushnumber(J, round(js_tonumber(J, 1)));
-	return 1;
 }
 
-static int Math_sin(js_State *J, unsigned int argc)
+static void Math_sin(js_State *J, unsigned int argc)
 {
 	js_pushnumber(J, sin(js_tonumber(J, 1)));
-	return 1;
 }
 
-static int Math_sqrt(js_State *J, unsigned int argc)
+static void Math_sqrt(js_State *J, unsigned int argc)
 {
 	js_pushnumber(J, sqrt(js_tonumber(J, 1)));
-	return 1;
 }
 
-static int Math_tan(js_State *J, unsigned int argc)
+static void Math_tan(js_State *J, unsigned int argc)
 {
 	js_pushnumber(J, tan(js_tonumber(J, 1)));
-	return 1;
 }
 
-static int Math_max(js_State *J, unsigned int argc)
+static void Math_max(js_State *J, unsigned int argc)
 {
 	double n = js_tonumber(J, 1);
 	unsigned int i;
@@ -107,10 +91,9 @@ static int Math_max(js_State *J, unsigned int argc)
 		n = n > m ? n : m;
 	}
 	js_pushnumber(J, n);
-	return 1;
 }
 
-static int Math_min(js_State *J, unsigned int argc)
+static void Math_min(js_State *J, unsigned int argc)
 {
 	double n = js_tonumber(J, 1);
 	unsigned int i;
@@ -119,7 +102,6 @@ static int Math_min(js_State *J, unsigned int argc)
 		n = n < m ? n : m;
 	}
 	js_pushnumber(J, n);
-	return 1;
 }
 
 void jsB_initmath(js_State *J)

@@ -2,25 +2,23 @@
 #include "jsvalue.h"
 #include "jsbuiltin.h"
 
-static int jsB_new_Object(js_State *J, unsigned int argc)
+static void jsB_new_Object(js_State *J, unsigned int argc)
 {
 	if (argc == 0 || js_isundefined(J, 1) || js_isnull(J, 1))
 		js_newobject(J);
 	else
 		js_pushobject(J, js_toobject(J, 1));
-	return 1;
 }
 
-static int jsB_Object(js_State *J, unsigned int argc)
+static void jsB_Object(js_State *J, unsigned int argc)
 {
 	if (argc == 0 || js_isundefined(J, 1) || js_isnull(J, 1))
 		js_newobject(J);
 	else
 		js_pushobject(J, js_toobject(J, 1));
-	return 1;
 }
 
-static int Op_toString(js_State *J, unsigned int argc)
+static void Op_toString(js_State *J, unsigned int argc)
 {
 	js_Object *self = js_toobject(J, 0);
 	switch (self->type) {
@@ -46,25 +44,22 @@ static int Op_toString(js_State *J, unsigned int argc)
 		js_concat(J);
 		break;
 	}
-	return 1;
 }
 
-static int Op_valueOf(js_State *J, unsigned int argc)
+static void Op_valueOf(js_State *J, unsigned int argc)
 {
 	js_copy(J, 0);
-	return 1;
 }
 
-static int Op_hasOwnProperty(js_State *J, unsigned int argc)
+static void Op_hasOwnProperty(js_State *J, unsigned int argc)
 {
 	js_Object *self = js_toobject(J, 0);
 	const char *name = js_tostring(J, 1);
 	js_Property *ref = jsV_getownproperty(J, self, name);
 	js_pushboolean(J, ref != NULL);
-	return 1;
 }
 
-static int Op_isPrototypeOf(js_State *J, unsigned int argc)
+static void Op_isPrototypeOf(js_State *J, unsigned int argc)
 {
 	js_Object *self = js_toobject(J, 0);
 	if (js_isobject(J, 1)) {
@@ -73,24 +68,22 @@ static int Op_isPrototypeOf(js_State *J, unsigned int argc)
 			V = V->prototype;
 			if (V == self) {
 				js_pushboolean(J, 1);
-				return 1;
+				return;
 			}
 		} while (V);
 	}
 	js_pushboolean(J, 0);
-	return 1;
 }
 
-static int Op_propertyIsEnumerable(js_State *J, unsigned int argc)
+static void Op_propertyIsEnumerable(js_State *J, unsigned int argc)
 {
 	js_Object *self = js_toobject(J, 0);
 	const char *name = js_tostring(J, 1);
 	js_Property *ref = jsV_getownproperty(J, self, name);
 	js_pushboolean(J, ref && !(ref->atts & JS_DONTENUM));
-	return 1;
 }
 
-static int O_getPrototypeOf(js_State *J, unsigned int argc)
+static void O_getPrototypeOf(js_State *J, unsigned int argc)
 {
 	js_Object *obj;
 	if (!js_isobject(J, 1))
@@ -100,10 +93,9 @@ static int O_getPrototypeOf(js_State *J, unsigned int argc)
 		js_pushobject(J, obj->prototype);
 	else
 		js_pushnull(J);
-	return 1;
 }
 
-static int O_getOwnPropertyDescriptor(js_State *J, unsigned int argc)
+static void O_getOwnPropertyDescriptor(js_State *J, unsigned int argc)
 {
 	js_Object *obj;
 	js_Property *ref;
@@ -137,10 +129,9 @@ static int O_getOwnPropertyDescriptor(js_State *J, unsigned int argc)
 		js_pushboolean(J, !(ref->atts & JS_DONTCONF));
 		js_setproperty(J, -2, "configurable");
 	}
-	return 1;
 }
 
-static int O_getOwnPropertyNames(js_State *J, unsigned int argc)
+static void O_getOwnPropertyNames(js_State *J, unsigned int argc)
 {
 	js_Object *obj;
 	js_Property *ref;
@@ -185,8 +176,6 @@ static int O_getOwnPropertyNames(js_State *J, unsigned int argc)
 		js_pushliteral(J, "lastIndex");
 		js_setindex(J, -2, i++);
 	}
-
-	return 1;
 }
 
 static void ToPropertyDescriptor(js_State *J, js_Object *obj, const char *name, js_Object *desc)
@@ -242,16 +231,15 @@ static void ToPropertyDescriptor(js_State *J, js_Object *obj, const char *name, 
 	js_pop(J, 2);
 }
 
-static int O_defineProperty(js_State *J, unsigned int argc)
+static void O_defineProperty(js_State *J, unsigned int argc)
 {
 	if (!js_isobject(J, 1)) js_typeerror(J, "not an object");
 	if (!js_isobject(J, 3)) js_typeerror(J, "not an object");
 	ToPropertyDescriptor(J, js_toobject(J, 1), js_tostring(J, 2), js_toobject(J, 3));
 	js_copy(J, 1);
-	return 1;
 }
 
-static int O_defineProperties(js_State *J, unsigned int argc)
+static void O_defineProperties(js_State *J, unsigned int argc)
 {
 	js_Object *props;
 	js_Property *ref;
@@ -269,10 +257,9 @@ static int O_defineProperties(js_State *J, unsigned int argc)
 	}
 
 	js_copy(J, 1);
-	return 1;
 }
 
-static int O_create(js_State *J, unsigned int argc)
+static void O_create(js_State *J, unsigned int argc)
 {
 	js_Object *obj;
 	js_Object *proto;
@@ -299,11 +286,9 @@ static int O_create(js_State *J, unsigned int argc)
 			}
 		}
 	}
-
-	return 1;
 }
 
-static int O_keys(js_State *J, unsigned int argc)
+static void O_keys(js_State *J, unsigned int argc)
 {
 	js_Object *obj;
 	js_Property *ref;
@@ -330,28 +315,24 @@ static int O_keys(js_State *J, unsigned int argc)
 			js_setindex(J, -2, i++);
 		}
 	}
-
-	return 1;
 }
 
-static int O_preventExtensions(js_State *J, unsigned int argc)
+static void O_preventExtensions(js_State *J, unsigned int argc)
 {
 	if (!js_isobject(J, 1))
 		js_typeerror(J, "not an object");
 	js_toobject(J, 1)->extensible = 0;
 	js_copy(J, 1);
-	return 1;
 }
 
-static int O_isExtensible(js_State *J, unsigned int argc)
+static void O_isExtensible(js_State *J, unsigned int argc)
 {
 	if (!js_isobject(J, 1))
 		js_typeerror(J, "not an object");
 	js_pushboolean(J, js_toobject(J, 1)->extensible);
-	return 1;
 }
 
-static int O_seal(js_State *J, unsigned int argc)
+static void O_seal(js_State *J, unsigned int argc)
 {
 	js_Object *obj;
 	js_Property *ref;
@@ -366,10 +347,9 @@ static int O_seal(js_State *J, unsigned int argc)
 		ref->atts |= JS_DONTCONF;
 
 	js_copy(J, 1);
-	return 1;
 }
 
-static int O_isSealed(js_State *J, unsigned int argc)
+static void O_isSealed(js_State *J, unsigned int argc)
 {
 	js_Object *obj;
 	js_Property *ref;
@@ -380,21 +360,20 @@ static int O_isSealed(js_State *J, unsigned int argc)
 	obj = js_toobject(J, 1);
 	if (obj->extensible) {
 		js_pushboolean(J, 0);
-		return 1;
+		return;
 	}
 
 	for (ref = obj->head; ref; ref = ref->next) {
 		if (!(ref->atts & JS_DONTCONF)) {
 			js_pushboolean(J, 0);
-			return 1;
+			return;
 		}
 	}
 
 	js_pushboolean(J, 1);
-	return 1;
 }
 
-static int O_freeze(js_State *J, unsigned int argc)
+static void O_freeze(js_State *J, unsigned int argc)
 {
 	js_Object *obj;
 	js_Property *ref;
@@ -409,10 +388,9 @@ static int O_freeze(js_State *J, unsigned int argc)
 		ref->atts |= JS_READONLY | JS_DONTCONF;
 
 	js_copy(J, 1);
-	return 1;
 }
 
-static int O_isFrozen(js_State *J, unsigned int argc)
+static void O_isFrozen(js_State *J, unsigned int argc)
 {
 	js_Object *obj;
 	js_Property *ref;
@@ -423,18 +401,17 @@ static int O_isFrozen(js_State *J, unsigned int argc)
 	obj = js_toobject(J, 1);
 	if (obj->extensible) {
 		js_pushboolean(J, 0);
-		return 1;
+		return;
 	}
 
 	for (ref = obj->head; ref; ref = ref->next) {
 		if (!(ref->atts & (JS_READONLY | JS_DONTCONF))) {
 			js_pushboolean(J, 0);
-			return 1;
+			return;
 		}
 	}
 
 	js_pushboolean(J, 1);
-	return 1;
 }
 
 void jsB_initobject(js_State *J)

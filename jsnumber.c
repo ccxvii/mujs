@@ -2,35 +2,31 @@
 #include "jsvalue.h"
 #include "jsbuiltin.h"
 
-static int jsB_new_Number(js_State *J, unsigned int argc)
+static void jsB_new_Number(js_State *J, unsigned int argc)
 {
 	js_newnumber(J, js_isdefined(J, 1) ? js_tonumber(J, 1) : 0);
-	return 1;
 }
 
-static int jsB_Number(js_State *J, unsigned int argc)
+static void jsB_Number(js_State *J, unsigned int argc)
 {
 	js_pushnumber(J, js_isdefined(J, 1) ? js_tonumber(J, 1) : 0);
-	return 1;
 }
 
-static int Np_valueOf(js_State *J, unsigned int argc)
+static void Np_valueOf(js_State *J, unsigned int argc)
 {
 	js_Object *self = js_toobject(J, 0);
 	if (self->type != JS_CNUMBER) js_typeerror(J, "not a number");
 	js_pushnumber(J, self->u.number);
-	return 1;
 }
 
-static int Np_toString(js_State *J, unsigned int argc)
+static void Np_toString(js_State *J, unsigned int argc)
 {
 	js_Object *self = js_toobject(J, 0);
 	if (self->type != JS_CNUMBER) js_typeerror(J, "not a number");
 	js_pushliteral(J, jsV_numbertostring(J, self->u.number));
-	return 1;
 }
 
-static int Np_toFixed(js_State *J, unsigned int argc)
+static void Np_toFixed(js_State *J, unsigned int argc)
 {
 	char buf[40];
 	js_Object *self = js_toobject(J, 0);
@@ -38,10 +34,9 @@ static int Np_toFixed(js_State *J, unsigned int argc)
 	if (self->type != JS_CNUMBER) js_typeerror(J, "not a number");
 	sprintf(buf, "%.*f", width, self->u.number);
 	js_pushstring(J, buf);
-	return 1;
 }
 
-static int Np_toExponential(js_State *J, unsigned int argc)
+static void Np_toExponential(js_State *J, unsigned int argc)
 {
 	char buf[40];
 	js_Object *self = js_toobject(J, 0);
@@ -49,10 +44,9 @@ static int Np_toExponential(js_State *J, unsigned int argc)
 	if (self->type != JS_CNUMBER) js_typeerror(J, "not a number");
 	sprintf(buf, "%.*e", width, self->u.number);
 	js_pushstring(J, buf);
-	return 1;
 }
 
-static int Np_toPrecision(js_State *J, unsigned int argc)
+static void Np_toPrecision(js_State *J, unsigned int argc)
 {
 	char buf[40];
 	js_Object *self = js_toobject(J, 0);
@@ -60,7 +54,6 @@ static int Np_toPrecision(js_State *J, unsigned int argc)
 	if (self->type != JS_CNUMBER) js_typeerror(J, "not a number");
 	sprintf(buf, "%.*g", width, self->u.number);
 	js_pushstring(J, buf);
-	return 1;
 }
 
 void jsB_initnumber(js_State *J)

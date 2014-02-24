@@ -2,32 +2,28 @@
 #include "jsvalue.h"
 #include "jsbuiltin.h"
 
-static int jsB_new_Boolean(js_State *J, unsigned int argc)
+static void jsB_new_Boolean(js_State *J, unsigned int argc)
 {
 	js_newboolean(J, js_toboolean(J, 1));
-	return 1;
 }
 
-static int jsB_Boolean(js_State *J, unsigned int argc)
+static void jsB_Boolean(js_State *J, unsigned int argc)
 {
 	js_pushboolean(J, js_toboolean(J, 1));
-	return 1;
 }
 
-static int Bp_toString(js_State *J, unsigned int argc)
+static void Bp_toString(js_State *J, unsigned int argc)
 {
 	js_Object *self = js_toobject(J, 0);
 	if (self->type != JS_CBOOLEAN) js_typeerror(J, "not a boolean");
 	js_pushliteral(J, self->u.boolean ? "true" : "false");
-	return 1;
 }
 
-static int Bp_valueOf(js_State *J, unsigned int argc)
+static void Bp_valueOf(js_State *J, unsigned int argc)
 {
 	js_Object *self = js_toobject(J, 0);
 	if (self->type != JS_CBOOLEAN) js_typeerror(J, "not a boolean");
 	js_pushboolean(J, self->u.boolean);
-	return 1;
 }
 
 void jsB_initboolean(js_State *J)

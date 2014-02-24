@@ -92,14 +92,13 @@ static void jsonvalue(js_State *J)
 	}
 }
 
-static int JSON_parse(js_State *J, unsigned int argc)
+static void JSON_parse(js_State *J, unsigned int argc)
 {
 	const char *source = js_tostring(J, 1);
 	jsY_initlex(J, "JSON", source);
 	jsonnext(J);
 	jsonvalue(J);
 	// TODO: reviver Walk()
-	return 1;
 }
 
 static void fmtnum(js_Buffer **sb, double n)
@@ -237,7 +236,7 @@ static int fmtvalue(js_State *J, js_Buffer **sb, const char *key)
 	return 1;
 }
 
-static int JSON_stringify(js_State *J, unsigned int argc)
+static void JSON_stringify(js_State *J, unsigned int argc)
 {
 	js_Buffer *sb = NULL;
 	if (argc > 0) {
@@ -251,10 +250,10 @@ static int JSON_stringify(js_State *J, unsigned int argc)
 			js_pushstring(J, sb ? sb->s : "");
 			js_endtry(J);
 			free(sb);
-			return 1;
 		}
+	} else {
+		js_pushundefined(J);
 	}
-	return 0;
 }
 
 void jsB_initjson(js_State *J)

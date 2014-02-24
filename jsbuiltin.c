@@ -28,50 +28,45 @@ void jsB_props(js_State *J, const char *name, const char *string)
 	js_defproperty(J, -2, name, JS_DONTENUM);
 }
 
-static int jsB_eval(js_State *J, unsigned int argc)
+static void jsB_eval(js_State *J, unsigned int argc)
 {
 	if (!js_isstring(J, -1)) {
 		js_copy(J, 1);
-		return 1;
+		return;
 	}
 	js_loadstring(J, "(eval)", js_tostring(J, -1));
 	js_pushglobal(J);
 	js_call(J, 0);
-	return 1;
 }
 
-static int jsB_parseInt(js_State *J, unsigned int argc)
+static void jsB_parseInt(js_State *J, unsigned int argc)
 {
 	const char *s = js_tostring(J, 1);
 	double radix = js_isdefined(J, 2) ? js_tonumber(J, 2) : 10;
 	while (jsY_iswhite(*s) || jsY_isnewline(*s)) ++s;
 	js_pushnumber(J, strtol(s, NULL, radix == 0 ? 10 : radix));
-	return 1;
 }
 
-static int jsB_parseFloat(js_State *J, unsigned int argc)
+static void jsB_parseFloat(js_State *J, unsigned int argc)
 {
 	const char *s = js_tostring(J, 1);
 	while (jsY_iswhite(*s) || jsY_isnewline(*s)) ++s;
 	js_pushnumber(J, strtod(s, NULL));
-	return 1;
 }
 
-static int jsB_isNaN(js_State *J, unsigned int argc)
+static void jsB_isNaN(js_State *J, unsigned int argc)
 {
 	double n = js_tonumber(J, 1);
 	js_pushboolean(J, isnan(n));
-	return 1;
 }
 
-static int jsB_isFinite(js_State *J, unsigned int argc)
+static void jsB_isFinite(js_State *J, unsigned int argc)
 {
 	double n = js_tonumber(J, 1);
 	js_pushboolean(J, isfinite(n));
-	return 1;
 }
 
-static int Encode(js_State *J, const char *str, const char *unescaped)
+static void Encode(js_State *J, const char *str, const char *unescaped)
 {
 	js_Buffer *sb = NULL;
 
@@ -96,10 +91,9 @@ static int Encode(js_State *J, const char *str, const char *unescaped)
 	js_pushstring(J, sb ? sb->s : "");
 	js_endtry(J);
 	free(sb);
-	return 1;
 }
 
-static int Decode(js_State *J, const char *str, const char *reserved)
+static void Decode(js_State *J, const char *str, const char *reserved)
 {
 	js_Buffer *sb = NULL;
 	int a, b;
@@ -134,7 +128,6 @@ static int Decode(js_State *J, const char *str, const char *reserved)
 	js_pushstring(J, sb ? sb->s : "");
 	js_endtry(J);
 	free(sb);
-	return 1;
 }
 
 #define URIRESERVED ";/?:@&=+$,"
@@ -143,24 +136,24 @@ static int Decode(js_State *J, const char *str, const char *reserved)
 #define URIMARK "-_.!~*`()"
 #define URIUNESCAPED URIALPHA URIDIGIT URIMARK
 
-static int jsB_decodeURI(js_State *J, unsigned int argc)
+static void jsB_decodeURI(js_State *J, unsigned int argc)
 {
-	return Decode(J, js_tostring(J, 1), URIRESERVED "#");
+	Decode(J, js_tostring(J, 1), URIRESERVED "#");
 }
 
-static int jsB_decodeURIComponent(js_State *J, unsigned int argc)
+static void jsB_decodeURIComponent(js_State *J, unsigned int argc)
 {
-	return Decode(J, js_tostring(J, 1), "");
+	Decode(J, js_tostring(J, 1), "");
 }
 
-static int jsB_encodeURI(js_State *J, unsigned int argc)
+static void jsB_encodeURI(js_State *J, unsigned int argc)
 {
-	return Encode(J, js_tostring(J, 1), URIUNESCAPED URIRESERVED "#");
+	Encode(J, js_tostring(J, 1), URIUNESCAPED URIRESERVED "#");
 }
 
-static int jsB_encodeURIComponent(js_State *J, unsigned int argc)
+static void jsB_encodeURIComponent(js_State *J, unsigned int argc)
 {
-	return Encode(J, js_tostring(J, 1), URIUNESCAPED);
+	Encode(J, js_tostring(J, 1), URIUNESCAPED);
 }
 
 void jsB_init(js_State *J)

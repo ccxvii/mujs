@@ -26,7 +26,7 @@
 
 typedef struct js_State js_State;
 
-typedef int (*js_CFunction)(js_State *J, unsigned int argc);
+typedef void (*js_CFunction)(js_State *J, unsigned int argc);
 
 /* Basic functions */
 js_State *js_newstate(void);
