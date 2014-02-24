@@ -374,6 +374,7 @@ static void cassignop2(JF, js_Ast *lhs)
 		emitlocal(J, F, OP_SETLOCAL, OP_SETVAR, lhs->string);
 		break;
 	case EXP_INDEX:
+		emit(J, F, OP_SETPROP);
 		break;
 	case EXP_MEMBER:
 		emitstring(J, F, OP_SETPROP_S, lhs->b->string);
