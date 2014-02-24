@@ -529,10 +529,10 @@ static Renode *parsealt(struct cstate *g)
 /* Compile */
 
 enum {
-	I_MATCH, I_JUMP, I_SPLIT, I_PLA, I_NLA,
+	I_END, I_JUMP, I_SPLIT, I_PLA, I_NLA,
 	I_ANY, I_CHAR, I_CCLASS, I_NCCLASS, I_REF,
 	I_BOL, I_EOL, I_WORD, I_NWORD,
-	I_PAR, I_ENDPAR
+	I_LPAR, I_RPAR
 };
 
 struct Reinst {
@@ -650,31 +650,31 @@ static void compile(Reprog *prog, Renode *node)
 	case P_NWORD: emit(prog, I_NWORD); break;
 
 	case P_PAR:
-		inst = emit(prog, I_PAR);
+		inst = emit(prog, I_LPAR);
 		inst->n = node->n;
 		compile(prog, node->x);
-		inst = emit(prog, I_ENDPAR);
+		inst = emit(prog, I_RPAR);
 		inst->n = node->n;
 		break;
 	case P_PLA:
 		split = emit(prog, I_PLA);
-		inst = emit(prog, I_PAR);
+		inst = emit(prog, I_LPAR);
 		inst->n = node->n;
 		compile(prog, node->x);
-		inst = emit(prog, I_ENDPAR);
+		inst = emit(prog, I_RPAR);
 		inst->n = node->n;
-		emit(prog, I_MATCH);
+		emit(prog, I_END);
 		split->x = split + 1;
 		split->y = prog->end;
 		break;
 	case P_NLA:
 		split = emit(prog, I_NLA);
-		inst = emit(prog, I_PAR);
+		inst = emit(prog, I_LPAR);
 		inst->n = node->n;
 		compile(prog, node->x);
-		inst = emit(prog, I_ENDPAR);
+		inst = emit(prog, I_RPAR);
 		inst->n = node->n;
-		emit(prog, I_MATCH);
+		emit(prog, I_END);
 		split->x = split + 1;
 		split->y = prog->end;
 		break;
@@ -744,7 +744,7 @@ static void dumpprog(Reprog *prog)
 	for (i = 0, inst = prog->start; inst < prog->end; ++i, ++inst) {
 		printf("% 5d: ", i);
 		switch (inst->opcode) {
-		case I_MATCH: puts("match"); break;
+		case I_END: puts("end"); break;
 		case I_JUMP: printf("jump %d\n", (int)(inst->x - prog->start)); break;
 		case I_SPLIT: printf("split %d %d\n", (int)(inst->x - prog->start), (int)(inst->y - prog->start)); break;
 		case I_PLA: printf("pla %d %d\n", (int)(inst->x - prog->start), (int)(inst->y - prog->start)); break;
@@ -758,8 +758,8 @@ static void dumpprog(Reprog *prog)
 		case I_EOL: puts("eol"); break;
 		case I_WORD: puts("word"); break;
 		case I_NWORD: puts("nword"); break;
-		case I_PAR: printf("par %d\n", inst->n); break;
-		case I_ENDPAR: printf("endpar %d\n", inst->n); break;
+		case I_LPAR: printf("lpar %d\n", inst->n); break;
+		case I_RPAR: printf("rpar %d\n", inst->n); break;
 		}
 	}
 }
@@ -798,10 +798,10 @@ Reprog *regcomp(const char *pattern, int cflags, const char **errorp)
 		die(&g, "syntax error");
 
 	g.prog->start = g.prog->end = malloc((count(node) + 3) * sizeof (Reinst));
-	emit(g.prog, I_PAR);
+	emit(g.prog, I_LPAR);
 	compile(g.prog, node);
-	emit(g.prog, I_ENDPAR);
-	emit(g.prog, I_MATCH);
+	emit(g.prog, I_RPAR);
+	emit(g.prog, I_END);
 
 #ifdef TEST
 	dumpnode(node);
@@ -887,7 +887,7 @@ static int match(struct estate *g, Reinst *pc, const char *s)
 
 	for (;;) {
 		switch (pc->opcode) {
-		case I_MATCH:
+		case I_END:
 			return 1;
 		case I_JUMP:
 			pc = pc->x;
@@ -998,14 +998,14 @@ static int match(struct estate *g, Reinst *pc, const char *s)
 			if (!n)
 				break;
 			return 0;
-		case I_PAR:
+		case I_LPAR:
 			p = g->m[pc->n].sp;
 			g->m[pc->n].sp = s;
 			if (match(g, pc + 1, s))
 				return 1;
 			g->m[pc->n].sp = p;
 			return 0;
-		case I_ENDPAR:
+		case I_RPAR:
 			p = g->m[pc->n].ep;
 			g->m[pc->n].ep = s;
 			if (match(g, pc + 1, s))

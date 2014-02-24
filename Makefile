@@ -4,7 +4,7 @@ OBJS := $(SRCS:%.c=build/%.o)
 
 CFLAGS = -Wall -g
 
-default: build js
+default: build js re
 
 build:
 	mkdir -p build
