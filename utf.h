@@ -25,10 +25,10 @@ enum
 	Runeerror	= 0xFFFD,	/* decoding error in UTF */
 };
 
-int		chartorune(Rune *rune, const char *str);
-int		runetochar(char *str, const Rune *rune);
-int		runelen(int c);
-int		utflen(const char *s);
+unsigned int	chartorune(Rune *rune, const char *str);
+unsigned int	runetochar(char *str, const Rune *rune);
+unsigned int	runelen(int c);
+unsigned int	utflen(const char *s);
 
 int		isalpharune(Rune c);
 int		islowerrune(Rune c);

@@ -762,11 +762,11 @@ static int js_delvar(js_State *J, const char *name)
 
 /* Function calls */
 
-static void jsR_calllwfunction(js_State *J, int n, js_Function *F, js_Environment *scope)
+static void jsR_calllwfunction(js_State *J, unsigned int n, js_Function *F, js_Environment *scope)
 {
 	js_Environment *saveE;
 	js_Value v;
-	int i;
+	unsigned int i;
 
 	saveE = J->E;
 
@@ -787,11 +787,11 @@ static void jsR_calllwfunction(js_State *J, int n, js_Function *F, js_Environmen
 	J->E = saveE;
 }
 
-static void jsR_callfunction(js_State *J, int n, js_Function *F, js_Environment *scope)
+static void jsR_callfunction(js_State *J, unsigned int n, js_Function *F, js_Environment *scope)
 {
 	js_Environment *saveE;
 	js_Value v;
-	int i;
+	unsigned int i;
 
 	saveE = J->E;
 
@@ -830,7 +830,7 @@ static void jsR_callfunction(js_State *J, int n, js_Function *F, js_Environment 
 	J->E = saveE;
 }
 
-static void jsR_callscript(js_State *J, int n, js_Function *F)
+static void jsR_callscript(js_State *J, unsigned int n, js_Function *F)
 {
 	js_Value v;
 	js_pop(J, n);
@@ -840,7 +840,7 @@ static void jsR_callscript(js_State *J, int n, js_Function *F)
 	js_pushvalue(J, v);
 }
 
-static void jsR_callcfunction(js_State *J, int n, int min, js_CFunction F)
+static void jsR_callcfunction(js_State *J, unsigned int n, int min, js_CFunction F)
 {
 	int rv, i;
 
@@ -858,7 +858,7 @@ static void jsR_callcfunction(js_State *J, int n, int min, js_CFunction F)
 	}
 }
 
-void js_call(js_State *J, int n)
+void js_call(js_State *J, unsigned int n)
 {
 	js_Object *obj;
 	int savebot;
@@ -884,7 +884,7 @@ void js_call(js_State *J, int n)
 	BOT = savebot;
 }
 
-void js_construct(js_State *J, int n)
+void js_construct(js_State *J, unsigned int n)
 {
 	js_Object *obj;
 	js_Object *prototype;

@@ -123,23 +123,23 @@ struct js_Function
 	const char *name;
 	int script;
 	int lightweight;
-	int arguments;
-	int numparams;
+	unsigned int arguments;
+	unsigned int numparams;
 
 	short *code;
-	int codecap, codelen;
+	unsigned int codecap, codelen;
 
 	js_Function **funtab;
-	int funcap, funlen;
+	unsigned int funcap, funlen;
 
 	double *numtab;
-	int numcap, numlen;
+	unsigned int numcap, numlen;
 
 	const char **strtab;
-	int strcap, strlen;
+	unsigned int strcap, strlen;
 
 	const char **vartab;
-	int varcap, varlen;
+	unsigned int varcap, varlen;
 
 	const char *filename;
 	int line;

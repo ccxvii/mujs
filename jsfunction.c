@@ -53,7 +53,7 @@ static int Fp_toString(js_State *J, unsigned int argc)
 {
 	js_Object *self = js_toobject(J, 0);
 	char *s;
-	int i, n;
+	unsigned int i, n;
 
 	if (!js_iscallable(J, 0))
 		js_typeerror(J, "not a function");

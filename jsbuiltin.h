@@ -18,7 +18,7 @@ void jsB_propf(js_State *J, const char *name, js_CFunction cfun, int n);
 void jsB_propn(js_State *J, const char *name, double number);
 void jsB_props(js_State *J, const char *name, const char *string);
 
-typedef struct js_Buffer { int n, m; char s[64]; } js_Buffer;
+typedef struct js_Buffer { unsigned int n, m; char s[64]; } js_Buffer;
 
 static void sb_putc(js_Buffer **sbp, int c)
 {

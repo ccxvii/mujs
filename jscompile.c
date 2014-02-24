@@ -77,7 +77,7 @@ static int addfunction(JF, js_Function *value)
 
 static int addnumber(JF, double value)
 {
-	int i;
+	unsigned int i;
 	for (i = 0; i < F->numlen; ++i)
 		if (F->numtab[i] == value)
 			return i;
@@ -91,7 +91,7 @@ static int addnumber(JF, double value)
 
 static int addstring(JF, const char *value)
 {
-	int i;
+	unsigned int i;
 	for (i = 0; i < F->strlen; ++i)
 		if (!strcmp(F->strtab[i], value))
 			return i;
@@ -106,7 +106,7 @@ static int addstring(JF, const char *value)
 static void addlocal(JF, const char *name, int reuse)
 {
 	if (reuse) {
-		int i;
+		unsigned int i;
 		for (i = 0; i < F->varlen; ++i)
 			if (!strcmp(F->vartab[i], name))
 				return;
@@ -120,10 +120,10 @@ static void addlocal(JF, const char *name, int reuse)
 
 static int findlocal(JF, const char *name)
 {
-	int i;
-	for (i = F->varlen - 1; i >= 0; --i)
-		if (!strcmp(F->vartab[i], name))
-			return i + 1;
+	unsigned int i;
+	for (i = F->varlen; i > 0; --i)
+		if (!strcmp(F->vartab[i-1], name))
+			return i;
 	return -1;
 }
 

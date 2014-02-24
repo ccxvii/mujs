@@ -715,7 +715,7 @@ void jsC_dumpfunction(js_State *J, js_Function *F)
 {
 	short *p = F->code;
 	short *end = F->code + F->codelen;
-	int i;
+	unsigned int i;
 
 	printf("%s(%d)\n", F->name, F->numparams);
 	if (F->lightweight) printf("\tlightweight\n");

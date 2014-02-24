@@ -552,9 +552,9 @@ struct Reinst {
 	const char *p;
 };
 
-static int count(Renode *node)
+static unsigned int count(Renode *node)
 {
-	int min, max;
+	unsigned int min, max;
 	if (!node) return 0;
 	switch (node->type) {
 	default: return 1;
@@ -864,7 +864,7 @@ static inline int incclasscanon(Reclass *cc, Rune c)
 	return 0;
 }
 
-static int strncmpcanon(const char *a, const char *b, int n)
+static int strncmpcanon(const char *a, const char *b, unsigned int n)
 {
 	Rune ra, rb;
 	int c;
@@ -884,7 +884,8 @@ static int match(struct estate *g, Reinst *pc, const char *s)
 {
 	const char *p;
 	Rune c;
-	int n;
+	unsigned int n;
+	int v;
 
 	for (;;) {
 		switch (pc->opcode) {
@@ -918,9 +919,9 @@ static int match(struct estate *g, Reinst *pc, const char *s)
 			continue;
 		case I_NLA:
 			++g->nla;
-			n = match(g, pc->x, s);
+			v = match(g, pc->x, s);
 			--g->nla;
-			if (n)
+			if (v)
 				return 0;
 			pc = pc->y;
 			continue;
@@ -965,7 +966,7 @@ static int match(struct estate *g, Reinst *pc, const char *s)
 			}
 			break;
 		case I_REF:
-			n = (int)(g->m[pc->n].ep - g->m[pc->n].sp);
+			n = g->m[pc->n].ep - g->m[pc->n].sp;
 			if (g->icase) {
 				if (strncmpcanon(s, g->m[pc->n].sp, n))
 					return 0;
@@ -991,15 +992,15 @@ static int match(struct estate *g, Reinst *pc, const char *s)
 					break;
 			return 0;
 		case I_WORD:
-			n = s > g->bol && iswordchar(s[-1]);
-			n ^= iswordchar(s[0]);
-			if (n)
+			v = s > g->bol && iswordchar(s[-1]);
+			v ^= iswordchar(s[0]);
+			if (v)
 				break;
 			return 0;
 		case I_NWORD:
-			n = s > g->bol && iswordchar(s[-1]);
-			n ^= iswordchar(s[0]);
-			if (!n)
+			v = s > g->bol && iswordchar(s[-1]);
+			v ^= iswordchar(s[0]);
+			if (!v)
 				break;
 			return 0;
 		case I_LPAR:
