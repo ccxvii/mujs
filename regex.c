@@ -7,6 +7,10 @@
 #include "regex.h"
 #include "utf.h"
 
+#define emit regemit
+#define next regnext
+#define accept regaccept
+
 #define nelem(a) (sizeof (a) / sizeof (a)[0])
 
 typedef struct Reclass Reclass;
@@ -714,9 +718,9 @@ static void dumpnode(Renode *node)
 	case P_EOL: printf("Eol"); break;
 	case P_WORD: printf("Word"); break;
 	case P_NWORD: printf("NotWord"); break;
-	case P_PAR: printf("Par("); dumpnode(node->x); printf(")"); break;
-	case P_PLA: printf("PLA("); dumpnode(node->x); printf(")"); break;
-	case P_NLA: printf("NLA("); dumpnode(node->x); printf(")"); break;
+	case P_PAR: printf("Par(%d,", node->n); dumpnode(node->x); printf(")"); break;
+	case P_PLA: printf("PLA(%d,", node->n); dumpnode(node->x); printf(")"); break;
+	case P_NLA: printf("NLA(%d,", node->n); dumpnode(node->x); printf(")"); break;
 	case P_ANY: printf("Any"); break;
 	case P_CHAR: printf("Char(%c)", node->c); break;
 	case P_CCLASS:
