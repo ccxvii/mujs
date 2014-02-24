@@ -199,6 +199,15 @@ static void labelto(JF, int inst, int addr)
 
 /* Expressions */
 
+static void ctypeof(JF, js_Ast *exp)
+{
+	if (exp->type == EXP_IDENTIFIER)
+		emitlocal(J, F, OP_GETLOCAL, OP_HASVAR, exp->string);
+	else
+		cexp(J, F, exp);
+	emit(J, F, OP_TYPEOF);
+}
+
 static void cunary(JF, js_Ast *exp, int opcode)
 {
 	cexp(J, F, exp->a);
@@ -525,7 +534,7 @@ static void cexp(JF, js_Ast *exp)
 		emit(J, F, OP_UNDEF);
 		break;
 
-	case EXP_TYPEOF: cunary(J, F, exp, OP_TYPEOF); break;
+	case EXP_TYPEOF: ctypeof(J, F, exp->a); break;
 	case EXP_POS: cunary(J, F, exp, OP_POS); break;
 	case EXP_NEG: cunary(J, F, exp, OP_NEG); break;
 	case EXP_BITNOT: cunary(J, F, exp, OP_BITNOT); break;

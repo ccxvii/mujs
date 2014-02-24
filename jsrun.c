@@ -702,7 +702,7 @@ static void js_defvar(js_State *J, const char *name)
 	jsR_defproperty(J, J->E->variables, name, JS_DONTENUM | JS_DONTCONF, NULL, NULL, NULL);
 }
 
-static void js_getvar(js_State *J, const char *name)
+static int js_hasvar(js_State *J, const char *name)
 {
 	js_Environment *E = J->E;
 	do {
@@ -715,11 +715,11 @@ static void js_getvar(js_State *J, const char *name)
 			} else {
 				js_pushvalue(J, ref->value);
 			}
-			return;
+			return 1;
 		}
 		E = E->outer;
 	} while (E);
-	js_referenceerror(J, "%s is not defined", name);
+	return 0;
 }
 
 static void js_setvar(js_State *J, const char *name)
@@ -1075,7 +1075,14 @@ static void jsR_run(js_State *J, js_Function *F)
 			break;
 
 		case OP_GETVAR:
-			js_getvar(J, ST[*pc++]);
+			str = ST[*pc++];
+			if (!js_hasvar(J, str))
+				js_referenceerror(J, "%s is not defined", str);
+			break;
+
+		case OP_HASVAR:
+			if (!js_hasvar(J, ST[*pc++]))
+				js_pushundefined(J);
 			break;
 
 		case OP_SETVAR:

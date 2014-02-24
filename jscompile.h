@@ -42,6 +42,7 @@ enum js_OpCode
 
 	OP_INITVAR,	/* <value> -S- */
 	OP_DEFVAR,	/* -S- */
+	OP_HASVAR,	/* -S- ( <value> | undefined ) */
 	OP_GETVAR,	/* -S- <value> */
 	OP_SETVAR,	/* <value> -S- <value> */
 	OP_DELVAR,	/* -S- <success> */

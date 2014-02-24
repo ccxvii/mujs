@@ -30,6 +30,7 @@
 "dellocal",
 "initvar",
 "defvar",
+"hasvar",
 "getvar",
 "setvar",
 "delvar",
