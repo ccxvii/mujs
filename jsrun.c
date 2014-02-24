@@ -187,7 +187,6 @@ static const char *js_typeof(js_State *J, int idx)
 			return "function";
 		return "object";
 	}
-	return "object";
 }
 
 js_Value js_tovalue(js_State *J, int idx)
@@ -1376,7 +1375,6 @@ static void jsR_run(js_State *J, js_Function *F)
 
 		case OP_THROW:
 			js_throw(J);
-			break;
 
 		case OP_TRY:
 			offset = *pc++;
@@ -1445,9 +1443,6 @@ static void jsR_run(js_State *J, js_Function *F)
 
 		case OP_RETURN:
 			return;
-
-		default:
-			js_error(J, "illegal instruction: %s (pc=%d)", jsC_opcodestring(opcode), (int)(pc - F->code - 1));
 		}
 	}
 }

@@ -108,7 +108,6 @@ int jsV_toboolean(js_State *J, const js_Value *v)
 	case JS_TSTRING: return v->u.string[0] != 0;
 	case JS_TOBJECT: return 1;
 	}
-	return 0;
 }
 
 /* ToNumber() on a string */
@@ -141,7 +140,6 @@ double jsV_tonumber(js_State *J, const js_Value *v)
 			return jsV_tonumber(J, &vv);
 		}
 	}
-	return 0;
 }
 
 double jsV_tointeger(js_State *J, const js_Value *v)
@@ -175,7 +173,6 @@ const char *jsV_tostring(js_State *J, const js_Value *v)
 			return jsV_tostring(J, &vv);
 		}
 	}
-	return "undefined";
 }
 
 /* Objects */
@@ -213,7 +210,6 @@ js_Object *jsV_toobject(js_State *J, const js_Value *v)
 	case JS_TSTRING: return jsV_newstring(J, v->u.string);
 	case JS_TOBJECT: return v->u.object;
 	}
-	js_typeerror(J, "cannot convert value to object");
 }
 
 void js_newobject(js_State *J)
