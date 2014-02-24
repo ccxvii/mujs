@@ -25,6 +25,7 @@ struct Reclass {
 struct Reprog {
 	Reinst *start, *end;
 	int icase, newline;
+	int ncap;
 	Reclass cclass[16];
 };
 
@@ -413,20 +414,6 @@ static inline int accept(struct cstate *g, int t)
 
 static Renode *parsealt(struct cstate *g);
 
-static Renode *parsecap(struct cstate *g, int type)
-{
-	Renode *atom = newnode(g, type);
-	if (++g->ncap == 10)
-		die(g, "too many captures");
-	atom->n = g->ncap;
-	g->nref[atom->n] = 0;
-	atom->x = parsealt(g);
-	g->nref[atom->n] = 1;
-	if (!accept(g, ')'))
-		die(g, "unmatched '('");
-	return atom;
-}
-
 static Renode *parseatom(struct cstate *g)
 {
 	Renode *atom;
@@ -458,18 +445,38 @@ static Renode *parseatom(struct cstate *g)
 	}
 	if (accept(g, '.'))
 		return newnode(g, P_ANY);
+	if (accept(g, '(')) {
+		atom = newnode(g, P_PAR);
+		if (++g->ncap == 10)
+			die(g, "too many captures");
+		atom->n = g->ncap;
+		g->nref[atom->n] = 0;
+		atom->x = parsealt(g);
+		g->nref[atom->n] = 1;
+		if (!accept(g, ')'))
+			die(g, "unmatched '('");
+		return atom;
+	}
 	if (accept(g, L_NC)) {
 		atom = parsealt(g);
 		if (!accept(g, ')'))
 			die(g, "unmatched '('");
 		return atom;
 	}
-	if (accept(g, '('))
-		return parsecap(g, P_PAR);
-	if (accept(g, L_PLA))
-		return parsecap(g, P_PLA);
-	if (accept(g, L_NLA))
-		return parsecap(g, P_NLA);
+	if (accept(g, L_PLA)) {
+		atom = newnode(g, P_PLA);
+		atom->x = parsealt(g);
+		if (!accept(g, ')'))
+			die(g, "unmatched '('");
+		return atom;
+	}
+	if (accept(g, L_NLA)) {
+		atom = newnode(g, P_NLA);
+		atom->x = parsealt(g);
+		if (!accept(g, ')'))
+			die(g, "unmatched '('");
+		return atom;
+	}
 	die(g, "syntax error");
 	return NULL;
 }
@@ -560,8 +567,8 @@ static int count(Renode *node)
 		if (max < USHRT_MAX) return count(node->x) * max + (max - min);
 		return count(node->x) * (min + 1) + 2;
 	case P_PAR: return count(node->x) + 2;
-	case P_PLA: return count(node->x) + 4;
-	case P_NLA: return count(node->x) + 4;
+	case P_PLA: return count(node->x) + 2;
+	case P_NLA: return count(node->x) + 2;
 	}
 }
 
@@ -658,22 +665,14 @@ static void compile(Reprog *prog, Renode *node)
 		break;
 	case P_PLA:
 		split = emit(prog, I_PLA);
-		inst = emit(prog, I_LPAR);
-		inst->n = node->n;
 		compile(prog, node->x);
-		inst = emit(prog, I_RPAR);
-		inst->n = node->n;
 		emit(prog, I_END);
 		split->x = split + 1;
 		split->y = prog->end;
 		break;
 	case P_NLA:
 		split = emit(prog, I_NLA);
-		inst = emit(prog, I_LPAR);
-		inst->n = node->n;
 		compile(prog, node->x);
-		inst = emit(prog, I_RPAR);
-		inst->n = node->n;
 		emit(prog, I_END);
 		split->x = split + 1;
 		split->y = prog->end;
@@ -719,8 +718,8 @@ static void dumpnode(Renode *node)
 	case P_WORD: printf("Word"); break;
 	case P_NWORD: printf("NotWord"); break;
 	case P_PAR: printf("Par(%d,", node->n); dumpnode(node->x); printf(")"); break;
-	case P_PLA: printf("PLA(%d,", node->n); dumpnode(node->x); printf(")"); break;
-	case P_NLA: printf("NLA(%d,", node->n); dumpnode(node->x); printf(")"); break;
+	case P_PLA: printf("PLA("); dumpnode(node->x); printf(")"); break;
+	case P_NLA: printf("NLA("); dumpnode(node->x); printf(")"); break;
 	case P_ANY: printf("Any"); break;
 	case P_CHAR: printf("Char(%c)", node->c); break;
 	case P_CCLASS:
@@ -797,6 +796,7 @@ Reprog *regcomp(const char *pattern, int cflags, const char **errorp)
 	if (g.lookahead != 0)
 		die(&g, "syntax error");
 
+	g.prog->ncap = g.ncap;
 	g.prog->start = g.prog->end = malloc((count(node) + 3) * sizeof (Reinst));
 	emit(g.prog, I_LPAR);
 	compile(g.prog, node);
@@ -827,6 +827,7 @@ void regfree(Reprog *prog)
 
 struct estate {
 	int icase, newline, notbol;
+	int nla;
 	const char *bol;
 	Resub *m;
 };
@@ -916,7 +917,10 @@ static int match(struct estate *g, Reinst *pc, const char *s)
 			pc = pc->y;
 			continue;
 		case I_NLA:
-			if (match(g, pc->x, s))
+			++g->nla;
+			n = match(g, pc->x, s);
+			--g->nla;
+			if (n)
 				return 0;
 			pc = pc->y;
 			continue;
@@ -1001,15 +1005,19 @@ static int match(struct estate *g, Reinst *pc, const char *s)
 		case I_LPAR:
 			p = g->m[pc->n].sp;
 			g->m[pc->n].sp = s;
-			if (match(g, pc + 1, s))
+			if (match(g, pc + 1, s)) {
+				if (g->nla) g->m[pc->n].sp = p;
 				return 1;
+			}
 			g->m[pc->n].sp = p;
 			return 0;
 		case I_RPAR:
 			p = g->m[pc->n].ep;
 			g->m[pc->n].ep = s;
-			if (match(g, pc + 1, s))
+			if (match(g, pc + 1, s)) {
+				if (g->nla) g->m[pc->n].ep = p;
 				return 1;
+			}
 			g->m[pc->n].ep = p;
 			return 0;
 		default:
@@ -1030,9 +1038,10 @@ int regexec(Reprog *prog, const char *s, int n, Resub *m, int eflags)
 	g.newline = prog->newline;
 	g.notbol = eflags & REG_NOTBOL;
 	g.bol = s;
+	g.nla = 0;
 	g.m = m ? m : gm;
-	for (i = 0; i < n; ++i)
-		g.m[i].sp = g.m[i].ep = NULL;
+	for (i = 0; i < 10; ++i)
+		g.m[i].sp = g.m[i].ep = i <= prog->ncap ? s : NULL;
 
 	do {
 		if (match(&g, prog->start, s))
@@ -1061,6 +1070,7 @@ int main(int argc, char **argv)
 
 		if (argc > 2) {
 			s = argv[2];
+			printf("ncap = %d\n", p->ncap);
 			if (!regexec(p, s, 10, m, 0)) {
 				for (i = 0; i < 10; ++i)
 					if (m[i].sp) {
