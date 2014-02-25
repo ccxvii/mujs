@@ -29,7 +29,7 @@ void js_loadfile(js_State *J, const char *filename)
 	char *s;
 	int n, t;
 
-	f = fopen(filename, "r");
+	f = fopen(filename, "rb");
 	if (!f) {
 		js_error(J, "cannot open file: '%s'", filename);
 	}
