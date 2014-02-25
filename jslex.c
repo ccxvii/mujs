@@ -98,7 +98,7 @@ int jsY_findword(const char *s, const char **list, int num)
 	return -1;
 }
 
-static inline int jsY_findkeyword(js_State *J, const char *s)
+static int jsY_findkeyword(js_State *J, const char *s)
 {
 	int i = jsY_findword(s, keywords, nelem(keywords));
 	if (i >= 0) {
@@ -119,17 +119,17 @@ int jsY_isnewline(int c)
 	return c == 0xA || c == 0xD || c == 0x2028 || c == 0x2029;
 }
 
-static inline int jsY_isidentifierstart(int c)
+static int jsY_isidentifierstart(int c)
 {
 	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '$' || c == '_' || isalpharune(c);
 }
 
-static inline int jsY_isidentifierpart(int c)
+static int jsY_isidentifierpart(int c)
 {
 	return (c >= '0' && c <= '9') || jsY_isidentifierstart(c);
 }
 
-static inline int jsY_isdec(int c)
+static int jsY_isdec(int c)
 {
 	return (c >= '0' && c <= '9');
 }
@@ -192,7 +192,7 @@ static void textinit(js_State *J)
 	J->lexbuf.len = 0;
 }
 
-static inline void textpush(js_State *J, Rune c)
+static void textpush(js_State *J, Rune c)
 {
 	int n = runelen(c);
 	if (J->lexbuf.len + n > J->lexbuf.cap) {
@@ -202,19 +202,19 @@ static inline void textpush(js_State *J, Rune c)
 	J->lexbuf.len += runetochar(J->lexbuf.text + J->lexbuf.len, &c);
 }
 
-static inline char *textend(js_State *J)
+static char *textend(js_State *J)
 {
 	textpush(J, 0);
 	return J->lexbuf.text;
 }
 
-static inline void lexlinecomment(js_State *J)
+static void lexlinecomment(js_State *J)
 {
 	while (PEEK && PEEK != '\n')
 		NEXT();
 }
 
-static inline int lexcomment(js_State *J)
+static int lexcomment(js_State *J)
 {
 	/* already consumed initial '/' '*' sequence */
 	while (PEEK != 0) {
@@ -229,7 +229,7 @@ static inline int lexcomment(js_State *J)
 	return -1;
 }
 
-static inline double lexhex(js_State *J)
+static double lexhex(js_State *J)
 {
 	double n = 0;
 	if (!jsY_ishex(PEEK))
@@ -241,7 +241,7 @@ static inline double lexhex(js_State *J)
 	return n;
 }
 
-static inline double lexinteger(js_State *J)
+static double lexinteger(js_State *J)
 {
 	double n = 0;
 	if (!jsY_isdec(PEEK))
@@ -253,7 +253,7 @@ static inline double lexinteger(js_State *J)
 	return n;
 }
 
-static inline double lexfraction(js_State *J)
+static double lexfraction(js_State *J)
 {
 	double n = 0;
 	double d = 1;
@@ -265,7 +265,7 @@ static inline double lexfraction(js_State *J)
 	return n / d;
 }
 
-static inline double lexexponent(js_State *J)
+static double lexexponent(js_State *J)
 {
 	double sign;
 	if (ACCEPT('e') || ACCEPT('E')) {
@@ -277,7 +277,7 @@ static inline double lexexponent(js_State *J)
 	return 0;
 }
 
-static inline int lexnumber(js_State *J)
+static int lexnumber(js_State *J)
 {
 	double n;
 	double e;
@@ -315,7 +315,7 @@ static inline int lexnumber(js_State *J)
 	return TK_NUMBER;
 }
 
-static inline int lexescape(js_State *J)
+static int lexescape(js_State *J)
 {
 	int x = 0;
 
@@ -354,7 +354,7 @@ static inline int lexescape(js_State *J)
 	return 0;
 }
 
-static inline int lexstring(js_State *J)
+static int lexstring(js_State *J)
 {
 	const char *s;
 
@@ -452,7 +452,7 @@ static int lexregexp(js_State *J)
 }
 
 /* simple "return [no Line Terminator here] ..." contexts */
-static inline int isnlthcontext(int last)
+static int isnlthcontext(int last)
 {
 	switch (last) {
 	case TK_BREAK:

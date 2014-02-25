@@ -146,7 +146,7 @@ static void jsB_RegExp(js_State *J, unsigned int argc)
 {
 	if (js_isregexp(J, 1) && argc == 1)
 		return;
-	return jsB_new_RegExp(J, argc);
+	jsB_new_RegExp(J, argc);
 }
 
 static void Rp_toString(js_State *J, unsigned int argc)
@@ -176,7 +176,7 @@ static void Rp_toString(js_State *J, unsigned int argc)
 
 static void Rp_exec(js_State *J, unsigned int argc)
 {
-	return js_RegExp_prototype_exec(J, js_toregexp(J, 0), js_tostring(J, 1));
+	js_RegExp_prototype_exec(J, js_toregexp(J, 0), js_tostring(J, 1));
 }
 
 void jsB_initregexp(js_State *J)

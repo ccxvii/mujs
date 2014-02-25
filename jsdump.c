@@ -130,23 +130,23 @@ static int prec(enum js_AstType type)
 	}
 }
 
-static inline void pc(int c)
+static void pc(int c)
 {
 	putchar(c);
 }
 
-static inline void ps(const char *s)
+static void ps(const char *s)
 {
 	fputs(s, stdout);
 }
 
-static inline void in(int d)
+static void in(int d)
 {
 	while (d-- > 0)
 		putchar('\t');
 }
 
-static inline void nl(void)
+static void nl(void)
 {
 	putchar('\n');
 }

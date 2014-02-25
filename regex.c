@@ -54,7 +54,7 @@ static void die(struct cstate *g, const char *message)
 	longjmp(g->kaboom, 1);
 }
 
-static inline int canon(Rune c)
+static int canon(Rune c)
 {
 	Rune u = toupperrune(c);
 	if (c >= 128 && u < 128)
@@ -398,12 +398,12 @@ static Renode *newrep(struct cstate *g, Renode *atom, int ng, int min, int max)
 	return rep;
 }
 
-static inline void next(struct cstate *g)
+static void next(struct cstate *g)
 {
 	g->lookahead = lex(g);
 }
 
-static inline int accept(struct cstate *g, int t)
+static int accept(struct cstate *g, int t)
 {
 	if (g->lookahead == t) {
 		next(g);
@@ -832,12 +832,12 @@ struct estate {
 	Resub *m;
 };
 
-static inline int isnewline(int c)
+static int isnewline(int c)
 {
 	return c == 0xA || c == 0xD || c == 0x2028 || c == 0x2029;
 }
 
-static inline int iswordchar(int c)
+static int iswordchar(int c)
 {
 	return c == '_' ||
 		(c >= 'a' && c <= 'z') ||
@@ -845,7 +845,7 @@ static inline int iswordchar(int c)
 		(c >= '0' && c <= '9');
 }
 
-static inline int incclass(Reclass *cc, Rune c)
+static int incclass(Reclass *cc, Rune c)
 {
 	Rune *p;
 	for (p = cc->spans; p < cc->end; p += 2)
@@ -854,7 +854,7 @@ static inline int incclass(Reclass *cc, Rune c)
 	return 0;
 }
 
-static inline int incclasscanon(Reclass *cc, Rune c)
+static int incclasscanon(Reclass *cc, Rune c)
 {
 	Rune *p, r;
 	for (p = cc->spans; p < cc->end; p += 2)
@@ -895,8 +895,8 @@ static int match(struct estate *g, Reinst *pc, const char *s)
 			pc = pc->x;
 			continue;
 		case I_SPLIT:
-			// TODO: use I_PROGRESS instead?
 #if 0
+			// TODO: use I_PROGRESS instead?
 			if (match(g, pc->x, s))
 				return 1;
 			pc = pc->y;

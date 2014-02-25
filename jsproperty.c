@@ -57,7 +57,7 @@ static js_Property *lookup(js_Property *node, const char *name)
 	return NULL;
 }
 
-static inline js_Property *skew(js_Property *node)
+static js_Property *skew(js_Property *node)
 {
 	if (node->left->level == node->level) {
 		js_Property *temp = node;
@@ -68,7 +68,7 @@ static inline js_Property *skew(js_Property *node)
 	return node;
 }
 
-static inline js_Property *split(js_Property *node)
+static js_Property *split(js_Property *node)
 {
 	if (node->right->right->level == node->level) {
 		js_Property *temp = node;

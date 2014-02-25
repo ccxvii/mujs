@@ -3,7 +3,7 @@ HDRS := $(wildcard js*.h utf.h regex.h)
 OBJS := $(SRCS:%.c=build/%.o)
 
 CC := clang
-CFLAGS := -Wall -Wextra -Wunreachable-code -Wno-unused-parameter -Werror -g
+CFLAGS := -std=c99 -pedantic -Wall -Wextra -Wunreachable-code -Wno-unused-parameter -Werror -g
 
 default: build js re
 

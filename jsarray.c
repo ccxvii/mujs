@@ -400,7 +400,7 @@ static void Ap_unshift(js_State *J, unsigned int argc)
 static void Ap_toString(js_State *J, unsigned int argc)
 {
 	js_pop(J, argc);
-	return Ap_join(J, 0);
+	Ap_join(J, 0);
 }
 
 static void Ap_indexOf(js_State *J, unsigned int argc)

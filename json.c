@@ -5,12 +5,12 @@
 
 #include "utf.h"
 
-static inline void jsonnext(js_State *J)
+static void jsonnext(js_State *J)
 {
 	J->lookahead = jsY_lexjson(J);
 }
 
-static inline int jsonaccept(js_State *J, int t)
+static int jsonaccept(js_State *J, int t)
 {
 	if (J->lookahead == t) {
 		jsonnext(J);
@@ -19,7 +19,7 @@ static inline int jsonaccept(js_State *J, int t)
 	return 0;
 }
 
-static inline void jsonexpect(js_State *J, int t)
+static void jsonexpect(js_State *J, int t)
 {
 	if (!jsonaccept(J, t))
 		js_syntaxerror(J, "JSON: unexpected token: %s (expected %s)",

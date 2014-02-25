@@ -130,12 +130,12 @@ void jsP_freeparse(js_State *J)
 
 /* Lookahead */
 
-static inline void next(js_State *J)
+static void next(js_State *J)
 {
 	J->lookahead = jsY_lex(J);
 }
 
-static inline int accept(js_State *J, int t)
+static int accept(js_State *J, int t)
 {
 	if (J->lookahead == t) {
 		next(J);
@@ -144,7 +144,7 @@ static inline int accept(js_State *J, int t)
 	return 0;
 }
 
-static inline void expect(js_State *J, int t)
+static void expect(js_State *J, int t)
 {
 	if (accept(J, t))
 		return;
@@ -883,7 +883,7 @@ static js_Ast *funbody(js_State *J)
 
 /* Constant folding */
 
-static inline int toint32(double d)
+static int toint32(double d)
 {
 	double two32 = 4294967296.0;
 	double two31 = 2147483648.0;
@@ -899,7 +899,7 @@ static inline int toint32(double d)
 		return d;
 }
 
-static inline unsigned int touint32(double d)
+static unsigned int touint32(double d)
 {
 	return toint32(d);
 }

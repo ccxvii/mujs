@@ -322,8 +322,10 @@ static void Sp_match(js_State *J, unsigned int argc)
 		js_newregexp(J, js_tostring(J, 1), 0);
 
 	re = js_toregexp(J, -1);
-	if (!(re->flags & JS_REGEXP_G))
-		return js_RegExp_prototype_exec(J, re, text);
+	if (!(re->flags & JS_REGEXP_G)) {
+		js_RegExp_prototype_exec(J, re, text);
+		return;
+	}
 
 	re->last = 0;
 
@@ -526,8 +528,9 @@ static void Sp_replace_string(js_State *J, unsigned int argc)
 static void Sp_replace(js_State *J, unsigned int argc)
 {
 	if (js_isregexp(J, 1))
-		return Sp_replace_regexp(J, argc);
-	return Sp_replace_string(J, argc);
+		Sp_replace_regexp(J, argc);
+	else
+		Sp_replace_string(J, argc);
 }
 
 static void Sp_split_regexp(js_State *J, unsigned int argc)
