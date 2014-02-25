@@ -2,7 +2,8 @@ SRCS := $(wildcard js*.c utf*.c regex.c)
 HDRS := $(wildcard js*.h utf.h regex.h)
 OBJS := $(SRCS:%.c=build/%.o)
 
-CFLAGS = -Wall -g
+CC := clang
+CFLAGS := -Wall -Wextra -Wunreachable-code -Wno-unused-parameter -Werror -g
 
 default: build js re
 

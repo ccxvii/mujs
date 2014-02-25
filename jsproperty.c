@@ -18,7 +18,14 @@
 	split() fixes consecutive right horizontal links.
 */
 
-static js_Property sentinel = { "", &sentinel, &sentinel, 0 };
+static js_Property sentinel = {
+	"",
+	&sentinel, &sentinel,
+	NULL, NULL,
+	0, 0,
+	{ 0, { 0 } },
+	NULL, NULL
+};
 
 static js_Property *newproperty(js_State *J, const char *name)
 {
