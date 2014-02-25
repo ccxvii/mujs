@@ -6,14 +6,14 @@
 
 #define JF js_State *J, js_Function *F
 
-JS_NORETURN int jsC_error(js_State *J, js_Ast *node, const char *fmt, ...) JS_PRINTFLIKE(3,4);
+JS_NORETURN void jsC_error(js_State *J, js_Ast *node, const char *fmt, ...) JS_PRINTFLIKE(3,4);
 
 static void cfunbody(JF, js_Ast *name, js_Ast *params, js_Ast *body);
 static void cexp(JF, js_Ast *exp);
 static void cstmlist(JF, js_Ast *list);
 static void cstm(JF, js_Ast *stm);
 
-int jsC_error(js_State *J, js_Ast *node, const char *fmt, ...)
+void jsC_error(js_State *J, js_Ast *node, const char *fmt, ...)
 {
 	va_list ap;
 	char buf[512];

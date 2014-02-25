@@ -76,8 +76,8 @@ JS_NORETURN void js_throw(js_State *J);
 void js_loadstring(js_State *J, const char *filename, const char *source);
 void js_loadfile(js_State *J, const char *filename);
 
-void js_call(js_State *J, unsigned int n);
-void js_construct(js_State *J, unsigned int n);
+void js_call(js_State *J, int n);
+void js_construct(js_State *J, int n);
 
 const char *js_ref(js_State *J);
 void js_unref(js_State *J, const char *ref);

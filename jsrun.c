@@ -854,15 +854,15 @@ static void jsR_callcfunction(js_State *J, unsigned int n, unsigned int min, js_
 	js_pushvalue(J, v);
 }
 
-void js_call(js_State *J, unsigned int n)
+void js_call(js_State *J, int n)
 {
 	js_Object *obj;
 	int savebot;
 
-	if (!js_iscallable(J, -n - 2))
+	if (!js_iscallable(J, -n-2))
 		js_typeerror(J, "called object is not a function");
 
-	obj = js_toobject(J, -n - 2);
+	obj = js_toobject(J, -n-2);
 
 	savebot = BOT;
 	BOT = TOP - n - 1;
@@ -880,16 +880,16 @@ void js_call(js_State *J, unsigned int n)
 	BOT = savebot;
 }
 
-void js_construct(js_State *J, unsigned int n)
+void js_construct(js_State *J, int n)
 {
 	js_Object *obj;
 	js_Object *prototype;
 	js_Object *newobj;
 
-	if (!js_iscallable(J, -n - 1))
+	if (!js_iscallable(J, -n-1))
 		js_typeerror(J, "called object is not a function");
 
-	obj = js_toobject(J, -n - 1);
+	obj = js_toobject(J, -n-1);
 
 	/* built-in constructors create their own objects, give them a 'null' this */
 	if (obj->type == JS_CCFUNCTION && obj->u.c.constructor) {

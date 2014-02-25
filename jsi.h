@@ -12,10 +12,19 @@
 #include <math.h>
 #include <float.h>
 
-#ifdef _WIN32
+#ifdef _MSC_VER
+#pragma warning(disable:4996) /* _CRT_SECURE_NO_WARNINGS */
+#pragma warning(disable:4244) /* implicit conversion from double to int */
+#pragma warning(disable:4267) /* implicit conversion of int to smaller int */
 #define inline __inline
 #define snprintf _snprintf
 #define vsnprintf _vsnprintf
+#define round(x) floor((x) < 0 ? (x) - 0.5 : (x) + 0.5)
+#define isnan(x) _isnan(x)
+#define isinf(x) (!_finite(x))
+#define isfinite(x) _finite(x)
+#define INFINITY (DBL_MAX+DBL_MAX)
+#define NAN (INFINITY-INFINITY)
 #endif
 
 typedef struct js_Regexp js_Regexp;
