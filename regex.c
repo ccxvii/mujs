@@ -13,6 +13,8 @@
 
 #define nelem(a) (sizeof (a) / sizeof (a)[0])
 
+#define REPINF 255
+
 typedef struct Reclass Reclass;
 typedef struct Renode Renode;
 typedef struct Reinst Reinst;
@@ -134,13 +136,13 @@ static int lexcount(struct cstate *g)
 		g->yymin = g->yymin * 10 + dec(g, g->yychar);
 		nextrune(g);
 	}
-	if (g->yymin >= USHRT_MAX)
+	if (g->yymin >= REPINF)
 		die(g, "numeric overflow");
 
 	if (g->yychar == ',') {
 		nextrune(g);
 		if (g->yychar == '}') {
-			g->yymax = USHRT_MAX;
+			g->yymax = REPINF;
 		} else {
 			g->yymax = dec(g, g->yychar);
 			nextrune(g);
@@ -148,7 +150,7 @@ static int lexcount(struct cstate *g)
 				g->yymax = g->yymax * 10 + dec(g, g->yychar);
 				nextrune(g);
 			}
-			if (g->yymax >= USHRT_MAX)
+			if (g->yymax >= REPINF)
 				die(g, "numeric overflow");
 		}
 	} else {
@@ -366,11 +368,10 @@ enum {
 };
 
 struct Renode {
-	int type;
-	Reclass *cc;
+	unsigned char type;
+	unsigned char ng, m, n;
 	Rune c;
-	unsigned char ng;
-	unsigned short m, n;
+	Reclass *cc;
 	Renode *x;
 	Renode *y;
 };
@@ -498,8 +499,8 @@ static Renode *parserep(struct cstate *g)
 			die(g, "invalid quantifier");
 		return newrep(g, atom, accept(g, '?'), min, max);
 	}
-	if (accept(g, '*')) return newrep(g, atom, accept(g, '?'), 0, USHRT_MAX);
-	if (accept(g, '+')) return newrep(g, atom, accept(g, '?'), 1, USHRT_MAX);
+	if (accept(g, '*')) return newrep(g, atom, accept(g, '?'), 0, REPINF);
+	if (accept(g, '+')) return newrep(g, atom, accept(g, '?'), 1, REPINF);
 	if (accept(g, '?')) return newrep(g, atom, accept(g, '?'), 0, 1);
 	return atom;
 }
@@ -543,10 +544,10 @@ enum {
 };
 
 struct Reinst {
-	int opcode;
-	Reclass *cc;
-	Rune c;
+	unsigned char opcode;
 	unsigned char n;
+	Rune c;
+	Reclass *cc;
 	Reinst *x;
 	Reinst *y;
 	const char *p;
@@ -564,7 +565,7 @@ static unsigned int count(Renode *node)
 		min = node->m;
 		max = node->n;
 		if (min == max) return count(node->x) * min;
-		if (max < USHRT_MAX) return count(node->x) * max + (max - min);
+		if (max < REPINF) return count(node->x) * max + (max - min);
 		return count(node->x) * (min + 1) + 2;
 	case P_PAR: return count(node->x) + 2;
 	case P_PLA: return count(node->x) + 2;
@@ -587,7 +588,7 @@ static Reinst *emit(Reprog *prog, int opcode)
 static void compile(Reprog *prog, Renode *node)
 {
 	Reinst *inst, *split, *jump;
-	int i;
+	unsigned int i;
 
 	if (!node)
 		return;
@@ -615,7 +616,7 @@ static void compile(Reprog *prog, Renode *node)
 		}
 		if (node->m == node->n)
 			break;
-		if (node->n < USHRT_MAX) {
+		if (node->n < REPINF) {
 			for (i = node->m; i < node->n; ++i) {
 				split = emit(prog, I_SPLIT);
 				compile(prog, node->x);
