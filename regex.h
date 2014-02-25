@@ -19,13 +19,10 @@ void regfree(Reprog *prog);
 enum {
 	/* regcomp flags */
 	REG_ICASE = 1,
-	REG_NEWLINE = 2
-};
+	REG_NEWLINE = 2,
 
-enum {
 	/* regexec flags */
-	REG_NOTBOL = 1,
-	REG_NOTEOL = 2
+	REG_NOTBOL = 4,
 };
 
 #endif

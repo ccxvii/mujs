@@ -14,10 +14,13 @@
 #define nelem(a) (sizeof (a) / sizeof (a)[0])
 
 #define REPINF 255
+#define MAXTHREAD 1000
+#define MAXSUB 10
 
 typedef struct Reclass Reclass;
 typedef struct Renode Renode;
 typedef struct Reinst Reinst;
+typedef struct Rethread Rethread;
 
 struct Reclass {
 	Rune *end;
@@ -26,7 +29,7 @@ struct Reclass {
 
 struct Reprog {
 	Reinst *start, *end;
-	int icase, newline;
+	int flags;
 	unsigned int ncap;
 	Reclass cclass[16];
 };
@@ -34,12 +37,11 @@ struct Reprog {
 struct cstate {
 	Reprog *prog;
 	Renode *pstart, *pend;
-	int flags;
 
 	const char *source;
 	unsigned int ncclass;
 	unsigned int ncap;
-	int nref[10];
+	int nref[MAXSUB];
 
 	int lookahead;
 	Rune yychar;
@@ -448,7 +450,7 @@ static Renode *parseatom(struct cstate *g)
 		return newnode(g, P_ANY);
 	if (accept(g, '(')) {
 		atom = newnode(g, P_PAR);
-		if (++g->ncap == 10)
+		if (++g->ncap == MAXSUB)
 			die(g, "too many captures");
 		atom->n = g->ncap;
 		g->nref[atom->n] = 0;
@@ -538,7 +540,7 @@ static Renode *parsealt(struct cstate *g)
 
 enum {
 	I_END, I_JUMP, I_SPLIT, I_PLA, I_NLA,
-	I_ANY, I_CHAR, I_CCLASS, I_NCCLASS, I_REF,
+	I_ANYNL, I_ANY, I_CHAR, I_CCLASS, I_NCCLASS, I_REF,
 	I_BOL, I_EOL, I_WORD, I_NWORD,
 	I_LPAR, I_RPAR
 };
@@ -550,7 +552,6 @@ struct Reinst {
 	Reclass *cc;
 	Reinst *x;
 	Reinst *y;
-	const char *p;
 };
 
 static unsigned int count(Renode *node)
@@ -577,11 +578,10 @@ static Reinst *emit(Reprog *prog, int opcode)
 {
 	Reinst *inst = prog->end++;
 	inst->opcode = opcode;
-	inst->cc = NULL;
-	inst->c = 0;
 	inst->n = 0;
+	inst->c = 0;
+	inst->cc = NULL;
 	inst->x = inst->y = NULL;
-	inst->p = 0;
 	return inst;
 }
 
@@ -684,7 +684,7 @@ static void compile(Reprog *prog, Renode *node)
 		break;
 	case P_CHAR:
 		inst = emit(prog, I_CHAR);
-		inst->c = prog->icase ? canon(node->c) : node->c;
+		inst->c = (prog->flags & REG_ICASE) ? canon(node->c) : node->c;
 		break;
 	case P_CCLASS:
 		inst = emit(prog, I_CCLASS);
@@ -750,6 +750,7 @@ static void dumpprog(Reprog *prog)
 		case I_PLA: printf("pla %d %d\n", (int)(inst->x - prog->start), (int)(inst->y - prog->start)); break;
 		case I_NLA: printf("nla %d %d\n", (int)(inst->x - prog->start), (int)(inst->y - prog->start)); break;
 		case I_ANY: puts("any"); break;
+		case I_ANYNL: puts("anynl"); break;
 		case I_CHAR: printf(inst->c >= 32 && inst->c < 127 ? "char '%c'\n" : "char U+%04X\n", inst->c); break;
 		case I_CCLASS: puts("cclass"); break;
 		case I_NCCLASS: puts("ncclass"); break;
@@ -769,6 +770,7 @@ Reprog *regcomp(const char *pattern, int cflags, const char **errorp)
 {
 	struct cstate g;
 	Renode *node;
+	Reinst *split, *jump;
 	int i;
 
 	g.prog = malloc(sizeof (Reprog));
@@ -784,11 +786,10 @@ Reprog *regcomp(const char *pattern, int cflags, const char **errorp)
 	g.source = pattern;
 	g.ncclass = 0;
 	g.ncap = 0;
-	for (i = 0; i < 10; ++i)
+	for (i = 0; i < MAXSUB; ++i)
 		g.nref[i] = 0;
 
-	g.prog->icase = cflags & REG_ICASE;
-	g.prog->newline = cflags & REG_NEWLINE;
+	g.prog->flags = cflags;
 
 	next(&g);
 	node = parsealt(&g);
@@ -798,7 +799,14 @@ Reprog *regcomp(const char *pattern, int cflags, const char **errorp)
 		die(&g, "syntax error");
 
 	g.prog->ncap = g.ncap;
-	g.prog->start = g.prog->end = malloc((count(node) + 3) * sizeof (Reinst));
+	g.prog->start = g.prog->end = malloc((count(node) + 6) * sizeof (Reinst));
+
+	split = emit(g.prog, I_SPLIT);
+	split->x = split + 3;
+	split->y = split + 1;
+	emit(g.prog, I_ANYNL);
+	jump = emit(g.prog, I_JUMP);
+	jump->x = split;
 	emit(g.prog, I_LPAR);
 	compile(g.prog, node);
 	emit(g.prog, I_RPAR);
@@ -825,13 +833,6 @@ void regfree(Reprog *prog)
 }
 
 /* Match */
-
-struct estate {
-	int icase, newline, notbol;
-	int nla;
-	const char *bol;
-	Resub *m;
-};
 
 static int isnewline(int c)
 {
@@ -881,176 +882,182 @@ static int strncmpcanon(const char *a, const char *b, unsigned int n)
 	return 0;
 }
 
-static int match(struct estate *g, Reinst *pc, const char *s)
-{
-	const char *p;
-	Rune c;
-	unsigned int n;
-	int v;
+struct Rethread {
+	Reinst *pc;
+	const char *sp;
+	Resub sub[MAXSUB];
+};
 
-	for (;;) {
-		switch (pc->opcode) {
-		case I_END:
-			return 1;
-		case I_JUMP:
-			pc = pc->x;
-			continue;
-		case I_SPLIT:
-#if 0
-			if (match(g, pc->x, s))
-				return 1;
-			pc = pc->y;
-			continue;
-#endif
-			if (pc->p == s)
-				return 0;
-			p = pc->p;
-			pc->p = s;
-			v = match(g, pc->x, s);
-			pc->p = p;
-			if (v)
-				return 1;
-			pc = pc->y;
-			continue;
-		case I_PLA:
-			if (!match(g, pc->x, s))
-				return 0;
-			pc = pc->y;
-			continue;
-		case I_NLA:
-			++g->nla;
-			v = match(g, pc->x, s);
-			--g->nla;
-			if (v)
-				return 0;
-			pc = pc->y;
-			continue;
-		case I_ANY:
-			s += chartorune(&c, s);
-			if (c == 0)
-				return 0;
-			if (isnewline(c))
-				return 0;
-			break;
-		case I_CHAR:
-			s += chartorune(&c, s);
-			if (c == 0)
-				return 0;
-			if (g->icase)
-				c = canon(c);
-			if (c != pc->c)
-				return 0;
-			break;
-		case I_CCLASS:
-			s += chartorune(&c, s);
-			if (c == 0)
-				return 0;
-			if (g->icase) {
-				if (!incclasscanon(pc->cc, canon(c)))
-					return 0;
-			} else {
-				if (!incclass(pc->cc, c))
-					return 0;
-			}
-			break;
-		case I_NCCLASS:
-			s += chartorune(&c, s);
-			if (c == 0)
-				return 0;
-			if (g->icase) {
-				if (incclasscanon(pc->cc, canon(c)))
-					return 0;
-			} else {
-				if (incclass(pc->cc, c))
-					return 0;
-			}
-			break;
-		case I_REF:
-			n = g->m[pc->n].ep - g->m[pc->n].sp;
-			if (g->icase) {
-				if (strncmpcanon(s, g->m[pc->n].sp, n))
-					return 0;
-			} else {
-				if (strncmp(s, g->m[pc->n].sp, n))
-					return 0;
-			}
-			if (n > 0)
-				s += n;
-			break;
-		case I_BOL:
-			if (s == g->bol && !g->notbol)
-				break;
-			if (g->newline)
-				if (s > g->bol && isnewline(s[-1]))
-					break;
-			return 0;
-		case I_EOL:
-			if (*s == 0)
-				break;
-			if (g->newline)
-				if (isnewline(*s))
-					break;
-			return 0;
-		case I_WORD:
-			v = s > g->bol && iswordchar(s[-1]);
-			v ^= iswordchar(s[0]);
-			if (v)
-				break;
-			return 0;
-		case I_NWORD:
-			v = s > g->bol && iswordchar(s[-1]);
-			v ^= iswordchar(s[0]);
-			if (!v)
-				break;
-			return 0;
-		case I_LPAR:
-			p = g->m[pc->n].sp;
-			g->m[pc->n].sp = s;
-			if (match(g, pc + 1, s)) {
-				if (g->nla) g->m[pc->n].sp = p;
-				return 1;
-			}
-			g->m[pc->n].sp = p;
-			return 0;
-		case I_RPAR:
-			p = g->m[pc->n].ep;
-			g->m[pc->n].ep = s;
-			if (match(g, pc + 1, s)) {
-				if (g->nla) g->m[pc->n].ep = p;
-				return 1;
-			}
-			g->m[pc->n].ep = p;
-			return 0;
-		default:
-			return 0;
-		}
-		pc = pc + 1;
-	}
+static void spawn(Rethread *t, Reinst *pc, const char *sp, Resub *sub)
+{
+	t->pc = pc;
+	t->sp = sp;
+	memcpy(t->sub, sub, sizeof t->sub);
 }
 
-int regexec(Reprog *prog, const char *s, int n, Resub *m, int eflags)
+static int match(Reinst *pc, const char *sp, const char *bol, int flags, Resub *out)
 {
-	struct estate g;
-	Resub gm[10];
+	Rethread ready[MAXTHREAD];
+	Resub scrap[MAXSUB];
+	Resub sub[MAXSUB];
 	Rune c;
+	unsigned int nready;
+	int i;
+
+	/* queue initial thread */
+	spawn(ready + 0, pc, sp, out);
+	nready = 1;
+
+	/* run threads in stack order */
+	while (nready > 0) {
+		--nready;
+		pc = ready[nready].pc;
+		sp = ready[nready].sp;
+		memcpy(sub, ready[nready].sub, sizeof sub);
+		for (;;) {
+			switch (pc->opcode) {
+			case I_END:
+				for (i = 0; i < MAXSUB; ++i) {
+					out[i].sp = sub[i].sp;
+					out[i].ep = sub[i].ep;
+				}
+				return 1;
+			case I_JUMP:
+				pc = pc->x;
+				continue;
+			case I_SPLIT:
+				if (nready >= MAXTHREAD) {
+					fprintf(stderr, "regexec: backtrack overflow!\n");
+					return 0;
+				}
+				spawn(&ready[nready++], pc->y, sp, sub);
+				pc = pc->x;
+				continue;
+
+			case I_PLA:
+				if (!match(pc->x, sp, bol, flags, sub))
+					goto dead;
+				pc = pc->y;
+				continue;
+			case I_NLA:
+				memcpy(scrap, sub, sizeof scrap);
+				if (match(pc->x, sp, bol, flags, scrap))
+					goto dead;
+				pc = pc->y;
+				continue;
+
+			case I_ANYNL:
+				sp += chartorune(&c, sp);
+				if (c == 0)
+					goto dead;
+				break;
+			case I_ANY:
+				sp += chartorune(&c, sp);
+				if (c == 0)
+					goto dead;
+				if (isnewline(c))
+					goto dead;
+				break;
+			case I_CHAR:
+				sp += chartorune(&c, sp);
+				if (c == 0)
+					goto dead;
+				if (flags & REG_ICASE)
+					c = canon(c);
+				if (c != pc->c)
+					goto dead;
+				break;
+			case I_CCLASS:
+				sp += chartorune(&c, sp);
+				if (c == 0)
+					goto dead;
+				if (flags & REG_ICASE) {
+					if (!incclasscanon(pc->cc, canon(c)))
+						goto dead;
+				} else {
+					if (!incclass(pc->cc, c))
+						goto dead;
+				}
+				break;
+			case I_NCCLASS:
+				sp += chartorune(&c, sp);
+				if (c == 0)
+					goto dead;
+				if (flags & REG_ICASE) {
+					if (incclasscanon(pc->cc, canon(c)))
+						goto dead;
+				} else {
+					if (incclass(pc->cc, c))
+						goto dead;
+				}
+				break;
+			case I_REF:
+				i = sub[pc->n].ep - sub[pc->n].sp;
+				if (flags & REG_ICASE) {
+					if (strncmpcanon(sp, sub[pc->n].sp, i))
+						goto dead;
+				} else {
+					if (strncmp(sp, sub[pc->n].sp, i))
+						goto dead;
+				}
+				if (i > 0)
+					sp += i;
+				break;
+
+			case I_BOL:
+				if (sp == bol && !(flags & REG_NOTBOL))
+					break;
+				if (flags & REG_NEWLINE)
+					if (sp > bol && isnewline(sp[-1]))
+						break;
+				goto dead;
+			case I_EOL:
+				if (*sp == 0)
+					break;
+				if (flags & REG_NEWLINE)
+					if (isnewline(*sp))
+						break;
+				goto dead;
+			case I_WORD:
+				i = sp > bol && iswordchar(sp[-1]);
+				i ^= iswordchar(sp[0]);
+				if (i)
+					break;
+				goto dead;
+			case I_NWORD:
+				i = sp > bol && iswordchar(sp[-1]);
+				i ^= iswordchar(sp[0]);
+				if (!i)
+					break;
+				goto dead;
+
+			case I_LPAR:
+				sub[pc->n].sp = sp;
+				break;
+			case I_RPAR:
+				sub[pc->n].ep = sp;
+				break;
+			default:
+				goto dead;
+			}
+			pc = pc + 1;
+		}
+dead: ;
+	}
+	return 0;
+}
+
+int regexec(Reprog *prog, const char *sp, int n, Resub *m, int eflags)
+{
+	Resub gm[MAXSUB];
 	unsigned int i;
 
-	g.icase = prog->icase;
-	g.newline = prog->newline;
-	g.notbol = eflags & REG_NOTBOL;
-	g.bol = s;
-	g.nla = 0;
-	g.m = m ? m : gm;
-	for (i = 0; i < 10; ++i)
-		g.m[i].sp = g.m[i].ep = i <= prog->ncap ? s : NULL;
+	m = m ? m : gm;
 
-	do {
-		if (match(&g, prog->start, s))
-			return 0;
-		s += chartorune(&c, s);
-	} while (c);
+	for (i = 0; i < MAXSUB; ++i)
+		m[i].sp = m[i].ep = i <= prog->ncap ? sp : NULL;
 
-	return 1;
+	return !match(prog->start, sp, sp, prog->flags | eflags, m);
 }
 
 #ifdef TEST
@@ -1059,7 +1066,7 @@ int main(int argc, char **argv)
 	const char *error;
 	const char *s;
 	Reprog *p;
-	Resub m[10];
+	Resub m[MAXSUB];
 	int i;
 
 	if (argc > 1) {
@@ -1072,8 +1079,8 @@ int main(int argc, char **argv)
 		if (argc > 2) {
 			s = argv[2];
 			printf("ncap = %d\n", p->ncap);
-			if (!regexec(p, s, 10, m, 0)) {
-				for (i = 0; i < 10; ++i)
+			if (!regexec(p, s, MAXSUB, m, 0)) {
+				for (i = 0; i < MAXSUB; ++i)
 					if (m[i].sp) {
 						int n = m[i].ep - m[i].sp;
 						printf("match %d: s=%d e=%d n=%d '%.*s'\n", i, (int)(m[i].sp - s), (int)(m[i].ep - s), n, n, m[i].sp);
