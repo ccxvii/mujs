@@ -191,7 +191,6 @@ static js_Ast *identifier(js_State *J)
 		return a;
 	}
 	jsP_error(J, "unexpected token: %s (expected identifier)", TOKSTR);
-	return NULL;
 }
 
 static js_Ast *identifieropt(js_State *J)
@@ -209,7 +208,6 @@ static js_Ast *identifiername(js_State *J)
 		return a;
 	}
 	jsP_error(J, "unexpected token: %s (expected identifier or keyword)", TOKSTR);
-	return NULL;
 }
 
 static js_Ast *arrayelement(js_State *J)
@@ -376,7 +374,6 @@ static js_Ast *primary(js_State *J)
 	if (accept(J, '(')) { a = expression(J, 0); expect(J, ')'); return a; }
 
 	jsP_error(J, "unexpected token in expression: %s", TOKSTR);
-	return NULL;
 }
 
 static js_Ast *arguments(js_State *J)
@@ -632,7 +629,6 @@ static js_Ast *caseclause(js_State *J)
 	}
 
 	jsP_error(J, "unexpected token in switch: %s (expected 'case' or 'default')", TOKSTR);
-	return NULL;
 }
 
 static js_Ast *caselist(js_State *J)
@@ -683,7 +679,6 @@ static js_Ast *forstatement(js_State *J)
 			return STM3(FOR_IN_VAR, a, b, c);
 		}
 		jsP_error(J, "unexpected token in for-var-statement: %s", TOKSTR);
-		return NULL;
 	}
 
 	if (J->lookahead != ';')
@@ -703,7 +698,6 @@ static js_Ast *forstatement(js_State *J)
 		return STM3(FOR_IN, a, b, c);
 	}
 	jsP_error(J, "unexpected token in for-statement: %s", TOKSTR);
-	return NULL;
 }
 
 static js_Ast *statement(js_State *J)
@@ -847,9 +841,6 @@ static js_Ast *statement(js_State *J)
 	a = expression(J, 0);
 	semicolon(J);
 	return a;
-
-	jsP_error(J, "unexpected token in statement: %s", TOKSTR);
-	return NULL;
 }
 
 /* Program */

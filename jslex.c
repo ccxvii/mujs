@@ -150,7 +150,7 @@ int jsY_tohex(int c)
 #define PEEK (J->lexchar)
 #define NEXT() jsY_next(J)
 #define ACCEPT(x) (PEEK == x ? (NEXT(), 1) : 0)
-#define EXPECT(x) (ACCEPT(x) || (jsY_error(J, "expected '%c'", x), 0))
+#define EXPECT(x) if (!ACCEPT(x)) jsY_error(J, "expected '%c'", x)
 
 static void jsY_next(js_State *J)
 {
