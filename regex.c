@@ -896,22 +896,21 @@ static int match(struct estate *g, Reinst *pc, const char *s)
 			continue;
 		case I_SPLIT:
 #if 0
-			// TODO: use I_PROGRESS instead?
 			if (match(g, pc->x, s))
 				return 1;
 			pc = pc->y;
 			continue;
-#else
-			if (pc->p == s) return 0;
+#endif
+			if (pc->p == s)
+				return 0;
 			p = pc->p;
 			pc->p = s;
-			if (match(g, pc->x, s) || match(g, pc->y, s)) {
-				pc->p = p;
-				return 1;
-			}
+			v = match(g, pc->x, s);
 			pc->p = p;
-			return 0;
-#endif
+			if (v)
+				return 1;
+			pc = pc->y;
+			continue;
 		case I_PLA:
 			if (!match(g, pc->x, s))
 				return 0;
