@@ -12,6 +12,12 @@
 #include <math.h>
 #include <float.h>
 
+#ifdef _WIN32
+#define inline __inline
+#define snprintf _snprintf
+#define vsnprintf _vsnprintf
+#endif
+
 typedef struct js_Regexp js_Regexp;
 typedef struct js_Value js_Value;
 typedef struct js_Object js_Object;
