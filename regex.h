@@ -23,6 +23,9 @@ enum {
 
 	/* regexec flags */
 	REG_NOTBOL = 4,
+
+	/* limits */
+	REG_MAXSUB = 16
 };
 
 #endif

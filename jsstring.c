@@ -307,7 +307,7 @@ static void S_fromCharCode(js_State *J, unsigned int argc)
 static void Sp_match(js_State *J, unsigned int argc)
 {
 	js_Regexp *re;
-	Resub m[10];
+	Resub m[REG_MAXSUB];
 	const char *text;
 	unsigned int len;
 	const char *a, *b, *c, *e;
@@ -353,7 +353,7 @@ static void Sp_match(js_State *J, unsigned int argc)
 static void Sp_search(js_State *J, unsigned int argc)
 {
 	js_Regexp *re;
-	Resub m[10];
+	Resub m[REG_MAXSUB];
 	const char *text;
 
 	text = js_tostring(J, 0);
@@ -376,7 +376,7 @@ static void Sp_search(js_State *J, unsigned int argc)
 static void Sp_replace_regexp(js_State *J, unsigned int argc)
 {
 	js_Regexp *re;
-	Resub m[10];
+	Resub m[REG_MAXSUB];
 	const char *source, *s, *r;
 	js_Buffer *sb = NULL;
 	int n, x;
@@ -422,11 +422,19 @@ loop:
 				case '0': case '1': case '2': case '3': case '4':
 				case '5': case '6': case '7': case '8': case '9':
 					x = *r - '0';
-					if (m[x].sp) {
+					if (r[1] >= '0' && r[1] <= '9')
+						x = x * 10 + *(++r) - '0';
+					// TODO: use prog->nsub somehow
+					if (x > 0 && x < REG_MAXSUB && m[x].sp) {
 						sb_putm(&sb, m[x].sp, m[x].ep);
 					} else {
 						sb_putc(&sb, '$');
-						sb_putc(&sb, '0'+x);
+						if (x > 10) {
+							sb_putc(&sb, '0' + x / 10);
+							sb_putc(&sb, '0' + x % 10);
+						} else {
+							sb_putc(&sb, '0' + x);
+						}
 					}
 					break;
 				default:
@@ -536,7 +544,7 @@ static void Sp_replace(js_State *J, unsigned int argc)
 static void Sp_split_regexp(js_State *J, unsigned int argc)
 {
 	js_Regexp *re;
-	Resub m[10];
+	Resub m[REG_MAXSUB];
 	const char *text;
 	unsigned int limit, len, k;
 	const char *p, *a, *b, *c, *e;

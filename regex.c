@@ -15,7 +15,7 @@
 
 #define REPINF 255
 #define MAXTHREAD 1000
-#define MAXSUB 10
+#define MAXSUB REG_MAXSUB
 
 typedef struct Reclass Reclass;
 typedef struct Renode Renode;
@@ -319,9 +319,12 @@ static int lex(struct cstate *g)
 		case 'D': newcclass(g); addranges_d(g); return L_NCCLASS;
 		case 'S': newcclass(g); addranges_s(g); return L_NCCLASS;
 		case 'W': newcclass(g); addranges_w(g); return L_NCCLASS;
+		case '0': g->yychar = 0; return L_CHAR;
 		}
 		if (g->yychar >= '0' && g->yychar <= '9') {
 			g->yychar -= '0';
+			if (*g->source >= '0' && *g->source <= '9')
+				g->yychar = g->yychar * 10 + *g->source++ - '0';
 			return L_REF;
 		}
 		return L_CHAR;

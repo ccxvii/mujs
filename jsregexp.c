@@ -31,7 +31,7 @@ void js_newregexp(js_State *J, const char *pattern, int flags)
 
 void js_RegExp_prototype_exec(js_State *J, js_Regexp *re, const char *text)
 {
-	Resub m[10];
+	Resub m[REG_MAXSUB];
 	unsigned int i;
 	int opts;
 
@@ -69,7 +69,7 @@ static void Rp_test(js_State *J, unsigned int argc)
 {
 	js_Regexp *re;
 	const char *text;
-	Resub m[10];
+	Resub m[REG_MAXSUB];
 	int opts;
 
 	re = js_toregexp(J, 0);
