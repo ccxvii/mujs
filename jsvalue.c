@@ -368,16 +368,19 @@ void js_concat(js_State *J)
 	}
 }
 
-int js_compare(js_State *J)
+int js_compare(js_State *J, int *okay)
 {
 	js_Value va = js_toprimitive(J, -2, JS_HNUMBER);
 	js_Value vb = js_toprimitive(J, -1, JS_HNUMBER);
 
+	*okay = 1;
 	if (va.type == JS_TSTRING && vb.type == JS_TSTRING) {
 		return strcmp(va.u.string, vb.u.string);
 	} else {
 		double x = jsV_tonumber(J, &va);
 		double y = jsV_tonumber(J, &vb);
+		if (isnan(x) || isnan(y))
+			*okay = 0;
 		return x < y ? -1 : x > y ? 1 : 0;
 	}
 }

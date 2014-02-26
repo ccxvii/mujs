@@ -159,7 +159,7 @@ void js_insert(js_State *J, int idx);
 void js_replace(js_State* J, int idx);
 
 void js_concat(js_State *J);
-int js_compare(js_State *J);
+int js_compare(js_State *J, int *okay);
 int js_equal(js_State *J);
 int js_strictequal(js_State *J);
 int js_instanceof(js_State *J);

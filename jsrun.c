@@ -1000,7 +1000,7 @@ static void jsR_run(js_State *J, js_Function *F)
 	js_Object *obj;
 	double x, y;
 	unsigned int ux, uy;
-	int ix, iy;
+	int ix, iy, okay;
 	int b;
 
 	while (1) {
@@ -1315,10 +1315,10 @@ static void jsR_run(js_State *J, js_Function *F)
 
 		/* Relational operators */
 
-		case OP_LT: b = js_compare(J); js_pop(J, 2); js_pushboolean(J, b < 0); break;
-		case OP_GT: b = js_compare(J); js_pop(J, 2); js_pushboolean(J, b > 0); break;
-		case OP_LE: b = js_compare(J); js_pop(J, 2); js_pushboolean(J, b <= 0); break;
-		case OP_GE: b = js_compare(J); js_pop(J, 2); js_pushboolean(J, b >= 0); break;
+		case OP_LT: b = js_compare(J, &okay); js_pop(J, 2); js_pushboolean(J, okay && b < 0); break;
+		case OP_GT: b = js_compare(J, &okay); js_pop(J, 2); js_pushboolean(J, okay && b > 0); break;
+		case OP_LE: b = js_compare(J, &okay); js_pop(J, 2); js_pushboolean(J, okay && b <= 0); break;
+		case OP_GE: b = js_compare(J, &okay); js_pop(J, 2); js_pushboolean(J, okay && b >= 0); break;
 
 		case OP_INSTANCEOF:
 			b = js_instanceof(J);
