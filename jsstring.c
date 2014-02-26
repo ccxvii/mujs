@@ -307,10 +307,10 @@ static void S_fromCharCode(js_State *J, unsigned int argc)
 static void Sp_match(js_State *J, unsigned int argc)
 {
 	js_Regexp *re;
-	Resub m[REG_MAXSUB];
 	const char *text;
 	unsigned int len;
 	const char *a, *b, *c, *e;
+	Resub m;
 
 	text = js_tostring(J, 0);
 
@@ -335,11 +335,11 @@ static void Sp_match(js_State *J, unsigned int argc)
 	a = text;
 	e = text + strlen(text);
 	while (a <= e) {
-		if (js_regexec(re->prog, a, nelem(m), m, a > text ? REG_NOTBOL : 0))
+		if (js_regexec(re->prog, a, &m, a > text ? REG_NOTBOL : 0))
 			break;
 
-		b = m[0].sp;
-		c = m[0].ep;
+		b = m.sub[0].sp;
+		c = m.sub[0].ep;
 
 		js_pushlstring(J, b, c - b);
 		js_setindex(J, -2, len++);
@@ -353,8 +353,8 @@ static void Sp_match(js_State *J, unsigned int argc)
 static void Sp_search(js_State *J, unsigned int argc)
 {
 	js_Regexp *re;
-	Resub m[REG_MAXSUB];
 	const char *text;
+	Resub m;
 
 	text = js_tostring(J, 0);
 
@@ -367,8 +367,8 @@ static void Sp_search(js_State *J, unsigned int argc)
 
 	re = js_toregexp(J, -1);
 
-	if (!js_regexec(re->prog, text, nelem(m), m, 0))
-		js_pushnumber(J, js_utfptrtoidx(text, m[0].sp));
+	if (!js_regexec(re->prog, text, &m, 0))
+		js_pushnumber(J, js_utfptrtoidx(text, m.sub[0].sp));
 	else
 		js_pushnumber(J, -1);
 }
@@ -376,15 +376,15 @@ static void Sp_search(js_State *J, unsigned int argc)
 static void Sp_replace_regexp(js_State *J, unsigned int argc)
 {
 	js_Regexp *re;
-	Resub m[REG_MAXSUB];
 	const char *source, *s, *r;
 	js_Buffer *sb = NULL;
-	int n, x;
+	unsigned int n, x;
+	Resub m;
 
 	source = js_tostring(J, 0);
 	re = js_toregexp(J, 1);
 
-	if (js_regexec(re->prog, source, nelem(m), m, 0)) {
+	if (js_regexec(re->prog, source, &m, 0)) {
 		js_copy(J, 0);
 		return;
 	}
@@ -392,14 +392,14 @@ static void Sp_replace_regexp(js_State *J, unsigned int argc)
 	re->last = 0;
 
 loop:
-	s = m[0].sp;
-	n = m[0].ep - m[0].sp;
+	s = m.sub[0].sp;
+	n = m.sub[0].ep - m.sub[0].sp;
 
 	if (js_iscallable(J, 2)) {
 		js_copy(J, 2);
 		js_pushglobal(J);
-		for (x = 0; m[x].sp; ++x) /* arg 0..x: substring and subexps that matched */
-			js_pushlstring(J, m[x].sp, m[x].ep - m[x].sp);
+		for (x = 0; m.sub[x].sp; ++x) /* arg 0..x: substring and subexps that matched */
+			js_pushlstring(J, m.sub[x].sp, m.sub[x].ep - m.sub[x].sp);
 		js_pushnumber(J, s - source); /* arg x+2: offset within search string */
 		js_copy(J, 0); /* arg x+3: search string */
 		js_call(J, 2 + x);
@@ -425,8 +425,8 @@ loop:
 					if (r[1] >= '0' && r[1] <= '9')
 						x = x * 10 + *(++r) - '0';
 					// TODO: use prog->nsub somehow
-					if (x > 0 && x < REG_MAXSUB && m[x].sp) {
-						sb_putm(&sb, m[x].sp, m[x].ep);
+					if (x > 0 && x < m.nsub) {
+						sb_putm(&sb, m.sub[x].sp, m.sub[x].ep);
 					} else {
 						sb_putc(&sb, '$');
 						if (x > 10) {
@@ -450,14 +450,14 @@ loop:
 	}
 
 	if (re->flags & JS_REGEXP_G) {
-		source = m[0].ep;
+		source = m.sub[0].ep;
 		if (n == 0) {
 			if (*source)
 				sb_putc(&sb, *source++);
 			else
 				goto end;
 		}
-		if (!js_regexec(re->prog, source, nelem(m), m, REG_NOTBOL))
+		if (!js_regexec(re->prog, source, &m, REG_NOTBOL))
 			goto loop;
 	}
 
@@ -544,10 +544,10 @@ static void Sp_replace(js_State *J, unsigned int argc)
 static void Sp_split_regexp(js_State *J, unsigned int argc)
 {
 	js_Regexp *re;
-	Resub m[REG_MAXSUB];
 	const char *text;
 	unsigned int limit, len, k;
 	const char *p, *a, *b, *c, *e;
+	Resub m;
 
 	text = js_tostring(J, 0);
 	re = js_toregexp(J, 1);
@@ -560,7 +560,7 @@ static void Sp_split_regexp(js_State *J, unsigned int argc)
 
 	/* splitting the empty string */
 	if (e == 0) {
-		if (js_regexec(re->prog, text, nelem(m), m, 0)) {
+		if (js_regexec(re->prog, text, &m, 0)) {
 			if (len == limit) return;
 			js_pushliteral(J, "");
 			js_setindex(J, -2, 0);
@@ -570,11 +570,11 @@ static void Sp_split_regexp(js_State *J, unsigned int argc)
 
 	p = a = text;
 	while (a < e) {
-		if (js_regexec(re->prog, a, nelem(m), m, a > text ? REG_NOTBOL : 0))
+		if (js_regexec(re->prog, a, &m, a > text ? REG_NOTBOL : 0))
 			break; /* no match */
 
-		b = m[0].sp;
-		c = m[0].ep;
+		b = m.sub[0].sp;
+		c = m.sub[0].ep;
 
 		/* empty string at end of last match */
 		if (b == p) {
@@ -586,9 +586,9 @@ static void Sp_split_regexp(js_State *J, unsigned int argc)
 		js_pushlstring(J, p, b - p);
 		js_setindex(J, -2, len++);
 
-		for (k = 1; k < nelem(m) && m[k].sp; ++k) {
+		for (k = 1; k < m.nsub; ++k) {
 			if (len == limit) return;
-			js_pushlstring(J, m[k].sp, m[k].ep - m[k].sp);
+			js_pushlstring(J, m.sub[k].sp, m.sub[k].ep - m.sub[k].sp);
 			js_setindex(J, -2, len++);
 		}
 

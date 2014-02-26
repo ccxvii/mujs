@@ -7,13 +7,9 @@
 
 typedef struct Reprog Reprog;
 typedef struct Resub Resub;
-struct Resub {
-	const char *sp;
-	const char *ep;
-};
 
 Reprog *regcomp(const char *pattern, int cflags, const char **errorp);
-int regexec(Reprog *prog, const char *string, int nmatch, Resub *pmatch, int eflags);
+int regexec(Reprog *prog, const char *string, Resub *sub, int eflags);
 void regfree(Reprog *prog);
 
 enum {
@@ -26,6 +22,14 @@ enum {
 
 	/* limits */
 	REG_MAXSUB = 16
+};
+
+struct Resub {
+	unsigned int nsub;
+	struct {
+		const char *sp;
+		const char *ep;
+	} sub[REG_MAXSUB];
 };
 
 #endif

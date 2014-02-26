@@ -30,7 +30,7 @@ struct Reclass {
 struct Reprog {
 	Reinst *start, *end;
 	int flags;
-	unsigned int ncap;
+	unsigned int nsub;
 	Reclass cclass[16];
 };
 
@@ -40,8 +40,8 @@ struct cstate {
 
 	const char *source;
 	unsigned int ncclass;
-	unsigned int ncap;
-	Renode *cap[MAXSUB];
+	unsigned int nsub;
+	Renode *sub[MAXSUB];
 
 	int lookahead;
 	Rune yychar;
@@ -77,7 +77,7 @@ enum {
 	L_NLA,		/* "(?!" negative lookahead */
 	L_WORD,		/* "\b" word boundary */
 	L_NWORD,	/* "\B" non-word boundary */
-	L_REF,		/* "\0" back-reference */
+	L_REF,		/* "\1" back-reference */
 	L_COUNT,	/* {M,N} */
 };
 
@@ -459,10 +459,10 @@ static Renode *parseatom(struct cstate *g)
 	}
 	if (g->lookahead == L_REF) {
 		atom = newnode(g, P_REF);
-		if (g->yychar == 0 || g->yychar > g->ncap || !g->cap[g->yychar])
+		if (g->yychar == 0 || g->yychar > g->nsub || !g->sub[g->yychar])
 			die(g, "invalid back-reference");
 		atom->n = g->yychar;
-		atom->x = g->cap[g->yychar];
+		atom->x = g->sub[g->yychar];
 		next(g);
 		return atom;
 	}
@@ -470,12 +470,11 @@ static Renode *parseatom(struct cstate *g)
 		return newnode(g, P_ANY);
 	if (accept(g, '(')) {
 		atom = newnode(g, P_PAR);
-		if (++g->ncap == MAXSUB)
+		if (g->nsub == MAXSUB)
 			die(g, "too many captures");
-		atom->n = g->ncap;
-		g->cap[atom->n] = NULL;
+		atom->n = g->nsub++;
 		atom->x = parsealt(g);
-		g->cap[atom->n] = atom;
+		g->sub[atom->n] = atom;
 		if (!accept(g, ')'))
 			die(g, "unmatched '('");
 		return atom;
@@ -805,9 +804,9 @@ Reprog *regcomp(const char *pattern, int cflags, const char **errorp)
 
 	g.source = pattern;
 	g.ncclass = 0;
-	g.ncap = 0;
+	g.nsub = 1;
 	for (i = 0; i < MAXSUB; ++i)
-		g.cap[i] = 0;
+		g.sub[i] = 0;
 
 	g.prog->flags = cflags;
 
@@ -818,7 +817,7 @@ Reprog *regcomp(const char *pattern, int cflags, const char **errorp)
 	if (g.lookahead != 0)
 		die(&g, "syntax error");
 
-	g.prog->ncap = g.ncap;
+	g.prog->nsub = g.nsub;
 	g.prog->start = g.prog->end = malloc((count(node) + 6) * sizeof (Reinst));
 
 	split = emit(g.prog, I_SPLIT);
@@ -905,21 +904,21 @@ static int strncmpcanon(const char *a, const char *b, unsigned int n)
 struct Rethread {
 	Reinst *pc;
 	const char *sp;
-	Resub sub[MAXSUB];
+	Resub sub;
 };
 
 static void spawn(Rethread *t, Reinst *pc, const char *sp, Resub *sub)
 {
 	t->pc = pc;
 	t->sp = sp;
-	memcpy(t->sub, sub, sizeof t->sub);
+	memcpy(&t->sub, sub, sizeof t->sub);
 }
 
 static int match(Reinst *pc, const char *sp, const char *bol, int flags, Resub *out)
 {
 	Rethread ready[MAXTHREAD];
-	Resub scrap[MAXSUB];
-	Resub sub[MAXSUB];
+	Resub scratch;
+	Resub sub;
 	Rune c;
 	unsigned int nready;
 	int i;
@@ -933,13 +932,13 @@ static int match(Reinst *pc, const char *sp, const char *bol, int flags, Resub *
 		--nready;
 		pc = ready[nready].pc;
 		sp = ready[nready].sp;
-		memcpy(sub, ready[nready].sub, sizeof sub);
+		memcpy(&sub, &ready[nready].sub, sizeof sub);
 		for (;;) {
 			switch (pc->opcode) {
 			case I_END:
 				for (i = 0; i < MAXSUB; ++i) {
-					out[i].sp = sub[i].sp;
-					out[i].ep = sub[i].ep;
+					out->sub[i].sp = sub.sub[i].sp;
+					out->sub[i].ep = sub.sub[i].ep;
 				}
 				return 1;
 			case I_JUMP:
@@ -950,18 +949,18 @@ static int match(Reinst *pc, const char *sp, const char *bol, int flags, Resub *
 					fprintf(stderr, "regexec: backtrack overflow!\n");
 					return 0;
 				}
-				spawn(&ready[nready++], pc->y, sp, sub);
+				spawn(&ready[nready++], pc->y, sp, &sub);
 				pc = pc->x;
 				continue;
 
 			case I_PLA:
-				if (!match(pc->x, sp, bol, flags, sub))
+				if (!match(pc->x, sp, bol, flags, &sub))
 					goto dead;
 				pc = pc->y;
 				continue;
 			case I_NLA:
-				memcpy(scrap, sub, sizeof scrap);
-				if (match(pc->x, sp, bol, flags, scrap))
+				memcpy(&scratch, &sub, sizeof scratch);
+				if (match(pc->x, sp, bol, flags, &scratch))
 					goto dead;
 				pc = pc->y;
 				continue;
@@ -1012,12 +1011,12 @@ static int match(Reinst *pc, const char *sp, const char *bol, int flags, Resub *
 				}
 				break;
 			case I_REF:
-				i = sub[pc->n].ep - sub[pc->n].sp;
+				i = sub.sub[pc->n].ep - sub.sub[pc->n].sp;
 				if (flags & REG_ICASE) {
-					if (strncmpcanon(sp, sub[pc->n].sp, i))
+					if (strncmpcanon(sp, sub.sub[pc->n].sp, i))
 						goto dead;
 				} else {
-					if (strncmp(sp, sub[pc->n].sp, i))
+					if (strncmp(sp, sub.sub[pc->n].sp, i))
 						goto dead;
 				}
 				if (i > 0)
@@ -1052,10 +1051,10 @@ static int match(Reinst *pc, const char *sp, const char *bol, int flags, Resub *
 				goto dead;
 
 			case I_LPAR:
-				sub[pc->n].sp = sp;
+				sub.sub[pc->n].sp = sp;
 				break;
 			case I_RPAR:
-				sub[pc->n].ep = sp;
+				sub.sub[pc->n].ep = sp;
 				break;
 			default:
 				goto dead;
@@ -1067,17 +1066,19 @@ dead: ;
 	return 0;
 }
 
-int regexec(Reprog *prog, const char *sp, int n, Resub *m, int eflags)
+int regexec(Reprog *prog, const char *sp, Resub *sub, int eflags)
 {
-	Resub gm[MAXSUB];
-	unsigned int i;
+	Resub scratch;
+	int i;
 
-	m = m ? m : gm;
+	if (!sub)
+		sub = &scratch;
 
+	sub->nsub = prog->nsub;
 	for (i = 0; i < MAXSUB; ++i)
-		m[i].sp = m[i].ep = i <= prog->ncap ? sp : NULL;
+		sub->sub[i].sp = sub->sub[i].ep = NULL;
 
-	return !match(prog->start, sp, sp, prog->flags | eflags, m);
+	return !match(prog->start, sp, sp, prog->flags | eflags, sub);
 }
 
 #ifdef TEST
@@ -1086,8 +1087,8 @@ int main(int argc, char **argv)
 	const char *error;
 	const char *s;
 	Reprog *p;
-	Resub m[MAXSUB];
-	int i;
+	Resub m;
+	unsigned int i;
 
 	if (argc > 1) {
 		p = regcomp(argv[1], 0, &error);
@@ -1098,13 +1099,12 @@ int main(int argc, char **argv)
 
 		if (argc > 2) {
 			s = argv[2];
-			printf("ncap = %d\n", p->ncap);
-			if (!regexec(p, s, MAXSUB, m, 0)) {
-				for (i = 0; i < MAXSUB; ++i)
-					if (m[i].sp) {
-						int n = m[i].ep - m[i].sp;
-						printf("match %d: s=%d e=%d n=%d '%.*s'\n", i, (int)(m[i].sp - s), (int)(m[i].ep - s), n, n, m[i].sp);
-					}
+			printf("nsub = %d\n", p->nsub);
+			if (!regexec(p, s, &m, 0)) {
+				for (i = 0; i < m.nsub; ++i) {
+					int n = m.sub[i].ep - m.sub[i].sp;
+					printf("match %d: s=%d e=%d n=%d '%.*s'\n", i, (int)(m.sub[i].sp - s), (int)(m.sub[i].ep - s), n, n, m.sub[i].sp);
+				}
 			} else {
 				printf("no match\n");
 			}

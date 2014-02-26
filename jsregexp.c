@@ -29,9 +29,9 @@ void js_newregexp(js_State *J, const char *pattern, int flags)
 
 void js_RegExp_prototype_exec(js_State *J, js_Regexp *re, const char *text)
 {
-	Resub m[REG_MAXSUB];
 	unsigned int i;
 	int opts;
+	Resub m;
 
 	opts = 0;
 	if (re->flags & JS_REGEXP_G) {
@@ -46,14 +46,14 @@ void js_RegExp_prototype_exec(js_State *J, js_Regexp *re, const char *text)
 		}
 	}
 
-	if (!js_regexec(re->prog, text, nelem(m), m, opts)) {
+	if (!js_regexec(re->prog, text, &m, opts)) {
 		js_newarray(J);
-		for (i = 0; i < nelem(m) && m[i].sp; ++i) {
-			js_pushlstring(J, m[i].sp, m[i].ep - m[i].sp);
+		for (i = 0; i < m.nsub; ++i) {
+			js_pushlstring(J, m.sub[i].sp, m.sub[i].ep - m.sub[i].sp);
 			js_setindex(J, -2, i);
 		}
 		if (re->flags & JS_REGEXP_G)
-			re->last = re->last + (m[0].ep - text);
+			re->last = re->last + (m.sub[0].ep - text);
 		return;
 	}
 
@@ -67,8 +67,8 @@ static void Rp_test(js_State *J, unsigned int argc)
 {
 	js_Regexp *re;
 	const char *text;
-	Resub m[REG_MAXSUB];
 	int opts;
+	Resub m;
 
 	re = js_toregexp(J, 0);
 	text = js_tostring(J, 1);
@@ -86,9 +86,9 @@ static void Rp_test(js_State *J, unsigned int argc)
 		}
 	}
 
-	if (!js_regexec(re->prog, text, nelem(m), m, opts)) {
+	if (!js_regexec(re->prog, text, &m, opts)) {
 		if (re->flags & JS_REGEXP_G)
-			re->last = re->last + (m[0].ep - text);
+			re->last = re->last + (m.sub[0].ep - text);
 		js_pushboolean(J, 1);
 		return;
 	}
