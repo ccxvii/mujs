@@ -7,8 +7,6 @@
 
 #include <assert.h>
 
-#define nelem(a) (sizeof (a) / sizeof (a)[0])
-
 static const char *astname[] = {
 #include "astnames.h"
 };

@@ -4,8 +4,6 @@
 #include "utf.h"
 #include "regex.h"
 
-#define nelem(a) (sizeof (a) / sizeof (a)[0])
-
 int js_runeat(js_State *J, const char *s, int i)
 {
 	Rune rune = 0;

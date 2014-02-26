@@ -2,8 +2,6 @@
 #include "jslex.h"
 #include "jsparse.h"
 
-#define nelem(a) (sizeof (a) / sizeof (a)[0])
-
 #define LIST(h)		jsP_newnode(J, AST_LIST, h, 0, 0, 0)
 
 #define EXP0(x)		jsP_newnode(J, EXP_ ## x, 0, 0, 0, 0)

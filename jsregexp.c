@@ -3,8 +3,6 @@
 #include "jsbuiltin.h"
 #include "regex.h"
 
-#define nelem(a) (sizeof (a) / sizeof (a)[0])
-
 void js_newregexp(js_State *J, const char *pattern, int flags)
 {
 	const char *error;

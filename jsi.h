@@ -27,6 +27,8 @@
 #define NAN (INFINITY-INFINITY)
 #endif
 
+#define nelem(a) (sizeof (a) / sizeof (a)[0])
+
 typedef struct js_Regexp js_Regexp;
 typedef struct js_Value js_Value;
 typedef struct js_Object js_Object;

@@ -2,8 +2,6 @@
 #include "jslex.h"
 #include "utf.h"
 
-#define nelem(a) (sizeof (a) / sizeof (a)[0])
-
 JS_NORETURN static void jsY_error(js_State *J, const char *fmt, ...) JS_PRINTFLIKE(2,3);
 
 static void jsY_error(js_State *J, const char *fmt, ...)
