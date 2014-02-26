@@ -41,7 +41,7 @@ struct cstate {
 	const char *source;
 	unsigned int ncclass;
 	unsigned int ncap;
-	int nref[MAXSUB];
+	Renode *cap[MAXSUB];
 
 	int lookahead;
 	Rune yychar;
@@ -391,9 +391,25 @@ static Renode *newnode(struct cstate *g, int type)
 	return node;
 }
 
+static int empty(Renode *node)
+{
+	if (!node) return 1;
+	switch (node->type) {
+	default: return 1;
+	case P_CAT: return empty(node->x) && empty(node->y);
+	case P_ALT: return empty(node->x) || empty(node->y);
+	case P_REP: return empty(node->x) || node->m == 0;
+	case P_PAR: return empty(node->x);
+	case P_REF: return empty(node->x);
+	case P_ANY: case P_CHAR: case P_CCLASS: case P_NCCLASS: return 0;
+	}
+}
+
 static Renode *newrep(struct cstate *g, Renode *atom, int ng, int min, int max)
 {
 	Renode *rep = newnode(g, P_REP);
+	if (max == REPINF && empty(atom))
+		die(g, "infinite loop matching the empty string");
 	rep->ng = ng;
 	rep->m = min;
 	rep->n = max;
@@ -440,9 +456,10 @@ static Renode *parseatom(struct cstate *g)
 	}
 	if (g->lookahead == L_REF) {
 		atom = newnode(g, P_REF);
-		if (g->yychar == 0 || g->yychar > g->ncap || !g->nref[g->yychar])
+		if (g->yychar == 0 || g->yychar > g->ncap || !g->cap[g->yychar])
 			die(g, "invalid back-reference");
 		atom->n = g->yychar;
+		atom->x = g->cap[g->yychar];
 		next(g);
 		return atom;
 	}
@@ -453,9 +470,9 @@ static Renode *parseatom(struct cstate *g)
 		if (++g->ncap == MAXSUB)
 			die(g, "too many captures");
 		atom->n = g->ncap;
-		g->nref[atom->n] = 0;
+		g->cap[atom->n] = NULL;
 		atom->x = parsealt(g);
-		g->nref[atom->n] = 1;
+		g->cap[atom->n] = atom;
 		if (!accept(g, ')'))
 			die(g, "unmatched '('");
 		return atom;
@@ -787,7 +804,7 @@ Reprog *regcomp(const char *pattern, int cflags, const char **errorp)
 	g.ncclass = 0;
 	g.ncap = 0;
 	for (i = 0; i < MAXSUB; ++i)
-		g.nref[i] = 0;
+		g.cap[i] = 0;
 
 	g.prog->flags = cflags;
 
