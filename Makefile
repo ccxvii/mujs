@@ -3,7 +3,7 @@ HDRS := $(wildcard js*.h utf.h regex.h)
 OBJS := $(SRCS:%.c=build/%.o)
 
 CC := clang
-CFLAGS := -std=c99 -pedantic -Wall -Wextra -Wunreachable-code -Wno-unused-parameter -Werror -g
+CFLAGS := -std=c99 -pedantic -Wall -Wextra -Wunreachable-code -Wno-unused-parameter -g
 
 default: build js re
 
@@ -11,7 +11,7 @@ build:
 	mkdir -p build
 
 build/%.o : %.c $(HDRS)
-	$(CC) -c $< -o $@ $(CFLAGS)
+	$(CC) $(CFLAGS) -o $@ -c $<
 
 build/libjs.a: $(OBJS)
 	ar cru $@ $^
@@ -34,7 +34,7 @@ libjs.c : $(SRCS)
 	ls $(SRCS) | awk '{print "#include \""$$1"\""}' > $@
 
 jsone: build/main.o build/libjs.o
-	$(CC) -o $@ $^ -lm
+	$(CC) $(CFLAGS) -o $@ $^ -lm
 
 tags: $(SRCS) main.c $(HDRS)
 	ctags $^
