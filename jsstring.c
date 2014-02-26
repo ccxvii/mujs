@@ -232,6 +232,7 @@ static void Sp_toLowerCase(js_State *J, unsigned int argc)
 		rune = tolowerrune(rune);
 		d += runetochar(d, &rune);
 	}
+	*d = 0;
 	if (js_try(J)) {
 		free(dst);
 		js_throw(J);
@@ -253,6 +254,7 @@ static void Sp_toUpperCase(js_State *J, unsigned int argc)
 		rune = toupperrune(rune);
 		d += runetochar(d, &rune);
 	}
+	*d = 0;
 	if (js_try(J)) {
 		free(dst);
 		js_throw(J);
