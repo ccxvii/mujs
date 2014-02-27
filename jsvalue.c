@@ -110,6 +110,29 @@ int jsV_toboolean(js_State *J, const js_Value *v)
 	}
 }
 
+double js_strtod(const char *s, char **ep)
+{
+	char *end;
+	double n;
+	const char *e = s;
+	while (*e == '+' || *e == '-') ++e;
+	while (*e >= '0' && *e <= '9') ++e;
+	if (*e == '.') ++e;
+	while (*e >= '0' && *e <= '9') ++e;
+	if (*e == 'e' || *e == 'E') {
+		++e;
+		while (*e == '+' || *e == '-') ++e;
+		while (*e >= '0' && *e <= '9') ++e;
+	}
+	n = strtod(s, &end);
+	if (end == e) {
+		*ep = (char*)e;
+		return n;
+	}
+	*ep = (char*)s;
+	return 0;
+}
+
 /* ToNumber() on a string */
 double jsV_stringtonumber(js_State *J, const char *s)
 {
@@ -118,8 +141,14 @@ double jsV_stringtonumber(js_State *J, const char *s)
 	while (jsY_iswhite(*s) || jsY_isnewline(*s)) ++s;
 	if (s[0] == '0' && s[1] == 'x' && s[2] != 0)
 		n = strtol(s + 2, &e, 16);
+	else if (!strncmp(s, "Infinity", 8))
+		n = INFINITY, e = (char*)s + 8;
+	else if (!strncmp(s, "+Infinity", 9))
+		n = INFINITY, e = (char*)s + 9;
+	else if (!strncmp(s, "-Infinity", 9))
+		n = -INFINITY, e = (char*)s + 9;
 	else
-		n = strtod(s, &e);
+		n = js_strtod(s, &e);
 	while (jsY_iswhite(*e) || jsY_isnewline(*e)) ++e;
 	if (*e) return NAN;
 	return n;

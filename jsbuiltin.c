@@ -43,15 +43,43 @@ static void jsB_parseInt(js_State *J, unsigned int argc)
 {
 	const char *s = js_tostring(J, 1);
 	double radix = js_isdefined(J, 2) ? js_tonumber(J, 2) : 10;
+	char *e;
+	double n;
+
 	while (jsY_iswhite(*s) || jsY_isnewline(*s)) ++s;
-	js_pushnumber(J, strtol(s, NULL, radix == 0 ? 10 : radix));
+	if (radix == 0)
+		radix = 10;
+	if (s[0] == '0' && (s[1] == 'x' || s[1] == 'X')) {
+		s += 2;
+		radix = 16;
+	}
+	n = strtol(s, &e, radix);
+	if (s == e)
+		js_pushnumber(J, NAN);
+	else
+		js_pushnumber(J, n);
 }
 
 static void jsB_parseFloat(js_State *J, unsigned int argc)
 {
 	const char *s = js_tostring(J, 1);
+	char *e;
+	double n;
+
 	while (jsY_iswhite(*s) || jsY_isnewline(*s)) ++s;
-	js_pushnumber(J, strtod(s, NULL));
+	if (!strncmp(s, "Infinity", 8))
+		js_pushnumber(J, INFINITY);
+	else if (!strncmp(s, "+Infinity", 9))
+		js_pushnumber(J, INFINITY);
+	else if (!strncmp(s, "-Infinity", 9))
+		js_pushnumber(J, -INFINITY);
+	else {
+		n = js_strtod(s, &e);
+		if (e == s)
+			js_pushnumber(J, NAN);
+		else
+			js_pushnumber(J, n);
+	}
 }
 
 static void jsB_isNaN(js_State *J, unsigned int argc)
