@@ -97,6 +97,8 @@ static int dec(struct cstate *g, int c)
 	return 0;
 }
 
+#define ESCAPES "BbDdSsWw^$\\.*+?()[]{}|0123456789"
+
 static int nextrune(struct cstate *g)
 {
 	g->source += chartorune(&g->yychar, g->source);
@@ -123,6 +125,8 @@ static int nextrune(struct cstate *g)
 			g->yychar += hex(g, *g->source++);
 			return 0;
 		}
+		if (!strchr(ESCAPES, g->yychar))
+			die(g, "invalid escape character");
 		return 1;
 	}
 	return 0;
@@ -130,27 +134,27 @@ static int nextrune(struct cstate *g)
 
 static int lexcount(struct cstate *g)
 {
-	nextrune(g);
+	g->yychar = *g->source++;
 
 	g->yymin = dec(g, g->yychar);
-	nextrune(g);
+	g->yychar = *g->source++;
 	while (g->yychar != ',' && g->yychar != '}') {
 		g->yymin = g->yymin * 10 + dec(g, g->yychar);
-		nextrune(g);
+		g->yychar = *g->source++;
 	}
 	if (g->yymin >= REPINF)
 		die(g, "numeric overflow");
 
 	if (g->yychar == ',') {
-		nextrune(g);
+		g->yychar = *g->source++;
 		if (g->yychar == '}') {
 			g->yymax = REPINF;
 		} else {
 			g->yymax = dec(g, g->yychar);
-			nextrune(g);
+			g->yychar = *g->source++;
 			while (g->yychar != '}') {
 				g->yymax = g->yymax * 10 + dec(g, g->yychar);
-				nextrune(g);
+				g->yychar = *g->source++;
 			}
 			if (g->yymax >= REPINF)
 				die(g, "numeric overflow");
@@ -278,8 +282,11 @@ static int lexclass(struct cstate *g)
 			}
 			havesave = havedash = 0;
 		} else {
-			if (quoted && g->yychar == 'b')
-				g->yychar = '\b';
+			if (quoted) {
+				if (g->yychar == 'b')
+					g->yychar = '\b';
+				else
+					die(g, "invalid escape character");
 			if (havesave) {
 				if (havedash) {
 					addrange(g, save, g->yychar);
@@ -331,9 +338,9 @@ static int lex(struct cstate *g)
 	}
 
 	switch (g->yychar) {
-	case '*': case '+': case '?': case '|':
-	case ')': case '.': case '^': case '$':
 	case 0:
+	case '$': case ')': case '*': case '+':
+	case '.': case '?': case '^': case '|':
 		return g->yychar;
 	}
 
