@@ -117,12 +117,20 @@ static int nextrune(struct cstate *g)
 		case 'x':
 			g->yychar = hex(g, *g->source++) << 4;
 			g->yychar += hex(g, *g->source++);
+			if (g->yychar == 0) {
+				g->yychar = '0';
+				return 1;
+			}
 			return 0;
 		case 'u':
 			g->yychar = hex(g, *g->source++) << 12;
 			g->yychar += hex(g, *g->source++) << 8;
 			g->yychar += hex(g, *g->source++) << 4;
 			g->yychar += hex(g, *g->source++);
+			if (g->yychar == 0) {
+				g->yychar = '0';
+				return 1;
+			}
 			return 0;
 		}
 		if (!strchr(ESCAPES, g->yychar))
@@ -285,8 +293,11 @@ static int lexclass(struct cstate *g)
 			if (quoted) {
 				if (g->yychar == 'b')
 					g->yychar = '\b';
+				else if (g->yychar == '0')
+					g->yychar = 0;
 				else
 					die(g, "invalid escape character");
+			}
 			if (havesave) {
 				if (havedash) {
 					addrange(g, save, g->yychar);
