@@ -115,13 +115,13 @@ double js_strtod(const char *s, char **ep)
 	char *end;
 	double n;
 	const char *e = s;
-	while (*e == '+' || *e == '-') ++e;
+	if (*e == '+' || *e == '-') ++e;
 	while (*e >= '0' && *e <= '9') ++e;
 	if (*e == '.') ++e;
 	while (*e >= '0' && *e <= '9') ++e;
 	if (*e == 'e' || *e == 'E') {
 		++e;
-		while (*e == '+' || *e == '-') ++e;
+		if (*e == '+' || *e == '-') ++e;
 		while (*e >= '0' && *e <= '9') ++e;
 	}
 	n = strtod(s, &end);
