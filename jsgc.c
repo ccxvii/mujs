@@ -204,6 +204,6 @@ void js_freestate(js_State *J)
 	jsS_freestrings(J);
 
 	js_free(J, J->lexbuf.text);
-	free(J->stack);
-	free(J);
+	J->alloc(J->actx, J->stack, 0);
+	J->alloc(J->actx, J, 0);
 }

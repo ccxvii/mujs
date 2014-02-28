@@ -29,17 +29,17 @@ static void js_outofmemory(js_State *J)
 	js_throw(J);
 }
 
-void *js_malloc(js_State *J, size_t size)
+void *js_malloc(js_State *J, unsigned int size)
 {
-	void *ptr = malloc(size);
+	void *ptr = J->alloc(J->actx, NULL, size);
 	if (!ptr)
 		js_outofmemory(J);
 	return ptr;
 }
 
-void *js_realloc(js_State *J, void *ptr, size_t size)
+void *js_realloc(js_State *J, void *ptr, unsigned int size)
 {
-	ptr = realloc(ptr, size);
+	ptr = J->alloc(J->actx, ptr, size);
 	if (!ptr)
 		js_outofmemory(J);
 	return ptr;
@@ -47,7 +47,7 @@ void *js_realloc(js_State *J, void *ptr, size_t size)
 
 void js_free(js_State *J, void *ptr)
 {
-	free(ptr);
+	J->alloc(J->actx, ptr, 0);
 }
 
 #define CHECKSTACK(n) if (TOP + n >= JS_STACKSIZE) js_stackoverflow(J)

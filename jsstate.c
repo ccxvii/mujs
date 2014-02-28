@@ -5,6 +5,17 @@
 #include "jsrun.h"
 #include "jsbuiltin.h"
 
+static void *js_defaultalloc(void *actx, void *ptr, unsigned int size)
+{
+	if (size == 0) {
+		free(ptr);
+		return NULL;
+	}
+	if (!ptr)
+		return malloc(size);
+	return realloc(ptr, size);
+}
+
 void js_loadstring(js_State *J, const char *filename, const char *source)
 {
 	js_Ast *P;
@@ -101,16 +112,23 @@ int js_dofile(js_State *J, const char *filename)
 	return 0;
 }
 
-js_State *js_newstate(void)
+js_State *js_newstate(js_Alloc alloc, void *actx)
 {
-	js_State *J = malloc(sizeof *J);
+	js_State *J;
+
+	if (!alloc)
+		alloc = js_defaultalloc;
+
+	J = alloc(actx, NULL, sizeof *J);
 	if (!J)
 		return NULL;
 	memset(J, 0, sizeof(*J));
+	J->actx = actx;
+	J->alloc = alloc;
 
-	J->stack = malloc(JS_STACKSIZE * sizeof *J->stack);
+	J->stack = alloc(actx, NULL, JS_STACKSIZE * sizeof *J->stack);
 	if (!J->stack) {
-		free(J);
+		alloc(actx, NULL, 0);
 		return NULL;
 	}
 

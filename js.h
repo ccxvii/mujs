@@ -26,10 +26,11 @@
 
 typedef struct js_State js_State;
 
+typedef void *(*js_Alloc)(void *memctx, void *ptr, unsigned int size);
 typedef void (*js_CFunction)(js_State *J, unsigned int argc);
 
 /* Basic functions */
-js_State *js_newstate(void);
+js_State *js_newstate(js_Alloc afun, void *actx);
 void js_freestate(js_State *J);
 int js_dostring(js_State *J, const char *source, int report);
 int js_dofile(js_State *J, const char *filename);

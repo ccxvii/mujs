@@ -37,7 +37,7 @@ main(int argc, char **argv)
 	js_State *J;
 	int i;
 
-	J = js_newstate();
+	J = js_newstate(NULL, NULL);
 
 	js_newcfunction(J, jsB_gc, 0);
 	js_setglobal(J, "gc");

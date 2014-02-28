@@ -29,8 +29,8 @@
 
 #define nelem(a) (sizeof (a) / sizeof (a)[0])
 
-void *js_malloc(js_State *J, size_t size);
-void *js_realloc(js_State *J, void *ptr, size_t size);
+void *js_malloc(js_State *J, unsigned int size);
+void *js_realloc(js_State *J, void *ptr, unsigned int size);
 void js_free(js_State *J, void *ptr);
 
 typedef struct js_Regexp js_Regexp;
@@ -101,6 +101,9 @@ void js_savetry(js_State *J, short *pc);
 
 struct js_State
 {
+	void *actx;
+	js_Alloc alloc;
+
 	js_StringNode *strings;
 
 	/* parser input source */
@@ -109,7 +112,7 @@ struct js_State
 	int line;
 
 	/* lexer state */
-	struct { char *text; size_t len, cap; } lexbuf;
+	struct { char *text; unsigned int len, cap; } lexbuf;
 	int lexline;
 	int lexchar;
 	int lasttoken;
