@@ -4,10 +4,26 @@
 
 #include <time.h>
 
+#ifdef _WIN32
+#include <sys/timeb.h>
+#endif
+#ifdef __unix__
+#include <sys/time.h>
+#endif
+
 static double Now(void)
 {
-	time_t now = time(NULL);
-	return mktime(gmtime(&now)) * 1000;
+#if defined(_WIN32)
+	struct _timeb tv;
+	_ftime(&tv);
+	return tv.time * 1000.0 + tv.millitm;
+#elif defined(__unix__)
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	return floor(tv.tv_sec * 1000.0 + tv.tv_usec / 1000.0);
+#else
+	return time(NULL) * 1000.0;
+#endif
 }
 
 static double LocalTZA(void)
