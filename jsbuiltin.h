@@ -20,31 +20,31 @@ void jsB_props(js_State *J, const char *name, const char *string);
 
 typedef struct js_Buffer { unsigned int n, m; char s[64]; } js_Buffer;
 
-static void sb_putc(js_Buffer **sbp, int c)
+static void js_putc(js_State *J, js_Buffer **sbp, int c)
 {
 	js_Buffer *sb = *sbp;
 	if (!sb) {
-		sb = malloc(sizeof *sb);
+		sb = js_malloc(J, sizeof *sb);
 		sb->n = 0;
 		sb->m = sizeof sb->s;
 		*sbp = sb;
 	} else if (sb->n == sb->m) {
-		sb = realloc(sb, (sb->m *= 2) + offsetof(js_Buffer, s));
+		sb = js_realloc(J, sb, (sb->m *= 2) + offsetof(js_Buffer, s));
 		*sbp = sb;
 	}
 	sb->s[sb->n++] = c;
 }
 
-static inline void sb_puts(js_Buffer **sb, const char *s)
+static inline void js_puts(js_State *J, js_Buffer **sb, const char *s)
 {
 	while (*s)
-		sb_putc(sb, *s++);
+		js_putc(J, sb, *s++);
 }
 
-static inline void sb_putm(js_Buffer **sb, const char *s, const char *e)
+static inline void js_putm(js_State *J, js_Buffer **sb, const char *s, const char *e)
 {
 	while (s < e)
-		sb_putc(sb, *s++);
+		js_putc(J, sb, *s++);
 }
 
 #endif

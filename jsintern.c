@@ -11,10 +11,10 @@ struct js_StringNode
 
 static js_StringNode jsS_sentinel = { &jsS_sentinel, &jsS_sentinel, 0, ""};
 
-static js_StringNode *jsS_newstringnode(const char *string, const char **result)
+static js_StringNode *jsS_newstringnode(js_State *J, const char *string, const char **result)
 {
 	int n = strlen(string);
-	js_StringNode *node = malloc(offsetof(js_StringNode, string) + n + 1);
+	js_StringNode *node = js_malloc(J, offsetof(js_StringNode, string) + n + 1);
 	node->left = node->right = &jsS_sentinel;
 	node->level = 1;
 	strcpy(node->string, string);
@@ -44,21 +44,21 @@ static js_StringNode *jsS_split(js_StringNode *node)
 	return node;
 }
 
-static js_StringNode *jsS_insert(js_StringNode *node, const char *string, const char **result)
+static js_StringNode *jsS_insert(js_State *J, js_StringNode *node, const char *string, const char **result)
 {
 	if (node != &jsS_sentinel) {
 		int c = strcmp(string, node->string);
 		if (c < 0)
-			node->left = jsS_insert(node->left, string, result);
+			node->left = jsS_insert(J, node->left, string, result);
 		else if (c > 0)
-			node->right = jsS_insert(node->right, string, result);
+			node->right = jsS_insert(J, node->right, string, result);
 		else
 			return *result = node->string, node;
 		node = jsS_skew(node);
 		node = jsS_split(node);
 		return node;
 	}
-	return jsS_newstringnode(string, result);
+	return jsS_newstringnode(J, string, result);
 }
 
 static void dumpstringnode(js_StringNode *node, int level)
@@ -87,7 +87,7 @@ static void jsS_freestringnode(js_State *J, js_StringNode *node)
 {
 	if (node->left != &jsS_sentinel) jsS_freestringnode(J, node->left);
 	if (node->right != &jsS_sentinel) jsS_freestringnode(J, node->right);
-	free(node);
+	js_free(J, node);
 }
 
 void jsS_freestrings(js_State *J)
@@ -101,6 +101,6 @@ const char *js_intern(js_State *J, const char *s)
 	const char *result;
 	if (!J->strings)
 		J->strings = &jsS_sentinel;
-	J->strings = jsS_insert(J->strings, s, &result);
+	J->strings = jsS_insert(J, J->strings, s, &result);
 	return result;
 }

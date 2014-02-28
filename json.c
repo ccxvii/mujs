@@ -101,46 +101,46 @@ static void JSON_parse(js_State *J, unsigned int argc)
 	// TODO: reviver Walk()
 }
 
-static void fmtnum(js_Buffer **sb, double n)
+static void fmtnum(js_State *J, js_Buffer **sb, double n)
 {
-	if (isnan(n)) sb_puts(sb, "NaN");
-	else if (isinf(n)) sb_puts(sb, n < 0 ? "-Infinity" : "Infinity");
-	else if (n == 0) sb_puts(sb, "0");
+	if (isnan(n)) js_puts(J, sb, "NaN");
+	else if (isinf(n)) js_puts(J, sb, n < 0 ? "-Infinity" : "Infinity");
+	else if (n == 0) js_puts(J, sb, "0");
 	else {
 		char buf[40];
 		sprintf(buf, "%.17g", n);
-		sb_puts(sb, buf);
+		js_puts(J, sb, buf);
 	}
 }
 
-static void fmtstr(js_Buffer **sb, const char *s)
+static void fmtstr(js_State *J, js_Buffer **sb, const char *s)
 {
 	static const char *HEX = "0123456789ABCDEF";
 	Rune c;
-	sb_putc(sb, '"');
+	js_putc(J, sb, '"');
 	while (*s) {
 		s += chartorune(&c, s);
 		switch (c) {
-		case '"': sb_puts(sb, "\\\""); break;
-		case '\\': sb_puts(sb, "\\\\"); break;
-		case '\b': sb_puts(sb, "\\b"); break;
-		case '\f': sb_puts(sb, "\\f"); break;
-		case '\n': sb_puts(sb, "\\n"); break;
-		case '\r': sb_puts(sb, "\\r"); break;
-		case '\t': sb_puts(sb, "\\t"); break;
+		case '"': js_puts(J, sb, "\\\""); break;
+		case '\\': js_puts(J, sb, "\\\\"); break;
+		case '\b': js_puts(J, sb, "\\b"); break;
+		case '\f': js_puts(J, sb, "\\f"); break;
+		case '\n': js_puts(J, sb, "\\n"); break;
+		case '\r': js_puts(J, sb, "\\r"); break;
+		case '\t': js_puts(J, sb, "\\t"); break;
 		default:
 			if (c < ' ') {
-				sb_puts(sb, "\\u");
-				sb_putc(sb, HEX[(c>>12)&15]);
-				sb_putc(sb, HEX[(c>>8)&15]);
-				sb_putc(sb, HEX[(c>>4)&15]);
-				sb_putc(sb, HEX[c&15]);
+				js_puts(J, sb, "\\u");
+				js_putc(J, sb, HEX[(c>>12)&15]);
+				js_putc(J, sb, HEX[(c>>8)&15]);
+				js_putc(J, sb, HEX[(c>>4)&15]);
+				js_putc(J, sb, HEX[c&15]);
 			} else {
-				sb_putc(sb, c); break;
+				js_putc(J, sb, c); break;
 			}
 		}
 	}
-	sb_putc(sb, '"');
+	js_putc(J, sb, '"');
 }
 
 static int fmtvalue(js_State *J, js_Buffer **sb, const char *key);
@@ -151,14 +151,14 @@ static void fmtobject(js_State *J, js_Buffer **sb, js_Object *obj)
 	int save;
 	int n = 0;
 
-	sb_putc(sb, '{');
+	js_putc(J, sb, '{');
 	for (ref = obj->head; ref; ref = ref->next) {
 		if (ref->atts & JS_DONTENUM)
 			continue;
 		save = (*sb)->n;
-		if (n) sb_putc(sb, ',');
-		fmtstr(sb, ref->name);
-		sb_putc(sb, ':');
+		if (n) js_putc(J, sb, ',');
+		fmtstr(J, sb, ref->name);
+		js_putc(J, sb, ':');
 		js_pushvalue(J, ref->value);
 		if (!fmtvalue(J, sb, ref->name))
 			(*sb)->n = save;
@@ -166,7 +166,7 @@ static void fmtobject(js_State *J, js_Buffer **sb, js_Object *obj)
 			++n;
 		js_pop(J, 1);
 	}
-	sb_putc(sb, '}');
+	js_putc(J, sb, '}');
 }
 
 static void fmtarray(js_State *J, js_Buffer **sb)
@@ -178,22 +178,22 @@ static void fmtarray(js_State *J, js_Buffer **sb)
 	len = js_touint32(J, -1);
 	js_pop(J, 1);
 
-	sb_putc(sb, '[');
+	js_putc(J, sb, '[');
 	for (k = 0; k < len; ++k) {
-		if (k) sb_putc(sb, ',');
+		if (k) js_putc(J, sb, ',');
 		sprintf(buf, "%u", k);
 		js_getproperty(J, -1, buf);
 		if (!fmtvalue(J, sb, buf))
-			sb_puts(sb, "null");
+			js_puts(J, sb, "null");
 		js_pop(J, 1);
 	}
-	sb_putc(sb, ']');
+	js_putc(J, sb, ']');
 }
 
 static int fmtvalue(js_State *J, js_Buffer **sb, const char *key)
 {
 	if (js_try(J)) {
-		free(*sb);
+		js_free(J, *sb);
 		js_throw(J);
 	}
 	if (js_isobject(J, -1)) {
@@ -215,21 +215,21 @@ static int fmtvalue(js_State *J, js_Buffer **sb, const char *key)
 	if (js_isobject(J, -1) && !js_iscallable(J, -1)) {
 		js_Object *obj = js_toobject(J, -1);
 		switch (obj->type) {
-		case JS_CNUMBER: fmtnum(sb, obj->u.number); break;
-		case JS_CSTRING: fmtstr(sb, obj->u.s.string); break;
-		case JS_CBOOLEAN: sb_puts(sb, obj->u.boolean ? "true" : "false"); break;
+		case JS_CNUMBER: fmtnum(J, sb, obj->u.number); break;
+		case JS_CSTRING: fmtstr(J, sb, obj->u.s.string); break;
+		case JS_CBOOLEAN: js_puts(J, sb, obj->u.boolean ? "true" : "false"); break;
 		case JS_CARRAY: fmtarray(J, sb); break;
 		default: fmtobject(J, sb, obj); break;
 		}
 	}
 	else if (js_isboolean(J, -1))
-		sb_puts(sb, js_toboolean(J, -1) ? "true" : "false");
+		js_puts(J, sb, js_toboolean(J, -1) ? "true" : "false");
 	else if (js_isnumber(J, -1))
-		fmtnum(sb, js_tonumber(J, -1));
+		fmtnum(J, sb, js_tonumber(J, -1));
 	else if (js_isstring(J, -1))
-		fmtstr(sb, js_tostring(J, -1));
+		fmtstr(J, sb, js_tostring(J, -1));
 	else if (js_isnull(J, -1))
-		sb_puts(sb, "null");
+		js_puts(J, sb, "null");
 	else
 		return 0;
 
@@ -242,14 +242,14 @@ static void JSON_stringify(js_State *J, unsigned int argc)
 	if (argc > 0) {
 		js_copy(J, 1);
 		if (fmtvalue(J, &sb, "")) {
-			sb_putc(&sb, 0);
+			js_putc(J, &sb, 0);
 			if (js_try(J)) {
-				free(sb);
+				js_free(J, sb);
 				js_throw(J);
 			}
 			js_pushstring(J, sb ? sb->s : "");
 			js_endtry(J);
-			free(sb);
+			js_free(J, sb);
 		}
 	} else {
 		js_pushundefined(J);

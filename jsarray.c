@@ -119,7 +119,7 @@ static void Ap_join(js_State *J, unsigned int argc)
 	}
 
 	if (js_try(J)) {
-		free(out);
+		js_free(J, out);
 		js_throw(J);
 	}
 
@@ -133,7 +133,7 @@ static void Ap_join(js_State *J, unsigned int argc)
 		n += strlen(r);
 
 		if (k == 0) {
-			out = malloc(n);
+			out = js_malloc(J, n);
 			strcpy(out, r);
 		} else {
 			n += seplen;
@@ -147,7 +147,7 @@ static void Ap_join(js_State *J, unsigned int argc)
 
 	js_pushstring(J, out);
 	js_endtry(J);
-	free(out);
+	js_free(J, out);
 }
 
 static void Ap_pop(js_State *J, unsigned int argc)

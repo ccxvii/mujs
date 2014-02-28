@@ -108,11 +108,11 @@ static void Sp_concat(js_State *J, unsigned int argc)
 
 	s = js_tostring(J, 0);
 	n = strlen(s);
-	out = malloc(n + 1);
+	out = js_malloc(J, n + 1);
 	strcpy(out, s);
 
 	if (js_try(J)) {
-		free(out);
+		js_free(J, out);
 		js_throw(J);
 	}
 
@@ -125,7 +125,7 @@ static void Sp_concat(js_State *J, unsigned int argc)
 
 	js_pushstring(J, out);
 	js_endtry(J);
-	free(out);
+	js_free(J, out);
 }
 
 static void Sp_indexOf(js_State *J, unsigned int argc)
@@ -221,7 +221,7 @@ static void Sp_substring(js_State *J, unsigned int argc)
 static void Sp_toLowerCase(js_State *J, unsigned int argc)
 {
 	const char *src = js_tostring(J, 0);
-	char *dst = malloc(UTFmax * strlen(src) + 1);
+	char *dst = js_malloc(J, UTFmax * strlen(src) + 1);
 	const char *s = src;
 	char *d = dst;
 	Rune rune;
@@ -232,18 +232,18 @@ static void Sp_toLowerCase(js_State *J, unsigned int argc)
 	}
 	*d = 0;
 	if (js_try(J)) {
-		free(dst);
+		js_free(J, dst);
 		js_throw(J);
 	}
 	js_pushstring(J, dst);
 	js_endtry(J);
-	free(dst);
+	js_free(J, dst);
 }
 
 static void Sp_toUpperCase(js_State *J, unsigned int argc)
 {
 	const char *src = js_tostring(J, 0);
-	char *dst = malloc(UTFmax * strlen(src) + 1);
+	char *dst = js_malloc(J, UTFmax * strlen(src) + 1);
 	const char *s = src;
 	char *d = dst;
 	Rune rune;
@@ -254,12 +254,12 @@ static void Sp_toUpperCase(js_State *J, unsigned int argc)
 	}
 	*d = 0;
 	if (js_try(J)) {
-		free(dst);
+		js_free(J, dst);
 		js_throw(J);
 	}
 	js_pushstring(J, dst);
 	js_endtry(J);
-	free(dst);
+	js_free(J, dst);
 }
 
 static int istrim(int c)
@@ -286,10 +286,10 @@ static void S_fromCharCode(js_State *J, unsigned int argc)
 	Rune c;
 	char *s, *p;
 
-	s = p = malloc(argc * UTFmax + 1);
+	s = p = js_malloc(J, argc * UTFmax + 1);
 
 	if (js_try(J)) {
-		free(s);
+		js_free(J, s);
 		js_throw(J);
 	}
 
@@ -301,7 +301,7 @@ static void S_fromCharCode(js_State *J, unsigned int argc)
 	js_pushstring(J, s);
 
 	js_endtry(J);
-	free(s);
+	js_free(J, s);
 }
 
 static void Sp_match(js_State *J, unsigned int argc)
@@ -404,20 +404,20 @@ loop:
 		js_copy(J, 0); /* arg x+3: search string */
 		js_call(J, 2 + x);
 		r = js_tostring(J, -1);
-		sb_putm(&sb, source, s);
-		sb_puts(&sb, r);
+		js_putm(J, &sb, source, s);
+		js_puts(J, &sb, r);
 		js_pop(J, 1);
 	} else {
 		r = js_tostring(J, 2);
-		sb_putm(&sb, source, s);
+		js_putm(J, &sb, source, s);
 		while (*r) {
 			if (*r == '$') {
 				switch (*(++r)) {
-				case '$': sb_putc(&sb, '$'); break;
-				case '`': sb_putm(&sb, source, s); break;
-				case '\'': sb_puts(&sb, s + n); break;
+				case '$': js_putc(J, &sb, '$'); break;
+				case '`': js_putm(J, &sb, source, s); break;
+				case '\'': js_puts(J, &sb, s + n); break;
 				case '&':
-					sb_putm(&sb, s, s + n);
+					js_putm(J, &sb, s, s + n);
 					break;
 				case '0': case '1': case '2': case '3': case '4':
 				case '5': case '6': case '7': case '8': case '9':
@@ -426,25 +426,25 @@ loop:
 						x = x * 10 + *(++r) - '0';
 					// TODO: use prog->nsub somehow
 					if (x > 0 && x < m.nsub) {
-						sb_putm(&sb, m.sub[x].sp, m.sub[x].ep);
+						js_putm(J, &sb, m.sub[x].sp, m.sub[x].ep);
 					} else {
-						sb_putc(&sb, '$');
+						js_putc(J, &sb, '$');
 						if (x > 10) {
-							sb_putc(&sb, '0' + x / 10);
-							sb_putc(&sb, '0' + x % 10);
+							js_putc(J, &sb, '0' + x / 10);
+							js_putc(J, &sb, '0' + x % 10);
 						} else {
-							sb_putc(&sb, '0' + x);
+							js_putc(J, &sb, '0' + x);
 						}
 					}
 					break;
 				default:
-					sb_putc(&sb, '$');
-					sb_putc(&sb, *r);
+					js_putc(J, &sb, '$');
+					js_putc(J, &sb, *r);
 					break;
 				}
 				++r;
 			} else {
-				sb_putc(&sb, *r++);
+				js_putc(J, &sb, *r++);
 			}
 		}
 	}
@@ -453,7 +453,7 @@ loop:
 		source = m.sub[0].ep;
 		if (n == 0) {
 			if (*source)
-				sb_putc(&sb, *source++);
+				js_putc(J, &sb, *source++);
 			else
 				goto end;
 		}
@@ -462,16 +462,16 @@ loop:
 	}
 
 end:
-	sb_puts(&sb, s + n);
-	sb_putc(&sb, 0);
+	js_puts(J, &sb, s + n);
+	js_putc(J, &sb, 0);
 
 	if (js_try(J)) {
-		free(sb);
+		js_free(J, sb);
 		js_throw(J);
 	}
 	js_pushstring(J, sb ? sb->s : "");
 	js_endtry(J);
-	free(sb);
+	js_free(J, sb);
 }
 
 static void Sp_replace_string(js_State *J, unsigned int argc)
@@ -498,39 +498,39 @@ static void Sp_replace_string(js_State *J, unsigned int argc)
 		js_copy(J, 0); /* arg 3: search string */
 		js_call(J, 3);
 		r = js_tostring(J, -1);
-		sb_putm(&sb, source, s);
-		sb_puts(&sb, r);
-		sb_puts(&sb, s + n);
-		sb_putc(&sb, 0);
+		js_putm(J, &sb, source, s);
+		js_puts(J, &sb, r);
+		js_puts(J, &sb, s + n);
+		js_putc(J, &sb, 0);
 		js_pop(J, 1);
 	} else {
 		r = js_tostring(J, 2);
-		sb_putm(&sb, source, s);
+		js_putm(J, &sb, source, s);
 		while (*r) {
 			if (*r == '$') {
 				switch (*(++r)) {
-				case '$': sb_putc(&sb, '$'); break;
-				case '&': sb_putm(&sb, s, s + n); break;
-				case '`': sb_putm(&sb, source, s); break;
-				case '\'': sb_puts(&sb, s + n); break;
-				default: sb_putc(&sb, '$'); sb_putc(&sb, *r); break;
+				case '$': js_putc(J, &sb, '$'); break;
+				case '&': js_putm(J, &sb, s, s + n); break;
+				case '`': js_putm(J, &sb, source, s); break;
+				case '\'': js_puts(J, &sb, s + n); break;
+				default: js_putc(J, &sb, '$'); js_putc(J, &sb, *r); break;
 				}
 				++r;
 			} else {
-				sb_putc(&sb, *r++);
+				js_putc(J, &sb, *r++);
 			}
 		}
-		sb_puts(&sb, s + n);
-		sb_putc(&sb, 0);
+		js_puts(J, &sb, s + n);
+		js_putc(J, &sb, 0);
 	}
 
 	if (js_try(J)) {
-		free(sb);
+		js_free(J, sb);
 		js_throw(J);
 	}
 	js_pushstring(J, sb ? sb->s : "");
 	js_endtry(J);
-	free(sb);
+	js_free(J, sb);
 }
 
 static void Sp_replace(js_State *J, unsigned int argc)

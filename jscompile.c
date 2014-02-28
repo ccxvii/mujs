@@ -32,7 +32,7 @@ void jsC_error(js_State *J, js_Ast *node, const char *fmt, ...)
 
 static js_Function *newfun(js_State *J, js_Ast *name, js_Ast *params, js_Ast *body, int script)
 {
-	js_Function *F = malloc(sizeof *F);
+	js_Function *F = js_malloc(J, sizeof *F);
 	memset(F, 0, sizeof *F);
 	F->gcmark = 0;
 	F->gcnext = J->gcfun;
@@ -619,7 +619,7 @@ static void cexp(JF, js_Ast *exp)
 
 static void addjump(JF, enum js_AstType type, js_Ast *target, int inst)
 {
-	js_JumpList *jump = malloc(sizeof *jump);
+	js_JumpList *jump = js_malloc(J, sizeof *jump);
 	jump->type = type;
 	jump->inst = inst;
 	jump->next = target->jumps;

@@ -41,7 +41,7 @@ void js_loadfile(js_State *J, const char *filename)
 	n = ftell(f);
 	fseek(f, 0, SEEK_SET);
 
-	s = malloc(n + 1); /* add space for string terminator */
+	s = js_malloc(J, n + 1); /* add space for string terminator */
 	if (!s) {
 		fclose(f);
 		js_error(J, "cannot allocate storage for file contents: '%s'", filename);
@@ -49,7 +49,7 @@ void js_loadfile(js_State *J, const char *filename)
 
 	t = fread(s, 1, n, f);
 	if (t != n) {
-		free(s);
+		js_free(J, s);
 		fclose(f);
 		js_error(J, "cannot read data from file: '%s'", filename);
 	}
@@ -57,14 +57,14 @@ void js_loadfile(js_State *J, const char *filename)
 	s[n] = 0; /* zero-terminate string containing file data */
 
 	if (js_try(J)) {
-		free(s);
+		js_free(J, s);
 		fclose(f);
 		js_throw(J);
 	}
 
 	js_loadstring(J, filename, s);
 
-	free(s);
+	js_free(J, s);
 	fclose(f);
 	js_endtry(J);
 }
@@ -104,9 +104,15 @@ int js_dofile(js_State *J, const char *filename)
 js_State *js_newstate(void)
 {
 	js_State *J = malloc(sizeof *J);
+	if (!J)
+		return NULL;
 	memset(J, 0, sizeof(*J));
 
 	J->stack = malloc(JS_STACKSIZE * sizeof *J->stack);
+	if (!J->stack) {
+		free(J);
+		return NULL;
+	}
 
 	J->gcmark = 1;
 	J->nextref = 0;

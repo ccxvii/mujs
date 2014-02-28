@@ -378,17 +378,17 @@ void js_concat(js_State *J)
 	if (va.type == JS_TSTRING || vb.type == JS_TSTRING) {
 		const char *sa = jsV_tostring(J, &va);
 		const char *sb = jsV_tostring(J, &vb);
-		char *sab = malloc(strlen(sa) + strlen(sb) + 1);
+		char *sab = js_malloc(J, strlen(sa) + strlen(sb) + 1);
 		strcpy(sab, sa);
 		strcat(sab, sb);
 		if (js_try(J)) {
-			free(sab);
+			js_free(J, sab);
 			js_throw(J);
 		}
 		js_pop(J, 2);
 		js_pushstring(J, sab);
 		js_endtry(J);
-		free(sab);
+		js_free(J, sab);
 	} else {
 		double x = jsV_tonumber(J, &va);
 		double y = jsV_tonumber(J, &vb);

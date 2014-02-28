@@ -29,7 +29,7 @@ static js_Property sentinel = {
 
 static js_Property *newproperty(js_State *J, const char *name)
 {
-	js_Property *node = malloc(sizeof(js_Property));
+	js_Property *node = js_malloc(J, sizeof *node);
 	node->name = js_intern(J, name);
 	node->left = node->right = &sentinel;
 	node->prevp = NULL;
@@ -97,12 +97,12 @@ static js_Property *insert(js_State *J, js_Property *node, const char *name, js_
 	return *result = newproperty(J, name);
 }
 
-static void freenode(js_State *J, js_Property *node)
+static void freeproperty(js_State *J, js_Property *node)
 {
 	if (node->next)
 		node->next->prevp = node->prevp;
 	*node->prevp = node->next;
-	free(node);
+	js_free(J, node);
 }
 
 static js_Property *delete(js_State *J, js_Property *node, const char *name)
@@ -119,11 +119,11 @@ static js_Property *delete(js_State *J, js_Property *node, const char *name)
 			if (node->left == &sentinel) {
 				temp = node;
 				node = node->right;
-				freenode(J, temp);
+				freeproperty(J, temp);
 			} else if (node->right == &sentinel) {
 				temp = node;
 				node = node->left;
-				freenode(J, temp);
+				freeproperty(J, temp);
 			} else {
 				succ = node->right;
 				while (succ->left != &sentinel)
@@ -153,7 +153,8 @@ static js_Property *delete(js_State *J, js_Property *node, const char *name)
 
 js_Object *jsV_newobject(js_State *J, enum js_Class type, js_Object *prototype)
 {
-	js_Object *obj = calloc(sizeof(js_Object), 1);
+	js_Object *obj = js_malloc(J, sizeof *obj);
+	memset(obj, 0, sizeof *obj);
 	obj->gcmark = 0;
 	obj->gcnext = J->gcobj;
 	J->gcobj = obj;
@@ -246,7 +247,7 @@ static void itwalk(js_State *J, js_Object *io, js_Object *top, int own)
 	unsigned int k;
 
 #define ITADD(x) \
-	js_Iterator *node = malloc(sizeof *node); \
+	js_Iterator *node = js_malloc(J, sizeof *node); \
 	node->name = x; \
 	node->next = NULL; \
 	if (!tail) { \
@@ -297,7 +298,7 @@ const char *jsV_nextiterator(js_State *J, js_Object *io)
 	while (io->u.iter.head) {
 		js_Iterator *next = io->u.iter.head->next;
 		const char *name = io->u.iter.head->name;
-		free(io->u.iter.head);
+		js_free(J, io->u.iter.head);
 		io->u.iter.head = next;
 		if (jsV_getproperty(J, io->u.iter.target, name))
 			return name;

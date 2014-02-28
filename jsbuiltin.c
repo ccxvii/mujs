@@ -103,22 +103,22 @@ static void Encode(js_State *J, const char *str, const char *unescaped)
 	while (*str) {
 		int c = (unsigned char) *str++;
 		if (strchr(unescaped, c))
-			sb_putc(&sb, c);
+			js_putc(J, &sb, c);
 		else {
-			sb_putc(&sb, '%');
-			sb_putc(&sb, HEX[(c >> 4) & 0xf]);
-			sb_putc(&sb, HEX[c & 0xf]);
+			js_putc(J, &sb, '%');
+			js_putc(J, &sb, HEX[(c >> 4) & 0xf]);
+			js_putc(J, &sb, HEX[c & 0xf]);
 		}
 	}
-	sb_putc(&sb, 0);
+	js_putc(J, &sb, 0);
 
 	if (js_try(J)) {
-		free(sb);
+		js_free(J, sb);
 		js_throw(J);
 	}
 	js_pushstring(J, sb ? sb->s : "");
 	js_endtry(J);
-	free(sb);
+	js_free(J, sb);
 }
 
 static void Decode(js_State *J, const char *str, const char *reserved)
@@ -129,7 +129,7 @@ static void Decode(js_State *J, const char *str, const char *reserved)
 	while (*str) {
 		int c = (unsigned char) *str++;
 		if (c != '%')
-			sb_putc(&sb, c);
+			js_putc(J, &sb, c);
 		else {
 			if (!str[0] || !str[1])
 				js_urierror(J, "truncated escape sequence");
@@ -139,23 +139,23 @@ static void Decode(js_State *J, const char *str, const char *reserved)
 				js_urierror(J, "invalid escape sequence");
 			c = jsY_tohex(a) << 4 | jsY_tohex(b);
 			if (!strchr(reserved, c))
-				sb_putc(&sb, c);
+				js_putc(J, &sb, c);
 			else {
-				sb_putc(&sb, '%');
-				sb_putc(&sb, a);
-				sb_putc(&sb, b);
+				js_putc(J, &sb, '%');
+				js_putc(J, &sb, a);
+				js_putc(J, &sb, b);
 			}
 		}
 	}
-	sb_putc(&sb, 0);
+	js_putc(J, &sb, 0);
 
 	if (js_try(J)) {
-		free(sb);
+		js_free(J, sb);
 		js_throw(J);
 	}
 	js_pushstring(J, sb ? sb->s : "");
 	js_endtry(J);
-	free(sb);
+	js_free(J, sb);
 }
 
 #define URIRESERVED ";/?:@&=+$,"

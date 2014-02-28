@@ -29,6 +29,10 @@
 
 #define nelem(a) (sizeof (a) / sizeof (a)[0])
 
+void *js_malloc(js_State *J, size_t size);
+void *js_realloc(js_State *J, void *ptr, size_t size);
+void js_free(js_State *J, void *ptr);
+
 typedef struct js_Regexp js_Regexp;
 typedef struct js_Value js_Value;
 typedef struct js_Object js_Object;

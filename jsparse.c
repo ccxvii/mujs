@@ -54,7 +54,7 @@ static void jsP_warning(js_State *J, const char *fmt, ...)
 
 static js_Ast *jsP_newnode(js_State *J, int type, js_Ast *a, js_Ast *b, js_Ast *c, js_Ast *d)
 {
-	js_Ast *node = malloc(sizeof(js_Ast));
+	js_Ast *node = js_malloc(J, sizeof *node);
 
 	node->type = type;
 	node->line = J->lexline;
@@ -109,7 +109,7 @@ static void jsP_freejumps(js_State *J, js_JumpList *node)
 {
 	while (node) {
 		js_JumpList *next = node->next;
-		free(node);
+		js_free(J, node);
 		node = next;
 	}
 }
@@ -120,7 +120,7 @@ void jsP_freeparse(js_State *J)
 	while (node) {
 		js_Ast *next = node->gcnext;
 		jsP_freejumps(J, node->jumps);
-		free(node);
+		js_free(J, node);
 		node = next;
 	}
 	J->gcast = NULL;

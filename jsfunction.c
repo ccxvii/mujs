@@ -19,15 +19,15 @@ static void jsB_Function(js_State *J, unsigned int argc)
 		sb = NULL;
 		if (argc > 1) {
 			for (i = 1; i < argc; ++i) {
-				if (i > 1) sb_putc(&sb, ',');
-				sb_puts(&sb, js_tostring(J, i));
+				if (i > 1) js_putc(J, &sb, ',');
+				js_puts(J, &sb, js_tostring(J, i));
 			}
-			sb_putc(&sb, ')');
+			js_putc(J, &sb, ')');
 		}
 	}
 
 	if (js_try(J)) {
-		free(sb);
+		js_free(J, sb);
 		jsP_freeparse(J);
 		js_throw(J);
 	}
@@ -36,7 +36,7 @@ static void jsB_Function(js_State *J, unsigned int argc)
 	fun = jsC_compilefunction(J, parse);
 
 	js_endtry(J);
-	free(sb);
+	js_free(J, sb);
 	jsP_freeparse(J);
 
 	js_newfunction(J, fun, J->GE);
@@ -62,7 +62,7 @@ static void Fp_toString(js_State *J, unsigned int argc)
 		n += strlen(F->name);
 		for (i = 0; i < F->numparams; ++i)
 			n += strlen(F->vartab[i]) + 1;
-		s = malloc(n);
+		s = js_malloc(J, n);
 		strcpy(s, "function ");
 		strcat(s, F->name);
 		strcat(s, "(");
@@ -71,8 +71,12 @@ static void Fp_toString(js_State *J, unsigned int argc)
 			strcat(s, F->vartab[i]);
 		}
 		strcat(s, ") { ... }");
+		if (js_try(J)) {
+			js_free(J, s);
+			js_throw(J);
+		}
 		js_pushstring(J, s);
-		free(s);
+		js_free(J, s);
 	} else {
 		js_pushliteral(J, "function () { ... }");
 	}

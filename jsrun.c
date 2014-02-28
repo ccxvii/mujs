@@ -21,6 +21,35 @@ static void js_stackoverflow(js_State *J)
 	js_throw(J);
 }
 
+static void js_outofmemory(js_State *J)
+{
+	STACK[TOP].type = JS_TSTRING;
+	STACK[TOP].u.string = "out of memory";
+	++TOP;
+	js_throw(J);
+}
+
+void *js_malloc(js_State *J, size_t size)
+{
+	void *ptr = malloc(size);
+	if (!ptr)
+		js_outofmemory(J);
+	return ptr;
+}
+
+void *js_realloc(js_State *J, void *ptr, size_t size)
+{
+	ptr = realloc(ptr, size);
+	if (!ptr)
+		js_outofmemory(J);
+	return ptr;
+}
+
+void js_free(js_State *J, void *ptr)
+{
+	free(ptr);
+}
+
 #define CHECKSTACK(n) if (TOP + n >= JS_STACKSIZE) js_stackoverflow(J)
 
 void js_pushvalue(js_State *J, js_Value v)
@@ -76,16 +105,16 @@ void js_pushlstring(js_State *J, const char *v, unsigned int n)
 		buf[n] = 0;
 		js_pushstring(J, buf);
 	} else {
-		char *s = malloc(n + 1);
+		char *s = js_malloc(J, n + 1);
 		memcpy(s, v, n);
 		s[n] = 0;
 		if (js_try(J)) {
-			free(s);
+			js_free(J, s);
 			js_throw(J);
 		}
 		js_pushstring(J, s);
 		js_endtry(J);
-		free(s);
+		js_free(J, s);
 	}
 }
 
@@ -680,7 +709,7 @@ int js_hasproperty(js_State *J, int idx, const char *name)
 
 js_Environment *jsR_newenvironment(js_State *J, js_Object *vars, js_Environment *outer)
 {
-	js_Environment *E = malloc(sizeof *E);
+	js_Environment *E = js_malloc(J, sizeof *E);
 	E->gcmark = 0;
 	E->gcnext = J->gcenv;
 	J->gcenv = E;

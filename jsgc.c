@@ -9,24 +9,24 @@ static void jsG_markobject(js_State *J, int mark, js_Object *obj);
 
 static void jsG_freeenvironment(js_State *J, js_Environment *env)
 {
-	free(env);
+	js_free(J, env);
 }
 
 static void jsG_freefunction(js_State *J, js_Function *fun)
 {
-	free(fun->funtab);
-	free(fun->numtab);
-	free(fun->strtab);
-	free(fun->vartab);
-	free(fun->code);
-	free(fun);
+	js_free(J, fun->funtab);
+	js_free(J, fun->numtab);
+	js_free(J, fun->strtab);
+	js_free(J, fun->vartab);
+	js_free(J, fun->code);
+	js_free(J, fun);
 }
 
 static void jsG_freeproperty(js_State *J, js_Property *node)
 {
 	while (node) {
 		js_Property *next = node->next;
-		free(node);
+		js_free(J, node);
 		node = next;
 	}
 }
@@ -35,7 +35,7 @@ static void jsG_freeiterator(js_State *J, js_Iterator *node)
 {
 	while (node) {
 		js_Iterator *next = node->next;
-		free(node);
+		js_free(J, node);
 		node = next;
 	}
 }
@@ -48,7 +48,7 @@ static void jsG_freeobject(js_State *J, js_Object *obj)
 		js_regfree(obj->u.r.prog);
 	if (obj->type == JS_CITERATOR)
 		jsG_freeiterator(J, obj->u.iter.head);
-	free(obj);
+	js_free(J, obj);
 }
 
 static void jsG_markfunction(js_State *J, int mark, js_Function *fun)
@@ -203,7 +203,7 @@ void js_freestate(js_State *J)
 
 	jsS_freestrings(J);
 
-	free(J->lexbuf.text);
+	js_free(J, J->lexbuf.text);
 	free(J->stack);
 	free(J);
 }
