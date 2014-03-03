@@ -230,85 +230,72 @@ static double TimeClip(double t)
 	return t < 0 ? -floor(-t) : floor(t);
 }
 
-static int toint(const char *s, int w, int *v)
+static int toint(const char **sp, int w, int *v)
 {
 	char *e;
-	*v = strtol(s, &e, 10);
-	return e == s + w;
+	*v = strtol(*sp, &e, 10);
+	if (e != *sp + w)
+		return 0;
+	*sp += w;
+	return 1;
 }
 
-static double parseDate(const char *s)
+static double parseDateTime(const char *s)
 {
-	char *e;
 	int y = 1970, m = 1, d = 1, H = 0, M = 0, S = 0, ms = 0;
-	int tzs = 0, tzm = 0, tzh = 0;
+	int tza = 0;
 	double t;
 
 	/* Parse ISO 8601 formatted date and time: */
-	/* YYYY("-"mm("-"dd("T"HH":"MM(":"SS("."lll)?)?("Z"|[+-]zz(":"?zz)?)?)?)?)? */
+	/* YYYY("-"MM("-"DD)?)?("T"HH":"mm(":"ss("."sss)?)?("Z"|[+-]HH(":"mm)?)?)? */
 
-	if (!toint(s+0, 4, &y))
-		return NAN;
-	if (s[4] == '-') {
-		if (!toint(s+5, 2, &m))
-			return NAN;
-		if (s[7] == '-') {
-			if (!toint(s+8, 2, &d))
-				return NAN;
-			if (s[10] == 'T') {
-				if (!toint(s+11, 2, &H))
-					return NAN;
-				if (s[13] != ':')
-					return NAN;
-				if (!toint(s+14, 2, &M))
-					return NAN;
-				if (s[16] == ':') {
-					if (!toint(s + 17, 2, &S))
-						return NAN;
-					if (s[19] == '.') {
-						if (!toint(s + 20, 3, &ms))
-							return NAN;
-						s = s + 23;
-					} else {
-						s = s + 19;
-					}
-				} else {
-					s = s + 16;
-				}
-				if (s[0] == 'Z') {
-					tzs = 1;
-					tzh = tzm = 0;
-					if (s[1])
-						return NAN;
-				} else if (s[0] == '+' || s[0] == '-') {
-					tzs = s[0] == '+' ? 1 : -1;
-					tzh = strtol(s + 1, &e, 10);
-					if (e == s + 3) {
-						if (s[3] == ':') {
-							if (!toint(s + 4, 2, &tzm))
-								return NAN;
-							if (s[6])
-								return NAN;
-						} else if (s[3]) return NAN;
-					} else if (e == s + 5) {
-						tzm = tzh % 100;
-						tzh = tzh / 100;
-						if (s[5])
-							return NAN;
-					} else {
-						return NAN;
-					}
-				} else if (s[0]) {
-					return NAN;
-				}
-			} else if (s[10]) return NAN;
-		} else if (s[7]) return NAN;
-	} else if (s[4]) return NAN;
+	if (!toint(&s, 4, &y)) return NAN;
+	if (*s == '-') {
+		s += 1;
+		if (!toint(&s, 2, &m)) return NAN;
+		if (*s == '-') {
+			s += 1;
+			if (!toint(&s, 2, &d)) return NAN;
+		}
+	}
 
-	t = MakeDate(MakeDay(y, m-1, d-1), MakeTime(H, M, S, ms));
-	if (tzs)
-		return t - tzs * (tzh * msPerHour + tzm + msPerDay);
-	return UTC(t);
+	if (*s == 'T') {
+		s += 1;
+		if (!toint(&s, 2, &H)) return NAN;
+		if (*s != ':') return NAN;
+		s += 1;
+		if (!toint(&s, 2, &M)) return NAN;
+		if (*s == ':') {
+			s += 1;
+			if (!toint(&s, 2, &S)) return NAN;
+			if (*s == '.') {
+				s += 1;
+				if (!toint(&s, 3, &ms)) return NAN;
+			}
+		}
+		if (*s == 'Z') {
+			s += 1;
+			tza = 0;
+		} else if (*s == '+' || *s == '-') {
+			int tzh = 0, tzm = 0;
+			int tzs = *s == '+' ? 1 : -1;
+			s += 1;
+			if (!toint(&s, 2, &tzh)) return NAN;
+			if (*s == ':') {
+				s += 1;
+				if (!toint(&s, 2, &tzm)) return NAN;
+			}
+			tza = tzs * (tzh * msPerHour + tzm * msPerMinute);
+		} else {
+			tza = LocalTZA();
+		}
+	}
+
+	if (*s) return NAN;
+
+	// TODO: DaylightSavingTA on local times
+	t = MakeDate(MakeDay(y, m-1, d), MakeTime(H, M, S, ms));
+	return t - tza;
 }
 
 /* date formatting */
@@ -333,9 +320,9 @@ static char *fmttime(char *buf, double t, double tza)
 	if (tza == 0)
 		sprintf(buf, "%02d:%02d:%02d.%03dZ", H, M, S, ms);
 	else if (tza < 0)
-		sprintf(buf, "%02d:%02d:%02d.%03d-%02d%02d", H, M, S, ms, tzh, tzm);
+		sprintf(buf, "%02d:%02d:%02d.%03d-%02d:%02d", H, M, S, ms, tzh, tzm);
 	else
-		sprintf(buf, "%02d:%02d:%02d.%03d+%02d%02d", H, M, S, ms, tzh, tzm);
+		sprintf(buf, "%02d:%02d:%02d.%03d+%02d:%02d", H, M, S, ms, tzh, tzm);
 	return buf;
 }
 
@@ -369,7 +356,7 @@ static void js_setdate(js_State *J, int idx, double t)
 
 static void D_parse(js_State *J, unsigned int argc)
 {
-	double t = parseDate(js_tostring(J, 1));
+	double t = parseDateTime(js_tostring(J, 1));
 	js_pushnumber(J, t);
 }
 
@@ -411,7 +398,7 @@ static void jsB_new_Date(js_State *J, unsigned int argc)
 	else if (argc == 1) {
 		v = js_toprimitive(J, 1, JS_HNONE);
 		if (v.type == JS_TSTRING)
-			t = parseDate(v.u.string);
+			t = parseDateTime(v.u.string);
 		else
 			t = TimeClip(jsV_tonumber(J, &v));
 	} else {
