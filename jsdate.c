@@ -311,62 +311,40 @@ static double parseDate(const char *s)
 	return UTC(t);
 }
 
-/* strftime based date formatting */
+/* date formatting */
 
-#define FMT_DATE "%Y-%m-%d"
-#define FMT_TIME "%H:%M:%S"
-#define FMT_DATETIME "%Y-%m-%d %H:%M:%S %z"
-#define FMT_DATETIME_ISO "%Y-%m-%dT%H:%M:%SZ"
-
-static void fmtdate(char *buf, const char *fmt, double t, float tza)
+static char *fmtdate(char *buf, double t)
 {
-	char *p = buf;
-	const char *s = fmt;
-	int tzsign, tzhh, tzmm;
-	while (*s) {
-		if (*s == '%') {
-			switch (s[1]) {
-			default: *p++ = s[0]; *p++ = s[1]; break;
-			case 'Y': p += sprintf(p, "%04d", YearFromTime(t)); break;
-			case 'm': p += sprintf(p, "%02d", MonthFromTime(t) + 1); break;
-			case 'd': p += sprintf(p, "%02d", DateFromTime(t)); break;
-			case 'H': p += sprintf(p, "%02d", HourFromTime(t)); break;
-			case 'M': p += sprintf(p, "%02d", MinFromTime(t)); break;
-			case 'S': p += sprintf(p, "%02d", SecFromTime(t)); break;
-			case 'z':
-				if (tza < 0) {
-					tzsign = '-';
-					tza = -tza;
-				} else {
-					tzsign = '+';
-				}
-				tzhh = HourFromTime(tza);
-				tzmm = MinFromTime(tza);
-				if (tzmm != 0)
-					p += sprintf(p, "UTC%c%02d%02d", tzsign, tzhh, tzmm);
-				else if (tzhh != 0)
-					p += sprintf(p, "UTC%c%02d", tzsign, tzhh);
-				else
-					p += sprintf(p, "UTC");
-				break;
-			}
-			s += 2;
-		} else {
-			*p++ = *s++;
-		}
-	}
-	*p = 0;
-}
-
-static const char *fmtlocal(char *buf, const char *fmt, double t)
-{
-	fmtdate(buf, fmt, LocalTime(t), LocalTZA());
+	int y = YearFromTime(t);
+	int m = MonthFromTime(t);
+	int d = DateFromTime(t);
+	sprintf(buf, "%04d-%02d-%02d", y, m+1, d);
 	return buf;
 }
 
-static const char *fmtutc(char *buf, const char *fmt, double t)
+static char *fmttime(char *buf, double t, double tza)
 {
-	fmtdate(buf, fmt, t, 0);
+	int H = HourFromTime(t);
+	int M = MinFromTime(t);
+	int S = SecFromTime(t);
+	int ms = msFromTime(t);
+	int tzh = HourFromTime(fabs(tza));
+	int tzm = MinFromTime(fabs(tza));
+	if (tza == 0)
+		sprintf(buf, "%02d:%02d:%02d.%03dZ", H, M, S, ms);
+	else if (tza < 0)
+		sprintf(buf, "%02d:%02d:%02d.%03d-%02d%02d", H, M, S, ms, tzh, tzm);
+	else
+		sprintf(buf, "%02d:%02d:%02d.%03d+%02d%02d", H, M, S, ms, tzh, tzm);
+	return buf;
+}
+
+static char *fmtdatetime(char *buf, double t, double tza)
+{
+	char dbuf[20], tbuf[20];
+	fmtdate(dbuf, t);
+	fmttime(tbuf, t, tza);
+	sprintf(buf, "%sT%s", dbuf, tbuf);
 	return buf;
 }
 
@@ -419,7 +397,7 @@ static void D_now(js_State *J, unsigned int argc)
 static void jsB_Date(js_State *J, unsigned int argc)
 {
 	char buf[64];
-	js_pushstring(J, fmtlocal(buf, FMT_DATETIME, Now()));
+	js_pushstring(J, fmtdatetime(buf, LocalTime(Now()), LocalTZA()));
 }
 
 static void jsB_new_Date(js_State *J, unsigned int argc)
@@ -466,35 +444,35 @@ static void Dp_toString(js_State *J, unsigned int argc)
 {
 	char buf[64];
 	double t = js_todate(J, 0);
-	js_pushstring(J, fmtlocal(buf, FMT_DATETIME, t));
+	js_pushstring(J, fmtdatetime(buf, LocalTime(t), LocalTZA()));
 }
 
 static void Dp_toDateString(js_State *J, unsigned int argc)
 {
 	char buf[64];
 	double t = js_todate(J, 0);
-	js_pushstring(J, fmtlocal(buf, FMT_DATE, t));
+	js_pushstring(J, fmtdate(buf, LocalTime(t)));
 }
 
 static void Dp_toTimeString(js_State *J, unsigned int argc)
 {
 	char buf[64];
 	double t = js_todate(J, 0);
-	js_pushstring(J, fmtlocal(buf, FMT_TIME, t));
+	js_pushstring(J, fmttime(buf, LocalTime(t), LocalTZA()));
 }
 
 static void Dp_toUTCString(js_State *J, unsigned int argc)
 {
 	char buf[64];
 	double t = js_todate(J, 0);
-	js_pushstring(J, fmtutc(buf, FMT_DATETIME, t));
+	js_pushstring(J, fmtdatetime(buf, t, 0));
 }
 
 static void Dp_toISOString(js_State *J, unsigned int argc)
 {
 	char buf[64];
 	double t = js_todate(J, 0);
-	js_pushstring(J, fmtutc(buf, FMT_DATETIME_ISO, t));
+	js_pushstring(J, fmtdatetime(buf, t, 0));
 }
 
 static void Dp_getFullYear(js_State *J, unsigned int argc)
