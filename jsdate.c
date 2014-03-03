@@ -59,6 +59,14 @@ static double DaylightSavingTA(double t)
 #define msPerMinute	(SecondsPerMinute * msPerSecond)
 #define msPerSecond	1000.0
 
+static double pmod(double x, double y)
+{
+	x = fmod(x, y);
+	if (x < 0)
+		x += y;
+	return x;
+}
+
 static int Day(double t)
 {
 	return floor(t / msPerDay);
@@ -66,7 +74,7 @@ static int Day(double t)
 
 static double TimeWithinDay(double t)
 {
-	return fmod(t, msPerDay);
+	return pmod(t, msPerDay);
 }
 
 static int DaysInYear(int y)
@@ -148,7 +156,7 @@ static int DateFromTime(double t)
 
 static int WeekDay(double t)
 {
-	return (Day(t) + 4) % 7;
+	return pmod(Day(t) + 4, 7);
 }
 
 static double LocalTime(double utc)
@@ -163,22 +171,22 @@ static double UTC(double loc)
 
 static int HourFromTime(double t)
 {
-	return fmod(floor(t / msPerHour), HoursPerDay);
+	return pmod(floor(t / msPerHour), HoursPerDay);
 }
 
 static int MinFromTime(double t)
 {
-	return fmod(floor(t / msPerMinute), MinutesPerHour);
+	return pmod(floor(t / msPerMinute), MinutesPerHour);
 }
 
 static int SecFromTime(double t)
 {
-	return fmod(floor(t / msPerSecond), SecondsPerMinute);
+	return pmod(floor(t / msPerSecond), SecondsPerMinute);
 }
 
 static int msFromTime(double t)
 {
-	return fmod(t, msPerSecond);
+	return pmod(t, msPerSecond);
 }
 
 static double MakeTime(double hour, double min, double sec, double ms)
@@ -200,8 +208,7 @@ static double MakeDay(double y, double m, double date)
 	double yd, md;
 
 	y += floor(m / 12);
-	m = fmod(m, 12);
-	if (m < 0) m += 12;
+	m = pmod(m, 12);
 
 	yd = floor(TimeFromYear(y) / msPerDay);
 	md = firstDayOfMonth[InLeapYear(y)][(int)m];
