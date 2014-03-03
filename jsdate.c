@@ -232,11 +232,14 @@ static double TimeClip(double t)
 
 static int toint(const char **sp, int w, int *v)
 {
-	char *e;
-	*v = strtol(*sp, &e, 10);
-	if (e != *sp + w)
-		return 0;
-	*sp += w;
+	const char *s = *sp;
+	*v = 0;
+	while (w--) {
+		if (*s < '0' || *s > '9')
+			return 0;
+		*v = *v * 10 + (*s++ - '0');
+	}
+	*sp = s;
 	return 1;
 }
 
@@ -285,6 +288,7 @@ static double parseDateTime(const char *s)
 				s += 1;
 				if (!toint(&s, 2, &tzm)) return NAN;
 			}
+			if (tzh > 23 || tzm > 59) return NAN;
 			tza = tzs * (tzh * msPerHour + tzm * msPerMinute);
 		} else {
 			tza = LocalTZA();
@@ -292,6 +296,11 @@ static double parseDateTime(const char *s)
 	}
 
 	if (*s) return NAN;
+
+	if (m > 11) return NAN;
+	if (d < 1 || d > 31) return NAN;
+	if (H > 24 || M > 59 || S > 59) return NAN;
+	if (H == 24 && (M != 0 || S != 0 || ms != 0)) return NAN;
 
 	// TODO: DaylightSavingTA on local times
 	t = MakeDate(MakeDay(y, m-1, d), MakeTime(H, M, S, ms));
@@ -305,6 +314,8 @@ static char *fmtdate(char *buf, double t)
 	int y = YearFromTime(t);
 	int m = MonthFromTime(t);
 	int d = DateFromTime(t);
+	if (!isfinite(t))
+		return "Invalid Date";
 	sprintf(buf, "%04d-%02d-%02d", y, m+1, d);
 	return buf;
 }
@@ -317,6 +328,8 @@ static char *fmttime(char *buf, double t, double tza)
 	int ms = msFromTime(t);
 	int tzh = HourFromTime(fabs(tza));
 	int tzm = MinFromTime(fabs(tza));
+	if (!isfinite(t))
+		return "Invalid Date";
 	if (tza == 0)
 		sprintf(buf, "%02d:%02d:%02d.%03dZ", H, M, S, ms);
 	else if (tza < 0)
@@ -329,6 +342,8 @@ static char *fmttime(char *buf, double t, double tza)
 static char *fmtdatetime(char *buf, double t, double tza)
 {
 	char dbuf[20], tbuf[20];
+	if (!isfinite(t))
+		return "Invalid Date";
 	fmtdate(dbuf, t);
 	fmttime(tbuf, t, tza);
 	sprintf(buf, "%sT%s", dbuf, tbuf);
@@ -459,6 +474,8 @@ static void Dp_toISOString(js_State *J, unsigned int argc)
 {
 	char buf[64];
 	double t = js_todate(J, 0);
+	if (!isfinite(t))
+		js_rangeerror(J, "invalid date");
 	js_pushstring(J, fmtdatetime(buf, t, 0));
 }
 
