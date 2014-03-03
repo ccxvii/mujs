@@ -223,16 +223,84 @@ static double TimeClip(double t)
 	return t < 0 ? -floor(-t) : floor(t);
 }
 
-static double parseDate(const char *str)
+static int toint(const char *s, int w, int *v)
 {
-	const char *tz;
-	int y = 1970, m = 0, d = 1, H = 0, M = 0, S = 0, ms = 0;
+	char *e;
+	*v = strtol(s, &e, 10);
+	return e == s + w;
+}
+
+static double parseDate(const char *s)
+{
+	char *e;
+	int y = 1970, m = 1, d = 1, H = 0, M = 0, S = 0, ms = 0;
+	int tzs = 0, tzm = 0, tzh = 0;
 	double t;
-	sscanf(str, "%04d-%02d-%02d%*[T ]%02d:%02d:%02d.%d", &y, &m, &d, &H, &M, &S, &ms);
-	t = MakeDate(MakeDay(y, m-1, d), MakeTime(H, M, S, ms));
-	if ((tz = strstr(str, "UTC")) && !strcmp(tz, "UTC")) return t;
-	if ((tz = strstr(str, "GMT")) && !strcmp(tz, "GMT")) return t;
-	if ((tz = strstr(str, "Z")) && !strcmp(tz, "Z")) return t;
+
+	/* Parse ISO 8601 formatted date and time: */
+	/* YYYY("-"mm("-"dd("T"HH":"MM(":"SS("."lll)?)?("Z"|[+-]zz(":"?zz)?)?)?)?)? */
+
+	if (!toint(s+0, 4, &y))
+		return NAN;
+	if (s[4] == '-') {
+		if (!toint(s+5, 2, &m))
+			return NAN;
+		if (s[7] == '-') {
+			if (!toint(s+8, 2, &d))
+				return NAN;
+			if (s[10] == 'T') {
+				if (!toint(s+11, 2, &H))
+					return NAN;
+				if (s[13] != ':')
+					return NAN;
+				if (!toint(s+14, 2, &M))
+					return NAN;
+				if (s[16] == ':') {
+					if (!toint(s + 17, 2, &S))
+						return NAN;
+					if (s[19] == '.') {
+						if (!toint(s + 20, 3, &ms))
+							return NAN;
+						s = s + 23;
+					} else {
+						s = s + 19;
+					}
+				} else {
+					s = s + 16;
+				}
+				if (s[0] == 'Z') {
+					tzs = 1;
+					tzh = tzm = 0;
+					if (s[1])
+						return NAN;
+				} else if (s[0] == '+' || s[0] == '-') {
+					tzs = s[0] == '+' ? 1 : -1;
+					tzh = strtol(s + 1, &e, 10);
+					if (e == s + 3) {
+						if (s[3] == ':') {
+							if (!toint(s + 4, 2, &tzm))
+								return NAN;
+							if (s[6])
+								return NAN;
+						} else if (s[3]) return NAN;
+					} else if (e == s + 5) {
+						tzm = tzh % 100;
+						tzh = tzh / 100;
+						if (s[5])
+							return NAN;
+					} else {
+						return NAN;
+					}
+				} else if (s[0]) {
+					return NAN;
+				}
+			} else if (s[10]) return NAN;
+		} else if (s[7]) return NAN;
+	} else if (s[4]) return NAN;
+
+	t = MakeDate(MakeDay(y, m-1, d-1), MakeTime(H, M, S, ms));
+	if (tzs)
+		return t - tzs * (tzh * msPerHour + tzm + msPerDay);
 	return UTC(t);
 }
 
@@ -240,22 +308,58 @@ static double parseDate(const char *str)
 
 #define FMT_DATE "%Y-%m-%d"
 #define FMT_TIME "%H:%M:%S"
-#define FMT_DATETIME "%Y-%m-%d %H:%M:%S %Z"
+#define FMT_DATETIME "%Y-%m-%d %H:%M:%S %z"
 #define FMT_DATETIME_ISO "%Y-%m-%dT%H:%M:%SZ"
 
-static const char *fmtlocal(const char *fmt, double t)
+static void fmtdate(char *buf, const char *fmt, double t, float tza)
 {
-	static char buf[64];
-	time_t tt = t * 0.001;
-	strftime(buf, sizeof buf, fmt, localtime(&tt));
+	char *p = buf;
+	const char *s = fmt;
+	int tzsign, tzhh, tzmm;
+	while (*s) {
+		if (*s == '%') {
+			switch (s[1]) {
+			default: *p++ = s[0]; *p++ = s[1]; break;
+			case 'Y': p += sprintf(p, "%04d", YearFromTime(t)); break;
+			case 'm': p += sprintf(p, "%02d", MonthFromTime(t) + 1); break;
+			case 'd': p += sprintf(p, "%02d", DateFromTime(t)); break;
+			case 'H': p += sprintf(p, "%02d", HourFromTime(t)); break;
+			case 'M': p += sprintf(p, "%02d", MinFromTime(t)); break;
+			case 'S': p += sprintf(p, "%02d", SecFromTime(t)); break;
+			case 'z':
+				if (tza < 0) {
+					tzsign = '-';
+					tza = -tza;
+				} else {
+					tzsign = '+';
+				}
+				tzhh = HourFromTime(tza);
+				tzmm = MinFromTime(tza);
+				if (tzmm != 0)
+					p += sprintf(p, "UTC%c%02d%02d", tzsign, tzhh, tzmm);
+				else if (tzhh != 0)
+					p += sprintf(p, "UTC%c%02d", tzsign, tzhh);
+				else
+					p += sprintf(p, "UTC");
+				break;
+			}
+			s += 2;
+		} else {
+			*p++ = *s++;
+		}
+	}
+	*p = 0;
+}
+
+static const char *fmtlocal(char *buf, const char *fmt, double t)
+{
+	fmtdate(buf, fmt, LocalTime(t), LocalTZA());
 	return buf;
 }
 
-static const char *fmtutc(const char *fmt, double t)
+static const char *fmtutc(char *buf, const char *fmt, double t)
 {
-	static char buf[64];
-	time_t tt = t * 0.001;
-	strftime(buf, sizeof buf, fmt, gmtime(&tt));
+	fmtdate(buf, fmt, t, 0);
 	return buf;
 }
 
@@ -307,7 +411,8 @@ static void D_now(js_State *J, unsigned int argc)
 
 static void jsB_Date(js_State *J, unsigned int argc)
 {
-	js_pushstring(J, fmtlocal(FMT_DATETIME, Now()));
+	char buf[64];
+	js_pushstring(J, fmtlocal(buf, FMT_DATETIME, Now()));
 }
 
 static void jsB_new_Date(js_State *J, unsigned int argc)
@@ -352,32 +457,37 @@ static void Dp_valueOf(js_State *J, unsigned int argc)
 
 static void Dp_toString(js_State *J, unsigned int argc)
 {
+	char buf[64];
 	double t = js_todate(J, 0);
-	js_pushstring(J, fmtlocal(FMT_DATETIME, t));
+	js_pushstring(J, fmtlocal(buf, FMT_DATETIME, t));
 }
 
 static void Dp_toDateString(js_State *J, unsigned int argc)
 {
+	char buf[64];
 	double t = js_todate(J, 0);
-	js_pushstring(J, fmtlocal(FMT_DATE, t));
+	js_pushstring(J, fmtlocal(buf, FMT_DATE, t));
 }
 
 static void Dp_toTimeString(js_State *J, unsigned int argc)
 {
+	char buf[64];
 	double t = js_todate(J, 0);
-	js_pushstring(J, fmtlocal(FMT_TIME, t));
+	js_pushstring(J, fmtlocal(buf, FMT_TIME, t));
 }
 
 static void Dp_toUTCString(js_State *J, unsigned int argc)
 {
+	char buf[64];
 	double t = js_todate(J, 0);
-	js_pushstring(J, fmtutc(FMT_DATETIME, t));
+	js_pushstring(J, fmtutc(buf, FMT_DATETIME, t));
 }
 
 static void Dp_toISOString(js_State *J, unsigned int argc)
 {
+	char buf[64];
 	double t = js_todate(J, 0);
-	js_pushstring(J, fmtutc(FMT_DATETIME_ISO, t));
+	js_pushstring(J, fmtutc(buf, FMT_DATETIME_ISO, t));
 }
 
 static void Dp_getFullYear(js_State *J, unsigned int argc)
