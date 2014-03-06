@@ -171,15 +171,13 @@ static void fmtobject(js_State *J, js_Buffer **sb, js_Object *obj)
 
 static void fmtarray(js_State *J, js_Buffer **sb)
 {
-	unsigned int len, k;
+	unsigned int n, k;
 	char buf[40];
 
-	js_getproperty(J, -1, "length");
-	len = js_touint32(J, -1);
-	js_pop(J, 1);
+	n = js_getlength(J, -1);
 
 	js_putc(J, sb, '[');
-	for (k = 0; k < len; ++k) {
+	for (k = 0; k < n; ++k) {
 		if (k) js_putc(J, sb, ',');
 		sprintf(buf, "%u", k);
 		js_getproperty(J, -1, buf);

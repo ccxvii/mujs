@@ -85,7 +85,6 @@ static void Fp_toString(js_State *J, unsigned int argc)
 static void Fp_apply(js_State *J, unsigned int argc)
 {
 	int i, n;
-	char name[20];
 
 	if (!js_iscallable(J, 0))
 		js_typeerror(J, "not a function");
@@ -93,14 +92,9 @@ static void Fp_apply(js_State *J, unsigned int argc)
 	js_copy(J, 0);
 	js_copy(J, 1);
 
-	js_getproperty(J, 2, "length");
-	n = js_tonumber(J, -1);
-	js_pop(J, 1);
-
-	for (i = 0; i < n; ++i) {
-		sprintf(name, "%d", i);
-		js_getproperty(J, 2, name);
-	}
+	n = js_getlength(J, 2);
+	for (i = 0; i < n; ++i)
+		js_getindex(J, 2, i);
 
 	js_call(J, n);
 }
