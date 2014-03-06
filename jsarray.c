@@ -69,7 +69,7 @@ static void jsB_new_Array(js_State *J, unsigned int argc)
 
 static void Ap_concat(js_State *J, unsigned int argc)
 {
-	unsigned int n, len, i;
+	unsigned int n, k, len, i;
 
 	js_newarray(J);
 	n = 0;
@@ -77,20 +77,13 @@ static void Ap_concat(js_State *J, unsigned int argc)
 	for (i = 0; i <= argc; ++i) {
 		js_copy(J, i);
 		if (js_isarray(J, -1)) {
-			unsigned int k = 0;
-
 			len = js_getlength(J, -1);
-
-			while (k < len) {
+			for (k = 0; k < len; ++k)
 				if (js_hasindex(J, -1, k))
-					js_setindex(J, -3, n);
-				++k;
-				++n;
-			}
+					js_setindex(J, -3, n++);
 			js_pop(J, 1);
 		} else {
-			js_setindex(J, -2, n);
-			++n;
+			js_setindex(J, -2, n++);
 		}
 	}
 }
