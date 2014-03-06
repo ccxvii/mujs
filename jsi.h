@@ -103,6 +103,7 @@ struct js_State
 {
 	void *actx;
 	js_Alloc alloc;
+	js_Panic panic;
 
 	js_StringNode *strings;
 

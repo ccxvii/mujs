@@ -989,7 +989,8 @@ void js_throw(js_State *J)
 		js_pushvalue(J, v);
 		longjmp(J->trybuf[J->trylen].buf, 1);
 	}
-	fprintf(stderr, "libjs: uncaught exception!\n");
+	if (J->panic)
+		J->panic(J);
 	abort();
 }
 

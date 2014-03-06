@@ -16,6 +16,12 @@ static void *js_defaultalloc(void *actx, void *ptr, unsigned int size)
 	return realloc(ptr, size);
 }
 
+static void js_defaultpanic(js_State *J)
+{
+	fprintf(stderr, "libjs: uncaught exception: %s\n", js_tostring(J, -1));
+	/* return to javascript to abort */
+}
+
 void js_loadstring(js_State *J, const char *filename, const char *source)
 {
 	js_Ast *P;
@@ -112,6 +118,13 @@ int js_dofile(js_State *J, const char *filename)
 	return 0;
 }
 
+js_Panic js_atpanic(js_State *J, js_Panic panic)
+{
+	js_Panic old = J->panic;
+	J->panic = panic;
+	return old;
+}
+
 js_State *js_newstate(js_Alloc alloc, void *actx)
 {
 	js_State *J;
@@ -125,6 +138,8 @@ js_State *js_newstate(js_Alloc alloc, void *actx)
 	memset(J, 0, sizeof(*J));
 	J->actx = actx;
 	J->alloc = alloc;
+
+	J->panic = js_defaultpanic;
 
 	J->stack = alloc(actx, NULL, JS_STACKSIZE * sizeof *J->stack);
 	if (!J->stack) {
