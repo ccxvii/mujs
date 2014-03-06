@@ -248,6 +248,16 @@ unsigned int js_touint32(js_State *J, int idx)
 	return jsV_numbertouint32(jsV_tonumber(J, stackidx(J, idx)));
 }
 
+short js_toint16(js_State *J, int idx)
+{
+	return jsV_numbertoint16(jsV_tonumber(J, stackidx(J, idx)));
+}
+
+unsigned short js_touint16(js_State *J, int idx)
+{
+	return jsV_numbertouint16(jsV_tonumber(J, stackidx(J, idx)));
+}
+
 const char *js_tostring(js_State *J, int idx)
 {
 	return jsV_tostring(J, stackidx(J, idx));

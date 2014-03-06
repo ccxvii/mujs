@@ -294,7 +294,7 @@ static void S_fromCharCode(js_State *J, unsigned int argc)
 	}
 
 	for (i = 1; i <= argc; ++i) {
-		c = js_tointeger(J, i); // TODO: ToUInt16()
+		c = js_touint16(J, i);
 		p += runetochar(p, &c);
 	}
 	*p = 0;
@@ -424,7 +424,6 @@ loop:
 					x = *r - '0';
 					if (r[1] >= '0' && r[1] <= '9')
 						x = x * 10 + *(++r) - '0';
-					// TODO: use prog->nsub somehow
 					if (x > 0 && x < m.nsub) {
 						js_putm(J, &sb, m.sub[x].sp, m.sub[x].ep);
 					} else {

@@ -33,6 +33,16 @@ unsigned int jsV_numbertouint32(double n)
 	return jsV_numbertoint32(n);
 }
 
+short jsV_numbertoint16(double n)
+{
+	return jsV_numbertoint32(n);
+}
+
+unsigned short jsV_numbertouint16(double n)
+{
+	return jsV_numbertoint32(n);
+}
+
 /* obj.toString() */
 static int jsV_toString(js_State *J, js_Object *obj)
 {

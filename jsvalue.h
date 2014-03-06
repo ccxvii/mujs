@@ -127,6 +127,8 @@ double js_strtod(const char *s, char **ep);
 double jsV_numbertointeger(double n);
 int jsV_numbertoint32(double n);
 unsigned int jsV_numbertouint32(double n);
+short jsV_numbertoint16(double n);
+unsigned short jsV_numbertouint16(double n);
 const char *jsV_numbertostring(js_State *J, double number);
 double jsV_stringtonumber(js_State *J, const char *string);
 
