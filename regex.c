@@ -1121,7 +1121,10 @@ int main(int argc, char **argv)
 			if (!regexec(p, s, &m, 0)) {
 				for (i = 0; i < m.nsub; ++i) {
 					int n = m.sub[i].ep - m.sub[i].sp;
-					printf("match %d: s=%d e=%d n=%d '%.*s'\n", i, (int)(m.sub[i].sp - s), (int)(m.sub[i].ep - s), n, n, m.sub[i].sp);
+					if (n > 0)
+						printf("match %d: s=%d e=%d n=%d '%.*s'\n", i, (int)(m.sub[i].sp - s), (int)(m.sub[i].ep - s), n, n, m.sub[i].sp);
+					else
+						printf("match %d: n=0 ''\n", i);
 				}
 			} else {
 				printf("no match\n");
