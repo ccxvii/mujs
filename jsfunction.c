@@ -120,6 +120,85 @@ static void Fp_call(js_State *J, unsigned int argc)
 	js_call(J, argc - 1);
 }
 
+static void callbound(js_State *J, unsigned int argc)
+{
+	unsigned int i, fun, args, n;
+
+	fun = js_gettop(J);
+	js_currentfunction(J);
+	js_getproperty(J, fun, "__TargetFunction__");
+	js_getproperty(J, fun, "__BoundThis__");
+
+	args = js_gettop(J);
+	js_getproperty(J, fun, "__BoundArguments__");
+	n = js_getlength(J, args);
+	for (i = 0; i < n; ++i)
+		js_getindex(J, args, i);
+	js_remove(J, args);
+
+	for (i = 1; i <= argc; ++i)
+		js_copy(J, i);
+
+	js_call(J, n + argc);
+}
+
+static void constructbound(js_State *J, unsigned int argc)
+{
+	unsigned int i, fun, args, n;
+
+	fun = js_gettop(J);
+	js_currentfunction(J);
+	js_getproperty(J, fun, "__TargetFunction__");
+
+	args = js_gettop(J);
+	js_getproperty(J, fun, "__BoundArguments__");
+	n = js_getlength(J, args);
+	for (i = 0; i < n; ++i)
+		js_getindex(J, args, i);
+	js_remove(J, args);
+
+	for (i = 1; i <= argc; ++i)
+		js_copy(J, i);
+
+	js_construct(J, n + argc);
+}
+
+static void Fp_bind(js_State *J, unsigned int argc)
+{
+	unsigned int i, n;
+
+	if (!js_iscallable(J, 0))
+		js_typeerror(J, "not a function");
+
+	n = js_getlength(J, 0);
+	if (argc - 1 < n)
+		n -= argc - 1;
+	else
+		n = 0;
+
+	js_newcconstructor(J, callbound, constructbound, n);
+
+	/* Reuse target function's prototype for HasInstance check. */
+	js_getproperty(J, 0, "prototype");
+	js_defproperty(J, -2, "prototype", JS_READONLY | JS_DONTENUM | JS_DONTCONF);
+
+	/* target function */
+	js_copy(J, 0);
+	js_defproperty(J, -2, "__TargetFunction__", JS_READONLY | JS_DONTENUM | JS_DONTCONF);
+
+	/* bound this */
+	js_copy(J, 1);
+	js_defproperty(J, -2, "__BoundThis__", JS_READONLY | JS_DONTENUM | JS_DONTCONF);
+
+	/* bound arguments */
+	js_newarray(J);
+	for (i = 2; i <= argc; ++i) {
+		js_copy(J, i);
+		js_setindex(J, -2, i-2);
+	}
+	js_defproperty(J, -2, "__BoundArguments__", JS_READONLY | JS_DONTENUM | JS_DONTCONF);
+}
+
 void jsB_initfunction(js_State *J)
 {
 	J->Function_prototype->u.c.function = jsB_Function_prototype;
@@ -130,6 +209,7 @@ void jsB_initfunction(js_State *J)
 		jsB_propf(J, "toString", Fp_toString, 2);
 		jsB_propf(J, "apply", Fp_apply, 2);
 		jsB_propf(J, "call", Fp_call, 1);
+		jsB_propf(J, "bind", Fp_bind, 1);
 	}
 	js_newcconstructor(J, jsB_Function, jsB_Function, 1);
 	js_defglobal(J, "Function", JS_DONTENUM);
