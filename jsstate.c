@@ -22,6 +22,24 @@ static void js_defaultpanic(js_State *J)
 	/* return to javascript to abort */
 }
 
+int js_ploadstring(js_State *J, const char *filename, const char *source)
+{
+	if (js_try(J))
+		return 1;
+	js_loadstring(J, filename, source);
+	js_endtry(J);
+	return 0;
+}
+
+int js_ploadfile(js_State *J, const char *filename)
+{
+	if (js_try(J))
+		return 1;
+	js_loadfile(J, filename);
+	js_endtry(J);
+	return 0;
+}
+
 void js_loadstring(js_State *J, const char *filename, const char *source)
 {
 	js_Ast *P;

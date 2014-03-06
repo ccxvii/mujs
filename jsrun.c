@@ -966,6 +966,24 @@ void js_construct(js_State *J, int n)
 	}
 }
 
+int js_pconstruct(js_State *J, int n)
+{
+	if (js_try(J))
+		return 1;
+	js_construct(J, n);
+	js_endtry(J);
+	return 0;
+}
+
+int js_pcall(js_State *J, int n)
+{
+	if (js_try(J))
+		return 1;
+	js_call(J, n);
+	js_endtry(J);
+	return 0;
+}
+
 /* Exceptions */
 
 void js_savetry(js_State *J, short *pc)

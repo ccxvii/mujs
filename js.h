@@ -34,9 +34,14 @@ typedef void (*js_CFunction)(js_State *J, unsigned int argc);
 js_State *js_newstate(js_Alloc alloc, void *actx);
 js_Panic js_atpanic(js_State *J, js_Panic panic);
 void js_freestate(js_State *J);
+void js_gc(js_State *J, int report);
+
 int js_dostring(js_State *J, const char *source, int report);
 int js_dofile(js_State *J, const char *filename);
-void js_gc(js_State *J, int report);
+int js_ploadstring(js_State *J, const char *filename, const char *source);
+int js_ploadfile(js_State *J, const char *filename);
+int js_pcall(js_State *J, int n);
+int js_pconstruct(js_State *J, int n);
 
 /* RegExp flags */
 enum {
