@@ -22,38 +22,50 @@ static void Np_valueOf(js_State *J, unsigned int argc)
 static void Np_toString(js_State *J, unsigned int argc)
 {
 	js_Object *self = js_toobject(J, 0);
+	int radix = js_isundefined(J, 1) ? 10 : js_tointeger(J, 1);
 	if (self->type != JS_CNUMBER) js_typeerror(J, "not a number");
+	if (radix < 2 || radix > 36)
+		js_rangeerror(J, "invalid radix");
+	if (radix != 10)
+		js_rangeerror(J, "invalid radix");
 	js_pushliteral(J, jsV_numbertostring(J, self->u.number));
+}
+
+/* Customized ToString() on a number */
+void numtostr(js_State *J, const char *fmt, int w, double n)
+{
+	char buf[40];
+	if (isnan(n)) js_pushliteral(J, "NaN");
+	else if (isinf(n)) js_pushliteral(J, n < 0 ? "-Infinity" : "Infinity");
+	else if (n == 0) js_pushliteral(J, "0");
+	else {
+		sprintf(buf, fmt, w, n);
+		js_pushstring(J, buf);
+	}
 }
 
 static void Np_toFixed(js_State *J, unsigned int argc)
 {
-	char buf[40];
 	js_Object *self = js_toobject(J, 0);
-	int width = js_tonumber(J, 1);
+	int width = js_tointeger(J, 1);
 	if (self->type != JS_CNUMBER) js_typeerror(J, "not a number");
-	sprintf(buf, "%.*f", width, self->u.number);
-	js_pushstring(J, buf);
+	numtostr(J, "%.*f", width, self->u.number);
 }
 
 static void Np_toExponential(js_State *J, unsigned int argc)
 {
-	char buf[40];
 	js_Object *self = js_toobject(J, 0);
-	int width = js_tonumber(J, 1);
+	int width = js_tointeger(J, 1);
 	if (self->type != JS_CNUMBER) js_typeerror(J, "not a number");
-	sprintf(buf, "%.*e", width, self->u.number);
-	js_pushstring(J, buf);
+	numtostr(J, "%.*e", width, self->u.number);
 }
 
 static void Np_toPrecision(js_State *J, unsigned int argc)
 {
-	char buf[40];
 	js_Object *self = js_toobject(J, 0);
-	int width = js_tonumber(J, 1);
+	int width = js_tointeger(J, 1);
 	if (self->type != JS_CNUMBER) js_typeerror(J, "not a number");
-	sprintf(buf, "%.*g", width, self->u.number);
-	js_pushstring(J, buf);
+	numtostr(J, "%.*g", width, self->u.number);
 }
 
 void jsB_initnumber(js_State *J)
