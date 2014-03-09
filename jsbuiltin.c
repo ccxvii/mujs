@@ -28,7 +28,7 @@ void jsB_props(js_State *J, const char *name, const char *string)
 	js_defproperty(J, -2, name, JS_DONTENUM);
 }
 
-static void jsB_eval(js_State *J, unsigned int argc)
+static void jsB_eval(js_State *J)
 {
 	if (!js_isstring(J, -1)) {
 		js_copy(J, 1);
@@ -39,7 +39,7 @@ static void jsB_eval(js_State *J, unsigned int argc)
 	js_call(J, 0);
 }
 
-static void jsB_parseInt(js_State *J, unsigned int argc)
+static void jsB_parseInt(js_State *J)
 {
 	const char *s = js_tostring(J, 1);
 	double radix = js_isdefined(J, 2) ? js_tonumber(J, 2) : 10;
@@ -60,7 +60,7 @@ static void jsB_parseInt(js_State *J, unsigned int argc)
 		js_pushnumber(J, n);
 }
 
-static void jsB_parseFloat(js_State *J, unsigned int argc)
+static void jsB_parseFloat(js_State *J)
 {
 	const char *s = js_tostring(J, 1);
 	char *e;
@@ -82,13 +82,13 @@ static void jsB_parseFloat(js_State *J, unsigned int argc)
 	}
 }
 
-static void jsB_isNaN(js_State *J, unsigned int argc)
+static void jsB_isNaN(js_State *J)
 {
 	double n = js_tonumber(J, 1);
 	js_pushboolean(J, isnan(n));
 }
 
-static void jsB_isFinite(js_State *J, unsigned int argc)
+static void jsB_isFinite(js_State *J)
 {
 	double n = js_tonumber(J, 1);
 	js_pushboolean(J, isfinite(n));
@@ -164,22 +164,22 @@ static void Decode(js_State *J, const char *str, const char *reserved)
 #define URIMARK "-_.!~*`()"
 #define URIUNESCAPED URIALPHA URIDIGIT URIMARK
 
-static void jsB_decodeURI(js_State *J, unsigned int argc)
+static void jsB_decodeURI(js_State *J)
 {
 	Decode(J, js_tostring(J, 1), URIRESERVED "#");
 }
 
-static void jsB_decodeURIComponent(js_State *J, unsigned int argc)
+static void jsB_decodeURIComponent(js_State *J)
 {
 	Decode(J, js_tostring(J, 1), "");
 }
 
-static void jsB_encodeURI(js_State *J, unsigned int argc)
+static void jsB_encodeURI(js_State *J)
 {
 	Encode(J, js_tostring(J, 1), URIUNESCAPED URIRESERVED "#");
 }
 
-static void jsB_encodeURIComponent(js_State *J, unsigned int argc)
+static void jsB_encodeURIComponent(js_State *J)
 {
 	Encode(J, js_tostring(J, 1), URIUNESCAPED);
 }

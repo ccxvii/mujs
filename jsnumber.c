@@ -2,24 +2,24 @@
 #include "jsvalue.h"
 #include "jsbuiltin.h"
 
-static void jsB_new_Number(js_State *J, unsigned int argc)
+static void jsB_new_Number(js_State *J)
 {
 	js_newnumber(J, js_isdefined(J, 1) ? js_tonumber(J, 1) : 0);
 }
 
-static void jsB_Number(js_State *J, unsigned int argc)
+static void jsB_Number(js_State *J)
 {
 	js_pushnumber(J, js_isdefined(J, 1) ? js_tonumber(J, 1) : 0);
 }
 
-static void Np_valueOf(js_State *J, unsigned int argc)
+static void Np_valueOf(js_State *J)
 {
 	js_Object *self = js_toobject(J, 0);
 	if (self->type != JS_CNUMBER) js_typeerror(J, "not a number");
 	js_pushnumber(J, self->u.number);
 }
 
-static void Np_toString(js_State *J, unsigned int argc)
+static void Np_toString(js_State *J)
 {
 	js_Object *self = js_toobject(J, 0);
 	int radix = js_isundefined(J, 1) ? 10 : js_tointeger(J, 1);
@@ -44,7 +44,7 @@ void numtostr(js_State *J, const char *fmt, int w, double n)
 	}
 }
 
-static void Np_toFixed(js_State *J, unsigned int argc)
+static void Np_toFixed(js_State *J)
 {
 	js_Object *self = js_toobject(J, 0);
 	int width = js_tointeger(J, 1);
@@ -52,7 +52,7 @@ static void Np_toFixed(js_State *J, unsigned int argc)
 	numtostr(J, "%.*f", width, self->u.number);
 }
 
-static void Np_toExponential(js_State *J, unsigned int argc)
+static void Np_toExponential(js_State *J)
 {
 	js_Object *self = js_toobject(J, 0);
 	int width = js_tointeger(J, 1);
@@ -60,7 +60,7 @@ static void Np_toExponential(js_State *J, unsigned int argc)
 	numtostr(J, "%.*e", width, self->u.number);
 }
 
-static void Np_toPrecision(js_State *J, unsigned int argc)
+static void Np_toPrecision(js_State *J)
 {
 	js_Object *self = js_toobject(J, 0);
 	int width = js_tointeger(J, 1);

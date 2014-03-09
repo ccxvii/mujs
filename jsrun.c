@@ -886,7 +886,7 @@ static void jsR_callcfunction(js_State *J, unsigned int n, unsigned int min, js_
 	for (i = n; i < min; ++i)
 		js_pushundefined(J);
 
-	F(J, n);
+	F(J);
 	v = js_tovalue(J, -1);
 	TOP = --BOT; /* clear stack */
 	js_pushvalue(J, v);

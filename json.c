@@ -92,7 +92,7 @@ static void jsonvalue(js_State *J)
 	}
 }
 
-static void JSON_parse(js_State *J, unsigned int argc)
+static void JSON_parse(js_State *J)
 {
 	const char *source = js_tostring(J, 1);
 	jsY_initlex(J, "JSON", source);
@@ -234,10 +234,10 @@ static int fmtvalue(js_State *J, js_Buffer **sb, const char *key)
 	return 1;
 }
 
-static void JSON_stringify(js_State *J, unsigned int argc)
+static void JSON_stringify(js_State *J)
 {
 	js_Buffer *sb = NULL;
-	if (argc > 0) {
+	if (js_isdefined(J, 1)) {
 		js_copy(J, 1);
 		if (fmtvalue(J, &sb, "")) {
 			js_putc(J, &sb, 0);

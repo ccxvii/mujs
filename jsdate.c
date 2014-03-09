@@ -11,6 +11,8 @@
 #include <sys/time.h>
 #endif
 
+#define js_optnumber(J,I,V) (js_isdefined(J,I) ? js_tonumber(J,I) : V)
+
 static double Now(void)
 {
 #if defined(_WIN32)
@@ -369,48 +371,49 @@ static void js_setdate(js_State *J, int idx, double t)
 	js_pushnumber(J, self->u.number);
 }
 
-static void D_parse(js_State *J, unsigned int argc)
+static void D_parse(js_State *J)
 {
 	double t = parseDateTime(js_tostring(J, 1));
 	js_pushnumber(J, t);
 }
 
-static void D_UTC(js_State *J, unsigned int argc)
+static void D_UTC(js_State *J)
 {
 	double y, m, d, H, M, S, ms, t;
 	y = js_tonumber(J, 1);
 	if (y < 100) y += 1900;
 	m = js_tonumber(J, 2);
-	d = argc > 2 ? js_tonumber(J, 3) : 1;
-	H = argc > 3 ? js_tonumber(J, 4) : 0;
-	M = argc > 4 ? js_tonumber(J, 5) : 0;
-	S = argc > 5 ? js_tonumber(J, 6) : 0;
-	ms = argc > 6 ? js_tonumber(J, 7) : 0;
+	d = js_optnumber(J, 3, 1);
+	H = js_optnumber(J, 4, 0);
+	M = js_optnumber(J, 5, 0);
+	S = js_optnumber(J, 6, 0);
+	ms = js_optnumber(J, 7, 0);
 	t = MakeDate(MakeDay(y, m, d), MakeTime(H, M, S, ms));
 	t = TimeClip(t);
 	js_pushnumber(J, t);
 }
 
-static void D_now(js_State *J, unsigned int argc)
+static void D_now(js_State *J)
 {
 	js_pushnumber(J, Now());
 }
 
-static void jsB_Date(js_State *J, unsigned int argc)
+static void jsB_Date(js_State *J)
 {
 	char buf[64];
 	js_pushstring(J, fmtdatetime(buf, LocalTime(Now()), LocalTZA()));
 }
 
-static void jsB_new_Date(js_State *J, unsigned int argc)
+static void jsB_new_Date(js_State *J)
 {
+	unsigned int top = js_gettop(J);
 	js_Object *obj;
 	js_Value v;
 	double t;
 
-	if (argc == 0)
+	if (top == 1)
 		t = Now();
-	else if (argc == 1) {
+	else if (top == 2) {
 		v = js_toprimitive(J, 1, JS_HNONE);
 		if (v.type == JS_TSTRING)
 			t = parseDateTime(v.u.string);
@@ -421,11 +424,11 @@ static void jsB_new_Date(js_State *J, unsigned int argc)
 		y = js_tonumber(J, 1);
 		if (y < 100) y += 1900;
 		m = js_tonumber(J, 2);
-		d = argc > 2 ? js_tonumber(J, 3) : 1;
-		H = argc > 3 ? js_tonumber(J, 4) : 0;
-		M = argc > 4 ? js_tonumber(J, 5) : 0;
-		S = argc > 5 ? js_tonumber(J, 6) : 0;
-		ms = argc > 6 ? js_tonumber(J, 7) : 0;
+		d = js_optnumber(J, 3, 1);
+		H = js_optnumber(J, 4, 0);
+		M = js_optnumber(J, 5, 0);
+		S = js_optnumber(J, 6, 0);
+		ms = js_optnumber(J, 7, 0);
 		t = MakeDate(MakeDay(y, m, d), MakeTime(H, M, S, ms));
 		t = TimeClip(UTC(t));
 	}
@@ -436,41 +439,41 @@ static void jsB_new_Date(js_State *J, unsigned int argc)
 	js_pushobject(J, obj);
 }
 
-static void Dp_valueOf(js_State *J, unsigned int argc)
+static void Dp_valueOf(js_State *J)
 {
 	double t = js_todate(J, 0);
 	js_pushnumber(J, t);
 }
 
-static void Dp_toString(js_State *J, unsigned int argc)
+static void Dp_toString(js_State *J)
 {
 	char buf[64];
 	double t = js_todate(J, 0);
 	js_pushstring(J, fmtdatetime(buf, LocalTime(t), LocalTZA()));
 }
 
-static void Dp_toDateString(js_State *J, unsigned int argc)
+static void Dp_toDateString(js_State *J)
 {
 	char buf[64];
 	double t = js_todate(J, 0);
 	js_pushstring(J, fmtdate(buf, LocalTime(t)));
 }
 
-static void Dp_toTimeString(js_State *J, unsigned int argc)
+static void Dp_toTimeString(js_State *J)
 {
 	char buf[64];
 	double t = js_todate(J, 0);
 	js_pushstring(J, fmttime(buf, LocalTime(t), LocalTZA()));
 }
 
-static void Dp_toUTCString(js_State *J, unsigned int argc)
+static void Dp_toUTCString(js_State *J)
 {
 	char buf[64];
 	double t = js_todate(J, 0);
 	js_pushstring(J, fmtdatetime(buf, t, 0));
 }
 
-static void Dp_toISOString(js_State *J, unsigned int argc)
+static void Dp_toISOString(js_State *J)
 {
 	char buf[64];
 	double t = js_todate(J, 0);
@@ -479,114 +482,114 @@ static void Dp_toISOString(js_State *J, unsigned int argc)
 	js_pushstring(J, fmtdatetime(buf, t, 0));
 }
 
-static void Dp_getFullYear(js_State *J, unsigned int argc)
+static void Dp_getFullYear(js_State *J)
 {
 	double t = js_todate(J, 0);
 	js_pushnumber(J, YearFromTime(LocalTime(t)));
 }
 
-static void Dp_getMonth(js_State *J, unsigned int argc)
+static void Dp_getMonth(js_State *J)
 {
 	double t = js_todate(J, 0);
 	js_pushnumber(J, MonthFromTime(LocalTime(t)));
 }
 
-static void Dp_getDate(js_State *J, unsigned int argc)
+static void Dp_getDate(js_State *J)
 {
 	double t = js_todate(J, 0);
 	js_pushnumber(J, DateFromTime(LocalTime(t)));
 }
 
-static void Dp_getDay(js_State *J, unsigned int argc)
+static void Dp_getDay(js_State *J)
 {
 	double t = js_todate(J, 0);
 	js_pushnumber(J, WeekDay(LocalTime(t)));
 }
 
-static void Dp_getHours(js_State *J, unsigned int argc)
+static void Dp_getHours(js_State *J)
 {
 	double t = js_todate(J, 0);
 	js_pushnumber(J, HourFromTime(LocalTime(t)));
 }
 
-static void Dp_getMinutes(js_State *J, unsigned int argc)
+static void Dp_getMinutes(js_State *J)
 {
 	double t = js_todate(J, 0);
 	js_pushnumber(J, MinFromTime(LocalTime(t)));
 }
 
-static void Dp_getSeconds(js_State *J, unsigned int argc)
+static void Dp_getSeconds(js_State *J)
 {
 	double t = js_todate(J, 0);
 	js_pushnumber(J, SecFromTime(LocalTime(t)));
 }
 
-static void Dp_getMilliseconds(js_State *J, unsigned int argc)
+static void Dp_getMilliseconds(js_State *J)
 {
 	double t = js_todate(J, 0);
 	js_pushnumber(J, msFromTime(LocalTime(t)));
 }
 
-static void Dp_getUTCFullYear(js_State *J, unsigned int argc)
+static void Dp_getUTCFullYear(js_State *J)
 {
 	double t = js_todate(J, 0);
 	js_pushnumber(J, YearFromTime(t));
 }
 
-static void Dp_getUTCMonth(js_State *J, unsigned int argc)
+static void Dp_getUTCMonth(js_State *J)
 {
 	double t = js_todate(J, 0);
 	js_pushnumber(J, MonthFromTime(t));
 }
 
-static void Dp_getUTCDate(js_State *J, unsigned int argc)
+static void Dp_getUTCDate(js_State *J)
 {
 	double t = js_todate(J, 0);
 	js_pushnumber(J, DateFromTime(t));
 }
 
-static void Dp_getUTCDay(js_State *J, unsigned int argc)
+static void Dp_getUTCDay(js_State *J)
 {
 	double t = js_todate(J, 0);
 	js_pushnumber(J, WeekDay(t));
 }
 
-static void Dp_getUTCHours(js_State *J, unsigned int argc)
+static void Dp_getUTCHours(js_State *J)
 {
 	double t = js_todate(J, 0);
 	js_pushnumber(J, HourFromTime(t));
 }
 
-static void Dp_getUTCMinutes(js_State *J, unsigned int argc)
+static void Dp_getUTCMinutes(js_State *J)
 {
 	double t = js_todate(J, 0);
 	js_pushnumber(J, MinFromTime(t));
 }
 
-static void Dp_getUTCSeconds(js_State *J, unsigned int argc)
+static void Dp_getUTCSeconds(js_State *J)
 {
 	double t = js_todate(J, 0);
 	js_pushnumber(J, SecFromTime(t));
 }
 
-static void Dp_getUTCMilliseconds(js_State *J, unsigned int argc)
+static void Dp_getUTCMilliseconds(js_State *J)
 {
 	double t = js_todate(J, 0);
 	js_pushnumber(J, msFromTime(t));
 }
 
-static void Dp_getTimezoneOffset(js_State *J, unsigned int argc)
+static void Dp_getTimezoneOffset(js_State *J)
 {
 	double t = js_todate(J, 0);
 	js_pushnumber(J, (t - LocalTime(t)) / msPerMinute);
 }
 
-static void Dp_setTime(js_State *J, unsigned int argc)
+static void Dp_setTime(js_State *J)
 {
 	js_setdate(J, 0, js_tonumber(J, 1));
 }
 
-static void Dp_setMilliseconds(js_State *J, unsigned int argc)
+static void Dp_setMilliseconds(js_State *J)
 {
 	double t = LocalTime(js_todate(J, 0));
 	double h = HourFromTime(t);
@@ -596,37 +599,37 @@ static void Dp_setMilliseconds(js_State *J, unsigned int argc)
 	js_setdate(J, 0, UTC(MakeDate(Day(t), MakeTime(h, m, s, ms))));
 }
 
-static void Dp_setSeconds(js_State *J, unsigned int argc)
+static void Dp_setSeconds(js_State *J)
 {
 	double t = LocalTime(js_todate(J, 0));
 	double h = HourFromTime(t);
 	double m = MinFromTime(t);
 	double s = js_tonumber(J, 1);
-	double ms = argc > 1 ? js_tonumber(J, 2) : msFromTime(t);
+	double ms = js_optnumber(J, 2, msFromTime(t));
 	js_setdate(J, 0, UTC(MakeDate(Day(t), MakeTime(h, m, s, ms))));
 }
 
-static void Dp_setMinutes(js_State *J, unsigned int argc)
+static void Dp_setMinutes(js_State *J)
 {
 	double t = LocalTime(js_todate(J, 0));
 	double h = HourFromTime(t);
 	double m = js_tonumber(J, 1);
-	double s = argc > 1 ? js_tonumber(J, 2) : SecFromTime(t);
-	double ms = argc > 2 ? js_tonumber(J, 3) : msFromTime(t);
+	double s = js_optnumber(J, 2, SecFromTime(t));
+	double ms = js_optnumber(J, 3, msFromTime(t));
 	js_setdate(J, 0, UTC(MakeDate(Day(t), MakeTime(h, m, s, ms))));
 }
 
-static void Dp_setHours(js_State *J, unsigned int argc)
+static void Dp_setHours(js_State *J)
 {
 	double t = LocalTime(js_todate(J, 0));
 	double h = js_tonumber(J, 1);
-	double m = argc > 1 ? js_tonumber(J, 2) : HourFromTime(t);
-	double s = argc > 2 ? js_tonumber(J, 3) : SecFromTime(t);
-	double ms = argc > 3 ? js_tonumber(J, 4) : msFromTime(t);
+	double m = js_optnumber(J, 2, HourFromTime(t));
+	double s = js_optnumber(J, 3, SecFromTime(t));
+	double ms = js_optnumber(J, 4, msFromTime(t));
 	js_setdate(J, 0, UTC(MakeDate(Day(t), MakeTime(h, m, s, ms))));
 }
 
-static void Dp_setDate(js_State *J, unsigned int argc)
+static void Dp_setDate(js_State *J)
 {
 	double t = LocalTime(js_todate(J, 0));
 	double y = YearFromTime(t);
@@ -635,25 +638,25 @@ static void Dp_setDate(js_State *J, unsigned int argc)
 	js_setdate(J, 0, UTC(MakeDate(MakeDay(y, m, d), TimeWithinDay(t))));
 }
 
-static void Dp_setMonth(js_State *J, unsigned int argc)
+static void Dp_setMonth(js_State *J)
 {
 	double t = LocalTime(js_todate(J, 0));
 	double y = YearFromTime(t);
 	double m = js_tonumber(J, 1);
-	double d = argc > 1 ? js_tonumber(J, 3) : DateFromTime(t);
+	double d = js_optnumber(J, 3, DateFromTime(t));
 	js_setdate(J, 0, UTC(MakeDate(MakeDay(y, m, d), TimeWithinDay(t))));
 }
 
-static void Dp_setFullYear(js_State *J, unsigned int argc)
+static void Dp_setFullYear(js_State *J)
 {
 	double t = LocalTime(js_todate(J, 0));
 	double y = js_tonumber(J, 1);
-	double m = argc > 1 ? js_tonumber(J, 2) : MonthFromTime(t);
-	double d = argc > 2 ? js_tonumber(J, 3) : DateFromTime(t);
+	double m = js_optnumber(J, 2, MonthFromTime(t));
+	double d = js_optnumber(J, 3, DateFromTime(t));
 	js_setdate(J, 0, UTC(MakeDate(MakeDay(y, m, d), TimeWithinDay(t))));
 }
 
-static void Dp_setUTCMilliseconds(js_State *J, unsigned int argc)
+static void Dp_setUTCMilliseconds(js_State *J)
 {
 	double t = js_todate(J, 0);
 	double h = HourFromTime(t);
@@ -663,37 +666,37 @@ static void Dp_setUTCMilliseconds(js_State *J, unsigned int argc)
 	js_setdate(J, 0, MakeDate(Day(t), MakeTime(h, m, s, ms)));
 }
 
-static void Dp_setUTCSeconds(js_State *J, unsigned int argc)
+static void Dp_setUTCSeconds(js_State *J)
 {
 	double t = js_todate(J, 0);
 	double h = HourFromTime(t);
 	double m = MinFromTime(t);
 	double s = js_tonumber(J, 1);
-	double ms = argc > 1 ? js_tonumber(J, 2) : msFromTime(t);
+	double ms = js_optnumber(J, 2, msFromTime(t));
 	js_setdate(J, 0, MakeDate(Day(t), MakeTime(h, m, s, ms)));
 }
 
-static void Dp_setUTCMinutes(js_State *J, unsigned int argc)
+static void Dp_setUTCMinutes(js_State *J)
 {
 	double t = js_todate(J, 0);
 	double h = HourFromTime(t);
 	double m = js_tonumber(J, 1);
-	double s = argc > 1 ? js_tonumber(J, 2) : SecFromTime(t);
-	double ms = argc > 2 ? js_tonumber(J, 3) : msFromTime(t);
+	double s = js_optnumber(J, 2, SecFromTime(t));
+	double ms = js_optnumber(J, 3, msFromTime(t));
 	js_setdate(J, 0, MakeDate(Day(t), MakeTime(h, m, s, ms)));
 }
 
-static void Dp_setUTCHours(js_State *J, unsigned int argc)
+static void Dp_setUTCHours(js_State *J)
 {
 	double t = js_todate(J, 0);
 	double h = js_tonumber(J, 1);
-	double m = argc > 1 ? js_tonumber(J, 2) : HourFromTime(t);
-	double s = argc > 2 ? js_tonumber(J, 3) : SecFromTime(t);
-	double ms = argc > 3 ? js_tonumber(J, 4) : msFromTime(t);
+	double m = js_optnumber(J, 2, HourFromTime(t));
+	double s = js_optnumber(J, 3, SecFromTime(t));
+	double ms = js_optnumber(J, 4, msFromTime(t));
 	js_setdate(J, 0, MakeDate(Day(t), MakeTime(h, m, s, ms)));
 }
 
-static void Dp_setUTCDate(js_State *J, unsigned int argc)
+static void Dp_setUTCDate(js_State *J)
 {
 	double t = js_todate(J, 0);
 	double y = YearFromTime(t);
@@ -702,25 +705,25 @@ static void Dp_setUTCDate(js_State *J, unsigned int argc)
 	js_setdate(J, 0, MakeDate(MakeDay(y, m, d), TimeWithinDay(t)));
 }
 
-static void Dp_setUTCMonth(js_State *J, unsigned int argc)
+static void Dp_setUTCMonth(js_State *J)
 {
 	double t = js_todate(J, 0);
 	double y = YearFromTime(t);
 	double m = js_tonumber(J, 1);
-	double d = argc > 1 ? js_tonumber(J, 3) : DateFromTime(t);
+	double d = js_optnumber(J, 3, DateFromTime(t));
 	js_setdate(J, 0, MakeDate(MakeDay(y, m, d), TimeWithinDay(t)));
 }
 
-static void Dp_setUTCFullYear(js_State *J, unsigned int argc)
+static void Dp_setUTCFullYear(js_State *J)
 {
 	double t = js_todate(J, 0);
 	double y = js_tonumber(J, 1);
-	double m = argc > 1 ? js_tonumber(J, 2) : MonthFromTime(t);
-	double d = argc > 2 ? js_tonumber(J, 3) : DateFromTime(t);
+	double m = js_optnumber(J, 2, MonthFromTime(t));
+	double d = js_optnumber(J, 3, DateFromTime(t));
 	js_setdate(J, 0, MakeDate(MakeDay(y, m, d), TimeWithinDay(t)));
 }
 
-static void Dp_toJSON(js_State *J, unsigned int argc)
+static void Dp_toJSON(js_State *J)
 {
 	js_Object *obj = js_toobject(J, 0);
 	js_Value tv = js_toprimitive(J, 0, JS_HNUMBER);

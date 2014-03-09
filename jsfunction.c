@@ -4,26 +4,26 @@
 #include "jsvalue.h"
 #include "jsbuiltin.h"
 
-static void jsB_Function(js_State *J, unsigned int argc)
+static void jsB_Function(js_State *J)
 {
+	unsigned int i, top = js_gettop(J);
 	const char *source;
 	js_Buffer *sb;
 	js_Ast *parse;
 	js_Function *fun;
-	unsigned int i;
 
 	if (js_isundefined(J, 1))
 		source = "";
 	else {
-		source = js_tostring(J, argc);
 		sb = NULL;
-		if (argc > 1) {
-			for (i = 1; i < argc; ++i) {
+		if (top > 2) {
+			for (i = 1; i < top - 1; ++i) {
 				if (i > 1) js_putc(J, &sb, ',');
 				js_puts(J, &sb, js_tostring(J, i));
 			}
 			js_putc(J, &sb, ')');
 		}
+		source = js_tostring(J, top - 1);
 	}
 
 	if (js_try(J)) {
@@ -42,12 +42,12 @@ static void jsB_Function(js_State *J, unsigned int argc)
 	js_newfunction(J, fun, J->GE);
 }
 
-static void jsB_Function_prototype(js_State *J, unsigned int argc)
+static void jsB_Function_prototype(js_State *J)
 {
 	js_pushundefined(J);
 }
 
-static void Fp_toString(js_State *J, unsigned int argc)
+static void Fp_toString(js_State *J)
 {
 	js_Object *self = js_toobject(J, 0);
 	char *s;
@@ -82,7 +82,7 @@ static void Fp_toString(js_State *J, unsigned int argc)
 	}
 }
 
-static void Fp_apply(js_State *J, unsigned int argc)
+static void Fp_apply(js_State *J)
 {
 	int i, n;
 
@@ -99,23 +99,22 @@ static void Fp_apply(js_State *J, unsigned int argc)
 	js_call(J, n);
 }
 
-static void Fp_call(js_State *J, unsigned int argc)
+static void Fp_call(js_State *J)
 {
-	unsigned int i;
+	unsigned int i, top = js_gettop(J);
 
 	if (!js_iscallable(J, 0))
 		js_typeerror(J, "not a function");
 
-	js_copy(J, 0);
-	js_copy(J, 1);
-	for (i = 2; i <= argc; ++i)
+	for (i = 0; i < top; ++i)
 		js_copy(J, i);
 
-	js_call(J, argc - 1);
+	js_call(J, top - 2);
 }
 
-static void callbound(js_State *J, unsigned int argc)
+static void callbound(js_State *J)
 {
+	unsigned int top = js_gettop(J);
 	unsigned int i, fun, args, n;
 
 	fun = js_gettop(J);
@@ -130,14 +129,15 @@ static void callbound(js_State *J, unsigned int argc)
 		js_getindex(J, args, i);
 	js_remove(J, args);
 
-	for (i = 1; i <= argc; ++i)
+	for (i = 1; i < top; ++i)
 		js_copy(J, i);
 
-	js_call(J, n + argc);
+	js_call(J, n + top - 1);
 }
 
-static void constructbound(js_State *J, unsigned int argc)
+static void constructbound(js_State *J)
 {
+	unsigned int top = js_gettop(J);
 	unsigned int i, fun, args, n;
 
 	fun = js_gettop(J);
@@ -151,22 +151,23 @@ static void constructbound(js_State *J, unsigned int argc)
 		js_getindex(J, args, i);
 	js_remove(J, args);
 
-	for (i = 1; i <= argc; ++i)
+	for (i = 1; i < top; ++i)
 		js_copy(J, i);
 
-	js_construct(J, n + argc);
+	js_construct(J, n + top - 1);
 }
 
-static void Fp_bind(js_State *J, unsigned int argc)
+static void Fp_bind(js_State *J)
 {
-	unsigned int i, n;
+	unsigned int i, top = js_gettop(J);
+	unsigned int n;
 
 	if (!js_iscallable(J, 0))
 		js_typeerror(J, "not a function");
 
 	n = js_getlength(J, 0);
-	if (argc - 1 < n)
-		n -= argc - 1;
+	if (n > top - 2)
+		n -= top - 2;
 	else
 		n = 0;
 
@@ -186,9 +187,9 @@ static void Fp_bind(js_State *J, unsigned int argc)
 
 	/* bound arguments */
 	js_newarray(J);
-	for (i = 2; i <= argc; ++i) {
+	for (i = 2; i < top; ++i) {
 		js_copy(J, i);
-		js_setindex(J, -2, i-2);
+		js_setindex(J, -2, i - 2);
 	}
 	js_defproperty(J, -2, "__BoundArguments__", JS_READONLY | JS_DONTENUM | JS_DONTCONF);
 }

@@ -28,7 +28,7 @@ typedef struct js_State js_State;
 
 typedef void *(*js_Alloc)(void *memctx, void *ptr, unsigned int size);
 typedef void (*js_Panic)(js_State *J);
-typedef void (*js_CFunction)(js_State *J, unsigned int argc);
+typedef void (*js_CFunction)(js_State *J);
 
 /* Basic functions */
 js_State *js_newstate(js_Alloc alloc, void *actx);
