@@ -24,17 +24,17 @@ opnames.h : jscompile.h
 
 jsdump.c : astnames.h opnames.h
 
+one.c : $(SRCS)
+	ls $(SRCS) | awk '{print "#include \""$$1"\""}' > $@
+
 js: build/main.o build/libjs.a
+	$(CC) -o $@ $^ -lm
+
+jsone: build/main.o build/one.o
 	$(CC) -o $@ $^ -lm
 
 re: regex.c utf.c utftype.c
 	$(CC) $(CFLAGS) -DTEST -o $@ $^
-
-libjs.c : $(SRCS)
-	ls $(SRCS) | awk '{print "#include \""$$1"\""}' > $@
-
-jsone: build/main.o build/libjs.o
-	$(CC) $(CFLAGS) -o $@ $^ -lm
 
 tags: $(SRCS) main.c $(HDRS)
 	ctags $^
@@ -43,6 +43,6 @@ test: js
 	python tests/sputniktests/tools/sputnik.py --tests=tests/sputniktests --command ./js --summary
 
 clean:
-	rm -f astnames.h opnames.h libjs.c build/* js
+	rm -f astnames.h opnames.h one.c build/* js
 
 .PHONY: default test clean
