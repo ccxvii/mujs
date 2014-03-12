@@ -1159,6 +1159,8 @@ static void jsR_run(js_State *J, js_Function *F)
 
 		case OP_IN:
 			str = js_tostring(J, -2);
+			if (!js_isobject(J, -1))
+				js_typeerror(J, "operand to 'in' is not an object");
 			b = js_hasproperty(J, -1, str);
 			js_pop(J, 2 + b);
 			js_pushboolean(J, b);
