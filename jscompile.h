@@ -4,15 +4,11 @@
 enum js_OpCode
 {
 	OP_POP,		/* A -- */
-	OP_POP2,	/* A B -- */
 	OP_DUP,		/* A -- A A */
 	OP_DUP2,	/* A B -- A B A B */
 	OP_ROT2,	/* A B -- B A */
 	OP_ROT3,	/* A B C -- C A B */
-	OP_ROT2POP1,	/* A B -- B */
-	OP_ROT3POP2,	/* A B C -- C */
-	OP_DUP1ROT3,	/* A B -- B A B */
-	OP_DUP1ROT4,	/* A B C -- C A B C */
+	OP_ROT4,	/* A B C D -- D A B C */
 
 	OP_NUMBER_0,	/* -- 0 */
 	OP_NUMBER_1,	/* -- 1 */
@@ -74,8 +70,10 @@ enum js_OpCode
 	OP_NEG,
 	OP_BITNOT,
 	OP_LOGNOT,
-	OP_INC,
-	OP_DEC,
+	OP_INC,		/* <x> -- ToNumber(x)+1 */
+	OP_DEC,		/* <x> -- ToNumber(x)-1 */
+	OP_POSTINC,	/* <x> -- ToNumber(x)+1 ToNumber(x) */
+	OP_POSTDEC,	/* <x> -- ToNumber(x)-1 ToNumber(x) */
 
 	OP_MUL,
 	OP_DIV,

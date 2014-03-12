@@ -342,41 +342,41 @@ static void cassignforin(JF, js_Ast *stm)
 	}
 }
 
-static void cassignop1(JF, js_Ast *lhs, int dup)
+static void cassignop1(JF, js_Ast *lhs)
 {
 	switch (lhs->type) {
 	case EXP_IDENTIFIER:
 		emitlocal(J, F, OP_GETLOCAL, OP_GETVAR, lhs->string);
-		if (dup) emit(J, F, OP_DUP);
 		break;
 	case EXP_INDEX:
 		cexp(J, F, lhs->a);
 		cexp(J, F, lhs->b);
 		emit(J, F, OP_DUP2);
 		emit(J, F, OP_GETPROP);
-		if (dup) emit(J, F, OP_DUP1ROT4);
 		break;
 	case EXP_MEMBER:
 		cexp(J, F, lhs->a);
 		emit(J, F, OP_DUP);
 		emitstring(J, F, OP_GETPROP_S, lhs->b->string);
-		if (dup) emit(J, F, OP_DUP1ROT3);
 		break;
 	default:
 		jsC_error(J, lhs, "invalid l-value in assignment");
 	}
 }
 
-static void cassignop2(JF, js_Ast *lhs)
+static void cassignop2(JF, js_Ast *lhs, int postfix)
 {
 	switch (lhs->type) {
 	case EXP_IDENTIFIER:
+		if (postfix) emit(J, F, OP_ROT2);
 		emitlocal(J, F, OP_SETLOCAL, OP_SETVAR, lhs->string);
 		break;
 	case EXP_INDEX:
+		if (postfix) emit(J, F, OP_ROT4);
 		emit(J, F, OP_SETPROP);
 		break;
 	case EXP_MEMBER:
+		if (postfix) emit(J, F, OP_ROT3);
 		emitstring(J, F, OP_SETPROP_S, lhs->b->string);
 		break;
 	default:
@@ -386,10 +386,10 @@ static void cassignop2(JF, js_Ast *lhs)
 
 static void cassignop(JF, js_Ast *lhs, js_Ast *rhs, int opcode)
 {
-	cassignop1(J, F, lhs, 0);
+	cassignop1(J, F, lhs);
 	cexp(J, F, rhs);
 	emit(J, F, opcode);
-	cassignop2(J, F, lhs);
+	cassignop2(J, F, lhs, 0);
 }
 
 static void cdelete(JF, js_Ast *exp)
@@ -504,28 +504,28 @@ static void cexp(JF, js_Ast *exp)
 		break;
 
 	case EXP_PREINC:
-		cassignop1(J, F, exp->a, 0);
+		cassignop1(J, F, exp->a);
 		emit(J, F, OP_INC);
-		cassignop2(J, F, exp->a);
+		cassignop2(J, F, exp->a, 0);
 		break;
 
 	case EXP_PREDEC:
-		cassignop1(J, F, exp->a, 0);
+		cassignop1(J, F, exp->a);
 		emit(J, F, OP_DEC);
-		cassignop2(J, F, exp->a);
+		cassignop2(J, F, exp->a, 0);
 		break;
 
 	case EXP_POSTINC:
-		cassignop1(J, F, exp->a, 1);
-		emit(J, F, OP_INC);
-		cassignop2(J, F, exp->a);
+		cassignop1(J, F, exp->a);
+		emit(J, F, OP_POSTINC);
+		cassignop2(J, F, exp->a, 1);
 		emit(J, F, OP_POP);
 		break;
 
 	case EXP_POSTDEC:
-		cassignop1(J, F, exp->a, 1);
-		emit(J, F, OP_DEC);
-		cassignop2(J, F, exp->a);
+		cassignop1(J, F, exp->a);
+		emit(J, F, OP_POSTDEC);
+		cassignop2(J, F, exp->a, 1);
 		emit(J, F, OP_POP);
 		break;
 
@@ -717,13 +717,19 @@ static void cexit(JF, enum js_AstType T, js_Ast *node, js_Ast *target)
 		case STM_FOR_IN_VAR:
 			/* pop the iterator if leaving the loop */
 			if (F->script) {
-				if (T == STM_RETURN || T == STM_BREAK || (T == STM_CONTINUE && target != node))
-					emit(J, F, OP_ROT2POP1); /* pop the iterator, save the return or exp value */
+				if (T == STM_RETURN || T == STM_BREAK || (T == STM_CONTINUE && target != node)) {
+					/* pop the iterator, save the return or exp value */
+					emit(J, F, OP_ROT2);
+					emit(J, F, OP_POP);
+				}
 				if (T == STM_CONTINUE)
 					emit(J, F, OP_ROT2); /* put the iterator back on top */
 			} else {
-				if (T == STM_RETURN)
-					emit(J, F, OP_ROT2POP1); /* pop the iterator, save the return value */
+				if (T == STM_RETURN) {
+					/* pop the iterator, save the return value */
+					emit(J, F, OP_ROT2);
+					emit(J, F, OP_POP);
+				}
 				if (T == STM_BREAK || (T == STM_CONTINUE && target != node))
 					emit(J, F, OP_POP); /* pop the iterator */
 			}

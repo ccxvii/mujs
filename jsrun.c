@@ -366,6 +366,16 @@ void js_rot3(js_State *J)
 	STACK[TOP-3] = tmp;		/* C A B */
 }
 
+void js_rot4(js_State *J)
+{
+	/* A B C D -> D A B C */
+	js_Value tmp = STACK[TOP-1];	/* A B C D (D) */
+	STACK[TOP-1] = STACK[TOP-2];	/* A B C C */
+	STACK[TOP-2] = STACK[TOP-3];	/* A B B C */
+	STACK[TOP-3] = STACK[TOP-4];	/* A A B C */
+	STACK[TOP-4] = tmp;		/* D A B C */
+}
+
 void js_rot2pop1(js_State *J)
 {
 	/* A B -> B */
@@ -378,27 +388,6 @@ void js_rot3pop2(js_State *J)
 	/* A B C -> C */
 	STACK[TOP-3] = STACK[TOP-1];
 	TOP -= 2;
-}
-
-void js_dup1rot3(js_State *J)
-{
-	CHECKSTACK(1);
-	/* A B -> B A B */
-	STACK[TOP] = STACK[TOP-1];	/* A B B */
-	STACK[TOP-1] = STACK[TOP-2];	/* A A B */
-	STACK[TOP-2] = STACK[TOP];	/* B A B */
-	++TOP;
-}
-
-void js_dup1rot4(js_State *J)
-{
-	CHECKSTACK(1);
-	/* A B C -> C A B C */
-	STACK[TOP] = STACK[TOP-1];	/* A B C C */
-	STACK[TOP-1] = STACK[TOP-2];	/* A B B C */
-	STACK[TOP-2] = STACK[TOP-3];	/* A A B C */
-	STACK[TOP-3] = STACK[TOP];	/* C A B C */
-	++TOP;
 }
 
 void js_rot(js_State *J, int n)
@@ -1080,15 +1069,11 @@ static void jsR_run(js_State *J, js_Function *F)
 		opcode = *pc++;
 		switch (opcode) {
 		case OP_POP: js_pop(J, 1); break;
-		case OP_POP2: js_pop(J, 2); break;
 		case OP_DUP: js_dup(J); break;
 		case OP_DUP2: js_dup2(J); break;
 		case OP_ROT2: js_rot2(J); break;
 		case OP_ROT3: js_rot3(J); break;
-		case OP_ROT2POP1: js_rot2pop1(J); break;
-		case OP_ROT3POP2: js_rot3pop2(J); break;
-		case OP_DUP1ROT3: js_dup1rot3(J); break;
-		case OP_DUP1ROT4: js_dup1rot4(J); break;
+		case OP_ROT4: js_rot4(J); break;
 
 		case OP_NUMBER_0: js_pushnumber(J, 0); break;
 		case OP_NUMBER_1: js_pushnumber(J, 1); break;
@@ -1322,6 +1307,20 @@ static void jsR_run(js_State *J, js_Function *F)
 			x = js_tonumber(J, -1);
 			js_pop(J, 1);
 			js_pushnumber(J, x - 1);
+			break;
+
+		case OP_POSTINC:
+			x = js_tonumber(J, -1);
+			js_pop(J, 1);
+			js_pushnumber(J, x + 1);
+			js_pushnumber(J, x);
+			break;
+
+		case OP_POSTDEC:
+			x = js_tonumber(J, -1);
+			js_pop(J, 1);
+			js_pushnumber(J, x - 1);
+			js_pushnumber(J, x);
 			break;
 
 		/* Multiplicative operators */
