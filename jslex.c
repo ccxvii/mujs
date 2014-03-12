@@ -277,6 +277,7 @@ static double lexexponent(js_State *J)
 
 static int lexnumber(js_State *J)
 {
+	const char *s = J->source - 1;
 	double n;
 	double e;
 
@@ -309,7 +310,7 @@ static int lexnumber(js_State *J)
 	if (jsY_isidentifierstart(PEEK))
 		jsY_error(J, "number with letter suffix");
 
-	J->number = n;
+	J->number = strtod(s, NULL);
 	return TK_NUMBER;
 }
 
