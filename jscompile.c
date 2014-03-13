@@ -135,11 +135,13 @@ static void emitfunction(JF, js_Function *fun)
 
 static void emitnumber(JF, double num)
 {
-	if (num == 0)
+	if (num == 0) {
 		emit(J, F, OP_NUMBER_0);
-	else if (num == 1)
+		if (signbit(num))
+			emit(J, F, OP_NEG);
+	} else if (num == 1) {
 		emit(J, F, OP_NUMBER_1);
-	else if (num == (short)num) {
+	} else if (num == (short)num) {
 		emit(J, F, OP_NUMBER_N);
 		emitraw(J, F, (short)num);
 	} else {
