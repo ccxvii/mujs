@@ -83,8 +83,8 @@ void jsB_initnumber(js_State *J)
 	}
 	js_newcconstructor(J, jsB_Number, jsB_new_Number, 1);
 	{
-		jsB_propn(J, "MAX_VALUE", DBL_MAX);
-		jsB_propn(J, "MIN_VALUE", DBL_MIN);
+		jsB_propn(J, "MAX_VALUE", 1.7976931348623157e+308);
+		jsB_propn(J, "MIN_VALUE", 5e-324);
 		jsB_propn(J, "NaN", NAN);
 		jsB_propn(J, "NEGATIVE_INFINITY", -INFINITY);
 		jsB_propn(J, "POSITIVE_INFINITY", INFINITY);
