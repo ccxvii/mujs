@@ -4,12 +4,12 @@
 
 static void jsB_new_Number(js_State *J)
 {
-	js_newnumber(J, js_isdefined(J, 1) ? js_tonumber(J, 1) : 0);
+	js_newnumber(J, js_gettop(J) > 1 ? js_tonumber(J, 1) : 0);
 }
 
 static void jsB_Number(js_State *J)
 {
-	js_pushnumber(J, js_isdefined(J, 1) ? js_tonumber(J, 1) : 0);
+	js_pushnumber(J, js_gettop(J) > 1 ? js_tonumber(J, 1) : 0);
 }
 
 static void Np_valueOf(js_State *J)

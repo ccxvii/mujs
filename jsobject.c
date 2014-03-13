@@ -4,7 +4,7 @@
 
 static void jsB_new_Object(js_State *J)
 {
-	if (js_isundefined(J, 1) || js_isnull(J, 1))
+	if (js_gettop(J) == 1 || js_isundefined(J, 1) || js_isnull(J, 1))
 		js_newobject(J);
 	else
 		js_pushobject(J, js_toobject(J, 1));
@@ -12,7 +12,7 @@ static void jsB_new_Object(js_State *J)
 
 static void jsB_Object(js_State *J)
 {
-	if (js_isundefined(J, 1) || js_isnull(J, 1))
+	if (js_gettop(J) == 1 || js_isundefined(J, 1) || js_isnull(J, 1))
 		js_newobject(J);
 	else
 		js_pushobject(J, js_toobject(J, 1));

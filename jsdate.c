@@ -11,7 +11,7 @@
 #include <sys/time.h>
 #endif
 
-#define js_optnumber(J,I,V) (js_isdefined(J,I) ? js_tonumber(J,I) : V)
+#define js_optnumber(J,I,V) (js_gettop(J) > I ? js_tonumber(J,I) : V)
 
 static double Now(void)
 {
