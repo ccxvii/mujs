@@ -19,7 +19,7 @@ void jsB_propf(js_State *J, const char *name, js_CFunction cfun, int n)
 void jsB_propn(js_State *J, const char *name, double number)
 {
 	js_pushnumber(J, number);
-	js_defproperty(J, -2, name, JS_DONTENUM);
+	js_defproperty(J, -2, name, JS_READONLY | JS_DONTENUM | JS_DONTCONF);
 }
 
 void jsB_props(js_State *J, const char *name, const char *string)
