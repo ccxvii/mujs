@@ -149,7 +149,7 @@ double jsV_stringtonumber(js_State *J, const char *s)
 	char *e;
 	double n;
 	while (jsY_iswhite(*s) || jsY_isnewline(*s)) ++s;
-	if (s[0] == '0' && s[1] == 'x' && s[2] != 0)
+	if (s[0] == '0' && (s[1] == 'x' || s[1] == 'X') && s[2] != 0)
 		n = strtol(s + 2, &e, 16);
 	else if (!strncmp(s, "Infinity", 8))
 		n = INFINITY, e = (char*)s + 8;
