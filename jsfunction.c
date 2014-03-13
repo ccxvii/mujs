@@ -7,24 +7,23 @@
 static void jsB_Function(js_State *J)
 {
 	unsigned int i, top = js_gettop(J);
-	const char *source;
-	js_Buffer *sb;
+	js_Buffer *sb = NULL;
+	const char *body;
 	js_Ast *parse;
 	js_Function *fun;
 
-	if (js_isundefined(J, 1))
-		source = "";
-	else {
-		sb = NULL;
-		if (top > 2) {
-			for (i = 1; i < top - 1; ++i) {
-				if (i > 1) js_putc(J, &sb, ',');
-				js_puts(J, &sb, js_tostring(J, i));
-			}
-			js_putc(J, &sb, ')');
+	/* p1, p2, ..., pn */
+	if (top > 2) {
+		for (i = 1; i < top - 1; ++i) {
+			if (i > 1)
+				js_putc(J, &sb, ',');
+			js_puts(J, &sb, js_tostring(J, i));
 		}
-		source = js_tostring(J, top - 1);
+		js_putc(J, &sb, ')');
 	}
+
+	/* body */
+	body = js_isdefined(J, top - 1) ? js_tostring(J, top - 1) : "";
 
 	if (js_try(J)) {
 		js_free(J, sb);
@@ -32,7 +31,7 @@ static void jsB_Function(js_State *J)
 		js_throw(J);
 	}
 
-	parse = jsP_parsefunction(J, "Function", sb->s, source);
+	parse = jsP_parsefunction(J, "Function", sb ? sb->s : NULL, body);
 	fun = jsC_compilefunction(J, parse);
 
 	js_endtry(J);
