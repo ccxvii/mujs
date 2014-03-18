@@ -104,6 +104,7 @@ js_Value jsV_toprimitive(js_State *J, const js_Value *v, int preferred)
 			return vv;
 		}
 	}
+
 	js_typeerror(J, "cannot convert object to primitive");
 }
 
@@ -187,13 +188,53 @@ double jsV_tointeger(js_State *J, const js_Value *v)
 }
 
 /* ToString() on a number */
-const char *jsV_numbertostring(js_State *J, double n)
+const char *jsV_numbertostring(js_State *J, double f)
 {
-	char buf[32];
-	if (isnan(n)) return "NaN";
-	if (isinf(n)) return n < 0 ? "-Infinity" : "Infinity";
-	if (n == 0) return "0";
-	sprintf(buf, "%.17g", n); /* DBL_DECIMAL_DIG == 17 */
+	char buf[32], digits[32], *p = buf, *s = digits;
+	int exp, neg, ndigits, point;
+
+	if (isnan(f)) return "NaN";
+	if (isinf(f)) return f < 0 ? "-Infinity" : "Infinity";
+	if (f == 0) return "0";
+
+	jsV_dtoa(f, digits, &exp, &neg, &ndigits);
+	point = ndigits + exp;
+
+	if (neg)
+		*p++ = '-';
+
+	if (point < -5 || point > 21) {
+		*p++ = *s++;
+		if (ndigits > 1) {
+			int n = ndigits - 1;
+			*p++ = '.';
+			while (n--)
+				*p++ = *s++;
+		}
+		jsV_fmtexp(p, point - 1);
+	}
+
+	else if (point <= 0) {
+		*p++ = '0';
+		*p++ = '.';
+		while (point++ < 0)
+			*p++ = '0';
+		while (ndigits-- > 0)
+			*p++ = *s++;
+		*p = 0;
+	}
+
+	else {
+		while (ndigits-- > 0) {
+			*p++ = *s++;
+			if (--point == 0 && ndigits > 0)
+				*p++ = '.';
+		}
+		while (point-- > 0)
+			*p++ = '0';
+		*p = 0;
+	}
+
 	return js_intern(J, buf);
 }
 
