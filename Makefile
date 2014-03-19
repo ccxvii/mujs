@@ -1,11 +1,11 @@
 SRCS := $(wildcard js*.c utf*.c regex.c)
-HDRS := $(wildcard js*.h utf.h regex.h)
+HDRS := $(wildcard js*.h mujs.h utf.h regex.h)
 OBJS := $(SRCS:%.c=build/%.o)
 
 CC := clang
 CFLAGS := -std=c99 -pedantic -Wall -Wextra -Wunreachable-code -Wno-unused-parameter -g
 
-default: build build/js build/jsone build/re
+default: build build/mujs build/mujsone
 
 astnames.h: jsparse.h
 	grep '\(AST\|EXP\|STM\)_' jsparse.h | sed 's/^[ \t]*\(AST_\)\?/"/;s/,.*/",/' | tr A-Z a-z > $@
@@ -24,13 +24,13 @@ build:
 build/%.o: %.c $(HDRS)
 	$(CC) $(CFLAGS) -o $@ -c $<
 
-build/libjs.a: $(OBJS)
+build/libmujs.a: $(OBJS)
 	ar cru $@ $^
 
-build/js: build/main.o build/libjs.a
+build/mujs: build/main.o build/libmujs.a
 	$(CC) -o $@ $^ -lm
 
-build/jsone: build/main.o build/one.o
+build/mujsone: build/main.o build/one.o
 	$(CC) -o $@ $^ -lm
 
 build/re: regex.c utf.c utftype.c

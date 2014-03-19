@@ -1,5 +1,5 @@
-#ifndef js_h
-#define js_h
+#ifndef mujs_h
+#define mujs_h
 
 /* noreturn is a GCC extension */
 #ifdef __GNUC__

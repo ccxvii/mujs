@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include "js.h"
+#include "mujs.h"
 
 #define PS1 "> "
 
