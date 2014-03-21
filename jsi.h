@@ -23,6 +23,7 @@
 #define isnan(x) _isnan(x)
 #define isinf(x) (!_finite(x))
 #define isfinite(x) _finite(x)
+static __inline int signbit(double x) {union{double d;__int64 i;}u;u.d=x;return u.i>>63;}
 #define INFINITY (DBL_MAX+DBL_MAX)
 #define NAN (INFINITY-INFINITY)
 #endif
