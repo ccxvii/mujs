@@ -14,8 +14,13 @@ h1 {
 	font-weight: normal;
 	margin: 0;
 	padding: 1rem 2rem;
-	background-color: #36648b;
+}
+header{
 	color: white;
+	background: no-repeat;
+	background-color: #36648b;
+	background-image: url("mujs-logo.png");
+	background-position: top right;
 }
 nav {
 	padding: 1rem 2rem;
