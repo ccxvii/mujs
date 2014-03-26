@@ -206,6 +206,7 @@ static const char *js_typeof(js_State *J, int idx)
 {
 	const js_Value *v = stackidx(J, idx);
 	switch (v->type) {
+	default:
 	case JS_TUNDEFINED: return "undefined";
 	case JS_TNULL: return "object";
 	case JS_TBOOLEAN: return "boolean";

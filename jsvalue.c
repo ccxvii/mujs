@@ -112,6 +112,7 @@ js_Value jsV_toprimitive(js_State *J, const js_Value *v, int preferred)
 int jsV_toboolean(js_State *J, const js_Value *v)
 {
 	switch (v->type) {
+	default:
 	case JS_TUNDEFINED: return 0;
 	case JS_TNULL: return 0;
 	case JS_TBOOLEAN: return v->u.boolean;
@@ -169,6 +170,7 @@ double jsV_stringtonumber(js_State *J, const char *s)
 double jsV_tonumber(js_State *J, const js_Value *v)
 {
 	switch (v->type) {
+	default:
 	case JS_TUNDEFINED: return NAN;
 	case JS_TNULL: return 0;
 	case JS_TBOOLEAN: return v->u.boolean;
@@ -242,6 +244,7 @@ const char *jsV_numbertostring(js_State *J, double f)
 const char *jsV_tostring(js_State *J, const js_Value *v)
 {
 	switch (v->type) {
+	default:
 	case JS_TUNDEFINED: return "undefined";
 	case JS_TNULL: return "null";
 	case JS_TBOOLEAN: return v->u.boolean ? "true" : "false";
@@ -283,6 +286,7 @@ static js_Object *jsV_newstring(js_State *J, const char *v)
 js_Object *jsV_toobject(js_State *J, const js_Value *v)
 {
 	switch (v->type) {
+	default:
 	case JS_TUNDEFINED: js_typeerror(J, "cannot convert undefined to object");
 	case JS_TNULL: js_typeerror(J, "cannot convert null to object");
 	case JS_TBOOLEAN: return jsV_newboolean(J, v->u.boolean);

@@ -8,7 +8,7 @@ incdir ?= $(prefix)/include
 libdir ?= $(prefix)/lib
 
 CC := clang
-CFLAGS := -std=c99 -pedantic -Wall -Wextra -Wunreachable-code -Wno-unused-parameter
+CFLAGS := -std=c99 -pedantic -Wall -Wextra -Wno-unused-parameter -Wunreachable-code
 
 ifeq "$(build)" "debug"
 CFLAGS += -g

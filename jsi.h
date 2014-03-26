@@ -12,6 +12,7 @@
 #include <math.h>
 #include <float.h>
 
+/* Microsoft Visual C */
 #ifdef _MSC_VER
 #pragma warning(disable:4996) /* _CRT_SECURE_NO_WARNINGS */
 #pragma warning(disable:4244) /* implicit conversion from double to int */
