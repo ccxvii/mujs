@@ -55,7 +55,7 @@ static void emitraw(JF, int value)
 {
 	if (F->codelen >= F->codecap) {
 		F->codecap = F->codecap ? F->codecap * 2 : 64;
-		F->code = realloc(F->code, F->codecap * sizeof *F->code);
+		F->code = js_realloc(J, F->code, F->codecap * sizeof *F->code);
 	}
 	F->code[F->codelen++] = value;
 }
@@ -69,7 +69,7 @@ static int addfunction(JF, js_Function *value)
 {
 	if (F->funlen >= F->funcap) {
 		F->funcap = F->funcap ? F->funcap * 2 : 16;
-		F->funtab = realloc(F->funtab, F->funcap * sizeof *F->funtab);
+		F->funtab = js_realloc(J, F->funtab, F->funcap * sizeof *F->funtab);
 	}
 	F->funtab[F->funlen] = value;
 	return F->funlen++;
@@ -83,7 +83,7 @@ static int addnumber(JF, double value)
 			return i;
 	if (F->numlen >= F->numcap) {
 		F->numcap = F->numcap ? F->numcap * 2 : 16;
-		F->numtab = realloc(F->numtab, F->numcap * sizeof *F->numtab);
+		F->numtab = js_realloc(J, F->numtab, F->numcap * sizeof *F->numtab);
 	}
 	F->numtab[F->numlen] = value;
 	return F->numlen++;
@@ -97,7 +97,7 @@ static int addstring(JF, const char *value)
 			return i;
 	if (F->strlen >= F->strcap) {
 		F->strcap = F->strcap ? F->strcap * 2 : 16;
-		F->strtab = realloc(F->strtab, F->strcap * sizeof *F->strtab);
+		F->strtab = js_realloc(J, F->strtab, F->strcap * sizeof *F->strtab);
 	}
 	F->strtab[F->strlen] = value;
 	return F->strlen++;
@@ -113,7 +113,7 @@ static void addlocal(JF, const char *name, int reuse)
 	}
 	if (F->varlen >= F->varcap) {
 		F->varcap = F->varcap ? F->varcap * 2 : 16;
-		F->vartab = realloc(F->vartab, F->varcap * sizeof *F->vartab);
+		F->vartab = js_realloc(J, F->vartab, F->varcap * sizeof *F->vartab);
 	}
 	F->vartab[F->varlen++] = name;
 }

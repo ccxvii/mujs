@@ -142,7 +142,7 @@ xsub1(char *a, int n)
 	 * can't get here.  the number a is always normalized
 	 * so that it has a nonzero first digit.
 	 */
-	abort();
+	return 0;
 }
 
 /*
