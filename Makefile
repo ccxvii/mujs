@@ -13,7 +13,7 @@ CFLAGS := -std=c99 -pedantic -Wall -Wextra -Wno-unused-parameter -Wunreachable-c
 ifeq "$(build)" "debug"
 CFLAGS += -g
 else
-CFLAGS += -O3
+CFLAGS += -O2
 endif
 
 default: build build/mujs build/mujsone

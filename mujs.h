@@ -50,13 +50,6 @@ enum {
 	JS_REGEXP_M = 4,
 };
 
-/* Hint to ToPrimitive() */
-enum {
-	JS_HNONE,
-	JS_HNUMBER,
-	JS_HSTRING
-};
-
 /* Property attribute flags */
 enum {
 	JS_READONLY = 1,

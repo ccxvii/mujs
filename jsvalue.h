@@ -4,6 +4,13 @@
 typedef struct js_Property js_Property;
 typedef struct js_Iterator js_Iterator;
 
+/* Hint to ToPrimitive() */
+enum {
+	JS_HNONE,
+	JS_HNUMBER,
+	JS_HSTRING
+};
+
 enum js_Type {
 	JS_TUNDEFINED,
 	JS_TNULL,
