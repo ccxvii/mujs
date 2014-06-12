@@ -137,12 +137,12 @@ int js_isobject(js_State *J, int idx);
 int js_isarray(js_State *J, int idx);
 int js_isregexp(js_State *J, int idx);
 int js_iscallable(js_State *J, int idx);
-int js_isuserdata(js_State *J, const char *tag, int idx);
+int js_isuserdata(js_State *J, int idx, const char *tag);
 
 int js_toboolean(js_State *J, int idx);
 double js_tonumber(js_State *J, int idx);
 const char *js_tostring(js_State *J, int idx);
-void *js_touserdata(js_State *J, const char *tag, int idx);
+void *js_touserdata(js_State *J, int idx, const char *tag);
 
 double js_tointeger(js_State *J, int idx);
 int js_toint32(js_State *J, int idx);

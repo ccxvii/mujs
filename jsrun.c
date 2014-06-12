@@ -194,7 +194,7 @@ int js_isiterator(js_State *J, int idx)
 	return v->type == JS_TOBJECT && v->u.object->type == JS_CITERATOR;
 }
 
-int js_isuserdata(js_State *J, const char *tag, int idx)
+int js_isuserdata(js_State *J, int idx, const char *tag)
 {
 	const js_Value *v = stackidx(J, idx);
 	if (v->type == JS_TOBJECT && v->u.object->type == JS_CUSERDATA)
@@ -282,7 +282,7 @@ js_Regexp *js_toregexp(js_State *J, int idx)
 	js_typeerror(J, "not a regexp");
 }
 
-void *js_touserdata(js_State *J, const char *tag, int idx)
+void *js_touserdata(js_State *J, int idx, const char *tag)
 {
 	const js_Value *v = stackidx(J, idx);
 	if (v->type == JS_TOBJECT && v->u.object->type == JS_CUSERDATA)
