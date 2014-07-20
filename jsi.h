@@ -20,6 +20,7 @@
 #define inline __inline
 #define snprintf _snprintf
 #define vsnprintf _vsnprintf
+#if _MSC_VER < 1800
 #define round(x) floor((x) < 0 ? (x) - 0.5 : (x) + 0.5)
 #define isnan(x) _isnan(x)
 #define isinf(x) (!_finite(x))
@@ -27,6 +28,7 @@
 static __inline int signbit(double x) {union{double d;__int64 i;}u;u.d=x;return u.i>>63;}
 #define INFINITY (DBL_MAX+DBL_MAX)
 #define NAN (INFINITY-INFINITY)
+#endif /* old MSVC */
 #endif
 
 #define nelem(a) (sizeof (a) / sizeof (a)[0])
