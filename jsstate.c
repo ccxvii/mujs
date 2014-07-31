@@ -115,7 +115,8 @@ int js_dostring(js_State *J, const char *source, int report)
 	js_pushglobal(J);
 	js_call(J, 0);
 	if (report)
-		printf("%s\n", js_tostring(J, -1));
+		if (js_isdefined(J, -1))
+			printf("%s\n", js_tostring(J, -1));
 	js_pop(J, 1);
 	js_endtry(J);
 	return 0;

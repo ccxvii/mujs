@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "mujs.h"
 
@@ -30,6 +32,84 @@ static void jsB_print(js_State *J)
 	js_pushundefined(J);
 }
 
+static void jsB_write(js_State *J)
+{
+	unsigned int i, top = js_gettop(J);
+	for (i = 1; i < top; ++i) {
+		const char *s = js_tostring(J, i);
+		if (i > 1) putchar(' ');
+		fputs(s, stdout);
+	}
+	js_pushundefined(J);
+}
+
+static void jsB_read(js_State *J)
+{
+	const char *filename = js_tostring(J, 1);
+	FILE *f;
+	char *s;
+	int n, t;
+
+	f = fopen(filename, "rb");
+	if (!f) {
+		js_error(J, "cannot open file: '%s'", filename);
+	}
+
+	if (fseek(f, 0, SEEK_END) < 0) {
+		fclose(f);
+		js_error(J, "cannot seek in file: '%s'", filename);
+	}
+	n = ftell(f);
+	fseek(f, 0, SEEK_SET);
+
+	s = malloc(n + 1);
+	if (!s) {
+		fclose(f);
+		js_error(J, "cannot allocate storage for file contents: '%s'", filename);
+	}
+
+	t = fread(s, 1, n, f);
+	if (t != n) {
+		free(s);
+		fclose(f);
+		js_error(J, "cannot read data from file: '%s'", filename);
+	}
+	s[n] = 0;
+
+	js_pushstring(J, s);
+	free(s);
+	fclose(f);
+}
+
+static void jsB_readline(js_State *J)
+{
+	char line[256];
+	int n;
+	if (!fgets(line, sizeof line, stdin))
+		js_error(J, "cannot read line from stdin");
+	n = strlen(line);
+	if (n > 0 && line[n-1] == '\n')
+		line[n-1] = 0;
+	js_pushstring(J, line);
+}
+
+static void jsB_quit(js_State *J)
+{
+	exit(js_tonumber(J, 1));
+}
+
+static const char *require_js =
+	"function require(name) {\n"
+	"var cache = require.cache;\n"
+	"if (name in cache) return cache[name];\n"
+	"var exports = {};\n"
+	"cache[name] = exports;\n"
+	"Function('exports', read(name+'.js'))(exports);\n"
+	"return exports;\n"
+	"}\n"
+	"require.cache = Object.create(null);\n"
+;
+
 int
 main(int argc, char **argv)
 {
@@ -47,6 +127,20 @@ main(int argc, char **argv)
 
 	js_newcfunction(J, jsB_print, 1);
 	js_setglobal(J, "print");
+
+	js_newcfunction(J, jsB_write, 0);
+	js_setglobal(J, "write");
+
+	js_newcfunction(J, jsB_read, 1);
+	js_setglobal(J, "read");
+
+	js_newcfunction(J, jsB_readline, 0);
+	js_setglobal(J, "readline");
+
+	js_newcfunction(J, jsB_quit, 1);
+	js_setglobal(J, "quit");
+
+	js_dostring(J, require_js, 0);
 
 	if (argc > 1) {
 		for (i = 1; i < argc; ++i) {
