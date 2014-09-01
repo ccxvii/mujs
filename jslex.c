@@ -310,7 +310,7 @@ static int lexnumber(js_State *J)
 	if (jsY_isidentifierstart(PEEK))
 		jsY_error(J, "number with letter suffix");
 
-	J->number = strtod(s, NULL);
+	J->number = js_strtod(s, NULL);
 	return TK_NUMBER;
 }
 

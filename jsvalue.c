@@ -122,7 +122,7 @@ int jsV_toboolean(js_State *J, const js_Value *v)
 	}
 }
 
-double js_strtod(const char *s, char **ep)
+double js_stringtofloat(const char *s, char **ep)
 {
 	char *end;
 	double n;
@@ -136,7 +136,7 @@ double js_strtod(const char *s, char **ep)
 		if (*e == '+' || *e == '-') ++e;
 		while (*e >= '0' && *e <= '9') ++e;
 	}
-	n = strtod(s, &end);
+	n = js_strtod(s, &end);
 	if (end == e) {
 		*ep = (char*)e;
 		return n;
@@ -160,7 +160,7 @@ double jsV_stringtonumber(js_State *J, const char *s)
 	else if (!strncmp(s, "-Infinity", 9))
 		n = -INFINITY, e = (char*)s + 9;
 	else
-		n = js_strtod(s, &e);
+		n = js_stringtofloat(s, &e);
 	while (jsY_iswhite(*e) || jsY_isnewline(*e)) ++e;
 	if (*e) return NAN;
 	return n;
@@ -199,7 +199,7 @@ const char *jsV_numbertostring(js_State *J, double f)
 	if (isinf(f)) return f < 0 ? "-Infinity" : "Infinity";
 	if (f == 0) return "0";
 
-	jsV_dtoa(f, digits, &exp, &neg, &ndigits);
+	js_dtoa(f, digits, &exp, &neg, &ndigits);
 	point = ndigits + exp;
 
 	if (neg)
@@ -213,7 +213,7 @@ const char *jsV_numbertostring(js_State *J, double f)
 			while (n--)
 				*p++ = *s++;
 		}
-		jsV_fmtexp(p, point - 1);
+		js_fmtexp(p, point - 1);
 	}
 
 	else if (point <= 0) {

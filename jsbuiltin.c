@@ -74,7 +74,7 @@ static void jsB_parseFloat(js_State *J)
 	else if (!strncmp(s, "-Infinity", 9))
 		js_pushnumber(J, -INFINITY);
 	else {
-		n = js_strtod(s, &e);
+		n = js_stringtofloat(s, &e);
 		if (e == s)
 			js_pushnumber(J, NAN);
 		else

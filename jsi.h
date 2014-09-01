@@ -58,6 +58,12 @@ const char *js_intern(js_State *J, const char *s);
 void jsS_dumpstrings(js_State *J);
 void jsS_freestrings(js_State *J);
 
+/* Portable strtod and printf float formatting */
+
+void js_fmtexp(char *p, int e);
+void js_dtoa(double f, char *digits, int *exp, int *neg, int *ndigits);
+double js_strtod(const char *as, char **aas);
+
 /* Private stack functions */
 
 void js_newfunction(js_State *J, js_Function *function, js_Environment *scope);
