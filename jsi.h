@@ -49,6 +49,7 @@ typedef struct js_Jumpbuf js_Jumpbuf;
 /* Limits */
 
 #define JS_STACKSIZE 256	/* value stack size */
+#define JS_ENVLIMIT 64		/* environment stack size */
 #define JS_TRYLIMIT 64		/* exception stack size */
 #define JS_GCLIMIT 10000	/* run gc cycle every N allocations */
 
@@ -92,6 +93,7 @@ struct js_Jumpbuf
 {
 	jmp_buf buf;
 	js_Environment *E;
+	int envtop;
 	int top, bot;
 	short *pc;
 };
@@ -172,6 +174,10 @@ struct js_State
 	js_Environment *gcenv;
 	js_Function *gcfun;
 	js_Object *gcobj;
+
+	/* environments on the call stack but currently not in scope */
+	int envtop;
+	js_Environment *envstack[JS_ENVLIMIT];
 
 	/* exception stack */
 	int trylen;

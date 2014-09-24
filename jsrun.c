@@ -801,15 +801,25 @@ static int js_delvar(js_State *J, const char *name)
 
 /* Function calls */
 
+static void jsR_savescope(js_State *J, js_Environment *newE)
+{
+	if (J->envtop + 1 >= JS_ENVLIMIT)
+		js_stackoverflow(J);
+	J->envstack[J->envtop++] = J->E;
+	J->E = newE;
+}
+
+static void jsR_restorescope(js_State *J)
+{
+	J->E = J->envstack[--J->envtop];
+}
+
 static void jsR_calllwfunction(js_State *J, unsigned int n, js_Function *F, js_Environment *scope)
 {
-	js_Environment *saveE;
 	js_Value v;
 	unsigned int i;
 
-	saveE = J->E;
-
-	J->E = scope;
+	jsR_savescope(J, scope);
 
 	if (n > F->numparams) {
 		js_pop(J, F->numparams - n);
@@ -823,18 +833,17 @@ static void jsR_calllwfunction(js_State *J, unsigned int n, js_Function *F, js_E
 	TOP = --BOT; /* clear stack */
 	js_pushvalue(J, v);
 
-	J->E = saveE;
+	jsR_restorescope(J);
 }
 
 static void jsR_callfunction(js_State *J, unsigned int n, js_Function *F, js_Environment *scope)
 {
-	js_Environment *saveE;
 	js_Value v;
 	unsigned int i;
 
-	saveE = J->E;
+	scope = jsR_newenvironment(J, jsV_newobject(J, JS_COBJECT, NULL), scope);
 
-	J->E = jsR_newenvironment(J, jsV_newobject(J, JS_COBJECT, NULL), scope);
+	jsR_savescope(J, scope);
 
 	if (F->arguments) {
 		js_newobject(J);
@@ -866,7 +875,7 @@ static void jsR_callfunction(js_State *J, unsigned int n, js_Function *F, js_Env
 	TOP = --BOT; /* clear stack */
 	js_pushvalue(J, v);
 
-	J->E = saveE;
+	jsR_restorescope(J);
 }
 
 static void jsR_callscript(js_State *J, unsigned int n, js_Function *F)
@@ -991,6 +1000,7 @@ void js_savetry(js_State *J, short *pc)
 	if (J->trylen == JS_TRYLIMIT)
 		js_error(J, "try: exception stack overflow");
 	J->trybuf[J->trylen].E = J->E;
+	J->trybuf[J->trylen].envtop = J->envtop;
 	J->trybuf[J->trylen].top = J->top;
 	J->trybuf[J->trylen].bot = J->bot;
 	J->trybuf[J->trylen].pc = pc;
@@ -1002,6 +1012,7 @@ void js_throw(js_State *J)
 		js_Value v = js_tovalue(J, -1);
 		--J->trylen;
 		J->E = J->trybuf[J->trylen].E;
+		J->envtop = J->trybuf[J->trylen].envtop;
 		J->top = J->trybuf[J->trylen].top;
 		J->bot = J->trybuf[J->trylen].bot;
 		js_pushvalue(J, v);

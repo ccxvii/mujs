@@ -120,6 +120,7 @@ void js_gc(js_State *J, int report)
 	int nenv = 0, nfun = 0, nobj = 0;
 	int genv = 0, gfun = 0, gobj = 0;
 	int mark;
+	int i;
 
 	mark = J->gcmark = J->gcmark == 1 ? 2 : 1;
 
@@ -129,6 +130,8 @@ void js_gc(js_State *J, int report)
 	jsG_markobject(J, mark, J->Boolean_prototype);
 	jsG_markobject(J, mark, J->Number_prototype);
 	jsG_markobject(J, mark, J->String_prototype);
+	jsG_markobject(J, mark, J->RegExp_prototype);
+	jsG_markobject(J, mark, J->Date_prototype);
 
 	jsG_markobject(J, mark, J->Error_prototype);
 	jsG_markobject(J, mark, J->EvalError_prototype);
@@ -142,7 +145,11 @@ void js_gc(js_State *J, int report)
 	jsG_markobject(J, mark, J->G);
 
 	jsG_markstack(J, mark);
+
 	jsG_markenvironment(J, mark, J->E);
+	jsG_markenvironment(J, mark, J->GE);
+	for (i = 0; i < J->envtop; ++i)
+		jsG_markenvironment(J, mark, J->envstack[i]);
 
 	prevnextenv = &J->gcenv;
 	for (env = J->gcenv; env; env = nextenv) {
