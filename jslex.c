@@ -464,11 +464,15 @@ static int lexregexp(js_State *J)
 		if (PEEK == 0 || PEEK == '\n') {
 			jsY_error(J, "regular expression not terminated");
 		} else if (ACCEPT('\\')) {
-			textpush(J, '\\');
-			if (PEEK == 0 || PEEK == '\n')
-				jsY_error(J, "regular expression not terminated");
-			textpush(J, PEEK);
-			NEXT();
+			if (ACCEPT('/')) {
+				textpush(J, '/');
+			} else {
+				textpush(J, '\\');
+				if (PEEK == 0 || PEEK == '\n')
+					jsY_error(J, "regular expression not terminated");
+				textpush(J, PEEK);
+				NEXT();
+			}
 		} else {
 			textpush(J, PEEK);
 			NEXT();
