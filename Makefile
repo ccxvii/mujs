@@ -45,10 +45,10 @@ build/libmujs.a: $(OBJS)
 	ar cru $@ $^
 
 build/mujs: build/main.o build/libmujs.a
-	$(CC) -o $@ $^ -lm
+	$(CC) $(LDFLAGS) -o $@ $^ -lm
 
 build/mujsone: build/main.o build/one.o
-	$(CC) -o $@ $^ -lm
+	$(CC) $(LDFLAGS) -o $@ $^ -lm
 
 install: release
 	install -d $(DESTDIR)$(incdir)
