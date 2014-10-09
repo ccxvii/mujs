@@ -454,13 +454,14 @@ static int lexregexp(js_State *J)
 {
 	const char *s;
 	int g, m, i;
+	int inclass = 0;
 
 	/* already consumed initial '/' */
 
 	textinit(J);
 
 	/* regexp body */
-	while (PEEK != '/') {
+	while (PEEK != '/' || inclass) {
 		if (PEEK == 0 || PEEK == '\n') {
 			jsY_error(J, "regular expression not terminated");
 		} else if (ACCEPT('\\')) {
@@ -474,6 +475,10 @@ static int lexregexp(js_State *J)
 				NEXT();
 			}
 		} else {
+			if (PEEK == '[' && !inclass)
+				inclass = 1;
+			if (PEEK == ']' && inclass)
+				inclass = 0;
 			textpush(J, PEEK);
 			NEXT();
 		}
