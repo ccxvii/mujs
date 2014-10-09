@@ -99,6 +99,11 @@ static int dec(struct cstate *g, int c)
 
 #define ESCAPES "BbDdSsWw^$\\.*+?()[]{}|0123456789"
 
+static int isunicodeletter(int c)
+{
+	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || isalpharune(c);
+}
+
 static int nextrune(struct cstate *g)
 {
 	g->source += chartorune(&g->yychar, g->source);
@@ -133,9 +138,11 @@ static int nextrune(struct cstate *g)
 			}
 			return 0;
 		}
-		if (!strchr(ESCAPES, g->yychar))
+		if (strchr(ESCAPES, g->yychar))
+			return 1;
+		if (isunicodeletter(g->yychar) || g->yychar == '_') /* check identity escape */
 			die(g, "invalid escape character");
-		return 1;
+		return 0;
 	}
 	return 0;
 }
@@ -295,8 +302,7 @@ static int lexclass(struct cstate *g)
 					g->yychar = '\b';
 				else if (g->yychar == '0')
 					g->yychar = 0;
-				else
-					die(g, "invalid escape character");
+				/* else identity escape */
 			}
 			if (havesave) {
 				if (havedash) {
