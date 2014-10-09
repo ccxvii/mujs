@@ -53,6 +53,8 @@ static js_Function *newfun(js_State *J, js_Ast *name, js_Ast *params, js_Ast *bo
 
 static void emitraw(JF, int value)
 {
+	if (value != (js_Instruction)value)
+		js_syntaxerror(J, "integer overflow in instruction coding");
 	if (F->codelen >= F->codecap) {
 		F->codecap = F->codecap ? F->codecap * 2 : 64;
 		F->code = js_realloc(J, F->code, F->codecap * sizeof *F->code);
@@ -141,9 +143,12 @@ static void emitnumber(JF, double num)
 			emit(J, F, OP_NEG);
 	} else if (num == 1) {
 		emit(J, F, OP_NUMBER_1);
-	} else if (num == (short)num) {
-		emit(J, F, OP_NUMBER_N);
-		emitraw(J, F, (short)num);
+	} else if (num == (js_Instruction)num) {
+		emit(J, F, OP_NUMBER_POS);
+		emitraw(J, F, (js_Instruction)num);
+	} else if (num < 0 && -num == (js_Instruction)(-num)) {
+		emit(J, F, OP_NUMBER_NEG);
+		emitraw(J, F, (js_Instruction)(-num));
 	} else {
 		emit(J, F, OP_NUMBER);
 		emitraw(J, F, addnumber(J, F, num));
@@ -186,17 +191,21 @@ static int emitjump(JF, int opcode)
 static void emitjumpto(JF, int opcode, int dest)
 {
 	emit(J, F, opcode);
+	if (dest != (js_Instruction)dest)
+		js_syntaxerror(J, "jump address integer overflow");
 	emitraw(J, F, dest);
-}
-
-static void label(JF, int inst)
-{
-	F->code[inst] = F->codelen;
 }
 
 static void labelto(JF, int inst, int addr)
 {
+	if (addr != (js_Instruction)addr)
+		js_syntaxerror(J, "jump address integer overflow");
 	F->code[inst] = addr;
+}
+
+static void label(JF, int inst)
+{
+	labelto(J, F, inst, F->codelen);
 }
 
 /* Expressions */
@@ -248,10 +257,10 @@ static void cobject(JF, js_Ast *list)
 				cexp(J, F, kv->b);
 				emitstring(J, F, OP_INITPROP_S, prop->string);
 			} else if (prop->type == EXP_NUMBER) {
-				if (prop->number == (short)prop->number) {
+				if (prop->number == (js_Instruction)prop->number) {
 					cexp(J, F, kv->b);
 					emit(J, F, OP_INITPROP_N);
-					emitraw(J, F, (short)prop->number);
+					emitraw(J, F, (js_Instruction)prop->number);
 				} else {
 					emitnumber(J, F, prop->number);
 					cexp(J, F, kv->b);

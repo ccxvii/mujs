@@ -711,8 +711,8 @@ void jsP_dumplist(js_State *J, js_Ast *prog)
 
 void jsC_dumpfunction(js_State *J, js_Function *F)
 {
-	short *p = F->code;
-	short *end = F->code + F->codelen;
+	js_Instruction *p = F->code;
+	js_Instruction *end = F->code + F->codelen;
 	unsigned int i;
 
 	printf("%s(%d)\n", F->name, F->numparams);
@@ -764,7 +764,8 @@ void jsC_dumpfunction(js_State *J, js_Function *F)
 		case OP_GETLOCAL:
 		case OP_SETLOCAL:
 		case OP_DELLOCAL:
-		case OP_NUMBER_N:
+		case OP_NUMBER_POS:
+		case OP_NUMBER_NEG:
 		case OP_INITPROP_N:
 		case OP_CALL:
 		case OP_NEW:

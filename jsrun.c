@@ -995,7 +995,7 @@ int js_pcall(js_State *J, int n)
 
 /* Exceptions */
 
-void js_savetry(js_State *J, short *pc)
+void js_savetry(js_State *J, js_Instruction *pc)
 {
 	if (J->trylen == JS_TRYLIMIT)
 		js_error(J, "try: exception stack overflow");
@@ -1060,8 +1060,8 @@ static void jsR_run(js_State *J, js_Function *F)
 	js_Function **FT = F->funtab;
 	double *NT = F->numtab;
 	const char **ST = F->strtab;
-	short *pcstart = F->code;
-	short *pc = F->code;
+	js_Instruction *pcstart = F->code;
+	js_Instruction *pc = F->code;
 	enum js_OpCode opcode;
 	int offset;
 
@@ -1089,7 +1089,8 @@ static void jsR_run(js_State *J, js_Function *F)
 
 		case OP_NUMBER_0: js_pushnumber(J, 0); break;
 		case OP_NUMBER_1: js_pushnumber(J, 1); break;
-		case OP_NUMBER_N: js_pushnumber(J, *pc++); break;
+		case OP_NUMBER_POS: js_pushnumber(J, *pc++); break;
+		case OP_NUMBER_NEG: js_pushnumber(J, -(*pc++)); break;
 		case OP_NUMBER: js_pushnumber(J, NT[*pc++]); break;
 		case OP_STRING: js_pushliteral(J, ST[*pc++]); break;
 

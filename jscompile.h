@@ -12,7 +12,8 @@ enum js_OpCode
 
 	OP_NUMBER_0,	/* -- 0 */
 	OP_NUMBER_1,	/* -- 1 */
-	OP_NUMBER_N,	/* -K- K */
+	OP_NUMBER_POS,	/* -K- K */
+	OP_NUMBER_NEG,	/* -K- -K */
 
 	OP_NUMBER,	/* -N- <number> */
 	OP_STRING,	/* -S- <string> */
@@ -124,7 +125,7 @@ struct js_Function
 	unsigned int arguments;
 	unsigned int numparams;
 
-	short *code;
+	js_Instruction *code;
 	unsigned int codecap, codelen;
 
 	js_Function **funtab;

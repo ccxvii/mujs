@@ -53,6 +53,9 @@ typedef struct js_Jumpbuf js_Jumpbuf;
 #define JS_TRYLIMIT 64		/* exception stack size */
 #define JS_GCLIMIT 10000	/* run gc cycle every N allocations */
 
+/* instruction size -- change to unsigned int if you get integer overflow syntax errors */
+typedef unsigned short js_Instruction;
+
 /* String interning */
 
 const char *js_intern(js_State *J, const char *s);
@@ -95,10 +98,10 @@ struct js_Jumpbuf
 	js_Environment *E;
 	int envtop;
 	int top, bot;
-	short *pc;
+	js_Instruction *pc;
 };
 
-void js_savetry(js_State *J, short *pc);
+void js_savetry(js_State *J, js_Instruction *pc);
 
 #define js_trypc(J, PC) \
 	(js_savetry(J, PC), setjmp(J->trybuf[J->trylen++].buf))
