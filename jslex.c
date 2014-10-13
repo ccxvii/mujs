@@ -117,24 +117,28 @@ int jsY_isnewline(int c)
 	return c == 0xA || c == 0xD || c == 0x2028 || c == 0x2029;
 }
 
+#define isalpha(c) ((((unsigned)(c)|32)-'a') < 26)
+#define isdigit(c) (((unsigned)(c)-'0') < 10)
+#define ishex(c) ((((unsigned)(c)|32)-'a') < 6)
+
 static int jsY_isidentifierstart(int c)
 {
-	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '$' || c == '_' || isalpharune(c);
+	return isalpha(c) || c == '$' || c == '_' || isalpharune(c);
 }
 
 static int jsY_isidentifierpart(int c)
 {
-	return (c >= '0' && c <= '9') || jsY_isidentifierstart(c);
+	return isdigit(c) || isalpha(c) || c == '$' || c == '_' || isalpharune(c);
 }
 
 static int jsY_isdec(int c)
 {
-	return (c >= '0' && c <= '9');
+	return isdigit(c);
 }
 
 int jsY_ishex(int c)
 {
-	return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+	return isdigit(c) || ishex(c);
 }
 
 int jsY_tohex(int c)
