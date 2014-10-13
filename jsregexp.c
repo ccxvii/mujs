@@ -48,6 +48,10 @@ void js_RegExp_prototype_exec(js_State *J, js_Regexp *re, const char *text)
 
 	if (!js_regexec(re->prog, text, &m, opts)) {
 		js_newarray(J);
+		js_pushstring(J, text);
+		js_setproperty(J, -2, "input");
+		js_pushnumber(J, js_utfptrtoidx(text, m.sub[0].sp));
+		js_setproperty(J, -2, "index");
 		for (i = 0; i < m.nsub; ++i) {
 			js_pushlstring(J, m.sub[i].sp, m.sub[i].ep - m.sub[i].sp);
 			js_setindex(J, -2, i);
