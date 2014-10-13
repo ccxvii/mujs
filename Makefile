@@ -68,8 +68,8 @@ tarball:
 tags: $(SRCS) main.c $(HDRS)
 	ctags $^
 
-test: build/js
-	python tests/sputniktests/tools/sputnik.py --tests=tests/sputniktests --command ./build/js --summary
+test: build/mujs
+	python tests/sputniktests/tools/sputnik.py --tests=tests/sputniktests --command ./build/mujs --summary
 
 clean:
 	rm -f astnames.h opnames.h one.c build/*
