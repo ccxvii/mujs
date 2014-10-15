@@ -64,7 +64,12 @@ static void Math_random(js_State *J)
 
 static void Math_round(js_State *J)
 {
-	js_pushnumber(J, round(js_tonumber(J, 1)));
+	double x = js_tonumber(J, 1);
+	double r = round(x);
+	if (r - x == -0.5)
+		js_pushnumber(J, x == -0.5 ? -0.0 : r + 1.0);
+	else
+		js_pushnumber(J, r);
 }
 
 static void Math_sin(js_State *J)
