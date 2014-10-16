@@ -126,6 +126,9 @@ void js_newcconstructor(js_State *J, js_CFunction fun, js_CFunction con, unsigne
 void js_newuserdata(js_State *J, const char *tag, void *data);
 void js_newregexp(js_State *J, const char *pattern, int flags);
 
+void js_pushiterator(js_State *J, int idx, int own);
+const char *js_nextiterator(js_State *J, int idx);
+
 int js_isdefined(js_State *J, int idx);
 int js_isundefined(js_State *J, int idx);
 int js_isnull(js_State *J, int idx);

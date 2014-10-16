@@ -715,6 +715,18 @@ int js_hasproperty(js_State *J, int idx, const char *name)
 	return jsR_hasproperty(J, js_toobject(J, idx), name);
 }
 
+/* Iterator */
+
+void js_pushiterator(js_State *J, int idx, int own)
+{
+	js_pushobject(J, jsV_newiterator(J, js_toobject(J, idx), own));
+}
+
+const char *js_nextiterator(js_State *J, int idx)
+{
+	return jsV_nextiterator(J, js_toobject(J, idx));
+}
+
 /* Environment records */
 
 js_Environment *jsR_newenvironment(js_State *J, js_Object *vars, js_Environment *outer)
