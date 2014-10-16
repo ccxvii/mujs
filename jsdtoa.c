@@ -612,6 +612,8 @@ js_strtod(const char *as, char **aas)
 	goto out;
 
 ret0:
+	if(flag & Fsign)
+		return -0.0;
 	return 0;
 
 retnan:
