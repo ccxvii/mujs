@@ -24,7 +24,9 @@ static void Math_atan(js_State *J)
 
 static void Math_atan2(js_State *J)
 {
-	js_pushnumber(J, atan2(js_tonumber(J, 1), js_tonumber(J, 2)));
+	double y = js_tonumber(J, 1);
+	double x = js_tonumber(J, 2);
+	js_pushnumber(J, atan2(y, x));
 }
 
 static void Math_ceil(js_State *J)
@@ -54,7 +56,12 @@ static void Math_log(js_State *J)
 
 static void Math_pow(js_State *J)
 {
-	js_pushnumber(J, pow(js_tonumber(J, 1), js_tonumber(J, 2)));
+	double x = js_tonumber(J, 1);
+	double y = js_tonumber(J, 2);
+	if (!isfinite(y) && fabs(x) == 1)
+		js_pushnumber(J, NAN);
+	else
+		js_pushnumber(J, pow(x,y));
 }
 
 static void Math_random(js_State *J)
