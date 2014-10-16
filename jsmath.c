@@ -4,7 +4,7 @@
 
 static void Math_abs(js_State *J)
 {
-	js_pushnumber(J, abs(js_tonumber(J, 1)));
+	js_pushnumber(J, fabs(js_tonumber(J, 1)));
 }
 
 static void Math_acos(js_State *J)
