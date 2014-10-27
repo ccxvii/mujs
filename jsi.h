@@ -71,7 +71,8 @@ double js_strtod(const char *as, char **aas);
 /* Private stack functions */
 
 void js_newfunction(js_State *J, js_Function *function, js_Environment *scope);
-void js_newscript(js_State *J, js_Function *function);
+void js_newscript(js_State *J, js_Function *function, js_Environment *scope);
+void js_loadeval(js_State *J, const char *filename, const char *source);
 
 js_Regexp *js_toregexp(js_State *J, int idx);
 int js_isarrayindex(js_State *J, const char *str, unsigned int *idx);

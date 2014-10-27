@@ -40,7 +40,7 @@ int js_ploadfile(js_State *J, const char *filename)
 	return 0;
 }
 
-void js_loadstring(js_State *J, const char *filename, const char *source)
+static void js_loadstringx(js_State *J, const char *filename, const char *source, int iseval)
 {
 	js_Ast *P;
 	js_Function *F;
@@ -53,9 +53,19 @@ void js_loadstring(js_State *J, const char *filename, const char *source)
 	P = jsP_parse(J, filename, source);
 	F = jsC_compile(J, P);
 	jsP_freeparse(J);
-	js_newscript(J, F);
+	js_newscript(J, F, iseval ? NULL : J->GE);
 
 	js_endtry(J);
+}
+
+void js_loadeval(js_State *J, const char *filename, const char *source)
+{
+	js_loadstringx(J, filename, source, 1);
+}
+
+void js_loadstring(js_State *J, const char *filename, const char *source)
+{
+	js_loadstringx(J, filename, source, 0);
 }
 
 void js_loadfile(js_State *J, const char *filename)

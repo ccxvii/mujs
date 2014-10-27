@@ -890,14 +890,21 @@ static void jsR_callfunction(js_State *J, unsigned int n, js_Function *F, js_Env
 	jsR_restorescope(J);
 }
 
-static void jsR_callscript(js_State *J, unsigned int n, js_Function *F)
+static void jsR_callscript(js_State *J, unsigned int n, js_Function *F, js_Environment *scope)
 {
 	js_Value v;
+
+	if (scope)
+		jsR_savescope(J, scope);
+
 	js_pop(J, n);
 	jsR_run(J, F);
 	v = js_tovalue(J, -1);
 	TOP = --BOT; /* clear stack */
 	js_pushvalue(J, v);
+
+	if (scope)
+		jsR_restorescope(J);
 }
 
 static void jsR_callcfunction(js_State *J, unsigned int n, unsigned int min, js_CFunction F)
@@ -933,7 +940,7 @@ void js_call(js_State *J, int n)
 		else
 			jsR_callfunction(J, n, obj->u.f.function, obj->u.f.scope);
 	} else if (obj->type == JS_CSCRIPT)
-		jsR_callscript(J, n, obj->u.f.function);
+		jsR_callscript(J, n, obj->u.f.function, obj->u.f.scope);
 	else if (obj->type == JS_CCFUNCTION)
 		jsR_callcfunction(J, n, obj->u.c.length, obj->u.c.function);
 

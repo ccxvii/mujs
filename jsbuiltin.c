@@ -34,7 +34,7 @@ static void jsB_eval(js_State *J)
 		js_copy(J, 1);
 		return;
 	}
-	js_loadstring(J, "(eval)", js_tostring(J, -1));
+	js_loadeval(J, "(eval)", js_tostring(J, -1));
 	js_pushglobal(J);
 	js_call(J, 0);
 }
