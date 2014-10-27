@@ -753,6 +753,23 @@ int jsY_lexjson(js_State *J)
 			return 0; /* EOF */
 		}
 
+		/* Handle JSON keywords: true, false and null */
+		if (jsY_isidentifierstart(PEEK)) {
+			textinit(J);
+			textpush(J, PEEK);
+			NEXT();
+			while (jsY_isidentifierpart(PEEK)) {
+				textpush(J, PEEK);
+				NEXT();
+			}
+
+			textend(J);
+
+			if (strcmp(J->lexbuf.text, "true") == 0) return TK_TRUE;
+			else if (strcmp(J->lexbuf.text, "false") == 0) return TK_FALSE;
+			else if (strcmp(J->lexbuf.text, "null") == 0) return TK_NULL;
+		}
+
 		if (PEEK >= 0x20 && PEEK <= 0x7E)
 			jsY_error(J, "unexpected character: '%c'", PEEK);
 		jsY_error(J, "unexpected character: \\u%04X", PEEK);
