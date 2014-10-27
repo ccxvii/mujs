@@ -45,7 +45,7 @@ static void jsonvalue(js_State *J)
 	case '{':
 		js_newobject(J);
 		jsonnext(J);
-		if (J->lookahead == '}')
+		if (jsonaccept(J,'}'))
 			return;
 		do {
 			if (J->lookahead != TK_STRING)
@@ -63,7 +63,7 @@ static void jsonvalue(js_State *J)
 		js_newarray(J);
 		jsonnext(J);
 		i = 0;
-		if (J->lookahead == ']')
+		if (jsonaccept(J, ']'))
 			return;
 		do {
 			jsonvalue(J);
