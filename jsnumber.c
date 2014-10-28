@@ -32,7 +32,7 @@ static void Np_toString(js_State *J)
 }
 
 /* Customized ToString() on a number */
-void numtostr(js_State *J, const char *fmt, int w, double n)
+static void numtostr(js_State *J, const char *fmt, int w, double n)
 {
 	char buf[32], *e;
 	if (isnan(n)) js_pushliteral(J, "NaN");

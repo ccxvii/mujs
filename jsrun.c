@@ -188,7 +188,7 @@ int js_isregexp(js_State *J, int idx)
 	return v->type == JS_TOBJECT && v->u.object->type == JS_CREGEXP;
 }
 
-int js_isiterator(js_State *J, int idx)
+static int js_isiterator(js_State *J, int idx)
 {
 	const js_Value *v = stackidx(J, idx);
 	return v->type == JS_TOBJECT && v->u.object->type == JS_CITERATOR;
@@ -1044,7 +1044,7 @@ void js_throw(js_State *J)
 
 /* Main interpreter loop */
 
-void jsR_dumpstack(js_State *J)
+static void jsR_dumpstack(js_State *J)
 {
 	int i;
 	printf("stack {\n");
@@ -1057,7 +1057,7 @@ void jsR_dumpstack(js_State *J)
 	printf("}\n");
 }
 
-void jsR_dumpenvironment(js_State *J, js_Environment *E, int d)
+static void jsR_dumpenvironment(js_State *J, js_Environment *E, int d)
 {
 	printf("scope %d ", d);
 	js_dumpobject(J, E->variables);
