@@ -103,8 +103,8 @@ static void JSON_parse(js_State *J)
 
 static void fmtnum(js_State *J, js_Buffer **sb, double n)
 {
-	if (isnan(n)) js_puts(J, sb, "NaN");
-	else if (isinf(n)) js_puts(J, sb, n < 0 ? "-Infinity" : "Infinity");
+	if (isnan(n)) js_puts(J, sb, "null");
+	else if (isinf(n)) js_puts(J, sb, "null");
 	else if (n == 0) js_puts(J, sb, "0");
 	else {
 		char buf[40];
@@ -143,9 +143,16 @@ static void fmtstr(js_State *J, js_Buffer **sb, const char *s)
 	js_putc(J, sb, '"');
 }
 
-static int fmtvalue(js_State *J, js_Buffer **sb, const char *key);
+static void fmtindent(js_State *J, js_Buffer **sb, const char *gap, int level)
+{
+	js_putc(J, sb, '\n');
+	while (level--)
+		js_puts(J, sb, gap);
+}
 
-static void fmtobject(js_State *J, js_Buffer **sb, js_Object *obj)
+static int fmtvalue(js_State *J, js_Buffer **sb, const char *key, const char *gap, int level);
+
+static void fmtobject(js_State *J, js_Buffer **sb, js_Object *obj, const char *gap, int level)
 {
 	js_Property *ref;
 	int save;
@@ -157,19 +164,23 @@ static void fmtobject(js_State *J, js_Buffer **sb, js_Object *obj)
 			continue;
 		save = (*sb)->n;
 		if (n) js_putc(J, sb, ',');
+		if (gap) fmtindent(J, sb, gap, level + 1);
 		fmtstr(J, sb, ref->name);
 		js_putc(J, sb, ':');
+		if (gap)
+			js_putc(J, sb, ' ');
 		js_pushvalue(J, ref->value);
-		if (!fmtvalue(J, sb, ref->name))
+		if (!fmtvalue(J, sb, ref->name, gap, level + 1))
 			(*sb)->n = save;
 		else
 			++n;
 		js_pop(J, 1);
 	}
+	if (gap && n) fmtindent(J, sb, gap, level);
 	js_putc(J, sb, '}');
 }
 
-static void fmtarray(js_State *J, js_Buffer **sb)
+static void fmtarray(js_State *J, js_Buffer **sb, const char *gap, int level)
 {
 	unsigned int n, k;
 	char buf[40];
@@ -179,16 +190,18 @@ static void fmtarray(js_State *J, js_Buffer **sb)
 	js_putc(J, sb, '[');
 	for (k = 0; k < n; ++k) {
 		if (k) js_putc(J, sb, ',');
+		if (gap) fmtindent(J, sb, gap, level + 1);
 		sprintf(buf, "%u", k);
 		js_getproperty(J, -1, buf);
-		if (!fmtvalue(J, sb, buf))
+		if (!fmtvalue(J, sb, buf, gap, level + 1))
 			js_puts(J, sb, "null");
 		js_pop(J, 1);
 	}
+	if (gap && n) fmtindent(J, sb, gap, level);
 	js_putc(J, sb, ']');
 }
 
-static int fmtvalue(js_State *J, js_Buffer **sb, const char *key)
+static int fmtvalue(js_State *J, js_Buffer **sb, const char *key, const char *gap, int level)
 {
 	if (js_try(J)) {
 		js_free(J, *sb);
@@ -216,8 +229,8 @@ static int fmtvalue(js_State *J, js_Buffer **sb, const char *key)
 		case JS_CNUMBER: fmtnum(J, sb, obj->u.number); break;
 		case JS_CSTRING: fmtstr(J, sb, obj->u.s.string); break;
 		case JS_CBOOLEAN: js_puts(J, sb, obj->u.boolean ? "true" : "false"); break;
-		case JS_CARRAY: fmtarray(J, sb); break;
-		default: fmtobject(J, sb, obj); break;
+		case JS_CARRAY: fmtarray(J, sb, gap, level); break;
+		default: fmtobject(J, sb, obj, gap, level); break;
 		}
 	}
 	else if (js_isboolean(J, -1))
@@ -237,9 +250,33 @@ static int fmtvalue(js_State *J, js_Buffer **sb, const char *key)
 static void JSON_stringify(js_State *J)
 {
 	js_Buffer *sb = NULL;
+	char buf[12];
+	const char *s, *gap;
+	int n;
+
+	gap = NULL;
+
+	if (js_isnumber(J, 3)) {
+		n = js_tointeger(J, 3);
+		if (n < 0) n = 0;
+		if (n > 10) n = 10;
+		memset(buf, ' ', n);
+		buf[n] = 0;
+		if (n > 0) gap = buf;
+	} else if (js_isstring(J, 3)) {
+		s = js_tostring(J, 3);
+		n = strlen(s);
+		if (n > 10) n = 10;
+		memcpy(buf, s, n);
+		buf[n] = 0;
+		if (n > 0) gap = buf;
+	}
+
+	// TODO: replacer
+
 	if (js_isdefined(J, 1)) {
 		js_copy(J, 1);
-		if (fmtvalue(J, &sb, "")) {
+		if (fmtvalue(J, &sb, "", gap, 0)) {
 			js_putc(J, &sb, 0);
 			if (js_try(J)) {
 				js_free(J, sb);
