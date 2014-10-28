@@ -742,12 +742,23 @@ int jsY_lexjson(js_State *J)
 		case '{': NEXT(); return '{';
 		case '}': NEXT(); return '}';
 
-		case '\'':
 		case '"':
 			return lexstring(J);
 
 		case '.':
 			return lexnumber(J);
+
+		case 'f':
+			NEXT(); EXPECT('a'); EXPECT('l'); EXPECT('s'); EXPECT('e');
+			return TK_FALSE;
+
+		case 'n':
+			NEXT(); EXPECT('u'); EXPECT('l'); EXPECT('l');
+			return TK_NULL;
+
+		case 't':
+			NEXT(); EXPECT('r'); EXPECT('u'); EXPECT('e');
+			return TK_TRUE;
 
 		case 0:
 			return 0; /* EOF */
