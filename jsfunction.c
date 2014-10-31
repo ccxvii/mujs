@@ -76,6 +76,7 @@ static void Fp_toString(js_State *J)
 		}
 		js_pushstring(J, s);
 		js_free(J, s);
+		js_endtry(J);
 	} else {
 		js_pushliteral(J, "function () { ... }");
 	}
