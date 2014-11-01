@@ -62,7 +62,7 @@ struct js_Object
 	enum js_Class type;
 	int extensible;
 	js_Property *properties;
-	js_Property *head, *tail; /* for enumeration */
+	js_Property *head, **tailp; /* for enumeration */
 	js_Object *prototype;
 	union {
 		int boolean;
@@ -101,7 +101,7 @@ struct js_Property
 {
 	const char *name;
 	js_Property *left, *right;
-	js_Property **prevp, *next; /* for enumeration */
+	js_Property *next, **prevp; /* for enumeration */
 	int level;
 	int atts;
 	js_Value value;

@@ -97,33 +97,35 @@ static js_Property *insert(js_State *J, js_Property *node, const char *name, js_
 	return *result = newproperty(J, name);
 }
 
-static void freeproperty(js_State *J, js_Property *node)
+static void freeproperty(js_State *J, js_Object *obj, js_Property *node)
 {
 	if (node->next)
 		node->next->prevp = node->prevp;
+	else
+		obj->tailp = node->prevp;
 	*node->prevp = node->next;
 	js_free(J, node);
 }
 
-static js_Property *delete(js_State *J, js_Property *node, const char *name)
+static js_Property *delete(js_State *J, js_Object *obj, js_Property *node, const char *name)
 {
 	js_Property *temp, *succ;
 
 	if (node != &sentinel) {
 		int c = strcmp(name, node->name);
 		if (c < 0) {
-			node->left = delete(J, node->left, name);
+			node->left = delete(J, obj, node->left, name);
 		} else if (c > 0) {
-			node->right = delete(J, node->right, name);
+			node->right = delete(J, obj, node->right, name);
 		} else {
 			if (node->left == &sentinel) {
 				temp = node;
 				node = node->right;
-				freeproperty(J, temp);
+				freeproperty(J, obj, temp);
 			} else if (node->right == &sentinel) {
 				temp = node;
 				node = node->left;
-				freeproperty(J, temp);
+				freeproperty(J, obj, temp);
 			} else {
 				succ = node->right;
 				while (succ->left != &sentinel)
@@ -131,7 +133,7 @@ static js_Property *delete(js_State *J, js_Property *node, const char *name)
 				node->name = succ->name;
 				node->atts = succ->atts;
 				node->value = succ->value;
-				node->right = delete(J, node->right, succ->name);
+				node->right = delete(J, obj, node->right, succ->name);
 			}
 		}
 
@@ -162,6 +164,8 @@ js_Object *jsV_newobject(js_State *J, enum js_Class type, js_Object *prototype)
 
 	obj->type = type;
 	obj->properties = &sentinel;
+	obj->head = NULL;
+	obj->tailp = &obj->head;
 	obj->prototype = prototype;
 	obj->extensible = 1;
 	return obj;
@@ -205,21 +209,16 @@ js_Property *jsV_setproperty(js_State *J, js_Object *obj, const char *name)
 
 	obj->properties = insert(J, obj->properties, name, &result);
 	if (!result->prevp) {
-		if (!obj->head) {
-			result->prevp = &obj->head;
-			obj->tail = obj->head = result;
-		} else {
-			result->prevp = &obj->tail->next;
-			obj->tail->next = result;
-			obj->tail = result;
-		}
+		result->prevp = obj->tailp;
+		*obj->tailp = result;
+		obj->tailp = &result->next;
 	}
 	return result;
 }
 
 void jsV_delproperty(js_State *J, js_Object *obj, const char *name)
 {
-	obj->properties = delete(J, obj->properties, name);
+	obj->properties = delete(J, obj, obj->properties, name);
 }
 
 /* Flatten hierarchy of enumerable properties into an iterator object */
