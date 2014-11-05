@@ -14,7 +14,7 @@ unsigned int js_getlength(js_State *J, int idx)
 void js_setlength(js_State *J, int idx, unsigned int len)
 {
 	js_pushnumber(J, len);
-	js_setproperty(J, idx, "length");
+	js_setproperty(J, idx < 0 ? idx - 1: idx, "length");
 }
 
 int js_hasindex(js_State *J, int idx, unsigned int i)
