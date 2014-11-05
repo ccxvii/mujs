@@ -68,10 +68,7 @@ tarball:
 tags: $(SRCS) main.c $(HDRS)
 	ctags $^
 
-test: build/mujs
-	python tests/sputniktests/tools/sputnik.py --tests=tests/sputniktests --command ./build/mujs --summary
-
 clean:
 	rm -f astnames.h opnames.h one.c build/*
 
-.PHONY: default test clean install debug release
+.PHONY: default clean install debug release
