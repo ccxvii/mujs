@@ -41,6 +41,7 @@ void js_setindex(js_State *J, int idx, unsigned int i)
 void js_delindex(js_State *J, int idx, unsigned int i)
 {
 	char buf[32];
+printf("delindex %u\n", i);
 	sprintf(buf, "%u", i);
 	js_delproperty(J, idx, buf);
 }
@@ -338,6 +339,7 @@ static void Ap_splice(js_State *J)
 	for (k = 0; k < del; ++k)
 		if (js_hasindex(J, 0, start + k))
 			js_setindex(J, -2, k);
+	js_setlength(J, -1, del);
 
 	/* shift the tail to resize the hole left by deleted items */
 	add = top - 3;
@@ -346,7 +348,7 @@ static void Ap_splice(js_State *J)
 			if (js_hasindex(J, 0, k + del))
 				js_setindex(J, 0, k + add);
 			else
-				js_delindex(J, 0, k + del);
+				js_delindex(J, 0, k + add);
 		}
 		for (k = len; k > len - del + add; --k)
 			js_delindex(J, 0, k - 1);
