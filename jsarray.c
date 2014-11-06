@@ -41,7 +41,6 @@ void js_setindex(js_State *J, int idx, unsigned int i)
 void js_delindex(js_State *J, int idx, unsigned int i)
 {
 	char buf[32];
-printf("delindex %u\n", i);
 	sprintf(buf, "%u", i);
 	js_delproperty(J, idx, buf);
 }
