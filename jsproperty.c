@@ -27,7 +27,7 @@ static js_Property sentinel = {
 	NULL, NULL
 };
 
-static js_Property *newproperty(js_State *J, const char *name)
+static js_Property *newproperty(js_State *J, js_Object *obj, const char *name)
 {
 	js_Property *node = js_malloc(J, sizeof *node);
 	node->name = js_intern(J, name);
@@ -40,6 +40,7 @@ static js_Property *newproperty(js_State *J, const char *name)
 	node->value.u.number = 0;
 	node->getter = NULL;
 	node->setter = NULL;
+	++obj->count;
 	return node;
 }
 
@@ -80,21 +81,21 @@ static js_Property *split(js_Property *node)
 	return node;
 }
 
-static js_Property *insert(js_State *J, js_Property *node, const char *name, js_Property **result)
+static js_Property *insert(js_State *J, js_Object *obj, js_Property *node, const char *name, js_Property **result)
 {
 	if (node != &sentinel) {
 		int c = strcmp(name, node->name);
 		if (c < 0)
-			node->left = insert(J, node->left, name, result);
+			node->left = insert(J, obj, node->left, name, result);
 		else if (c > 0)
-			node->right = insert(J, node->right, name, result);
+			node->right = insert(J, obj, node->right, name, result);
 		else
 			return *result = node;
 		node = skew(node);
 		node = split(node);
 		return node;
 	}
-	return *result = newproperty(J, name);
+	return *result = newproperty(J, obj, name);
 }
 
 static void freeproperty(js_State *J, js_Object *obj, js_Property *node)
@@ -105,6 +106,7 @@ static void freeproperty(js_State *J, js_Object *obj, js_Property *node)
 		obj->tailp = node->prevp;
 	*node->prevp = node->next;
 	js_free(J, node);
+	--obj->count;
 }
 
 static js_Property *delete(js_State *J, js_Object *obj, js_Property *node, const char *name)
@@ -207,7 +209,7 @@ js_Property *jsV_setproperty(js_State *J, js_Object *obj, const char *name)
 	if (!obj->extensible)
 		return lookup(obj->properties, name);
 
-	obj->properties = insert(J, obj->properties, name, &result);
+	obj->properties = insert(J, obj, obj->properties, name, &result);
 	if (!result->prevp) {
 		result->prevp = obj->tailp;
 		*obj->tailp = result;
@@ -315,11 +317,19 @@ void jsV_resizearray(js_State *J, js_Object *obj, unsigned int newlen)
 	const char *s;
 	unsigned int k;
 	if (newlen < obj->u.a.length) {
-		js_Object *it = jsV_newiterator(J, obj, 1);
-		while ((s = jsV_nextiterator(J, it))) {
-			k = jsV_numbertouint32(jsV_stringtonumber(J, s));
-			if (k >= newlen && !strcmp(s, jsV_numbertostring(J, k)))
-				jsV_delproperty(J, obj, s);
+		if (obj->u.a.length > obj->count * 2) {
+			js_Object *it = jsV_newiterator(J, obj, 1);
+			while ((s = jsV_nextiterator(J, it))) {
+				k = jsV_numbertouint32(jsV_stringtonumber(J, s));
+				if (k >= newlen && !strcmp(s, jsV_numbertostring(J, k)))
+					jsV_delproperty(J, obj, s);
+			}
+		} else {
+			for (k = newlen; k < obj->u.a.length; ++k) {
+				char buf[32];
+				sprintf(buf, "%u", k);
+				jsV_delproperty(J, obj, buf);
+			}
 		}
 	}
 	obj->u.a.length = newlen;

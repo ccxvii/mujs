@@ -63,6 +63,7 @@ struct js_Object
 	int extensible;
 	js_Property *properties;
 	js_Property *head, **tailp; /* for enumeration */
+	unsigned int count; /* number of properties, for array sparseness check */
 	js_Object *prototype;
 	union {
 		int boolean;
