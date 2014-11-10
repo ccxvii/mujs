@@ -66,7 +66,7 @@ static void Math_pow(js_State *J)
 
 static void Math_random(js_State *J)
 {
-	js_pushnumber(J, (double)rand() / (RAND_MAX - 1));
+	js_pushnumber(J, rand() / (RAND_MAX + 1.0));
 }
 
 static void Math_round(js_State *J)
