@@ -1110,6 +1110,10 @@ static void analyze(JF, js_Ast *node)
 		F->lightweight = 0;
 	}
 
+	if (node->type == STM_TRY && node->c) {
+		F->lightweight = 0;
+	}
+
 	if (node->type == EXP_IDENTIFIER) {
 		if (!strcmp(node->string, "arguments")) {
 			F->lightweight = 0;
