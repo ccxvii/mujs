@@ -4,25 +4,24 @@
 
 #include <time.h>
 
-#ifdef _WIN32
-#include <sys/timeb.h>
-#endif
-#ifdef __unix__
+#if defined(__unix__)
 #include <sys/time.h>
+#elif defined(_WIN32)
+#include <sys/timeb.h>
 #endif
 
 #define js_optnumber(J,I,V) (js_gettop(J) > I ? js_tonumber(J,I) : V)
 
 static double Now(void)
 {
-#if defined(_WIN32)
-	struct _timeb tv;
-	_ftime(&tv);
-	return tv.time * 1000.0 + tv.millitm;
-#elif defined(__unix__)
+#if defined(__unix__)
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
 	return floor(tv.tv_sec * 1000.0 + tv.tv_usec / 1000.0);
+#elif defined(_WIN32)
+	struct _timeb tv;
+	_ftime(&tv);
+	return tv.time * 1000.0 + tv.millitm;
 #else
 	return time(NULL) * 1000.0;
 #endif
