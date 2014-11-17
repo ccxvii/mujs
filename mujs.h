@@ -120,7 +120,6 @@ void js_newarray(js_State *J);
 void js_newboolean(js_State *J, int v);
 void js_newnumber(js_State *J, double v);
 void js_newstring(js_State *J, const char *v);
-void js_newerror(js_State *J, const char *message);
 void js_newcfunction(js_State *J, js_CFunction fun, unsigned int length);
 void js_newcconstructor(js_State *J, js_CFunction fun, js_CFunction con, unsigned int length);
 void js_newuserdata(js_State *J, const char *tag, void *data);
