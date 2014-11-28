@@ -1,5 +1,5 @@
-#ifndef js_object_h
-#define js_object_h
+#ifndef js_value_h
+#define js_value_h
 
 typedef struct js_Property js_Property;
 typedef struct js_Iterator js_Iterator;
@@ -16,6 +16,7 @@ enum js_Type {
 	JS_TNULL,
 	JS_TBOOLEAN,
 	JS_TNUMBER,
+	JS_TLITERAL,
 	JS_TSTRING,
 	JS_TOBJECT,
 };
@@ -44,9 +45,17 @@ struct js_Value
 	union {
 		int boolean;
 		double number;
-		const char *string;
+		const char *literal;
+		js_String *string;
 		js_Object *object;
 	} u;
+};
+
+struct js_String
+{
+	js_String *gcnext;
+	char gcmark;
+	char p[1];
 };
 
 struct js_Regexp
@@ -137,7 +146,7 @@ int jsV_numbertoint32(double n);
 unsigned int jsV_numbertouint32(double n);
 short jsV_numbertoint16(double n);
 unsigned short jsV_numbertouint16(double n);
-const char *jsV_numbertostring(js_State *J, double number);
+const char *jsV_numbertostring(js_State *J, char buf[32], double number);
 double jsV_stringtonumber(js_State *J, const char *string);
 
 /* jsproperty.c */

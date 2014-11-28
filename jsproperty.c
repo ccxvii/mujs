@@ -314,6 +314,7 @@ const char *jsV_nextiterator(js_State *J, js_Object *io)
 
 void jsV_resizearray(js_State *J, js_Object *obj, unsigned int newlen)
 {
+	char buf[32];
 	const char *s;
 	unsigned int k;
 	if (newlen < obj->u.a.length) {
@@ -321,12 +322,11 @@ void jsV_resizearray(js_State *J, js_Object *obj, unsigned int newlen)
 			js_Object *it = jsV_newiterator(J, obj, 1);
 			while ((s = jsV_nextiterator(J, it))) {
 				k = jsV_numbertouint32(jsV_stringtonumber(J, s));
-				if (k >= newlen && !strcmp(s, jsV_numbertostring(J, k)))
+				if (k >= newlen && !strcmp(s, jsV_numbertostring(J, buf, k)))
 					jsV_delproperty(J, obj, s);
 			}
 		} else {
 			for (k = newlen; k < obj->u.a.length; ++k) {
-				char buf[32];
 				sprintf(buf, "%u", k);
 				jsV_delproperty(J, obj, buf);
 			}

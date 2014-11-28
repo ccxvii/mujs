@@ -15,16 +15,16 @@ static void jsR_run(js_State *J, js_Function *F);
 
 static void js_stackoverflow(js_State *J)
 {
-	STACK[TOP].type = JS_TSTRING;
-	STACK[TOP].u.string = "stack overflow";
+	STACK[TOP].type = JS_TLITERAL;
+	STACK[TOP].u.literal = "stack overflow";
 	++TOP;
 	js_throw(J);
 }
 
 static void js_outofmemory(js_State *J)
 {
-	STACK[TOP].type = JS_TSTRING;
-	STACK[TOP].u.string = "out of memory";
+	STACK[TOP].type = JS_TLITERAL;
+	STACK[TOP].u.literal = "out of memory";
 	++TOP;
 	js_throw(J);
 }
@@ -48,6 +48,18 @@ void *js_realloc(js_State *J, void *ptr, unsigned int size)
 void js_free(js_State *J, void *ptr)
 {
 	J->alloc(J->actx, ptr, 0);
+}
+
+static js_String *jsR_newstring(js_State *J, const char *s, int n)
+{
+	js_String *v = js_malloc(J, offsetof(js_String, p) + n + 1);
+	memcpy(v->p, s, n);
+	v->p[n] = 0;
+	v->gcmark = 0;
+	v->gcnext = J->gcstr;
+	J->gcstr = v;
+	++J->gccounter;
+	return v;
 }
 
 #define CHECKSTACK(n) if (TOP + n >= JS_STACKSIZE) js_stackoverflow(J)
@@ -93,36 +105,31 @@ void js_pushstring(js_State *J, const char *v)
 {
 	CHECKSTACK(1);
 	STACK[TOP].type = JS_TSTRING;
-	STACK[TOP].u.string = js_intern(J, v);
+	STACK[TOP].u.string = jsR_newstring(J, v, strlen(v));
 	++TOP;
 }
 
 void js_pushlstring(js_State *J, const char *v, unsigned int n)
 {
-	char buf[256];
-	if (n + 1 < sizeof buf) {
-		memcpy(buf, v, n);
-		buf[n] = 0;
-		js_pushstring(J, buf);
-	} else {
-		char *s = js_malloc(J, n + 1);
-		memcpy(s, v, n);
-		s[n] = 0;
-		if (js_try(J)) {
-			js_free(J, s);
-			js_throw(J);
-		}
-		js_pushstring(J, s);
-		js_endtry(J);
-		js_free(J, s);
-	}
+	CHECKSTACK(1);
+	STACK[TOP].type = JS_TSTRING;
+	STACK[TOP].u.string = jsR_newstring(J, v, n);
+	++TOP;
 }
 
 void js_pushliteral(js_State *J, const char *v)
 {
 	CHECKSTACK(1);
-	STACK[TOP].type = JS_TSTRING;
-	STACK[TOP].u.string = v;
+	STACK[TOP].type = JS_TLITERAL;
+	STACK[TOP].u.literal = v;
+	++TOP;
+}
+
+void js_pushintern(js_State *J, const char *v)
+{
+	CHECKSTACK(1);
+	STACK[TOP].type = JS_TLITERAL;
+	STACK[TOP].u.literal = js_intern(J, v);
 	++TOP;
 }
 
@@ -162,7 +169,7 @@ int js_isundefined(js_State *J, int idx) { return stackidx(J, idx)->type == JS_T
 int js_isnull(js_State *J, int idx) { return stackidx(J, idx)->type == JS_TNULL; }
 int js_isboolean(js_State *J, int idx) { return stackidx(J, idx)->type == JS_TBOOLEAN; }
 int js_isnumber(js_State *J, int idx) { return stackidx(J, idx)->type == JS_TNUMBER; }
-int js_isstring(js_State *J, int idx) { return stackidx(J, idx)->type == JS_TSTRING; }
+int js_isstring(js_State *J, int idx) { enum js_Type t = stackidx(J, idx)->type; return t == JS_TLITERAL || t == JS_TSTRING; }
 int js_isprimitive(js_State *J, int idx) { return stackidx(J, idx)->type != JS_TOBJECT; }
 int js_isobject(js_State *J, int idx) { return stackidx(J, idx)->type == JS_TOBJECT; }
 
@@ -211,6 +218,7 @@ static const char *js_typeof(js_State *J, int idx)
 	case JS_TNULL: return "object";
 	case JS_TBOOLEAN: return "boolean";
 	case JS_TNUMBER: return "number";
+	case JS_TLITERAL: return "string";
 	case JS_TSTRING: return "string";
 	case JS_TOBJECT:
 		if (v->u.object->type == JS_CFUNCTION || v->u.object->type == JS_CCFUNCTION)
@@ -262,6 +270,11 @@ unsigned short js_touint16(js_State *J, int idx)
 const char *js_tostring(js_State *J, int idx)
 {
 	return jsV_tostring(J, stackidx(J, idx));
+}
+
+const char *js_tointern(js_State *J, int idx)
+{
+	return js_intern(J, jsV_tostring(J, stackidx(J, idx)));
 }
 
 js_Object *js_toobject(js_State *J, int idx)
@@ -1085,6 +1098,7 @@ static void jsR_run(js_State *J, js_Function *F)
 	int offset;
 
 	const char *str;
+	char buf[32];
 	js_Object *obj;
 	double x, y;
 	unsigned int ux, uy;
@@ -1212,7 +1226,7 @@ static void jsR_run(js_State *J, js_Function *F)
 			break;
 
 		case OP_INITPROP_N:
-			str = jsV_numbertostring(J, *pc++);
+			str = jsV_numbertostring(J, buf, *pc++);
 			obj = js_toobject(J, -2);
 			jsR_setproperty(J, obj, str, stackidx(J, -1));
 			js_pop(J, 1);

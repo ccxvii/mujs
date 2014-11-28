@@ -799,7 +799,8 @@ void js_dumpvalue(js_State *J, js_Value v)
 	case JS_TNULL: printf("null"); break;
 	case JS_TBOOLEAN: printf(v.u.boolean ? "true" : "false"); break;
 	case JS_TNUMBER: printf("%.9g", v.u.number); break;
-	case JS_TSTRING: printf("'%s'", v.u.string); break;
+	case JS_TLITERAL: printf("'%s'", v.u.literal); break;
+	case JS_TSTRING: printf("'%s'", v.u.string->p); break;
 	case JS_TOBJECT:
 		if (v.u.object == J->G) {
 			printf("[Global]");

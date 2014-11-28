@@ -193,7 +193,7 @@ static void fmtarray(js_State *J, js_Buffer **sb, const char *gap, int level)
 		if (gap) fmtindent(J, sb, gap, level + 1);
 		sprintf(buf, "%u", k);
 		js_getproperty(J, -1, buf);
-		if (!fmtvalue(J, sb, buf, gap, level + 1))
+		if (!fmtvalue(J, sb, js_intern(J, buf), gap, level + 1))
 			js_puts(J, sb, "null");
 		js_pop(J, 1);
 	}

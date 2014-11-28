@@ -17,7 +17,7 @@ static js_StringNode *jsS_newstringnode(js_State *J, const char *string, const c
 	js_StringNode *node = js_malloc(J, offsetof(js_StringNode, string) + n + 1);
 	node->left = node->right = &jsS_sentinel;
 	node->level = 1;
-	strcpy(node->string, string);
+	memcpy(node->string, string, n + 1);
 	return *result = node->string, node;
 }
 

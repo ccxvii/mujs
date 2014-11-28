@@ -73,6 +73,8 @@ static void jsG_markenvironment(js_State *J, int mark, js_Environment *env)
 static void jsG_markproperty(js_State *J, int mark, js_Property *node)
 {
 	while (node) {
+		if (node->value.type == JS_TSTRING && node->value.u.string->gcmark != mark)
+			node->value.u.string->gcmark = mark;
 		if (node->value.type == JS_TOBJECT && node->value.u.object->gcmark != mark)
 			jsG_markobject(J, mark, node->value.u.object);
 		if (node->getter && node->getter->gcmark != mark)
@@ -106,6 +108,8 @@ static void jsG_markstack(js_State *J, int mark)
 	js_Value *v = J->stack;
 	int n = J->top;
 	while (n--) {
+		if (v->type == JS_TSTRING && v->u.string->gcmark != mark)
+			v->u.string->gcmark = mark;
 		if (v->type == JS_TOBJECT && v->u.object->gcmark != mark)
 			jsG_markobject(J, mark, v->u.object);
 		++v;
@@ -116,9 +120,10 @@ void js_gc(js_State *J, int report)
 {
 	js_Function *fun, *nextfun, **prevnextfun;
 	js_Object *obj, *nextobj, **prevnextobj;
+	js_String *str, *nextstr, **prevnextstr;
 	js_Environment *env, *nextenv, **prevnextenv;
-	int nenv = 0, nfun = 0, nobj = 0;
-	int genv = 0, gfun = 0, gobj = 0;
+	int nenv = 0, nfun = 0, nobj = 0, nstr = 0;
+	int genv = 0, gfun = 0, gobj = 0, gstr = 0;
 	int mark;
 	int i;
 
@@ -190,9 +195,22 @@ void js_gc(js_State *J, int report)
 		++nobj;
 	}
 
+	prevnextstr = &J->gcstr;
+	for (str = J->gcstr; str; str = nextstr) {
+		nextstr = str->gcnext;
+		if (str->gcmark != mark) {
+			*prevnextstr = nextstr;
+			js_free(J, str);
+			++gstr;
+		} else {
+			prevnextstr = &str->gcnext;
+		}
+		++nstr;
+	}
+
 	if (report)
-		printf("garbage collected: %d/%d envs, %d/%d funs, %d/%d objs\n",
-			genv, nenv, gfun, nfun, gobj, nobj);
+		printf("garbage collected: %d/%d envs, %d/%d funs, %d/%d objs, %d/%d strs\n",
+			genv, nenv, gfun, nfun, gobj, nobj, gstr, nstr);
 }
 
 void js_freestate(js_State *J)

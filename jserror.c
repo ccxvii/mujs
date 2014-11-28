@@ -24,14 +24,14 @@ static void Ep_toString(js_State *J)
 	js_pop(J, 1);
 
 	if (!strcmp(name, ""))
-		js_pushliteral(J, message);
+		js_pushstring(J, message);
 	else if (!strcmp(message, ""))
-		js_pushliteral(J, name);
+		js_pushstring(J, name);
 	else {
-		js_pushliteral(J, name);
-		js_pushliteral(J, ": ");
+		js_pushstring(J, name);
+		js_pushstring(J, ": ");
 		js_concat(J);
-		js_pushliteral(J, message);
+		js_pushstring(J, message);
 		js_concat(J);
 	}
 }

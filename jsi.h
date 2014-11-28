@@ -40,6 +40,7 @@ void js_free(js_State *J, void *ptr);
 typedef struct js_Regexp js_Regexp;
 typedef struct js_Value js_Value;
 typedef struct js_Object js_Object;
+typedef struct js_String js_String;
 typedef struct js_Ast js_Ast;
 typedef struct js_Function js_Function;
 typedef struct js_Environment js_Environment;
@@ -181,6 +182,7 @@ struct js_State
 	js_Environment *gcenv;
 	js_Function *gcfun;
 	js_Object *gcobj;
+	js_String *gcstr;
 
 	/* environments on the call stack but currently not in scope */
 	int envtop;

@@ -55,7 +55,7 @@ static void jsB_new_String(js_State *J)
 
 static void jsB_String(js_State *J)
 {
-	js_pushliteral(J, js_gettop(J) > 1 ? js_tostring(J, 1) : "");
+	js_pushstring(J, js_gettop(J) > 1 ? js_tostring(J, 1) : "");
 }
 
 static void Sp_toString(js_State *J)

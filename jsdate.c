@@ -414,8 +414,10 @@ static void jsB_new_Date(js_State *J)
 		t = Now();
 	else if (top == 2) {
 		v = js_toprimitive(J, 1, JS_HNONE);
-		if (v.type == JS_TSTRING)
-			t = parseDateTime(v.u.string);
+		if (v.type == JS_TLITERAL)
+			t = parseDateTime(v.u.literal);
+		else if (v.type == JS_TSTRING)
+			t = parseDateTime(v.u.string->p);
 		else
 			t = TimeClip(jsV_tonumber(J, &v));
 	} else {

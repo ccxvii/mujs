@@ -21,6 +21,7 @@ static void Np_valueOf(js_State *J)
 
 static void Np_toString(js_State *J)
 {
+	char buf[32];
 	js_Object *self = js_toobject(J, 0);
 	int radix = js_isundefined(J, 1) ? 10 : js_tointeger(J, 1);
 	if (self->type != JS_CNUMBER) js_typeerror(J, "not a number");
@@ -28,7 +29,7 @@ static void Np_toString(js_State *J)
 		js_rangeerror(J, "invalid radix");
 	if (radix != 10)
 		js_rangeerror(J, "invalid radix");
-	js_pushliteral(J, jsV_numbertostring(J, self->u.number));
+	js_pushstring(J, jsV_numbertostring(J, buf, self->u.number));
 }
 
 /* Customized ToString() on a number */
