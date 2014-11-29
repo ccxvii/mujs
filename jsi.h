@@ -122,6 +122,7 @@ void js_savetry(js_State *J, js_Instruction *pc);
 struct js_State
 {
 	void *actx;
+	void *uctx;
 	js_Alloc alloc;
 	js_Panic panic;
 

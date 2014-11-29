@@ -154,7 +154,17 @@ js_Panic js_atpanic(js_State *J, js_Panic panic)
 	return old;
 }
 
-js_State *js_newstate(js_Alloc alloc, void *actx)
+void js_setcontext(js_State *J, void *uctx)
+{
+	J->uctx = uctx;
+}
+
+void *js_getcontext(js_State *J)
+{
+	return J->uctx;
+}
+
+js_State *js_newstate(js_Alloc alloc, void *actx, void *uctx, int flags)
 {
 	js_State *J;
 
@@ -165,6 +175,7 @@ js_State *js_newstate(js_Alloc alloc, void *actx)
 	if (!J)
 		return NULL;
 	memset(J, 0, sizeof(*J));
+	J->uctx = uctx;
 	J->actx = actx;
 	J->alloc = alloc;
 

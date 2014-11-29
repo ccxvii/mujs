@@ -117,7 +117,7 @@ main(int argc, char **argv)
 	js_State *J;
 	int i;
 
-	J = js_newstate(NULL, NULL);
+	J = js_newstate(NULL, NULL, NULL, 0);
 
 	js_newcfunction(J, jsB_gc, 0);
 	js_setglobal(J, "gc");
