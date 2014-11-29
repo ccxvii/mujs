@@ -4,8 +4,8 @@
 #include "jsvalue.h"
 #include "utf.h"
 
-#define JSV_ISSTRING(v) (v->type==JS_TSTRING || v->type==JS_TLITERAL)
-#define JSV_TOSTRING(v) (v->type==JS_TSTRING ? v->u.string->p : v->type==JS_TLITERAL ? v->u.literal : NULL)
+#define JSV_ISSTRING(v) (v->type==JS_TSHRSTR || v->type==JS_TMEMSTR || v->type==JS_TLITSTR)
+#define JSV_TOSTRING(v) (v->type==JS_TSHRSTR ? v->u.shrstr : v->type==JS_TLITSTR ? v->u.litstr : v->type==JS_TMEMSTR ? v->u.memstr->p : NULL)
 
 double jsV_numbertointeger(double n)
 {
@@ -115,12 +115,13 @@ int jsV_toboolean(js_State *J, js_Value *v)
 {
 	switch (v->type) {
 	default:
+	case JS_TSHRSTR: return v->u.shrstr[0] != 0;
 	case JS_TUNDEFINED: return 0;
 	case JS_TNULL: return 0;
 	case JS_TBOOLEAN: return v->u.boolean;
 	case JS_TNUMBER: return v->u.number != 0 && !isnan(v->u.number);
-	case JS_TLITERAL: return v->u.literal[0] != 0;
-	case JS_TSTRING: return v->u.string->p[0] != 0;
+	case JS_TLITSTR: return v->u.litstr[0] != 0;
+	case JS_TMEMSTR: return v->u.memstr->p[0] != 0;
 	case JS_TOBJECT: return 1;
 	}
 }
@@ -195,12 +196,13 @@ double jsV_tonumber(js_State *J, js_Value *v)
 {
 	switch (v->type) {
 	default:
+	case JS_TSHRSTR: return jsV_stringtonumber(J, v->u.shrstr);
 	case JS_TUNDEFINED: return NAN;
 	case JS_TNULL: return 0;
 	case JS_TBOOLEAN: return v->u.boolean;
 	case JS_TNUMBER: return v->u.number;
-	case JS_TLITERAL: return jsV_stringtonumber(J, v->u.literal);
-	case JS_TSTRING: return jsV_stringtonumber(J, v->u.string->p);
+	case JS_TLITSTR: return jsV_stringtonumber(J, v->u.litstr);
+	case JS_TMEMSTR: return jsV_stringtonumber(J, v->u.memstr->p);
 	case JS_TOBJECT:
 		jsV_toprimitive(J, v, JS_HNUMBER);
 		return jsV_tonumber(J, v);
@@ -267,15 +269,30 @@ const char *jsV_numbertostring(js_State *J, char buf[32], double f)
 const char *jsV_tostring(js_State *J, js_Value *v)
 {
 	char buf[32];
+	const char *p;
 	switch (v->type) {
 	default:
+	case JS_TSHRSTR: return v->u.shrstr;
 	case JS_TUNDEFINED: return "undefined";
 	case JS_TNULL: return "null";
 	case JS_TBOOLEAN: return v->u.boolean ? "true" : "false";
-	case JS_TLITERAL: return v->u.literal;
-	case JS_TSTRING: return v->u.string->p;
+	case JS_TLITSTR: return v->u.litstr;
+	case JS_TMEMSTR: return v->u.memstr->p;
 	case JS_TNUMBER:
-		return js_intern(J, jsV_numbertostring(J, buf, v->u.number));
+		p = jsV_numbertostring(J, buf, v->u.number);
+		if (p == buf) {
+			int n = strlen(p);
+			if (n < 16) {
+				v->type = JS_TSHRSTR;
+				strcpy(v->u.shrstr, p);
+				return v->u.shrstr;
+			} else {
+				v->type = JS_TMEMSTR;
+				v->u.memstr = jsV_newmemstring(J, p, n);
+				return v->u.memstr->p;
+			}
+		}
+		return p;
 	case JS_TOBJECT:
 		jsV_toprimitive(J, v, JS_HSTRING);
 		return jsV_tostring(J, v);
@@ -311,12 +328,13 @@ js_Object *jsV_toobject(js_State *J, js_Value *v)
 {
 	switch (v->type) {
 	default:
+	case JS_TSHRSTR: return jsV_newstring(J, v->u.shrstr);
 	case JS_TUNDEFINED: js_typeerror(J, "cannot convert undefined to object");
 	case JS_TNULL: js_typeerror(J, "cannot convert null to object");
 	case JS_TBOOLEAN: return jsV_newboolean(J, v->u.boolean);
 	case JS_TNUMBER: return jsV_newnumber(J, v->u.number);
-	case JS_TLITERAL: return jsV_newstring(J, v->u.literal);
-	case JS_TSTRING: return jsV_newstring(J, v->u.string->p);
+	case JS_TLITSTR: return jsV_newstring(J, v->u.litstr);
+	case JS_TMEMSTR: return jsV_newstring(J, v->u.memstr->p);
 	case JS_TOBJECT: return v->u.object;
 	}
 }

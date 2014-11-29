@@ -73,8 +73,8 @@ static void jsG_markenvironment(js_State *J, int mark, js_Environment *env)
 static void jsG_markproperty(js_State *J, int mark, js_Property *node)
 {
 	while (node) {
-		if (node->value.type == JS_TSTRING && node->value.u.string->gcmark != mark)
-			node->value.u.string->gcmark = mark;
+		if (node->value.type == JS_TMEMSTR && node->value.u.memstr->gcmark != mark)
+			node->value.u.memstr->gcmark = mark;
 		if (node->value.type == JS_TOBJECT && node->value.u.object->gcmark != mark)
 			jsG_markobject(J, mark, node->value.u.object);
 		if (node->getter && node->getter->gcmark != mark)
@@ -108,8 +108,8 @@ static void jsG_markstack(js_State *J, int mark)
 	js_Value *v = J->stack;
 	int n = J->top;
 	while (n--) {
-		if (v->type == JS_TSTRING && v->u.string->gcmark != mark)
-			v->u.string->gcmark = mark;
+		if (v->type == JS_TMEMSTR && v->u.memstr->gcmark != mark)
+			v->u.memstr->gcmark = mark;
 		if (v->type == JS_TOBJECT && v->u.object->gcmark != mark)
 			jsG_markobject(J, mark, v->u.object);
 		++v;

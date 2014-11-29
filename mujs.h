@@ -114,7 +114,6 @@ void js_pushnumber(js_State *J, double v);
 void js_pushstring(js_State *J, const char *v);
 void js_pushlstring(js_State *J, const char *v, unsigned int n);
 void js_pushliteral(js_State *J, const char *v);
-void js_pushintern(js_State *J, const char *v);
 
 void js_newobject(js_State *J);
 void js_newarray(js_State *J);
@@ -145,7 +144,6 @@ int js_isuserdata(js_State *J, int idx, const char *tag);
 int js_toboolean(js_State *J, int idx);
 double js_tonumber(js_State *J, int idx);
 const char *js_tostring(js_State *J, int idx);
-const char *js_tointern(js_State *J, int idx);
 void *js_touserdata(js_State *J, int idx, const char *tag);
 
 double js_tointeger(js_State *J, int idx);

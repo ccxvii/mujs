@@ -12,12 +12,13 @@ enum {
 };
 
 enum js_Type {
+	JS_TSHRSTR, /* type tag doubles as string zero-terminator */
 	JS_TUNDEFINED,
 	JS_TNULL,
 	JS_TBOOLEAN,
 	JS_TNUMBER,
-	JS_TLITERAL,
-	JS_TSTRING,
+	JS_TLITSTR,
+	JS_TMEMSTR,
 	JS_TOBJECT,
 };
 
@@ -41,14 +42,16 @@ enum js_Class {
 
 struct js_Value
 {
-	enum js_Type type;
 	union {
 		int boolean;
 		double number;
-		const char *literal;
-		js_String *string;
+		char shrstr[8];
+		const char *litstr;
+		js_String *memstr;
 		js_Object *object;
 	} u;
+	char pad[7];
+	char type;
 };
 
 struct js_String
@@ -126,6 +129,7 @@ struct js_Iterator
 };
 
 /* jsrun.c */
+js_String *jsV_newmemstring(js_State *J, const char *s, int n);
 js_Value *js_tovalue(js_State *J, int idx);
 void js_toprimitive(js_State *J, int idx, int hint);
 js_Object *js_toobject(js_State *J, int idx);

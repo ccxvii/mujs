@@ -23,7 +23,7 @@ static js_Property sentinel = {
 	&sentinel, &sentinel,
 	NULL, NULL,
 	0, 0,
-	{ 0, { 0 } },
+	{ {0}, {0}, JS_TUNDEFINED },
 	NULL, NULL
 };
 

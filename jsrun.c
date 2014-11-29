@@ -15,16 +15,16 @@ static void jsR_run(js_State *J, js_Function *F);
 
 static void js_stackoverflow(js_State *J)
 {
-	STACK[TOP].type = JS_TLITERAL;
-	STACK[TOP].u.literal = "stack overflow";
+	STACK[TOP].type = JS_TLITSTR;
+	STACK[TOP].u.litstr = "stack overflow";
 	++TOP;
 	js_throw(J);
 }
 
 static void js_outofmemory(js_State *J)
 {
-	STACK[TOP].type = JS_TLITERAL;
-	STACK[TOP].u.literal = "out of memory";
+	STACK[TOP].type = JS_TLITSTR;
+	STACK[TOP].u.litstr = "out of memory";
 	++TOP;
 	js_throw(J);
 }
@@ -50,7 +50,7 @@ void js_free(js_State *J, void *ptr)
 	J->alloc(J->actx, ptr, 0);
 }
 
-static js_String *jsR_newstring(js_State *J, const char *s, int n)
+js_String *jsV_newmemstring(js_State *J, const char *s, int n)
 {
 	js_String *v = js_malloc(J, offsetof(js_String, p) + n + 1);
 	memcpy(v->p, s, n);
@@ -103,33 +103,36 @@ void js_pushnumber(js_State *J, double v)
 
 void js_pushstring(js_State *J, const char *v)
 {
+	int n = strlen(v);
 	CHECKSTACK(1);
-	STACK[TOP].type = JS_TSTRING;
-	STACK[TOP].u.string = jsR_newstring(J, v, strlen(v));
+	if (n < 16) {
+		STACK[TOP].type = JS_TSHRSTR;
+		strcpy(STACK[TOP].u.shrstr, v);
+	} else {
+		STACK[TOP].type = JS_TMEMSTR;
+		STACK[TOP].u.memstr = jsV_newmemstring(J, v, n);
+	}
 	++TOP;
 }
 
 void js_pushlstring(js_State *J, const char *v, unsigned int n)
 {
 	CHECKSTACK(1);
-	STACK[TOP].type = JS_TSTRING;
-	STACK[TOP].u.string = jsR_newstring(J, v, n);
+	if (n < 16) {
+		STACK[TOP].type = JS_TSHRSTR;
+		strcpy(STACK[TOP].u.shrstr, v);
+	} else {
+		STACK[TOP].type = JS_TMEMSTR;
+		STACK[TOP].u.memstr = jsV_newmemstring(J, v, n);
+	}
 	++TOP;
 }
 
 void js_pushliteral(js_State *J, const char *v)
 {
 	CHECKSTACK(1);
-	STACK[TOP].type = JS_TLITERAL;
-	STACK[TOP].u.literal = v;
-	++TOP;
-}
-
-void js_pushintern(js_State *J, const char *v)
-{
-	CHECKSTACK(1);
-	STACK[TOP].type = JS_TLITERAL;
-	STACK[TOP].u.literal = js_intern(J, v);
+	STACK[TOP].type = JS_TLITSTR;
+	STACK[TOP].u.litstr = v;
 	++TOP;
 }
 
@@ -157,7 +160,7 @@ void js_currentfunction(js_State *J)
 
 static js_Value *stackidx(js_State *J, int idx)
 {
-	static js_Value undefined = { JS_TUNDEFINED, { 0 } };
+	static js_Value undefined = { {0}, {0}, JS_TUNDEFINED };
 	idx = idx < 0 ? TOP + idx : BOT + idx;
 	if (idx < 0 || idx >= TOP)
 		return &undefined;
@@ -174,7 +177,7 @@ int js_isundefined(js_State *J, int idx) { return stackidx(J, idx)->type == JS_T
 int js_isnull(js_State *J, int idx) { return stackidx(J, idx)->type == JS_TNULL; }
 int js_isboolean(js_State *J, int idx) { return stackidx(J, idx)->type == JS_TBOOLEAN; }
 int js_isnumber(js_State *J, int idx) { return stackidx(J, idx)->type == JS_TNUMBER; }
-int js_isstring(js_State *J, int idx) { enum js_Type t = stackidx(J, idx)->type; return t == JS_TLITERAL || t == JS_TSTRING; }
+int js_isstring(js_State *J, int idx) { enum js_Type t = stackidx(J, idx)->type; return t == JS_TSHRSTR || t == JS_TLITSTR || t == JS_TMEMSTR; }
 int js_isprimitive(js_State *J, int idx) { return stackidx(J, idx)->type != JS_TOBJECT; }
 int js_isobject(js_State *J, int idx) { return stackidx(J, idx)->type == JS_TOBJECT; }
 
@@ -219,12 +222,13 @@ static const char *js_typeof(js_State *J, int idx)
 	js_Value *v = stackidx(J, idx);
 	switch (v->type) {
 	default:
+	case JS_TSHRSTR: return "string";
 	case JS_TUNDEFINED: return "undefined";
 	case JS_TNULL: return "object";
 	case JS_TBOOLEAN: return "boolean";
 	case JS_TNUMBER: return "number";
-	case JS_TLITERAL: return "string";
-	case JS_TSTRING: return "string";
+	case JS_TLITSTR: return "string";
+	case JS_TMEMSTR: return "string";
 	case JS_TOBJECT:
 		if (v->u.object->type == JS_CFUNCTION || v->u.object->type == JS_CCFUNCTION)
 			return "function";
@@ -270,11 +274,6 @@ unsigned short js_touint16(js_State *J, int idx)
 const char *js_tostring(js_State *J, int idx)
 {
 	return jsV_tostring(J, stackidx(J, idx));
-}
-
-const char *js_tointern(js_State *J, int idx)
-{
-	return js_intern(J, jsV_tostring(J, stackidx(J, idx)));
 }
 
 js_Object *js_toobject(js_State *J, int idx)
