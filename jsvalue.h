@@ -126,19 +126,19 @@ struct js_Iterator
 };
 
 /* jsrun.c */
-js_Value js_tovalue(js_State *J, int idx);
-js_Value js_toprimitive(js_State *J, int idx, int hint);
+js_Value *js_tovalue(js_State *J, int idx);
+void js_toprimitive(js_State *J, int idx, int hint);
 js_Object *js_toobject(js_State *J, int idx);
 void js_pushvalue(js_State *J, js_Value v);
 void js_pushobject(js_State *J, js_Object *v);
 
 /* jsvalue.c */
-int jsV_toboolean(js_State *J, const js_Value *v);
-double jsV_tonumber(js_State *J, const js_Value *v);
-double jsV_tointeger(js_State *J, const js_Value *v);
-const char *jsV_tostring(js_State *J, const js_Value *v);
-js_Object *jsV_toobject(js_State *J, const js_Value *v);
-js_Value jsV_toprimitive(js_State *J, const js_Value *v, int preferred);
+int jsV_toboolean(js_State *J, js_Value *v);
+double jsV_tonumber(js_State *J, js_Value *v);
+double jsV_tointeger(js_State *J, js_Value *v);
+const char *jsV_tostring(js_State *J, js_Value *v);
+js_Object *jsV_toobject(js_State *J, js_Value *v);
+void jsV_toprimitive(js_State *J, js_Value *v, int preferred);
 
 const char *js_itoa(char buf[32], unsigned int a);
 double js_stringtofloat(const char *s, char **ep);

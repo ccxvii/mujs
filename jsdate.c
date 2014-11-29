@@ -407,19 +407,16 @@ static void jsB_new_Date(js_State *J)
 {
 	unsigned int top = js_gettop(J);
 	js_Object *obj;
-	js_Value v;
 	double t;
 
 	if (top == 1)
 		t = Now();
 	else if (top == 2) {
-		v = js_toprimitive(J, 1, JS_HNONE);
-		if (v.type == JS_TLITERAL)
-			t = parseDateTime(v.u.literal);
-		else if (v.type == JS_TSTRING)
-			t = parseDateTime(v.u.string->p);
+		js_toprimitive(J, 1, JS_HNONE);
+		if (js_isstring(J, 1))
+			t = parseDateTime(js_tostring(J, 1));
 		else
-			t = TimeClip(jsV_tonumber(J, &v));
+			t = TimeClip(js_tonumber(J, 1));
 	} else {
 		double y, m, d, H, M, S, ms;
 		y = js_tonumber(J, 1);
@@ -726,17 +723,18 @@ static void Dp_setUTCFullYear(js_State *J)
 
 static void Dp_toJSON(js_State *J)
 {
-	js_Object *obj = js_toobject(J, 0);
-	js_Value tv = js_toprimitive(J, 0, JS_HNUMBER);
-	if (tv.type == JS_TNULL && !isfinite(tv.u.number)) {
+	js_copy(J, 0);
+	js_toprimitive(J, -1, JS_HNUMBER);
+	if (js_isnumber(J, -1) && !isfinite(js_tonumber(J, -1))) {
 		js_pushnull(J);
 		return;
 	}
-	js_pushobject(J, obj);
-	js_getproperty(J, -1, "toISOString");
+	js_pop(J, 1);
+
+	js_getproperty(J, 0, "toISOString");
 	if (!js_iscallable(J, -1))
 		js_typeerror(J, "Date.prototype.toJSON: this.toISOString not a function");
-	js_pushobject(J, obj);
+	js_copy(J, 0);
 	js_call(J, 0);
 }
 
