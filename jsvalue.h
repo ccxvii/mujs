@@ -140,6 +140,7 @@ const char *jsV_tostring(js_State *J, const js_Value *v);
 js_Object *jsV_toobject(js_State *J, const js_Value *v);
 js_Value jsV_toprimitive(js_State *J, const js_Value *v, int preferred);
 
+const char *js_itoa(char buf[32], unsigned int a);
 double js_stringtofloat(const char *s, char **ep);
 double jsV_numbertointeger(double n);
 int jsV_numbertoint32(double n);

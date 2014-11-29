@@ -269,7 +269,7 @@ static void itwalk(js_State *J, js_Object *io, js_Object *top, int own)
 
 		if (obj->type == JS_CSTRING) {
 			for (k = 0; k < obj->u.s.length; ++k) {
-				sprintf(buf, "%u", k);
+				js_itoa(buf, k);
 				if (!itshadow(J, top, obj, buf)) {
 					ITADD(js_intern(J, buf));
 				}
@@ -327,8 +327,7 @@ void jsV_resizearray(js_State *J, js_Object *obj, unsigned int newlen)
 			}
 		} else {
 			for (k = newlen; k < obj->u.a.length; ++k) {
-				sprintf(buf, "%u", k);
-				jsV_delproperty(J, obj, buf);
+				jsV_delproperty(J, obj, js_itoa(buf, k));
 			}
 		}
 	}

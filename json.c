@@ -183,7 +183,7 @@ static void fmtobject(js_State *J, js_Buffer **sb, js_Object *obj, const char *g
 static void fmtarray(js_State *J, js_Buffer **sb, const char *gap, int level)
 {
 	unsigned int n, k;
-	char buf[40];
+	char buf[32];
 
 	n = js_getlength(J, -1);
 
@@ -191,7 +191,7 @@ static void fmtarray(js_State *J, js_Buffer **sb, const char *gap, int level)
 	for (k = 0; k < n; ++k) {
 		if (k) js_putc(J, sb, ',');
 		if (gap) fmtindent(J, sb, gap, level + 1);
-		sprintf(buf, "%u", k);
+		js_itoa(buf, k);
 		js_getproperty(J, -1, buf);
 		if (!fmtvalue(J, sb, js_intern(J, buf), gap, level + 1))
 			js_puts(J, sb, "null");
