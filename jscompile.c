@@ -295,8 +295,10 @@ static int cargs(JF, js_Ast *list)
 	return n;
 }
 
-static void cassign(JF, js_Ast *lhs, js_Ast *rhs)
+static void cassign(JF, js_Ast *exp)
 {
+	js_Ast *lhs = exp->a;
+	js_Ast *rhs = exp->b;
 	switch (lhs->type) {
 	case EXP_IDENTIFIER:
 		cexp(J, F, rhs);
@@ -395,8 +397,10 @@ static void cassignop2(JF, js_Ast *lhs, int postfix)
 	}
 }
 
-static void cassignop(JF, js_Ast *lhs, js_Ast *rhs, int opcode)
+static void cassignop(JF, js_Ast *exp, int opcode)
 {
+	js_Ast *lhs = exp->a;
+	js_Ast *rhs = exp->b;
 	cassignop1(J, F, lhs);
 	cexp(J, F, rhs);
 	emit(J, F, opcode);
@@ -574,18 +578,18 @@ static void cexp(JF, js_Ast *exp)
 	case EXP_DIV: cbinary(J, F, exp, OP_DIV); break;
 	case EXP_MOD: cbinary(J, F, exp, OP_MOD); break;
 
-	case EXP_ASS: cassign(J, F, exp->a, exp->b); break;
-	case EXP_ASS_MUL: cassignop(J, F, exp->a, exp->b, OP_MUL); break;
-	case EXP_ASS_DIV: cassignop(J, F, exp->a, exp->b, OP_DIV); break;
-	case EXP_ASS_MOD: cassignop(J, F, exp->a, exp->b, OP_MOD); break;
-	case EXP_ASS_ADD: cassignop(J, F, exp->a, exp->b, OP_ADD); break;
-	case EXP_ASS_SUB: cassignop(J, F, exp->a, exp->b, OP_SUB); break;
-	case EXP_ASS_SHL: cassignop(J, F, exp->a, exp->b, OP_SHL); break;
-	case EXP_ASS_SHR: cassignop(J, F, exp->a, exp->b, OP_SHR); break;
-	case EXP_ASS_USHR: cassignop(J, F, exp->a, exp->b, OP_USHR); break;
-	case EXP_ASS_BITAND: cassignop(J, F, exp->a, exp->b, OP_BITAND); break;
-	case EXP_ASS_BITXOR: cassignop(J, F, exp->a, exp->b, OP_BITXOR); break;
-	case EXP_ASS_BITOR: cassignop(J, F, exp->a, exp->b, OP_BITOR); break;
+	case EXP_ASS: cassign(J, F, exp); break;
+	case EXP_ASS_MUL: cassignop(J, F, exp, OP_MUL); break;
+	case EXP_ASS_DIV: cassignop(J, F, exp, OP_DIV); break;
+	case EXP_ASS_MOD: cassignop(J, F, exp, OP_MOD); break;
+	case EXP_ASS_ADD: cassignop(J, F, exp, OP_ADD); break;
+	case EXP_ASS_SUB: cassignop(J, F, exp, OP_SUB); break;
+	case EXP_ASS_SHL: cassignop(J, F, exp, OP_SHL); break;
+	case EXP_ASS_SHR: cassignop(J, F, exp, OP_SHR); break;
+	case EXP_ASS_USHR: cassignop(J, F, exp, OP_USHR); break;
+	case EXP_ASS_BITAND: cassignop(J, F, exp, OP_BITAND); break;
+	case EXP_ASS_BITXOR: cassignop(J, F, exp, OP_BITXOR); break;
+	case EXP_ASS_BITOR: cassignop(J, F, exp, OP_BITOR); break;
 
 	case EXP_COMMA:
 		cexp(J, F, exp->a);
