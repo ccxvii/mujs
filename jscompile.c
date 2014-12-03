@@ -67,6 +67,15 @@ static void emit(JF, int value)
 	emitraw(J, F, value);
 }
 
+static void emitline(JF, js_Ast *node)
+{
+	if (F->lastline != node->line) {
+		F->lastline = node->line;
+		emit(J, F, OP_LINE);
+		emitraw(J, F, node->line);
+	}
+}
+
 static int addfunction(JF, js_Function *value)
 {
 	if (F->funlen >= F->funcap) {
@@ -892,6 +901,8 @@ static void cstm(JF, js_Ast *stm)
 {
 	js_Ast *target;
 	int loop, cont, then, end;
+
+	emitline(J, F, stm);
 
 	switch (stm->type) {
 	case AST_FUNDEC:

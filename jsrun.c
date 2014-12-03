@@ -934,6 +934,15 @@ static void jsR_callcfunction(js_State *J, unsigned int n, unsigned int min, js_
 	js_pushvalue(J, v);
 }
 
+static void jsR_pushtrace(js_State *J, const char *name, const char *file, int line)
+{
+	if (++J->tracetop == JS_ENVLIMIT)
+		js_error(J, "call stack overflow");
+	J->trace[J->tracetop].name = name;
+	J->trace[J->tracetop].file = file;
+	J->trace[J->tracetop].line = line;
+}
+
 void js_call(js_State *J, int n)
 {
 	js_Object *obj;
@@ -948,14 +957,21 @@ void js_call(js_State *J, int n)
 	BOT = TOP - n - 1;
 
 	if (obj->type == JS_CFUNCTION) {
+		jsR_pushtrace(J, obj->u.f.function->name, obj->u.f.function->filename, obj->u.f.function->line);
 		if (obj->u.f.function->lightweight)
 			jsR_calllwfunction(J, n, obj->u.f.function, obj->u.f.scope);
 		else
 			jsR_callfunction(J, n, obj->u.f.function, obj->u.f.scope);
-	} else if (obj->type == JS_CSCRIPT)
+		--J->tracetop;
+	} else if (obj->type == JS_CSCRIPT) {
+		jsR_pushtrace(J, obj->u.f.function->name, obj->u.f.function->filename, obj->u.f.function->line);
 		jsR_callscript(J, n, obj->u.f.function, obj->u.f.scope);
-	else if (obj->type == JS_CCFUNCTION)
+		--J->tracetop;
+	} else if (obj->type == JS_CCFUNCTION) {
+		jsR_pushtrace(J, obj->u.c.name, "[C]", 0);
 		jsR_callcfunction(J, n, obj->u.c.length, obj->u.c.function);
+		--J->tracetop;
+	}
 
 	BOT = savebot;
 }
@@ -978,7 +994,11 @@ void js_construct(js_State *J, int n)
 		if (n > 0)
 			js_rot(J, n + 1);
 		BOT = TOP - n - 1;
+
+		jsR_pushtrace(J, obj->u.c.name, "[C]", 0);
 		jsR_callcfunction(J, n, obj->u.c.length, obj->u.c.constructor);
+		--J->tracetop;
+
 		BOT = savebot;
 		return;
 	}
@@ -1029,26 +1049,28 @@ int js_pcall(js_State *J, int n)
 
 void js_savetry(js_State *J, js_Instruction *pc)
 {
-	if (J->trylen == JS_TRYLIMIT)
+	if (J->trytop == JS_TRYLIMIT)
 		js_error(J, "try: exception stack overflow");
-	J->trybuf[J->trylen].E = J->E;
-	J->trybuf[J->trylen].envtop = J->envtop;
-	J->trybuf[J->trylen].top = J->top;
-	J->trybuf[J->trylen].bot = J->bot;
-	J->trybuf[J->trylen].pc = pc;
+	J->trybuf[J->trytop].E = J->E;
+	J->trybuf[J->trytop].envtop = J->envtop;
+	J->trybuf[J->trytop].tracetop = J->tracetop;
+	J->trybuf[J->trytop].top = J->top;
+	J->trybuf[J->trytop].bot = J->bot;
+	J->trybuf[J->trytop].pc = pc;
 }
 
 void js_throw(js_State *J)
 {
-	if (J->trylen > 0) {
+	if (J->trytop > 0) {
 		js_Value v = *stackidx(J, -1);
-		--J->trylen;
-		J->E = J->trybuf[J->trylen].E;
-		J->envtop = J->trybuf[J->trylen].envtop;
-		J->top = J->trybuf[J->trylen].top;
-		J->bot = J->trybuf[J->trylen].bot;
+		--J->trytop;
+		J->E = J->trybuf[J->trytop].E;
+		J->envtop = J->trybuf[J->trytop].envtop;
+		J->tracetop = J->trybuf[J->trytop].tracetop;
+		J->top = J->trybuf[J->trytop].top;
+		J->bot = J->trybuf[J->trytop].bot;
 		js_pushvalue(J, v);
-		longjmp(J->trybuf[J->trylen].buf, 1);
+		longjmp(J->trybuf[J->trytop].buf, 1);
 	}
 	if (J->panic)
 		J->panic(J);
@@ -1078,13 +1100,31 @@ static void jsR_dumpenvironment(js_State *J, js_Environment *E, int d)
 		jsR_dumpenvironment(J, E->outer, d+1);
 }
 
+void js_stacktrace(js_State *J)
+{
+	int n;
+	printf("stack trace:\n");
+	for (n = J->tracetop; n >= 0; --n) {
+		const char *name = J->trace[n].name;
+		const char *file = J->trace[n].file;
+		int line = J->trace[n].line;
+		if (line > 0)
+			printf("\t%s:%d: in function '%s'\n", file, line, name);
+		else
+			printf("\t%s: in function '%s'\n", file, name);
+	}
+}
+
 void js_trap(js_State *J, int pc)
 {
-	js_Function *F = STACK[BOT-1].u.object->u.f.function;
-	printf("trap at %d in function ", pc);
-	jsC_dumpfunction(J, F);
+	if (pc > 0) {
+		js_Function *F = STACK[BOT-1].u.object->u.f.function;
+		printf("trap at %d in function ", pc);
+		jsC_dumpfunction(J, F);
+	}
 	jsR_dumpstack(J);
 	jsR_dumpenvironment(J, J->E, 0);
+	js_stacktrace(J);
 }
 
 static void jsR_run(js_State *J, js_Function *F)
@@ -1490,7 +1530,7 @@ static void jsR_run(js_State *J, js_Function *F)
 		case OP_TRY:
 			offset = *pc++;
 			if (js_trypc(J, pc)) {
-				pc = J->trybuf[J->trylen].pc;
+				pc = J->trybuf[J->trytop].pc;
 			} else {
 				pc = pcstart + offset;
 			}
@@ -1554,6 +1594,10 @@ static void jsR_run(js_State *J, js_Function *F)
 
 		case OP_RETURN:
 			return;
+
+		case OP_LINE:
+			J->trace[J->tracetop].line = *pc++;
+			break;
 		}
 	}
 }

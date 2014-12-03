@@ -92,6 +92,7 @@ struct js_Object
 			js_Environment *scope;
 		} f;
 		struct {
+			const char *name;
 			js_CFunction function;
 			js_CFunction constructor;
 			unsigned int length;

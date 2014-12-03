@@ -679,7 +679,7 @@ void jsB_initstring(js_State *J)
 		/* ES5 */
 		jsB_propf(J, "trim", Sp_trim, 0);
 	}
-	js_newcconstructor(J, jsB_String, jsB_new_String, 1);
+	js_newcconstructor(J, jsB_String, jsB_new_String, "String", 1);
 	{
 		jsB_propf(J, "fromCharCode", S_fromCharCode, 1);
 	}

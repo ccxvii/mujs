@@ -46,6 +46,7 @@ typedef struct js_Function js_Function;
 typedef struct js_Environment js_Environment;
 typedef struct js_StringNode js_StringNode;
 typedef struct js_Jumpbuf js_Jumpbuf;
+typedef struct js_StackTrace js_StackTrace;
 
 /* Limits */
 
@@ -95,6 +96,13 @@ void js_RegExp_prototype_exec(js_State *J, js_Regexp *re, const char *text);
 
 void js_trap(js_State *J, int pc); /* dump stack and environment to stdout */
 
+struct js_StackTrace
+{
+	const char *name;
+	const char *file;
+	int line;
+};
+
 /* Exception handling */
 
 struct js_Jumpbuf
@@ -102,6 +110,7 @@ struct js_Jumpbuf
 	jmp_buf buf;
 	js_Environment *E;
 	int envtop;
+	int tracetop;
 	int top, bot;
 	js_Instruction *pc;
 };
@@ -109,13 +118,13 @@ struct js_Jumpbuf
 void js_savetry(js_State *J, js_Instruction *pc);
 
 #define js_trypc(J, PC) \
-	(js_savetry(J, PC), setjmp(J->trybuf[J->trylen++].buf))
+	(js_savetry(J, PC), setjmp(J->trybuf[J->trytop++].buf))
 
 #define js_try(J) \
-	(js_savetry(J, NULL), setjmp(J->trybuf[J->trylen++].buf))
+	(js_savetry(J, NULL), setjmp(J->trybuf[J->trytop++].buf))
 
 #define js_endtry(J) \
-	(--J->trylen)
+	(--J->trytop)
 
 /* State struct */
 
@@ -141,6 +150,7 @@ struct js_State
 	int newline;
 
 	/* parser state */
+	int astline;
 	int lookahead;
 	const char *text;
 	double number;
@@ -185,12 +195,17 @@ struct js_State
 	js_Object *gcobj;
 	js_String *gcstr;
 
+
 	/* environments on the call stack but currently not in scope */
 	int envtop;
 	js_Environment *envstack[JS_ENVLIMIT];
 
+	/* debug info stack trace */
+	int tracetop;
+	js_StackTrace trace[JS_ENVLIMIT];
+
 	/* exception stack */
-	int trylen;
+	int trytop;
 	js_Jumpbuf trybuf[JS_TRYLIMIT];
 };
 

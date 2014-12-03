@@ -6,13 +6,13 @@
 
 static void jsB_globalf(js_State *J, const char *name, js_CFunction cfun, int n)
 {
-	js_newcfunction(J, cfun, n);
+	js_newcfunction(J, cfun, name, n);
 	js_defglobal(J, name, JS_DONTENUM);
 }
 
 void jsB_propf(js_State *J, const char *name, js_CFunction cfun, int n)
 {
-	js_newcfunction(J, cfun, n);
+	js_newcfunction(J, cfun, name, n);
 	js_defproperty(J, -2, name, JS_DONTENUM);
 }
 

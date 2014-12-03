@@ -18,7 +18,7 @@ static void *js_defaultalloc(void *actx, void *ptr, unsigned int size)
 
 static void js_defaultpanic(js_State *J)
 {
-	fprintf(stderr, "mujs: uncaught exception: %s\n", js_tostring(J, -1));
+	fprintf(stderr, "uncaught exception: %s\n", js_tostring(J, -1));
 	/* return to javascript to abort */
 }
 
@@ -117,11 +117,11 @@ void js_loadfile(js_State *J, const char *filename)
 int js_dostring(js_State *J, const char *source, int report)
 {
 	if (js_try(J)) {
-		fprintf(stderr, "mujs: %s\n", js_tostring(J, -1));
+		fprintf(stderr, "%s\n", js_tostring(J, -1));
 		js_pop(J, 1);
 		return 1;
 	}
-	js_loadstring(J, "(string)", source);
+	js_loadstring(J, "[string]", source);
 	js_pushglobal(J);
 	js_call(J, 0);
 	if (report)
@@ -135,7 +135,7 @@ int js_dostring(js_State *J, const char *source, int report)
 int js_dofile(js_State *J, const char *filename)
 {
 	if (js_try(J)) {
-		fprintf(stderr, "mujs: %s\n", js_tostring(J, -1));
+		fprintf(stderr, "%s\n", js_tostring(J, -1));
 		js_pop(J, 1);
 		return 1;
 	}
@@ -164,7 +164,7 @@ void *js_getcontext(js_State *J)
 	return J->uctx;
 }
 
-js_State *js_newstate(js_Alloc alloc, void *actx, void *uctx, int flags)
+js_State *js_newstate(js_Alloc alloc, void *actx)
 {
 	js_State *J;
 
@@ -175,9 +175,12 @@ js_State *js_newstate(js_Alloc alloc, void *actx, void *uctx, int flags)
 	if (!J)
 		return NULL;
 	memset(J, 0, sizeof(*J));
-	J->uctx = uctx;
 	J->actx = actx;
 	J->alloc = alloc;
+
+	J->trace[0].name = "?";
+	J->trace[0].file = "[C]";
+	J->trace[0].line = 0;
 
 	J->panic = js_defaultpanic;
 

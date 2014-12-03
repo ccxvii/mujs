@@ -709,7 +709,7 @@ void jsB_initarray(js_State *J)
 		jsB_propf(J, "reduce", Ap_reduce, 1);
 		jsB_propf(J, "reduceRight", Ap_reduceRight, 1);
 	}
-	js_newcconstructor(J, jsB_new_Array, jsB_new_Array, 1);
+	js_newcconstructor(J, jsB_new_Array, jsB_new_Array, "Array", 1);
 	{
 		/* ES5 */
 		jsB_propf(J, "isArray", A_isArray, 1);

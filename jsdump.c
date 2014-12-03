@@ -365,7 +365,7 @@ static void pexpi(int d, int p, js_Ast *exp)
 	case EXP_MEMBER:
 		pexpi(d, p, exp->a);
 		pc('.');
-		pexpi(d, p, exp->b);
+		pexpi(d, 0, exp->b);
 		break;
 
 	case EXP_CALL:
@@ -759,6 +759,7 @@ void jsC_dumpfunction(js_State *J, js_Function *F)
 			ps(F->strtab[*p++]);
 			break;
 
+		case OP_LINE:
 		case OP_CLOSURE:
 		case OP_INITLOCAL:
 		case OP_GETLOCAL:

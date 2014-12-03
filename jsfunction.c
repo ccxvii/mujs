@@ -31,7 +31,7 @@ static void jsB_Function(js_State *J)
 		js_throw(J);
 	}
 
-	parse = jsP_parsefunction(J, "Function", sb ? sb->s : NULL, body);
+	parse = jsP_parsefunction(J, "[string]", sb ? sb->s : NULL, body);
 	fun = jsC_compilefunction(J, parse);
 
 	js_endtry(J);
@@ -171,7 +171,7 @@ static void Fp_bind(js_State *J)
 	else
 		n = 0;
 
-	js_newcconstructor(J, callbound, constructbound, n);
+	js_newcconstructor(J, callbound, constructbound, "[bind]", n);
 
 	/* Reuse target function's prototype for HasInstance check. */
 	js_getproperty(J, 0, "prototype");
@@ -206,6 +206,6 @@ void jsB_initfunction(js_State *J)
 		jsB_propf(J, "call", Fp_call, 1);
 		jsB_propf(J, "bind", Fp_bind, 1);
 	}
-	js_newcconstructor(J, jsB_Function, jsB_Function, 1);
+	js_newcconstructor(J, jsB_Function, jsB_Function, "Function", 1);
 	js_defglobal(J, "Function", JS_DONTENUM);
 }

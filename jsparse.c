@@ -57,7 +57,7 @@ static js_Ast *jsP_newnode(js_State *J, int type, js_Ast *a, js_Ast *b, js_Ast *
 	js_Ast *node = js_malloc(J, sizeof *node);
 
 	node->type = type;
-	node->line = J->lexline;
+	node->line = J->astline;
 	node->a = a;
 	node->b = b;
 	node->c = c;
@@ -130,6 +130,7 @@ void jsP_freeparse(js_State *J)
 
 static void next(js_State *J)
 {
+	J->astline = J->lexline;
 	J->lookahead = jsY_lex(J);
 }
 

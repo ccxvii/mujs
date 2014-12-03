@@ -792,7 +792,7 @@ void jsB_initdate(js_State *J)
 		jsB_propf(J, "toISOString", Dp_toISOString, 0);
 		jsB_propf(J, "toJSON", Dp_toJSON, 1);
 	}
-	js_newcconstructor(J, jsB_Date, jsB_new_Date, 1);
+	js_newcconstructor(J, jsB_Date, jsB_new_Date, "Date", 1);
 	{
 		jsB_propf(J, "parse", D_parse, 1);
 		jsB_propf(J, "UTC", D_UTC, 7);

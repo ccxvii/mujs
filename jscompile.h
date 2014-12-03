@@ -115,6 +115,8 @@ enum js_OpCode
 	OP_JTRUE,
 	OP_JFALSE,
 	OP_RETURN,
+
+	OP_LINE,	/* -K- */
 };
 
 struct js_Function
@@ -141,7 +143,7 @@ struct js_Function
 	unsigned int varcap, varlen;
 
 	const char *filename;
-	int line;
+	int line, lastline;
 
 	js_Function *gcnext;
 	int gcmark;
