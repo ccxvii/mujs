@@ -218,6 +218,7 @@ void js_freestate(js_State *J)
 	js_Function *fun, *nextfun;
 	js_Object *obj, *nextobj;
 	js_Environment *env, *nextenv;
+	js_String *str, *nextstr;
 
 	for (env = J->gcenv; env; env = nextenv)
 		nextenv = env->gcnext, jsG_freeenvironment(J, env);
@@ -225,6 +226,8 @@ void js_freestate(js_State *J)
 		nextfun = fun->gcnext, jsG_freefunction(J, fun);
 	for (obj = J->gcobj; obj; obj = nextobj)
 		nextobj = obj->gcnext, jsG_freeobject(J, obj);
+	for (str = J->gcstr; str; str = nextstr)
+		nextstr = str->gcnext, js_free(J, str);
 
 	jsS_freestrings(J);
 
