@@ -107,7 +107,8 @@ void js_pushstring(js_State *J, const char *v)
 	CHECKSTACK(1);
 	if (n < 16) {
 		STACK[TOP].type = JS_TSHRSTR;
-		strcpy(STACK[TOP].u.shrstr, v);
+		memcpy(STACK[TOP].u.shrstr, v, n);
+		STACK[TOP].u.shrstr[n] = 0;
 	} else {
 		STACK[TOP].type = JS_TMEMSTR;
 		STACK[TOP].u.memstr = jsV_newmemstring(J, v, n);

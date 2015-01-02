@@ -284,7 +284,8 @@ const char *jsV_tostring(js_State *J, js_Value *v)
 			int n = strlen(p);
 			if (n < 16) {
 				v->type = JS_TSHRSTR;
-				strcpy(v->u.shrstr, p);
+				memcpy(v->u.shrstr, p, n);
+				v->u.shrstr[n] = 0;
 				return v->u.shrstr;
 			} else {
 				v->type = JS_TMEMSTR;
