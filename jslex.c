@@ -149,11 +149,6 @@ int jsY_tohex(int c)
 	return 0;
 }
 
-#define PEEK (J->lexchar)
-#define NEXT() jsY_next(J)
-#define ACCEPT(x) (PEEK == x ? (NEXT(), 1) : 0)
-#define EXPECT(x) if (!ACCEPT(x)) jsY_error(J, "expected '%c'", x)
-
 static void jsY_next(js_State *J)
 {
 	Rune c;
@@ -168,15 +163,19 @@ static void jsY_next(js_State *J)
 	J->lexchar = c;
 }
 
+#define jsY_accept(J, x) (J->lexchar == x ? (jsY_next(J), 1) : 0)
+
+#define jsY_expect(J, x) if (!jsY_accept(J, x)) jsY_error(J, "expected '%c'", x)
+
 static void jsY_unescape(js_State *J)
 {
-	if (ACCEPT('\\')) {
-		if (ACCEPT('u')) {
+	if (jsY_accept(J, '\\')) {
+		if (jsY_accept(J, 'u')) {
 			int x = 0;
-			if (!jsY_ishex(PEEK)) goto error; x |= jsY_tohex(PEEK) << 12; NEXT();
-			if (!jsY_ishex(PEEK)) goto error; x |= jsY_tohex(PEEK) << 8; NEXT();
-			if (!jsY_ishex(PEEK)) goto error; x |= jsY_tohex(PEEK) << 4; NEXT();
-			if (!jsY_ishex(PEEK)) goto error; x |= jsY_tohex(PEEK);
+			if (!jsY_ishex(J->lexchar)) goto error; x |= jsY_tohex(J->lexchar) << 12; jsY_next(J);
+			if (!jsY_ishex(J->lexchar)) goto error; x |= jsY_tohex(J->lexchar) << 8; jsY_next(J);
+			if (!jsY_ishex(J->lexchar)) goto error; x |= jsY_tohex(J->lexchar) << 4; jsY_next(J);
+			if (!jsY_ishex(J->lexchar)) goto error; x |= jsY_tohex(J->lexchar);
 			J->lexchar = x;
 			return;
 		}
@@ -212,21 +211,21 @@ static char *textend(js_State *J)
 
 static void lexlinecomment(js_State *J)
 {
-	while (PEEK && PEEK != '\n')
-		NEXT();
+	while (J->lexchar && J->lexchar != '\n')
+		jsY_next(J);
 }
 
 static int lexcomment(js_State *J)
 {
 	/* already consumed initial '/' '*' sequence */
-	while (PEEK != 0) {
-		if (ACCEPT('*')) {
-			while (PEEK == '*')
-				NEXT();
-			if (ACCEPT('/'))
+	while (J->lexchar != 0) {
+		if (jsY_accept(J, '*')) {
+			while (J->lexchar == '*')
+				jsY_next(J);
+			if (jsY_accept(J, '/'))
 				return 0;
 		}
-		NEXT();
+		jsY_next(J);
 	}
 	return -1;
 }
@@ -234,11 +233,11 @@ static int lexcomment(js_State *J)
 static double lexhex(js_State *J)
 {
 	double n = 0;
-	if (!jsY_ishex(PEEK))
+	if (!jsY_ishex(J->lexchar))
 		jsY_error(J, "malformed hexadecimal number");
-	while (jsY_ishex(PEEK)) {
-		n = n * 16 + jsY_tohex(PEEK);
-		NEXT();
+	while (jsY_ishex(J->lexchar)) {
+		n = n * 16 + jsY_tohex(J->lexchar);
+		jsY_next(J);
 	}
 	return n;
 }
@@ -248,11 +247,11 @@ static double lexhex(js_State *J)
 static double lexinteger(js_State *J)
 {
 	double n = 0;
-	if (!jsY_isdec(PEEK))
+	if (!jsY_isdec(J->lexchar))
 		jsY_error(J, "malformed number");
-	while (jsY_isdec(PEEK)) {
-		n = n * 10 + (PEEK - '0');
-		NEXT();
+	while (jsY_isdec(J->lexchar)) {
+		n = n * 10 + (J->lexchar - '0');
+		jsY_next(J);
 	}
 	return n;
 }
@@ -261,10 +260,10 @@ static double lexfraction(js_State *J)
 {
 	double n = 0;
 	double d = 1;
-	while (jsY_isdec(PEEK)) {
-		n = n * 10 + (PEEK - '0');
+	while (jsY_isdec(J->lexchar)) {
+		n = n * 10 + (J->lexchar - '0');
 		d = d * 10;
-		NEXT();
+		jsY_next(J);
 	}
 	return n / d;
 }
@@ -272,9 +271,9 @@ static double lexfraction(js_State *J)
 static double lexexponent(js_State *J)
 {
 	double sign;
-	if (ACCEPT('e') || ACCEPT('E')) {
-		if (ACCEPT('-')) sign = -1;
-		else if (ACCEPT('+')) sign = 1;
+	if (jsY_accept(J, 'e') || jsY_accept(J, 'E')) {
+		if (jsY_accept(J, '-')) sign = -1;
+		else if (jsY_accept(J, '+')) sign = 1;
 		else sign = 1;
 		return sign * lexinteger(J);
 	}
@@ -286,23 +285,23 @@ static int lexnumber(js_State *J)
 	double n;
 	double e;
 
-	if (ACCEPT('0')) {
-		if (ACCEPT('x') || ACCEPT('X')) {
+	if (jsY_accept(J, '0')) {
+		if (jsY_accept(J, 'x') || jsY_accept(J, 'X')) {
 			J->number = lexhex(J);
 			return TK_NUMBER;
 		}
-		if (jsY_isdec(PEEK))
+		if (jsY_isdec(J->lexchar))
 			jsY_error(J, "number with leading zero");
 		n = 0;
-		if (ACCEPT('.'))
+		if (jsY_accept(J, '.'))
 			n += lexfraction(J);
-	} else if (ACCEPT('.')) {
-		if (!jsY_isdec(PEEK))
+	} else if (jsY_accept(J, '.')) {
+		if (!jsY_isdec(J->lexchar))
 			return '.';
 		n = lexfraction(J);
 	} else {
 		n = lexinteger(J);
-		if (ACCEPT('.'))
+		if (jsY_accept(J, '.'))
 			n += lexfraction(J);
 	}
 
@@ -312,7 +311,7 @@ static int lexnumber(js_State *J)
 	else if (e > 0)
 		n *= pow(10, e);
 
-	if (jsY_isidentifierstart(PEEK))
+	if (jsY_isidentifierstart(J->lexchar))
 		jsY_error(J, "number with letter suffix");
 
 	J->number = n;
@@ -325,39 +324,39 @@ static int lexnumber(js_State *J)
 {
 	const char *s = J->source - 1;
 
-	if (ACCEPT('0')) {
-		if (ACCEPT('x') || ACCEPT('X')) {
+	if (jsY_accept(J, '0')) {
+		if (jsY_accept(J, 'x') || jsY_accept(J, 'X')) {
 			J->number = lexhex(J);
 			return TK_NUMBER;
 		}
-		if (jsY_isdec(PEEK))
+		if (jsY_isdec(J->lexchar))
 			jsY_error(J, "number with leading zero");
-		if (ACCEPT('.')) {
-			while (jsY_isdec(PEEK))
-				NEXT();
+		if (jsY_accept(J, '.')) {
+			while (jsY_isdec(J->lexchar))
+				jsY_next(J);
 		}
-	} else if (ACCEPT('.')) {
-		if (!jsY_isdec(PEEK))
+	} else if (jsY_accept(J, '.')) {
+		if (!jsY_isdec(J->lexchar))
 			return '.';
-		while (jsY_isdec(PEEK))
-			NEXT();
+		while (jsY_isdec(J->lexchar))
+			jsY_next(J);
 	} else {
-		while (jsY_isdec(PEEK))
-			NEXT();
-		if (ACCEPT('.')) {
-			while (jsY_isdec(PEEK))
-				NEXT();
+		while (jsY_isdec(J->lexchar))
+			jsY_next(J);
+		if (jsY_accept(J, '.')) {
+			while (jsY_isdec(J->lexchar))
+				jsY_next(J);
 		}
 	}
 
-	if (ACCEPT('e') || ACCEPT('E')) {
-		if (PEEK == '-' || PEEK == '+')
-			NEXT();
-		while (jsY_isdec(PEEK))
-			NEXT();
+	if (jsY_accept(J, 'e') || jsY_accept(J, 'E')) {
+		if (J->lexchar == '-' || J->lexchar == '+')
+			jsY_next(J);
+		while (jsY_isdec(J->lexchar))
+			jsY_next(J);
 	}
 
-	if (jsY_isidentifierstart(PEEK))
+	if (jsY_isidentifierstart(J->lexchar))
 		jsY_error(J, "number with letter suffix");
 
 	J->number = js_strtod(s, NULL);
@@ -373,35 +372,35 @@ static int lexescape(js_State *J)
 
 	/* already consumed '\' */
 
-	if (ACCEPT('\n'))
+	if (jsY_accept(J, '\n'))
 		return 0;
 
-	switch (PEEK) {
+	switch (J->lexchar) {
 	case 'u':
-		NEXT();
-		if (!jsY_ishex(PEEK)) return 1; else { x |= jsY_tohex(PEEK) << 12; NEXT(); }
-		if (!jsY_ishex(PEEK)) return 1; else { x |= jsY_tohex(PEEK) << 8; NEXT(); }
-		if (!jsY_ishex(PEEK)) return 1; else { x |= jsY_tohex(PEEK) << 4; NEXT(); }
-		if (!jsY_ishex(PEEK)) return 1; else { x |= jsY_tohex(PEEK); NEXT(); }
+		jsY_next(J);
+		if (!jsY_ishex(J->lexchar)) return 1; else { x |= jsY_tohex(J->lexchar) << 12; jsY_next(J); }
+		if (!jsY_ishex(J->lexchar)) return 1; else { x |= jsY_tohex(J->lexchar) << 8; jsY_next(J); }
+		if (!jsY_ishex(J->lexchar)) return 1; else { x |= jsY_tohex(J->lexchar) << 4; jsY_next(J); }
+		if (!jsY_ishex(J->lexchar)) return 1; else { x |= jsY_tohex(J->lexchar); jsY_next(J); }
 		textpush(J, x);
 		break;
 	case 'x':
-		NEXT();
-		if (!jsY_ishex(PEEK)) return 1; else { x |= jsY_tohex(PEEK) << 4; NEXT(); }
-		if (!jsY_ishex(PEEK)) return 1; else { x |= jsY_tohex(PEEK); NEXT(); }
+		jsY_next(J);
+		if (!jsY_ishex(J->lexchar)) return 1; else { x |= jsY_tohex(J->lexchar) << 4; jsY_next(J); }
+		if (!jsY_ishex(J->lexchar)) return 1; else { x |= jsY_tohex(J->lexchar); jsY_next(J); }
 		textpush(J, x);
 		break;
-	case '0': textpush(J, 0); NEXT(); break;
-	case '\\': textpush(J, '\\'); NEXT(); break;
-	case '\'': textpush(J, '\''); NEXT(); break;
-	case '"': textpush(J, '"'); NEXT(); break;
-	case 'b': textpush(J, '\b'); NEXT(); break;
-	case 'f': textpush(J, '\f'); NEXT(); break;
-	case 'n': textpush(J, '\n'); NEXT(); break;
-	case 'r': textpush(J, '\r'); NEXT(); break;
-	case 't': textpush(J, '\t'); NEXT(); break;
-	case 'v': textpush(J, '\v'); NEXT(); break;
-	default: textpush(J, PEEK); NEXT(); break;
+	case '0': textpush(J, 0); jsY_next(J); break;
+	case '\\': textpush(J, '\\'); jsY_next(J); break;
+	case '\'': textpush(J, '\''); jsY_next(J); break;
+	case '"': textpush(J, '"'); jsY_next(J); break;
+	case 'b': textpush(J, '\b'); jsY_next(J); break;
+	case 'f': textpush(J, '\f'); jsY_next(J); break;
+	case 'n': textpush(J, '\n'); jsY_next(J); break;
+	case 'r': textpush(J, '\r'); jsY_next(J); break;
+	case 't': textpush(J, '\t'); jsY_next(J); break;
+	case 'v': textpush(J, '\v'); jsY_next(J); break;
+	default: textpush(J, J->lexchar); jsY_next(J); break;
 	}
 	return 0;
 }
@@ -410,23 +409,23 @@ static int lexstring(js_State *J)
 {
 	const char *s;
 
-	int q = PEEK;
-	NEXT();
+	int q = J->lexchar;
+	jsY_next(J);
 
 	textinit(J);
 
-	while (PEEK != q) {
-		if (PEEK == 0 || PEEK == '\n')
+	while (J->lexchar != q) {
+		if (J->lexchar == 0 || J->lexchar == '\n')
 			jsY_error(J, "string not terminated");
-		if (ACCEPT('\\')) {
+		if (jsY_accept(J, '\\')) {
 			if (lexescape(J))
 				jsY_error(J, "malformed escape sequence");
 		} else {
-			textpush(J, PEEK);
-			NEXT();
+			textpush(J, J->lexchar);
+			jsY_next(J);
 		}
 	}
-	EXPECT(q);
+	jsY_expect(J, q);
 
 	s = textend(J);
 
@@ -465,40 +464,40 @@ static int lexregexp(js_State *J)
 	textinit(J);
 
 	/* regexp body */
-	while (PEEK != '/' || inclass) {
-		if (PEEK == 0 || PEEK == '\n') {
+	while (J->lexchar != '/' || inclass) {
+		if (J->lexchar == 0 || J->lexchar == '\n') {
 			jsY_error(J, "regular expression not terminated");
-		} else if (ACCEPT('\\')) {
-			if (ACCEPT('/')) {
+		} else if (jsY_accept(J, '\\')) {
+			if (jsY_accept(J, '/')) {
 				textpush(J, '/');
 			} else {
 				textpush(J, '\\');
-				if (PEEK == 0 || PEEK == '\n')
+				if (J->lexchar == 0 || J->lexchar == '\n')
 					jsY_error(J, "regular expression not terminated");
-				textpush(J, PEEK);
-				NEXT();
+				textpush(J, J->lexchar);
+				jsY_next(J);
 			}
 		} else {
-			if (PEEK == '[' && !inclass)
+			if (J->lexchar == '[' && !inclass)
 				inclass = 1;
-			if (PEEK == ']' && inclass)
+			if (J->lexchar == ']' && inclass)
 				inclass = 0;
-			textpush(J, PEEK);
-			NEXT();
+			textpush(J, J->lexchar);
+			jsY_next(J);
 		}
 	}
-	EXPECT('/');
+	jsY_expect(J, '/');
 
 	s = textend(J);
 
 	/* regexp flags */
 	g = i = m = 0;
 
-	while (jsY_isidentifierpart(PEEK)) {
-		if (ACCEPT('g')) ++g;
-		else if (ACCEPT('i')) ++i;
-		else if (ACCEPT('m')) ++m;
-		else jsY_error(J, "illegal flag in regular expression: %c", PEEK);
+	while (jsY_isidentifierpart(J->lexchar)) {
+		if (jsY_accept(J, 'g')) ++g;
+		else if (jsY_accept(J, 'i')) ++i;
+		else if (jsY_accept(J, 'm')) ++m;
+		else jsY_error(J, "illegal flag in regular expression: %c", J->lexchar);
 	}
 
 	if (g > 1 || i > 1 || m > 1)
@@ -533,49 +532,49 @@ static int jsY_lexx(js_State *J)
 	while (1) {
 		J->lexline = J->line; /* save location of beginning of token */
 
-		while (jsY_iswhite(PEEK))
-			NEXT();
+		while (jsY_iswhite(J->lexchar))
+			jsY_next(J);
 
-		if (ACCEPT('\n')) {
+		if (jsY_accept(J, '\n')) {
 			J->newline = 1;
 			if (isnlthcontext(J->lasttoken))
 				return ';';
 			continue;
 		}
 
-		if (ACCEPT('/')) {
-			if (ACCEPT('/')) {
+		if (jsY_accept(J, '/')) {
+			if (jsY_accept(J, '/')) {
 				lexlinecomment(J);
 				continue;
-			} else if (ACCEPT('*')) {
+			} else if (jsY_accept(J, '*')) {
 				if (lexcomment(J))
 					jsY_error(J, "multi-line comment not terminated");
 				continue;
 			} else if (isregexpcontext(J->lasttoken)) {
 				return lexregexp(J);
-			} else if (ACCEPT('=')) {
+			} else if (jsY_accept(J, '=')) {
 				return TK_DIV_ASS;
 			} else {
 				return '/';
 			}
 		}
 
-		if (PEEK >= '0' && PEEK <= '9') {
+		if (J->lexchar >= '0' && J->lexchar <= '9') {
 			return lexnumber(J);
 		}
 
-		switch (PEEK) {
-		case '(': NEXT(); return '(';
-		case ')': NEXT(); return ')';
-		case ',': NEXT(); return ',';
-		case ':': NEXT(); return ':';
-		case ';': NEXT(); return ';';
-		case '?': NEXT(); return '?';
-		case '[': NEXT(); return '[';
-		case ']': NEXT(); return ']';
-		case '{': NEXT(); return '{';
-		case '}': NEXT(); return '}';
-		case '~': NEXT(); return '~';
+		switch (J->lexchar) {
+		case '(': jsY_next(J); return '(';
+		case ')': jsY_next(J); return ')';
+		case ',': jsY_next(J); return ',';
+		case ':': jsY_next(J); return ':';
+		case ';': jsY_next(J); return ';';
+		case '?': jsY_next(J); return '?';
+		case '[': jsY_next(J); return '[';
+		case ']': jsY_next(J); return ']';
+		case '{': jsY_next(J); return '{';
+		case '}': jsY_next(J); return '}';
+		case '~': jsY_next(J); return '~';
 
 		case '\'':
 		case '"':
@@ -585,97 +584,97 @@ static int jsY_lexx(js_State *J)
 			return lexnumber(J);
 
 		case '<':
-			NEXT();
-			if (ACCEPT('<')) {
-				if (ACCEPT('='))
+			jsY_next(J);
+			if (jsY_accept(J, '<')) {
+				if (jsY_accept(J, '='))
 					return TK_SHL_ASS;
 				return TK_SHL;
 			}
-			if (ACCEPT('='))
+			if (jsY_accept(J, '='))
 				return TK_LE;
 			return '<';
 
 		case '>':
-			NEXT();
-			if (ACCEPT('>')) {
-				if (ACCEPT('>')) {
-					if (ACCEPT('='))
+			jsY_next(J);
+			if (jsY_accept(J, '>')) {
+				if (jsY_accept(J, '>')) {
+					if (jsY_accept(J, '='))
 						return TK_USHR_ASS;
 					return TK_USHR;
 				}
-				if (ACCEPT('='))
+				if (jsY_accept(J, '='))
 					return TK_SHR_ASS;
 				return TK_SHR;
 			}
-			if (ACCEPT('='))
+			if (jsY_accept(J, '='))
 				return TK_GE;
 			return '>';
 
 		case '=':
-			NEXT();
-			if (ACCEPT('=')) {
-				if (ACCEPT('='))
+			jsY_next(J);
+			if (jsY_accept(J, '=')) {
+				if (jsY_accept(J, '='))
 					return TK_STRICTEQ;
 				return TK_EQ;
 			}
 			return '=';
 
 		case '!':
-			NEXT();
-			if (ACCEPT('=')) {
-				if (ACCEPT('='))
+			jsY_next(J);
+			if (jsY_accept(J, '=')) {
+				if (jsY_accept(J, '='))
 					return TK_STRICTNE;
 				return TK_NE;
 			}
 			return '!';
 
 		case '+':
-			NEXT();
-			if (ACCEPT('+'))
+			jsY_next(J);
+			if (jsY_accept(J, '+'))
 				return TK_INC;
-			if (ACCEPT('='))
+			if (jsY_accept(J, '='))
 				return TK_ADD_ASS;
 			return '+';
 
 		case '-':
-			NEXT();
-			if (ACCEPT('-'))
+			jsY_next(J);
+			if (jsY_accept(J, '-'))
 				return TK_DEC;
-			if (ACCEPT('='))
+			if (jsY_accept(J, '='))
 				return TK_SUB_ASS;
 			return '-';
 
 		case '*':
-			NEXT();
-			if (ACCEPT('='))
+			jsY_next(J);
+			if (jsY_accept(J, '='))
 				return TK_MUL_ASS;
 			return '*';
 
 		case '%':
-			NEXT();
-			if (ACCEPT('='))
+			jsY_next(J);
+			if (jsY_accept(J, '='))
 				return TK_MOD_ASS;
 			return '%';
 
 		case '&':
-			NEXT();
-			if (ACCEPT('&'))
+			jsY_next(J);
+			if (jsY_accept(J, '&'))
 				return TK_AND;
-			if (ACCEPT('='))
+			if (jsY_accept(J, '='))
 				return TK_AND_ASS;
 			return '&';
 
 		case '|':
-			NEXT();
-			if (ACCEPT('|'))
+			jsY_next(J);
+			if (jsY_accept(J, '|'))
 				return TK_OR;
-			if (ACCEPT('='))
+			if (jsY_accept(J, '='))
 				return TK_OR_ASS;
 			return '|';
 
 		case '^':
-			NEXT();
-			if (ACCEPT('='))
+			jsY_next(J);
+			if (jsY_accept(J, '='))
 				return TK_XOR_ASS;
 			return '^';
 
@@ -685,15 +684,15 @@ static int jsY_lexx(js_State *J)
 
 		/* Handle \uXXXX escapes in identifiers */
 		jsY_unescape(J);
-		if (jsY_isidentifierstart(PEEK)) {
+		if (jsY_isidentifierstart(J->lexchar)) {
 			textinit(J);
-			textpush(J, PEEK);
+			textpush(J, J->lexchar);
 
-			NEXT();
+			jsY_next(J);
 			jsY_unescape(J);
-			while (jsY_isidentifierpart(PEEK)) {
-				textpush(J, PEEK);
-				NEXT();
+			while (jsY_isidentifierpart(J->lexchar)) {
+				textpush(J, J->lexchar);
+				jsY_next(J);
 				jsY_unescape(J);
 			}
 
@@ -702,9 +701,9 @@ static int jsY_lexx(js_State *J)
 			return jsY_findkeyword(J, J->lexbuf.text);
 		}
 
-		if (PEEK >= 0x20 && PEEK <= 0x7E)
-			jsY_error(J, "unexpected character: '%c'", PEEK);
-		jsY_error(J, "unexpected character: \\u%04X", PEEK);
+		if (J->lexchar >= 0x20 && J->lexchar <= 0x7E)
+			jsY_error(J, "unexpected character: '%c'", J->lexchar);
+		jsY_error(J, "unexpected character: \\u%04X", J->lexchar);
 	}
 }
 
@@ -714,7 +713,7 @@ void jsY_initlex(js_State *J, const char *filename, const char *source)
 	J->source = source;
 	J->line = 1;
 	J->lasttoken = 0;
-	NEXT(); /* load first lookahead character */
+	jsY_next(J); /* load first lookahead character */
 }
 
 int jsY_lex(js_State *J)
@@ -727,20 +726,20 @@ int jsY_lexjson(js_State *J)
 	while (1) {
 		J->lexline = J->line; /* save location of beginning of token */
 
-		while (jsY_iswhite(PEEK) || PEEK == '\n')
-			NEXT();
+		while (jsY_iswhite(J->lexchar) || J->lexchar == '\n')
+			jsY_next(J);
 
-		if (PEEK >= '0' && PEEK <= '9') {
+		if (J->lexchar >= '0' && J->lexchar <= '9') {
 			return lexnumber(J);
 		}
 
-		switch (PEEK) {
-		case ',': NEXT(); return ',';
-		case ':': NEXT(); return ':';
-		case '[': NEXT(); return '[';
-		case ']': NEXT(); return ']';
-		case '{': NEXT(); return '{';
-		case '}': NEXT(); return '}';
+		switch (J->lexchar) {
+		case ',': jsY_next(J); return ',';
+		case ':': jsY_next(J); return ':';
+		case '[': jsY_next(J); return '[';
+		case ']': jsY_next(J); return ']';
+		case '{': jsY_next(J); return '{';
+		case '}': jsY_next(J); return '}';
 
 		case '"':
 			return lexstring(J);
@@ -749,23 +748,23 @@ int jsY_lexjson(js_State *J)
 			return lexnumber(J);
 
 		case 'f':
-			NEXT(); EXPECT('a'); EXPECT('l'); EXPECT('s'); EXPECT('e');
+			jsY_next(J); jsY_expect(J, 'a'); jsY_expect(J, 'l'); jsY_expect(J, 's'); jsY_expect(J, 'e');
 			return TK_FALSE;
 
 		case 'n':
-			NEXT(); EXPECT('u'); EXPECT('l'); EXPECT('l');
+			jsY_next(J); jsY_expect(J, 'u'); jsY_expect(J, 'l'); jsY_expect(J, 'l');
 			return TK_NULL;
 
 		case 't':
-			NEXT(); EXPECT('r'); EXPECT('u'); EXPECT('e');
+			jsY_next(J); jsY_expect(J, 'r'); jsY_expect(J, 'u'); jsY_expect(J, 'e');
 			return TK_TRUE;
 
 		case 0:
 			return 0; /* EOF */
 		}
 
-		if (PEEK >= 0x20 && PEEK <= 0x7E)
-			jsY_error(J, "unexpected character: '%c'", PEEK);
-		jsY_error(J, "unexpected character: \\u%04X", PEEK);
+		if (J->lexchar >= 0x20 && J->lexchar <= 0x7E)
+			jsY_error(J, "unexpected character: '%c'", J->lexchar);
+		jsY_error(J, "unexpected character: \\u%04X", J->lexchar);
 	}
 }
