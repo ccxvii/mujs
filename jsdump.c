@@ -17,16 +17,16 @@ static const char *opname[] = {
 
 const char *jsP_aststring(enum js_AstType type)
 {
-	if (type > nelem(astname))
-		return "<unknown>";
-	return astname[type];
+	if (type < nelem(astname))
+		return astname[type];
+	return "<unknown>";
 }
 
 const char *jsC_opcodestring(enum js_OpCode opcode)
 {
-	if (opcode > nelem(opname))
-		return "<unknown>";
-	return opname[opcode];
+	if (opcode < nelem(opname))
+		return opname[opcode];
+	return "<unknown>";
 }
 
 static int prec(enum js_AstType type)
