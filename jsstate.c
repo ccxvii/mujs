@@ -83,8 +83,17 @@ void js_loadfile(js_State *J, const char *filename)
 		fclose(f);
 		js_error(J, "cannot seek in file: '%s'", filename);
 	}
+
 	n = ftell(f);
-	fseek(f, 0, SEEK_SET);
+	if (n < 0) {
+		fclose(f);
+		js_error(J, "cannot tell in file: '%s'", filename);
+	}
+
+	if (fseek(f, 0, SEEK_SET) < 0) {
+		fclose(f);
+		js_error(J, "cannot seek in file: '%s'", filename);
+	}
 
 	s = js_malloc(J, n + 1); /* add space for string terminator */
 	if (!s) {

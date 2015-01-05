@@ -59,8 +59,17 @@ static void jsB_read(js_State *J)
 		fclose(f);
 		js_error(J, "cannot seek in file: '%s'", filename);
 	}
+
 	n = ftell(f);
-	fseek(f, 0, SEEK_SET);
+	if (n < 0) {
+		fclose(f);
+		js_error(J, "cannot tell in file: '%s'", filename);
+	}
+
+	if (fseek(f, 0, SEEK_SET) < 0) {
+		fclose(f);
+		js_error(J, "cannot seek in file: '%s'", filename);
+	}
 
 	s = malloc(n + 1);
 	if (!s) {
