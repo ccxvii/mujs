@@ -40,6 +40,13 @@ enum js_Class {
 	JS_CUSERDATA,
 };
 
+/*
+	Short strings abuse the js_Value struct. By putting the type tag in the
+	last byte, and using 0 as the tag for short strings, we can use the
+	entire js_Value as string storage by letting the type tag serve double
+	purpose as the string zero terminator.
+*/
+
 struct js_Value
 {
 	union {
@@ -50,8 +57,8 @@ struct js_Value
 		js_String *memstr;
 		js_Object *object;
 	} u;
-	char pad[7];
-	char type;
+	char pad[7]; /* extra storage for shrstr */
+	char type; /* type tag and zero terminator for shrstr */
 };
 
 struct js_String

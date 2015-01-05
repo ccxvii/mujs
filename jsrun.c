@@ -103,9 +103,9 @@ void js_pushnumber(js_State *J, double v)
 
 void js_pushstring(js_State *J, const char *v)
 {
-	int n = strlen(v);
+	unsigned int n = strlen(v);
 	CHECKSTACK(1);
-	if (n < 16) {
+	if (n <= offsetof(js_Value, type)) {
 		char *s = STACK[TOP].u.shrstr;
 		while (n--) *s++ = *v++;
 		*s = 0;
@@ -120,7 +120,7 @@ void js_pushstring(js_State *J, const char *v)
 void js_pushlstring(js_State *J, const char *v, unsigned int n)
 {
 	CHECKSTACK(1);
-	if (n < 16) {
+	if (n <= offsetof(js_Value, type)) {
 		char *s = STACK[TOP].u.shrstr;
 		while (n--) *s++ = *v++;
 		*s = 0;
