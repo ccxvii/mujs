@@ -281,11 +281,12 @@ const char *jsV_tostring(js_State *J, js_Value *v)
 	case JS_TNUMBER:
 		p = jsV_numbertostring(J, buf, v->u.number);
 		if (p == buf) {
-			int n = strlen(p);
-			if (n < 16) {
+			unsigned int n = strlen(p);
+			if (n <= offsetof(js_Value, type)) {
+				char *s = v->u.shrstr;
+				while (n--) *s++ = *p++;
+				*s = 0;
 				v->type = JS_TSHRSTR;
-				memcpy(v->u.shrstr, p, n);
-				v->u.shrstr[n] = 0;
 				return v->u.shrstr;
 			} else {
 				v->type = JS_TMEMSTR;
