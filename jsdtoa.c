@@ -453,6 +453,7 @@ js_strtod(const char *as, char **aas)
 				flag |= Fsign;
 			else
 				flag |= Fesign;
+			/* fall through */
 		case '+':
 			if(state == S0)
 				state = S1;
@@ -495,6 +496,7 @@ js_strtod(const char *as, char **aas)
 				*aas = s+3;
 			goto retnan;
 		}
+		/* fall through */
 	case S1:
 		if(xcmp(s, "infinity") == 0) {
 			if(aas != NULL)
@@ -506,12 +508,14 @@ js_strtod(const char *as, char **aas)
 				*aas = s+3;
 			goto retinf;
 		}
+		/* fall through */
 	case S3:
 		if(aas != NULL)
 			*aas = (char*)as;
 		goto ret0;	/* no digits found */
 	case S6:
 		s--;		/* back over +- */
+		/* fall through */
 	case S5:
 		s--;		/* back over e */
 		break;
