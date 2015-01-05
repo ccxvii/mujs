@@ -559,7 +559,7 @@ static void Sp_split_regexp(js_State *J)
 	e = text + strlen(text);
 
 	/* splitting the empty string */
-	if (e == 0) {
+	if (e == text) {
 		if (js_regexec(re->prog, text, &m, 0)) {
 			if (len == limit) return;
 			js_pushliteral(J, "");
