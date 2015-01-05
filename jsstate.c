@@ -5,6 +5,8 @@
 #include "jsrun.h"
 #include "jsbuiltin.h"
 
+#include <assert.h>
+
 static void *js_defaultalloc(void *actx, void *ptr, unsigned int size)
 {
 	if (size == 0) {
@@ -176,6 +178,9 @@ void *js_getcontext(js_State *J)
 js_State *js_newstate(js_Alloc alloc, void *actx)
 {
 	js_State *J;
+
+	assert(sizeof(js_Value) == 16);
+	assert(offsetof(js_Value, type) == 15);
 
 	if (!alloc)
 		alloc = js_defaultalloc;
