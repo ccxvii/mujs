@@ -1,6 +1,7 @@
 #include "jsi.h"
 #include "jsparse.h"
 #include "jscompile.h"
+#include "jsvalue.h" /* for jsV_numbertostring */
 
 #define cexp jsC_cexp /* collision with math.h */
 
@@ -253,8 +254,8 @@ static void carray(JF, js_Ast *list)
 	while (list) {
 		if (list->a->type != EXP_UNDEF) {
 			cexp(J, F, list->a);
-			emit(J, F, OP_INITPROP_N);
-			emitraw(J, F, i++);
+			emitnumber(J, F, i++);
+			emit(J, F, OP_INITPROP);
 		} else {
 			++i;
 		}
@@ -262,39 +263,63 @@ static void carray(JF, js_Ast *list)
 	}
 }
 
+static void checkdup(JF, js_Ast *list, js_Ast *end)
+{
+	char nbuf[32], sbuf[32];
+	const char *needle, *straw;
+
+	if (end->a->type == EXP_NUMBER)
+		needle = jsV_numbertostring(J, nbuf, end->a->number);
+	else
+		needle = end->a->string;
+
+	while (list->a != end) {
+		if (list->a->type == end->type) {
+			js_Ast *prop = list->a->a;
+			if (prop->type == EXP_NUMBER)
+				straw = jsV_numbertostring(J, sbuf, prop->number);
+			else
+				straw =  prop->string;
+			if (!strcmp(needle, straw))
+				jsC_error(J, list, "duplicate property '%s' in object literal", needle);
+		}
+		list = list->b;
+	}
+}
+
 static void cobject(JF, js_Ast *list)
 {
+	js_Ast *head = list;
+
 	while (list) {
 		js_Ast *kv = list->a;
 		js_Ast *prop = kv->a;
-		if (kv->type == EXP_PROP_VAL) {
-			if (prop->type == AST_IDENTIFIER || prop->type == EXP_STRING) {
-				cexp(J, F, kv->b);
-				emitstring(J, F, OP_INITPROP_S, prop->string);
-			} else if (prop->type == EXP_NUMBER) {
-				if (prop->number == (js_Instruction)prop->number) {
-					cexp(J, F, kv->b);
-					emit(J, F, OP_INITPROP_N);
-					emitraw(J, F, (js_Instruction)prop->number);
-				} else {
-					emitnumber(J, F, prop->number);
-					cexp(J, F, kv->b);
-					emit(J, F, OP_INITPROP);
-				}
-			} else {
-				jsC_error(J, list, "illegal property name in object initializer");
-			}
-		} else {
-			if (prop->type == AST_IDENTIFIER || prop->type == EXP_STRING)
-				emitstring(J, F, OP_STRING, prop->string);
-			if (prop->type == EXP_NUMBER)
-				emitnumber(J, F, prop->number);
+
+		if (prop->type == AST_IDENTIFIER || prop->type == EXP_STRING)
+			emitstring(J, F, OP_STRING, prop->string);
+		else if (prop->type == EXP_NUMBER)
+			emitnumber(J, F, prop->number);
+		else
+			jsC_error(J, prop, "illegal property name in object initializer");
+
+		if (J->strict)
+			checkdup(J, F, head, kv);
+
+		switch (kv->type) {
+		case EXP_PROP_VAL:
+			cexp(J, F, kv->b);
+			emit(J, F, OP_INITPROP);
+			break;
+		case EXP_PROP_GET:
 			emitfunction(J, F, newfun(J, NULL, kv->b, kv->c, 0));
-			if (kv->type == EXP_PROP_GET)
-				emit(J, F, OP_INITGETTER);
-			if (kv->type == EXP_PROP_SET)
-				emit(J, F, OP_INITSETTER);
+			emit(J, F, OP_INITGETTER);
+			break;
+		case EXP_PROP_SET:
+			emitfunction(J, F, newfun(J, NULL, kv->b, kv->c, 0));
+			emit(J, F, OP_INITSETTER);
+			break;
 		}
+
 		list = list->b;
 	}
 }

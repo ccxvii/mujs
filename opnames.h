@@ -33,8 +33,6 @@
 "delvar",
 "in",
 "initprop",
-"initprop_n",
-"initprop_s",
 "initgetter",
 "initsetter",
 "getprop",

@@ -1188,7 +1188,6 @@ static void jsR_run(js_State *J, js_Function *F)
 	int offset;
 
 	const char *str;
-	char buf[32];
 	js_Object *obj;
 	double x, y;
 	unsigned int ux, uy;
@@ -1287,6 +1286,13 @@ static void jsR_run(js_State *J, js_Function *F)
 			js_pushboolean(J, b);
 			break;
 
+		case OP_INITPROP:
+			obj = js_toobject(J, -3);
+			str = js_tostring(J, -2);
+			jsR_setproperty(J, obj, str, stackidx(J, -1));
+			js_pop(J, 2);
+			break;
+
 		case OP_INITGETTER:
 			obj = js_toobject(J, -3);
 			str = js_tostring(J, -2);
@@ -1299,27 +1305,6 @@ static void jsR_run(js_State *J, js_Function *F)
 			str = js_tostring(J, -2);
 			jsR_defproperty(J, obj, str, 0, NULL, NULL, jsR_tofunction(J, -1));
 			js_pop(J, 2);
-			break;
-
-		case OP_INITPROP:
-			str = js_tostring(J, -2);
-			obj = js_toobject(J, -3);
-			jsR_setproperty(J, obj, str, stackidx(J, -1));
-			js_pop(J, 2);
-			break;
-
-		case OP_INITPROP_S:
-			str = ST[*pc++];
-			obj = js_toobject(J, -2);
-			jsR_setproperty(J, obj, str, stackidx(J, -1));
-			js_pop(J, 1);
-			break;
-
-		case OP_INITPROP_N:
-			str = jsV_numbertostring(J, buf, *pc++);
-			obj = js_toobject(J, -2);
-			jsR_setproperty(J, obj, str, stackidx(J, -1));
-			js_pop(J, 1);
 			break;
 
 		case OP_GETPROP:

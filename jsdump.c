@@ -753,7 +753,6 @@ void jsC_dumpfunction(js_State *J, js_Function *F)
 		case OP_GETPROP_S:
 		case OP_SETPROP_S:
 		case OP_DELPROP_S:
-		case OP_INITPROP_S:
 		case OP_CATCH:
 			pc(' ');
 			ps(F->strtab[*p++]);
@@ -767,7 +766,6 @@ void jsC_dumpfunction(js_State *J, js_Function *F)
 		case OP_DELLOCAL:
 		case OP_NUMBER_POS:
 		case OP_NUMBER_NEG:
-		case OP_INITPROP_N:
 		case OP_CALL:
 		case OP_NEW:
 		case OP_JUMP:
