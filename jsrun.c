@@ -869,8 +869,10 @@ static void jsR_callfunction(js_State *J, unsigned int n, js_Function *F, js_Env
 
 	if (F->arguments) {
 		js_newobject(J);
-		js_currentfunction(J);
-		js_defproperty(J, -2, "callee", JS_DONTENUM);
+		if (!J->strict) {
+			js_currentfunction(J);
+			js_defproperty(J, -2, "callee", JS_DONTENUM);
+		}
 		js_pushnumber(J, n);
 		js_defproperty(J, -2, "length", JS_DONTENUM);
 		for (i = 0; i < n; ++i) {
