@@ -114,13 +114,19 @@ static int addstring(JF, const char *value)
 	return F->strlen++;
 }
 
-static void addlocal(JF, const char *name, int reuse)
+static void addlocal(JF, js_Ast *ident, int reuse)
 {
-	if (reuse) {
+	const char *name = ident->string;
+	if (reuse || J->strict) {
 		unsigned int i;
-		for (i = 0; i < F->varlen; ++i)
-			if (!strcmp(F->vartab[i], name))
-				return;
+		for (i = 0; i < F->varlen; ++i) {
+			if (!strcmp(F->vartab[i], name)) {
+				if (reuse)
+					return;
+				if (J->strict)
+					jsC_error(J, ident, "duplicate formal parameter '%s'", name);
+			}
+		}
 	}
 	if (F->varlen >= F->varcap) {
 		F->varcap = F->varcap ? F->varcap * 2 : 16;
@@ -1178,7 +1184,7 @@ static void cparams(JF, js_Ast *list)
 {
 	F->numparams = listlength(list);
 	while (list) {
-		addlocal(J, F, list->a->string, 0);
+		addlocal(J, F, list->a, 0);
 		list = list->b;
 	}
 }
@@ -1190,7 +1196,7 @@ static void cvardecs(JF, js_Ast *node)
 
 	if (node->type == EXP_VAR) {
 		if (F->lightweight)
-			addlocal(J, F, node->a->string, 1);
+			addlocal(J, F, node->a, 1);
 		else
 			emitstring(J, F, OP_DEFVAR, node->a->string);
 	}
@@ -1229,7 +1235,7 @@ static void cfunbody(JF, js_Ast *name, js_Ast *params, js_Ast *body)
 	if (name) {
 		emit(J, F, OP_CURRENT);
 		if (F->lightweight) {
-			addlocal(J, F, name->string, 0);
+			addlocal(J, F, name, 0);
 			emit(J, F, OP_INITLOCAL);
 			emitraw(J, F, findlocal(J, F, name->string));
 		} else {
