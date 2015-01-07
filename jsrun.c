@@ -802,6 +802,8 @@ static void js_setvar(js_State *J, const char *name)
 		}
 		E = E->outer;
 	} while (E);
+	if (J->strict)
+		js_referenceerror(J, "assignment to undeclared variable '%s'", name);
 	jsR_setproperty(J, J->G, name, stackidx(J, -1));
 }
 
