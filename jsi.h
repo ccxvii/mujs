@@ -92,6 +92,8 @@ void js_rot3pop2(js_State *J);
 void js_dup1rot3(js_State *J);
 void js_dup1rot4(js_State *J);
 
+void js_pushundefinedthis(js_State *J); /* push 'global' if non-strict, undefined if strict */
+
 void js_RegExp_prototype_exec(js_State *J, js_Regexp *re, const char *text);
 
 void js_trap(js_State *J, int pc); /* dump stack and environment to stdout */

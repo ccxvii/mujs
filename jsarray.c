@@ -265,7 +265,7 @@ static int compare(js_State *J, unsigned int x, unsigned int y, int *hasx, int *
 
 		if (hasfn) {
 			js_copy(J, 1); /* copy function */
-			js_pushglobal(J); /* set this object */
+			js_pushundefinedthis(J); /* set this object */
 			js_copy(J, -4); /* copy x */
 			js_copy(J, -4); /* copy y */
 			js_call(J, 2);

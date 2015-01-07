@@ -153,6 +153,14 @@ void js_pushglobal(js_State *J)
 	js_pushobject(J, J->G);
 }
 
+void js_pushundefinedthis(js_State *J)
+{
+	if (J->strict)
+		js_pushundefined(J);
+	else
+		js_pushobject(J, J->G);
+}
+
 void js_currentfunction(js_State *J)
 {
 	CHECKSTACK(1);
