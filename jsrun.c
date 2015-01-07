@@ -521,17 +521,17 @@ static void jsR_setproperty(js_State *J, js_Object *obj, const char *name, js_Va
 
 	if (obj->type == JS_CSTRING) {
 		if (!strcmp(name, "length"))
-			return;
+			goto readonly;
 		if (js_isarrayindex(J, name, &k))
 			if (js_runeat(J, obj->u.s.string, k))
-				return;
+				goto readonly;
 	}
 
 	if (obj->type == JS_CREGEXP) {
-		if (!strcmp(name, "source")) return;
-		if (!strcmp(name, "global")) return;
-		if (!strcmp(name, "ignoreCase")) return;
-		if (!strcmp(name, "multiline")) return;
+		if (!strcmp(name, "source")) goto readonly;
+		if (!strcmp(name, "global")) goto readonly;
+		if (!strcmp(name, "ignoreCase")) goto readonly;
+		if (!strcmp(name, "multiline")) goto readonly;
 		if (!strcmp(name, "lastIndex")) {
 			obj->u.r.last = jsV_tointeger(J, value);
 			return;
@@ -553,8 +553,18 @@ static void jsR_setproperty(js_State *J, js_Object *obj, const char *name, js_Va
 	if (!ref || !own)
 		ref = jsV_setproperty(J, obj, name);
 
-	if (ref && !(ref->atts & JS_READONLY))
-		ref->value = *value;
+	if (ref) {
+		if (!(ref->atts & JS_READONLY))
+			ref->value = *value;
+		else
+			goto readonly;
+	}
+
+	return;
+
+readonly:
+	if (J->strict)
+		js_typeerror(J, "'%s' is read-only", name);
 }
 
 static void jsR_defproperty(js_State *J, js_Object *obj, const char *name,
@@ -565,34 +575,52 @@ static void jsR_defproperty(js_State *J, js_Object *obj, const char *name,
 
 	if (obj->type == JS_CARRAY)
 		if (!strcmp(name, "length"))
-			return;
+			goto readonly;
 
 	if (obj->type == JS_CSTRING) {
 		if (!strcmp(name, "length"))
-			return;
+			goto readonly;
 		if (js_isarrayindex(J, name, &k))
 			if (js_runeat(J, obj->u.s.string, k))
-				return;
+				goto readonly;
 	}
 
 	if (obj->type == JS_CREGEXP) {
-		if (!strcmp(name, "source")) return;
-		if (!strcmp(name, "global")) return;
-		if (!strcmp(name, "ignoreCase")) return;
-		if (!strcmp(name, "multiline")) return;
-		if (!strcmp(name, "lastIndex")) return;
+		if (!strcmp(name, "source")) goto readonly;
+		if (!strcmp(name, "global")) goto readonly;
+		if (!strcmp(name, "ignoreCase")) goto readonly;
+		if (!strcmp(name, "multiline")) goto readonly;
+		if (!strcmp(name, "lastIndex")) goto readonly;
 	}
 
 	ref = jsV_setproperty(J, obj, name);
 	if (ref) {
-		if (value && !(ref->atts & JS_READONLY))
-			ref->value = *value;
-		if (getter && !(ref->atts & JS_DONTCONF))
-			ref->getter = getter;
-		if (setter && !(ref->atts & JS_DONTCONF))
-			ref->setter = setter;
+		if (value) {
+			if (!(ref->atts & JS_READONLY))
+				ref->value = *value;
+			else if (J->strict)
+				js_typeerror(J, "'%s' is read-only", name);
+		}
+		if (getter) {
+			if (!(ref->atts & JS_DONTCONF))
+				ref->getter = getter;
+			else if (J->strict)
+				js_typeerror(J, "'%s' is non-configurable", name);
+		}
+		if (setter) {
+			if (!(ref->atts & JS_DONTCONF))
+				ref->setter = setter;
+			else if (J->strict)
+				js_typeerror(J, "'%s' is non-configurable", name);
+		}
 		ref->atts |= atts;
 	}
+
+	return;
+
+readonly:
+	if (J->strict)
+		js_typeerror(J, "'%s' is read-only or non-configurable", name);
 }
 
 static int jsR_delproperty(js_State *J, js_Object *obj, const char *name)
@@ -601,31 +629,37 @@ static int jsR_delproperty(js_State *J, js_Object *obj, const char *name)
 	unsigned int k;
 
 	if (obj->type == JS_CARRAY)
-		if (!strcmp(name, "length")) return 0;
+		if (!strcmp(name, "length"))
+			goto dontconf;
 
 	if (obj->type == JS_CSTRING) {
 		if (!strcmp(name, "length"))
-			return 0;
+			goto dontconf;
 		if (js_isarrayindex(J, name, &k))
 			if (js_runeat(J, obj->u.s.string, k))
-				return 0;
+				goto dontconf;
 	}
 
 	if (obj->type == JS_CREGEXP) {
-		if (!strcmp(name, "source")) return 0;
-		if (!strcmp(name, "global")) return 0;
-		if (!strcmp(name, "ignoreCase")) return 0;
-		if (!strcmp(name, "multiline")) return 0;
-		if (!strcmp(name, "lastIndex")) return 0;
+		if (!strcmp(name, "source")) goto dontconf;
+		if (!strcmp(name, "global")) goto dontconf;
+		if (!strcmp(name, "ignoreCase")) goto dontconf;
+		if (!strcmp(name, "multiline")) goto dontconf;
+		if (!strcmp(name, "lastIndex")) goto dontconf;
 	}
 
 	ref = jsV_getownproperty(J, obj, name);
 	if (ref) {
 		if (ref->atts & JS_DONTCONF)
-			return 0;
+			goto dontconf;
 		jsV_delproperty(J, obj, name);
 	}
 	return 1;
+
+dontconf:
+	if (J->strict)
+		js_typeerror(J, "'%s' is non-configurable", name);
+	return 0;
 }
 
 /* Registry, global and object property accessors */
@@ -798,6 +832,8 @@ static void js_setvar(js_State *J, const char *name)
 			}
 			if (!(ref->atts & JS_READONLY))
 				ref->value = *stackidx(J, -1);
+			else if (J->strict)
+				js_typeerror(J, "'%s' is read-only", name);
 			return;
 		}
 		E = E->outer;
@@ -813,8 +849,11 @@ static int js_delvar(js_State *J, const char *name)
 	do {
 		js_Property *ref = jsV_getownproperty(J, E->variables, name);
 		if (ref) {
-			if (ref->atts & JS_DONTCONF)
+			if (ref->atts & JS_DONTCONF) {
+				if (J->strict)
+					js_typeerror(J, "'%s' is non-configurable", name);
 				return 0;
+			}
 			jsV_delproperty(J, E->variables, name);
 			return 1;
 		}
