@@ -420,6 +420,8 @@ static void cdelete(JF, js_Ast *exp)
 {
 	switch (exp->type) {
 	case EXP_IDENTIFIER:
+		if (J->strict)
+			jsC_error(J, exp, "delete on an unqualified name is not allowed in strict mode");
 		emitlocal(J, F, OP_DELLOCAL, OP_DELVAR, exp->string);
 		break;
 	case EXP_INDEX:
