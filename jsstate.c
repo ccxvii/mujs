@@ -175,7 +175,7 @@ void *js_getcontext(js_State *J)
 	return J->uctx;
 }
 
-js_State *js_newstate(js_Alloc alloc, void *actx)
+js_State *js_newstate(js_Alloc alloc, void *actx, int flags)
 {
 	js_State *J;
 
@@ -191,6 +191,9 @@ js_State *js_newstate(js_Alloc alloc, void *actx)
 	memset(J, 0, sizeof(*J));
 	J->actx = actx;
 	J->alloc = alloc;
+
+	if (flags & JS_STRICT)
+		J->strict = 1;
 
 	J->trace[0].name = "?";
 	J->trace[0].file = "[C]";

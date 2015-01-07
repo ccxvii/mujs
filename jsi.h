@@ -137,6 +137,8 @@ struct js_State
 
 	js_StringNode *strings;
 
+	int strict;
+
 	/* parser input source */
 	const char *filename;
 	const char *source;
@@ -155,9 +157,6 @@ struct js_State
 	const char *text;
 	double number;
 	js_Ast *gcast; /* list of allocated nodes to free after parsing */
-
-	/* compiler state */
-	int strict;
 
 	/* runtime environment */
 	js_Object *Object_prototype;
