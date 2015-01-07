@@ -206,8 +206,12 @@ js_Property *jsV_setproperty(js_State *J, js_Object *obj, const char *name)
 {
 	js_Property *result;
 
-	if (!obj->extensible)
-		return lookup(obj->properties, name);
+	if (!obj->extensible) {
+		result = lookup(obj->properties, name);
+		if (J->strict && !result)
+			js_typeerror(J, "object is non-extensible");
+		return result;
+	}
 
 	obj->properties = insert(J, obj, obj->properties, name, &result);
 	if (!result->prevp) {
