@@ -118,6 +118,12 @@ static int addstring(JF, const char *value)
 static void addlocal(JF, js_Ast *ident, int reuse)
 {
 	const char *name = ident->string;
+	if (J->strict) {
+		if (!strcmp(name, "arguments"))
+			jsC_error(J, ident, "redefining 'arguments' is not allowed in strict mode");
+		if (!strcmp(name, "eval"))
+			jsC_error(J, ident, "redefining 'eval' is not allowed in strict mode");
+	}
 	if (reuse || J->strict) {
 		unsigned int i;
 		for (i = 0; i < F->varlen; ++i) {
@@ -177,18 +183,24 @@ static void emitstring(JF, int opcode, const char *str)
 	emitraw(J, F, addstring(J, F, str));
 }
 
-static void emitlocal(JF, int oploc, int opvar, const char *name)
+static void emitlocal(JF, int oploc, int opvar, js_Ast *ident)
 {
 	int i;
+	if (J->strict && oploc == OP_SETLOCAL) {
+		if (!strcmp(ident->string, "arguments"))
+			jsC_error(J, ident, "'arguments' is read-only in strict mode");
+		if (!strcmp(ident->string, "eval"))
+			jsC_error(J, ident, "'eval' is read-only in strict mode");
+	}
 	if (F->lightweight) {
-		i = findlocal(J, F, name);
+		i = findlocal(J, F, ident->string);
 		if (i >= 0) {
 			emit(J, F, oploc);
 			emitraw(J, F, i);
 			return;
 		}
 	}
-	emitstring(J, F, opvar, name);
+	emitstring(J, F, opvar, ident->string);
 }
 
 static int here(JF)
@@ -229,7 +241,7 @@ static void label(JF, int inst)
 static void ctypeof(JF, js_Ast *exp)
 {
 	if (exp->type == EXP_IDENTIFIER)
-		emitlocal(J, F, OP_GETLOCAL, OP_HASVAR, exp->string);
+		emitlocal(J, F, OP_GETLOCAL, OP_HASVAR, exp);
 	else
 		cexp(J, F, exp);
 	emit(J, F, OP_TYPEOF);
@@ -300,7 +312,7 @@ static void cobject(JF, js_Ast *list)
 		else if (prop->type == EXP_NUMBER)
 			emitnumber(J, F, prop->number);
 		else
-			jsC_error(J, prop, "illegal property name in object initializer");
+			jsC_error(J, prop, "invalid property name in object initializer");
 
 		if (J->strict)
 			checkdup(J, F, head, kv);
@@ -342,7 +354,7 @@ static void cassign(JF, js_Ast *exp)
 	switch (lhs->type) {
 	case EXP_IDENTIFIER:
 		cexp(J, F, rhs);
-		emitlocal(J, F, OP_SETLOCAL, OP_SETVAR, lhs->string);
+		emitlocal(J, F, OP_SETLOCAL, OP_SETVAR, lhs);
 		break;
 	case EXP_INDEX:
 		cexp(J, F, lhs->a);
@@ -367,14 +379,14 @@ static void cassignforin(JF, js_Ast *stm)
 	if (stm->type == STM_FOR_IN_VAR) {
 		if (lhs->b)
 			jsC_error(J, lhs->b, "more than one loop variable in for-in statement");
-		emitlocal(J, F, OP_SETLOCAL, OP_SETVAR, lhs->a->a->string); /* list(var-init(ident)) */
+		emitlocal(J, F, OP_SETLOCAL, OP_SETVAR, lhs->a->a); /* list(var-init(ident)) */
 		emit(J, F, OP_POP);
 		return;
 	}
 
 	switch (lhs->type) {
 	case EXP_IDENTIFIER:
-		emitlocal(J, F, OP_SETLOCAL, OP_SETVAR, lhs->string);
+		emitlocal(J, F, OP_SETLOCAL, OP_SETVAR, lhs);
 		emit(J, F, OP_POP);
 		break;
 	case EXP_INDEX:
@@ -399,7 +411,7 @@ static void cassignop1(JF, js_Ast *lhs)
 {
 	switch (lhs->type) {
 	case EXP_IDENTIFIER:
-		emitlocal(J, F, OP_GETLOCAL, OP_GETVAR, lhs->string);
+		emitlocal(J, F, OP_GETLOCAL, OP_GETVAR, lhs);
 		break;
 	case EXP_INDEX:
 		cexp(J, F, lhs->a);
@@ -422,7 +434,7 @@ static void cassignop2(JF, js_Ast *lhs, int postfix)
 	switch (lhs->type) {
 	case EXP_IDENTIFIER:
 		if (postfix) emit(J, F, OP_ROT2);
-		emitlocal(J, F, OP_SETLOCAL, OP_SETVAR, lhs->string);
+		emitlocal(J, F, OP_SETLOCAL, OP_SETVAR, lhs);
 		break;
 	case EXP_INDEX:
 		if (postfix) emit(J, F, OP_ROT4);
@@ -453,7 +465,7 @@ static void cdelete(JF, js_Ast *exp)
 	case EXP_IDENTIFIER:
 		if (J->strict)
 			jsC_error(J, exp, "delete on an unqualified name is not allowed in strict mode");
-		emitlocal(J, F, OP_DELLOCAL, OP_DELVAR, exp->string);
+		emitlocal(J, F, OP_DELLOCAL, OP_DELVAR, exp);
 		break;
 	case EXP_INDEX:
 		cexp(J, F, exp->a);
@@ -547,7 +559,7 @@ static void cexp(JF, js_Ast *exp)
 		break;
 
 	case EXP_IDENTIFIER:
-		emitlocal(J, F, OP_GETLOCAL, OP_GETVAR, exp->string);
+		emitlocal(J, F, OP_GETLOCAL, OP_GETVAR, exp);
 		break;
 
 	case EXP_INDEX:
@@ -852,6 +864,12 @@ static void ctrycatch(JF, js_Ast *trystm, js_Ast *catchvar, js_Ast *catchstm)
 	L1 = emitjump(J, F, OP_TRY);
 	{
 		/* if we get here, we have caught an exception in the try block */
+		if (J->strict) {
+			if (!strcmp(catchvar->string, "arguments"))
+				jsC_error(J, catchvar, "redefining 'arguments' is not allowed in strict mode");
+			if (!strcmp(catchvar->string, "eval"))
+				jsC_error(J, catchvar, "redefining 'eval' is not allowed in strict mode");
+		}
 		emitstring(J, F, OP_CATCH, catchvar->string);
 		cstm(J, F, catchstm);
 		emit(J, F, OP_ENDCATCH);
@@ -876,6 +894,12 @@ static void ctrycatchfinally(JF, js_Ast *trystm, js_Ast *catchvar, js_Ast *catch
 			emit(J, F, OP_THROW); /* rethrow exception */
 		}
 		label(J, F, L2);
+		if (J->strict) {
+			if (!strcmp(catchvar->string, "arguments"))
+				jsC_error(J, catchvar, "redefining 'arguments' is not allowed in strict mode");
+			if (!strcmp(catchvar->string, "eval"))
+				jsC_error(J, catchvar, "redefining 'eval' is not allowed in strict mode");
+		}
 		emitstring(J, F, OP_CATCH, catchvar->string);
 		cstm(J, F, catchstm);
 		emit(J, F, OP_ENDCATCH);
@@ -939,7 +963,7 @@ static void cvarinit(JF, js_Ast *list)
 		js_Ast *var = list->a;
 		if (var->b) {
 			cexp(J, F, var->b);
-			emitlocal(J, F, OP_SETLOCAL, OP_SETVAR, var->a->string);
+			emitlocal(J, F, OP_SETLOCAL, OP_SETVAR, var->a);
 			emit(J, F, OP_POP);
 		}
 		list = list->b;
@@ -1185,7 +1209,7 @@ static void analyze(JF, js_Ast *node)
 		} else if (!strcmp(node->string, "eval")) {
 			/* eval may only be used as a direct function call */
 			if (!node->parent || node->parent->type != EXP_CALL || node->parent->a != node)
-				js_evalerror(J, "%s:%d: illegal use of 'eval'", J->filename, node->line);
+				js_evalerror(J, "%s:%d: invalid use of 'eval'", J->filename, node->line);
 			F->lightweight = 0;
 		}
 	}
