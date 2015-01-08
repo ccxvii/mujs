@@ -436,6 +436,16 @@ static void cdelete(JF, js_Ast *exp)
 	}
 }
 
+static void ceval(JF, js_Ast *fun, js_Ast *args)
+{
+	int n = cargs(J, F, args);
+	if (n == 0)
+		emit(J, F, OP_UNDEF);
+	else while (n-- > 1)
+		emit(J, F, OP_POP);
+	emit(J, F, OP_EVAL);
+}
+
 static void ccall(JF, js_Ast *fun, js_Ast *args)
 {
 	int n;
@@ -453,6 +463,12 @@ static void ccall(JF, js_Ast *fun, js_Ast *args)
 		emitstring(J, F, OP_GETPROP_S, fun->b->string);
 		emit(J, F, OP_ROT2);
 		break;
+	case EXP_IDENTIFIER:
+		if (!strcmp(fun->string, "eval")) {
+			ceval(J, F, fun, args);
+			return;
+		}
+		/* fall through */
 	default:
 		cexp(J, F, fun);
 		emit(J, F, OP_GLOBAL);

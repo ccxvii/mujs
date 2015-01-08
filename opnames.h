@@ -45,6 +45,7 @@
 "delprop_s",
 "iterator",
 "nextiter",
+"eval",
 "call",
 "new",
 "typeof",

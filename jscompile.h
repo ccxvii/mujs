@@ -63,6 +63,7 @@ enum js_OpCode
 	OP_ITERATOR,	/* <obj> -- <iobj> */
 	OP_NEXTITER,	/* <iobj> -- ( <iobj> <name> true | false ) */
 
+	OP_EVAL,	/* <args...> -(numargs)- <returnvalue> */
 	OP_CALL,	/* <closure> <this> <args...> -(numargs)- <returnvalue> */
 	OP_NEW,		/* <closure> <args...> -(numargs)- <returnvalue> */
 
