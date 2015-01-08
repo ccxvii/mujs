@@ -207,12 +207,6 @@ int js_isregexp(js_State *J, int idx)
 	return v->type == JS_TOBJECT && v->u.object->type == JS_CREGEXP;
 }
 
-static int js_isiterator(js_State *J, int idx)
-{
-	js_Value *v = stackidx(J, idx);
-	return v->type == JS_TOBJECT && v->u.object->type == JS_CITERATOR;
-}
-
 int js_isuserdata(js_State *J, int idx, const char *tag)
 {
 	js_Value *v = stackidx(J, idx);
@@ -1328,16 +1322,11 @@ static void jsR_run(js_State *J, js_Function *F)
 			break;
 
 		case OP_NEXTITER:
-			if (js_isiterator(J, -1)) {
-				obj = js_toobject(J, -1);
-				str = jsV_nextiterator(J, obj);
-				if (str) {
-					js_pushliteral(J, str);
-					js_pushboolean(J, 1);
-				} else {
-					js_pop(J, 1);
-					js_pushboolean(J, 0);
-				}
+			obj = js_toobject(J, -1);
+			str = jsV_nextiterator(J, obj);
+			if (str) {
+				js_pushliteral(J, str);
+				js_pushboolean(J, 1);
 			} else {
 				js_pop(J, 1);
 				js_pushboolean(J, 0);
