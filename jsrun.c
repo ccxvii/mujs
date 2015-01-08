@@ -1208,7 +1208,7 @@ static void jsR_run(js_State *J, js_Function *F)
 		case OP_GETVAR:
 			str = ST[*pc++];
 			if (!js_hasvar(J, str))
-				js_referenceerror(J, "%s is not defined", str);
+				js_referenceerror(J, "'%s' is not defined", str);
 			break;
 
 		case OP_HASVAR:

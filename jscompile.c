@@ -1029,7 +1029,7 @@ static void cstm(JF, js_Ast *stm)
 		if (stm->a) {
 			target = breaktarget(J, F, stm, stm->a->string);
 			if (!target)
-				jsC_error(J, stm, "break label not found: %s", stm->a->string);
+				jsC_error(J, stm, "break label '%s' not found", stm->a->string);
 		} else {
 			target = breaktarget(J, F, stm, NULL);
 			if (!target)
@@ -1043,7 +1043,7 @@ static void cstm(JF, js_Ast *stm)
 		if (stm->a) {
 			target = continuetarget(J, F, stm, stm->a->string);
 			if (!target)
-				jsC_error(J, stm, "continue label not found: %s", stm->a->string);
+				jsC_error(J, stm, "continue label '%s' not found", stm->a->string);
 		} else {
 			target = continuetarget(J, F, stm, NULL);
 			if (!target)
