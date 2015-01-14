@@ -29,6 +29,7 @@ typedef struct js_State js_State;
 typedef void *(*js_Alloc)(void *memctx, void *ptr, unsigned int size);
 typedef void (*js_Panic)(js_State *J);
 typedef void (*js_CFunction)(js_State *J);
+typedef void (*js_Finalize)(js_State *J, void *p);
 
 /* Basic functions */
 js_State *js_newstate(js_Alloc alloc, void *actx);
@@ -125,7 +126,7 @@ void js_newnumber(js_State *J, double v);
 void js_newstring(js_State *J, const char *v);
 void js_newcfunction(js_State *J, js_CFunction fun, const char *name, unsigned int length);
 void js_newcconstructor(js_State *J, js_CFunction fun, js_CFunction con, const char *name, unsigned int length);
-void js_newuserdata(js_State *J, const char *tag, void *data);
+void js_newuserdata(js_State *J, const char *tag, void *data, js_Finalize finalize);
 void js_newregexp(js_State *J, const char *pattern, int flags);
 
 void js_pushiterator(js_State *J, int idx, int own);

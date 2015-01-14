@@ -48,6 +48,8 @@ static void jsG_freeobject(js_State *J, js_Object *obj)
 		js_regfree(obj->u.r.prog);
 	if (obj->type == JS_CITERATOR)
 		jsG_freeiterator(J, obj->u.iter.head);
+	if (obj->type == JS_CUSERDATA && obj->u.user.finalize)
+		obj->u.user.finalize(J, obj->u.user.data);
 	js_free(J, obj);
 }
 

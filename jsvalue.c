@@ -432,7 +432,7 @@ void js_newcconstructor(js_State *J, js_CFunction cfun, js_CFunction ccon, const
 	}
 }
 
-void js_newuserdata(js_State *J, const char *tag, void *data)
+void js_newuserdata(js_State *J, const char *tag, void *data, js_Finalize finalize)
 {
 	js_Object *prototype = NULL;
 	js_Object *obj;
@@ -444,6 +444,7 @@ void js_newuserdata(js_State *J, const char *tag, void *data)
 	obj = jsV_newobject(J, JS_CUSERDATA, prototype);
 	obj->u.user.tag = tag;
 	obj->u.user.data = data;
+	obj->u.user.finalize = finalize;
 	js_pushobject(J, obj);
 }
 

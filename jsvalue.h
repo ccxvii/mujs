@@ -112,6 +112,7 @@ struct js_Object
 		struct {
 			const char *tag;
 			void *data;
+			js_Finalize finalize;
 		} user;
 	} u;
 	js_Object *gcnext;
