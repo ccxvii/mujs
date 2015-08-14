@@ -4,7 +4,7 @@
 #include <setjmp.h>
 #include <limits.h>
 
-#include "regex.h"
+#include "regexp.h"
 #include "utf.h"
 
 #define emit regemit

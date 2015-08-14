@@ -1,5 +1,5 @@
-#ifndef regex_h
-#define regex_h
+#ifndef regexp_h
+#define regexp_h
 
 #define regcomp js_regcomp
 #define regexec js_regexec

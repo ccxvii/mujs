@@ -1,7 +1,7 @@
 #include "jsi.h"
 #include "jsvalue.h"
 #include "jsbuiltin.h"
-#include "regex.h"
+#include "regexp.h"
 
 void js_newregexp(js_State *J, const char *pattern, int flags)
 {

@@ -1,5 +1,5 @@
-SRCS := $(wildcard js*.c utf*.c regex.c)
-HDRS := $(wildcard js*.h mujs.h utf.h regex.h)
+SRCS := $(wildcard js*.c utf*.c regexp.c)
+HDRS := $(wildcard js*.h mujs.h utf.h regexp.h)
 OBJS := $(SRCS:%.c=build/%.o)
 
 prefix ?= /usr/local

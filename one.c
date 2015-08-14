@@ -21,6 +21,6 @@
 #include "jsstate.c"
 #include "jsstring.c"
 #include "jsvalue.c"
-#include "regex.c"
+#include "regexp.c"
 #include "utf.c"
 #include "utftype.c"

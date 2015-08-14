@@ -2,7 +2,7 @@
 #include "jsvalue.h"
 #include "jsbuiltin.h"
 #include "utf.h"
-#include "regex.h"
+#include "regexp.h"
 
 int js_runeat(js_State *J, const char *s, int i)
 {
