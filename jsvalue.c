@@ -12,7 +12,7 @@ double jsV_numbertointeger(double n)
 	double sign = n < 0 ? -1 : 1;
 	if (isnan(n)) return 0;
 	if (n == 0 || isinf(n)) return n;
-	return sign * floor(abs(n));
+	return sign * floor(fabs(n));
 }
 
 int jsV_numbertoint32(double n)

@@ -226,7 +226,7 @@ static double TimeClip(double t)
 {
 	if (!isfinite(t))
 		return NAN;
-	if (abs(t) > 8.64e15)
+	if (fabs(t) > 8.64e15)
 		return NAN;
 	return t < 0 ? -floor(-t) : floor(t);
 }
