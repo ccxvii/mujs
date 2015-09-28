@@ -120,10 +120,10 @@ struct js_Jumpbuf
 void js_savetry(js_State *J, js_Instruction *pc);
 
 #define js_trypc(J, PC) \
-	(js_savetry(J, PC), setjmp(J->trybuf[J->trytop++].buf))
+	setjmp((js_savetry(J, PC), J->trybuf[J->trytop++].buf))
 
 #define js_try(J) \
-	(js_savetry(J, NULL), setjmp(J->trybuf[J->trytop++].buf))
+	setjmp((js_savetry(J, NULL), J->trybuf[J->trytop++].buf))
 
 #define js_endtry(J) \
 	(--J->trytop)
