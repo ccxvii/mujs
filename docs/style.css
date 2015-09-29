@@ -1,0 +1,16 @@
+@import url(http://fonts.googleapis.com/css?family=Source+Sans+Pro:400,400italic,600,600italic|Source+Code+Pro);
+
+body {
+	font-family: 'Source Sans Pro', sans-serif;
+	font-size: 12pt;
+	margin: 3pc;
+	max-width: 45em;
+	text-align: justify;
+}
+pre, tt, code {
+	font-family: 'Source Code Pro', monospaced;
+	font-size: 11pt;
+}
+h2 {
+	border-bottom: 2px solid black;
+}
