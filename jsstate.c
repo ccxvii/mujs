@@ -125,7 +125,7 @@ void js_loadfile(js_State *J, const char *filename)
 	js_endtry(J);
 }
 
-int js_dostring(js_State *J, const char *source, int report)
+int js_dostring(js_State *J, const char *source)
 {
 	if (js_try(J)) {
 		fprintf(stderr, "%s\n", js_tostring(J, -1));
@@ -135,9 +135,6 @@ int js_dostring(js_State *J, const char *source, int report)
 	js_loadstring(J, "[string]", source);
 	js_pushglobal(J);
 	js_call(J, 0);
-	if (report)
-		if (js_isdefined(J, -1))
-			printf("%s\n", js_tostring(J, -1));
 	js_pop(J, 1);
 	js_endtry(J);
 	return 0;

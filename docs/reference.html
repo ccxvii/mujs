@@ -244,13 +244,12 @@ In case of failure, return 1 with the error object on the stack.
 There are two convenience functions for loading and executing code.
 
 <pre>
-int js_dostring(js_State *J, const char *source, int report);
+int js_dostring(js_State *J, const char *source);
 </pre>
 
 <p>
 Compile and execute the script in the zero-terminated string in source argument.
 If any errors occur, print the error message to stderr and return 1.
-If the report argument is non-zero, print the result of executing the script to stdout.
 Return 0 on success.
 
 <pre>
