@@ -346,6 +346,19 @@ void js_remove(js_State *J, int idx)
 	--TOP;
 }
 
+void js_insert(js_State *J, int idx)
+{
+	js_error(J, "not implemented yet");
+}
+
+void js_replace(js_State* J, int idx)
+{
+	idx = idx < 0 ? TOP + idx : BOT + idx;
+	if (idx < BOT || idx >= TOP)
+		js_error(J, "stack error!");
+	STACK[idx] = STACK[--TOP];
+}
+
 void js_copy(js_State *J, int idx)
 {
 	CHECKSTACK(1);
