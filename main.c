@@ -123,11 +123,13 @@ int eval_print(js_State *J, const char *source)
 {
 	if (js_ploadstring(J, "[string]", source)) {
 		fprintf(stderr, "%s\n", js_tostring(J, -1));
+		js_pop(J, 1);
 		return 1;
 	}
 	js_pushglobal(J);
 	if (js_pcall(J, 0)) {
 		fprintf(stderr, "%s\n", js_tostring(J, -1));
+		js_pop(J, 1);
 		return 1;
 	}
 	if (js_isdefined(J, -1))
