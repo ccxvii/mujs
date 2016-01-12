@@ -173,6 +173,14 @@ void js_remove(js_State *J, int idx);
 void js_insert(js_State *J, int idx);
 void js_replace(js_State* J, int idx);
 
+void js_dup(js_State *J);
+void js_dup2(js_State *J);
+void js_rot2(js_State *J);
+void js_rot3(js_State *J);
+void js_rot4(js_State *J);
+void js_rot2pop1(js_State *J);
+void js_rot3pop2(js_State *J);
+
 void js_concat(js_State *J);
 int js_compare(js_State *J, int *okay);
 int js_equal(js_State *J);
