@@ -48,6 +48,15 @@ int js_ploadfile(js_State *J, const char *filename);
 int js_pcall(js_State *J, int n);
 int js_pconstruct(js_State *J, int n);
 
+/* Exception handling */
+
+void *js_savetry(js_State *J); /* returns a jmp_buf */
+
+#define js_try(J) \
+	setjmp(js_savetry(J))
+
+void js_endtry(js_State *J);
+
 /* State constructor flags */
 enum {
 	JS_STRICT = 1,

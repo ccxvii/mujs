@@ -117,16 +117,10 @@ struct js_Jumpbuf
 	js_Instruction *pc;
 };
 
-void js_savetry(js_State *J, js_Instruction *pc);
+void *js_savetrypc(js_State *J, js_Instruction *pc);
 
 #define js_trypc(J, PC) \
-	setjmp((js_savetry(J, PC), J->trybuf[J->trytop++].buf))
-
-#define js_try(J) \
-	setjmp((js_savetry(J, NULL), J->trybuf[J->trytop++].buf))
-
-#define js_endtry(J) \
-	(--J->trytop)
+	setjmp(js_savetrypc(J, PC))
 
 /* State struct */
 
