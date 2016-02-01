@@ -18,9 +18,27 @@
 #pragma warning(disable:4244) /* implicit conversion from double to int */
 #pragma warning(disable:4267) /* implicit conversion of int to smaller int */
 #define inline __inline
-#define snprintf _snprintf
-#define vsnprintf _vsnprintf
-#if _MSC_VER < 1800
+#if _MSC_VER < 1900 /* MSVC 2015 */
+#define snprintf jsW_snprintf
+#define vsnprintf jsW_vsnprintf
+static int jsW_vsnprintf(char *str, size_t size, const char *fmt, va_list ap)
+{
+	int n;
+	n = _vsnprintf(str, size, fmt, ap);
+	str[size-1] = 0;
+	return n;
+}
+static int jsW_snprintf(char *str, size_t size, const char *fmt, ...)
+{
+	int n;
+	va_list ap;
+	va_start(ap, fmt);
+	n = jsW_vsnprintf(str, size, fmt, ap);
+	va_end(ap);
+	return n;
+}
+#endif
+#if _MSC_VER < 1700 /* MSVC 2012 */
 #define round(x) floor((x) < 0 ? (x) - 0.5 : (x) + 0.5)
 #define isnan(x) _isnan(x)
 #define isinf(x) (!_finite(x))
@@ -28,7 +46,7 @@
 static __inline int signbit(double x) {union{double d;__int64 i;}u;u.d=x;return u.i>>63;}
 #define INFINITY (DBL_MAX+DBL_MAX)
 #define NAN (INFINITY-INFINITY)
-#endif /* old MSVC */
+#endif
 #endif
 
 #define nelem(a) (sizeof (a) / sizeof (a)[0])
