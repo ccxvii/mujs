@@ -75,6 +75,30 @@ js_newobject(J);
 js_setglobal(J, "t");
 </pre>
 
+<h2>Callbacks from C to JS</h2>
+
+<pre>
+const char *handle = NULL; /* handle to stowed away js function */
+
+static void set_callback(js_State *J)
+{
+	if (handle)
+		js_unref(J, handle); /* delete old function */
+	js_copy(J, 1);
+	handle = js_ref(J); /* stow the js function in the registry */
+}
+
+static void call_callback(js_State *J, int arg1, int arg2)
+{
+	js_getregistry(J, handle); /* retrieve the js function from the registry */
+	js_pushnull(J);
+	js_pushnumber(J, arg1);
+	js_pushnumber(J, arg2);
+	js_pcall(J, 2);
+	js_pop(J, 1);
+}
+</pre>
+
 <h2>Complete userdata example</h2>
 
 <pre>
