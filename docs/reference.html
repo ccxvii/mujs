@@ -103,7 +103,7 @@ When the C function returns, the top value on the stack is passed back to the ca
 
 <p>
 The stack values are accessed using stack indices.
-Index 0 always contains this value, and function arguments are index 1 and up.
+Index 0 always contains the this value, and function arguments are index 1 and up.
 Negative indices count down from the top of the stack, so index -1 is the top of the index and index -2 is the one below that.
 
 <h2>The Application Program Interface</h2>
@@ -260,6 +260,38 @@ int js_dofile(js_State *J, const char *filename);
 Load the script from the file with the given filename, then compile and execute it.
 If any errors occur, print the error message to stderr and return 1.
 Return 0 on success.
+
+<h3>Protected environments</h3>
+
+<p>
+The js_try macro pushes a new protected environment and calls setjmp.
+If it returns true, an error has occurred. The protected environment has been popped
+and the error object is located on the top of the stack.
+
+<p>
+At the end of the code you want to run in the protected environment you must call
+js_endtry in order to pop the protected environment. Note: you should <i>not</i> call
+js_endtry when an error has occurred and you are in the true-branch of js_try.
+
+<p>
+Since the macro is a wrapper around setjmp, the usual
+<a href="http://pubs.opengroup.org/onlinepubs/007908799/xsh/setjmp.html">restrictions</a> apply.
+Use the following example as a guide for how to use js_try:
+
+<pre>
+if (js_try(J)) {
+	fprintf(stderr, "error: %s", js_tostring(J, -1));
+	js_pop(J, 1);
+	return;
+}
+do_some_stuff();
+js_endtry(J);
+</pre>
+
+<p>
+Most of the time you shouldn't need to worry about protected environments.
+The functions prefixed with 'p' (js_pcall, js_ploadstring, etc) handle setting
+up the protected environment and return simple error codes.
 
 <h3>Errors</h3>
 
