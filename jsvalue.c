@@ -421,6 +421,7 @@ void js_newcconstructor(js_State *J, js_CFunction cfun, js_CFunction ccon, const
 	obj->u.c.name = name;
 	obj->u.c.function = cfun;
 	obj->u.c.constructor = ccon;
+	obj->u.c.length = length;
 	js_pushobject(J, obj); /* proto obj */
 	{
 		js_pushnumber(J, length);
