@@ -452,7 +452,6 @@ static void js_pushrune(js_State *J, Rune rune)
 	}
 }
 
-
 static int jsR_hasproperty(js_State *J, js_Object *obj, const char *name)
 {
 	js_Property *ref;
@@ -465,7 +464,7 @@ static int jsR_hasproperty(js_State *J, js_Object *obj, const char *name)
 		}
 	}
 
-	if (obj->type == JS_CSTRING) {
+	else if (obj->type == JS_CSTRING) {
 		if (!strcmp(name, "length")) {
 			js_pushnumber(J, obj->u.s.length);
 			return 1;
@@ -476,7 +475,7 @@ static int jsR_hasproperty(js_State *J, js_Object *obj, const char *name)
 		}
 	}
 
-	if (obj->type == JS_CREGEXP) {
+	else if (obj->type == JS_CREGEXP) {
 		if (!strcmp(name, "source")) {
 			js_pushliteral(J, obj->u.r.source);
 			return 1;
@@ -499,7 +498,7 @@ static int jsR_hasproperty(js_State *J, js_Object *obj, const char *name)
 		}
 	}
 
-	if (obj->type == JS_CUSERDATA) {
+	else if (obj->type == JS_CUSERDATA) {
 		if (obj->u.user.has && obj->u.user.has(J, obj->u.user.data, name))
 			return 1;
 	}
@@ -546,7 +545,7 @@ static void jsR_setproperty(js_State *J, js_Object *obj, const char *name)
 				obj->u.a.length = k + 1;
 	}
 
-	if (obj->type == JS_CSTRING) {
+	else if (obj->type == JS_CSTRING) {
 		if (!strcmp(name, "length"))
 			goto readonly;
 		if (js_isarrayindex(J, name, &k))
@@ -554,7 +553,7 @@ static void jsR_setproperty(js_State *J, js_Object *obj, const char *name)
 				goto readonly;
 	}
 
-	if (obj->type == JS_CREGEXP) {
+	else if (obj->type == JS_CREGEXP) {
 		if (!strcmp(name, "source")) goto readonly;
 		if (!strcmp(name, "global")) goto readonly;
 		if (!strcmp(name, "ignoreCase")) goto readonly;
@@ -565,7 +564,7 @@ static void jsR_setproperty(js_State *J, js_Object *obj, const char *name)
 		}
 	}
 
-	if (obj->type == JS_CUSERDATA) {
+	else if (obj->type == JS_CUSERDATA) {
 		if (obj->u.user.put && obj->u.user.put(J, obj->u.user.data, name))
 			return;
 	}
@@ -605,11 +604,12 @@ static void jsR_defproperty(js_State *J, js_Object *obj, const char *name,
 	js_Property *ref;
 	unsigned int k;
 
-	if (obj->type == JS_CARRAY)
+	if (obj->type == JS_CARRAY) {
 		if (!strcmp(name, "length"))
 			goto readonly;
+	}
 
-	if (obj->type == JS_CSTRING) {
+	else if (obj->type == JS_CSTRING) {
 		if (!strcmp(name, "length"))
 			goto readonly;
 		if (js_isarrayindex(J, name, &k))
@@ -617,7 +617,7 @@ static void jsR_defproperty(js_State *J, js_Object *obj, const char *name,
 				goto readonly;
 	}
 
-	if (obj->type == JS_CREGEXP) {
+	else if (obj->type == JS_CREGEXP) {
 		if (!strcmp(name, "source")) goto readonly;
 		if (!strcmp(name, "global")) goto readonly;
 		if (!strcmp(name, "ignoreCase")) goto readonly;
@@ -625,7 +625,7 @@ static void jsR_defproperty(js_State *J, js_Object *obj, const char *name,
 		if (!strcmp(name, "lastIndex")) goto readonly;
 	}
 
-	if (obj->type == JS_CUSERDATA) {
+	else if (obj->type == JS_CUSERDATA) {
 		if (obj->u.user.put && obj->u.user.put(J, obj->u.user.data, name))
 			return;
 	}
@@ -665,11 +665,12 @@ static int jsR_delproperty(js_State *J, js_Object *obj, const char *name)
 	js_Property *ref;
 	unsigned int k;
 
-	if (obj->type == JS_CARRAY)
+	if (obj->type == JS_CARRAY) {
 		if (!strcmp(name, "length"))
 			goto dontconf;
+	}
 
-	if (obj->type == JS_CSTRING) {
+	else if (obj->type == JS_CSTRING) {
 		if (!strcmp(name, "length"))
 			goto dontconf;
 		if (js_isarrayindex(J, name, &k))
@@ -677,7 +678,7 @@ static int jsR_delproperty(js_State *J, js_Object *obj, const char *name)
 				goto dontconf;
 	}
 
-	if (obj->type == JS_CREGEXP) {
+	else if (obj->type == JS_CREGEXP) {
 		if (!strcmp(name, "source")) goto dontconf;
 		if (!strcmp(name, "global")) goto dontconf;
 		if (!strcmp(name, "ignoreCase")) goto dontconf;
