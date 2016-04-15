@@ -89,7 +89,7 @@ void jsB_initnumber(js_State *J)
 		jsB_propf(J, "toExponential", Np_toExponential, 1);
 		jsB_propf(J, "toPrecision", Np_toPrecision, 1);
 	}
-	js_newcconstructor(J, jsB_Number, jsB_new_Number, "Number", 1);
+	js_newcconstructor(J, jsB_Number, jsB_new_Number, "Number", 0); /* 1 */
 	{
 		jsB_propn(J, "MAX_VALUE", 1.7976931348623157e+308);
 		jsB_propn(J, "MIN_VALUE", 5e-324);

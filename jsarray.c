@@ -687,16 +687,16 @@ void jsB_initarray(js_State *J)
 	js_pushobject(J, J->Array_prototype);
 	{
 		jsB_propf(J, "toString", Ap_toString, 0);
-		jsB_propf(J, "concat", Ap_concat, 1);
+		jsB_propf(J, "concat", Ap_concat, 0); /* 1 */
 		jsB_propf(J, "join", Ap_join, 1);
 		jsB_propf(J, "pop", Ap_pop, 0);
-		jsB_propf(J, "push", Ap_push, 1);
+		jsB_propf(J, "push", Ap_push, 0); /* 1 */
 		jsB_propf(J, "reverse", Ap_reverse, 0);
 		jsB_propf(J, "shift", Ap_shift, 0);
 		jsB_propf(J, "slice", Ap_slice, 2);
 		jsB_propf(J, "sort", Ap_sort, 1);
-		jsB_propf(J, "splice", Ap_splice, 2);
-		jsB_propf(J, "unshift", Ap_unshift, 1);
+		jsB_propf(J, "splice", Ap_splice, 0); /* 2 */
+		jsB_propf(J, "unshift", Ap_unshift, 0); /* 1 */
 
 		/* ES5 */
 		jsB_propf(J, "indexOf", Ap_indexOf, 1);
@@ -709,7 +709,7 @@ void jsB_initarray(js_State *J)
 		jsB_propf(J, "reduce", Ap_reduce, 1);
 		jsB_propf(J, "reduceRight", Ap_reduceRight, 1);
 	}
-	js_newcconstructor(J, jsB_new_Array, jsB_new_Array, "Array", 1);
+	js_newcconstructor(J, jsB_new_Array, jsB_new_Array, "Array", 0); /* 1 */
 	{
 		/* ES5 */
 		jsB_propf(J, "isArray", A_isArray, 1);

@@ -153,7 +153,7 @@ main(int argc, char **argv)
 	js_newcfunction(J, jsB_load, "load", 1);
 	js_setglobal(J, "load");
 
-	js_newcfunction(J, jsB_print, "print", 1);
+	js_newcfunction(J, jsB_print, "print", 0);
 	js_setglobal(J, "print");
 
 	js_newcfunction(J, jsB_write, "write", 0);

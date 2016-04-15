@@ -661,7 +661,7 @@ void jsB_initstring(js_State *J)
 		jsB_propf(J, "valueOf", Sp_valueOf, 0);
 		jsB_propf(J, "charAt", Sp_charAt, 1);
 		jsB_propf(J, "charCodeAt", Sp_charCodeAt, 1);
-		jsB_propf(J, "concat", Sp_concat, 1);
+		jsB_propf(J, "concat", Sp_concat, 0); /* 1 */
 		jsB_propf(J, "indexOf", Sp_indexOf, 1);
 		jsB_propf(J, "lastIndexOf", Sp_lastIndexOf, 1);
 		jsB_propf(J, "localeCompare", Sp_localeCompare, 1);
@@ -679,9 +679,9 @@ void jsB_initstring(js_State *J)
 		/* ES5 */
 		jsB_propf(J, "trim", Sp_trim, 0);
 	}
-	js_newcconstructor(J, jsB_String, jsB_new_String, "String", 1);
+	js_newcconstructor(J, jsB_String, jsB_new_String, "String", 0); /* 1 */
 	{
-		jsB_propf(J, "fromCharCode", S_fromCharCode, 1);
+		jsB_propf(J, "fromCharCode", S_fromCharCode, 0); /* 1 */
 	}
 	js_defglobal(J, "String", JS_DONTENUM);
 }

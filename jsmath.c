@@ -153,8 +153,8 @@ void jsB_initmath(js_State *J)
 		jsB_propf(J, "exp", Math_exp, 1);
 		jsB_propf(J, "floor", Math_floor, 1);
 		jsB_propf(J, "log", Math_log, 1);
-		jsB_propf(J, "max", Math_max, 0);
-		jsB_propf(J, "min", Math_min, 0);
+		jsB_propf(J, "max", Math_max, 0); /* 2 */
+		jsB_propf(J, "min", Math_min, 0); /* 2 */
 		jsB_propf(J, "pow", Math_pow, 2);
 		jsB_propf(J, "random", Math_random, 0);
 		jsB_propf(J, "round", Math_round, 1);
