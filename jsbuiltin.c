@@ -50,7 +50,7 @@ static void jsB_parseInt(js_State *J)
 			s += 2;
 			radix = 16;
 		}
-	} else if (radix < 2 || radix > 32) {
+	} else if (radix < 2 || radix > 36) {
 		js_pushnumber(J, NAN);
 		return;
 	}
