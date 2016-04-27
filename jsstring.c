@@ -272,6 +272,10 @@ static int istrim(int c)
 static void Sp_trim(js_State *J)
 {
 	const char *s, *e;
+
+	if (js_isundefined(J, 0) || js_isnull(J, 0)) // CheckObjectCoercible
+		js_typeerror (J, "not a string");
+
 	s = js_tostring(J, 0);
 	while (istrim(*s))
 		++s;
