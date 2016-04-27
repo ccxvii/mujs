@@ -50,7 +50,7 @@ static void jsP_warning(js_State *J, const char *fmt, ...)
 	fprintf(stderr, "\n");
 }
 
-static js_Ast *jsP_newnode(js_State *J, int type, js_Ast *a, js_Ast *b, js_Ast *c, js_Ast *d)
+static js_Ast *jsP_newnode(js_State *J, enum js_AstType type, js_Ast *a, js_Ast *b, js_Ast *c, js_Ast *d)
 {
 	js_Ast *node = js_malloc(J, sizeof *node);
 
@@ -89,14 +89,14 @@ static js_Ast *jsP_list(js_Ast *head)
 	return head;
 }
 
-static js_Ast *jsP_newstrnode(js_State *J, int type, const char *s)
+static js_Ast *jsP_newstrnode(js_State *J, enum js_AstType type, const char *s)
 {
 	js_Ast *node = jsP_newnode(J, type, 0, 0, 0, 0);
 	node->string = s;
 	return node;
 }
 
-static js_Ast *jsP_newnumnode(js_State *J, int type, double n)
+static js_Ast *jsP_newnumnode(js_State *J, enum js_AstType type, double n)
 {
 	js_Ast *node = jsP_newnode(J, type, 0, 0, 0, 0);
 	node->number = n;
@@ -879,7 +879,7 @@ static int toint32(double d)
 
 static unsigned int touint32(double d)
 {
-	return toint32(d);
+	return (unsigned int)toint32(d);
 }
 
 static int jsP_setnumnode(js_Ast *node, double x)
@@ -906,6 +906,7 @@ static int jsP_foldconst(js_Ast *node)
 	if (a) {
 		x = node->a->number;
 		switch (node->type) {
+		default: break;
 		case EXP_NEG: return jsP_setnumnode(node, -x);
 		case EXP_POS: return jsP_setnumnode(node, x);
 		case EXP_BITNOT: return jsP_setnumnode(node, ~toint32(x));
@@ -914,6 +915,7 @@ static int jsP_foldconst(js_Ast *node)
 		if (b) {
 			y = node->b->number;
 			switch (node->type) {
+			default: break;
 			case EXP_MUL: return jsP_setnumnode(node, x * y);
 			case EXP_DIV: return jsP_setnumnode(node, x / y);
 			case EXP_MOD: return jsP_setnumnode(node, fmod(x, y));

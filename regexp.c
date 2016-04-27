@@ -11,7 +11,7 @@
 #define next regnext
 #define accept regaccept
 
-#define nelem(a) (sizeof (a) / sizeof (a)[0])
+#define nelem(a) (int)(sizeof (a) / sizeof (a)[0])
 
 #define REPINF 255
 #define MAXTHREAD 1000
@@ -30,7 +30,7 @@ struct Reclass {
 struct Reprog {
 	Reinst *start, *end;
 	int flags;
-	unsigned int nsub;
+	int nsub;
 	Reclass cclass[16];
 };
 
@@ -39,8 +39,8 @@ struct cstate {
 	Renode *pstart, *pend;
 
 	const char *source;
-	unsigned int ncclass;
-	unsigned int nsub;
+	int ncclass;
+	int nsub;
 	Renode *sub[MAXSUB];
 
 	int lookahead;
@@ -597,9 +597,9 @@ struct Reinst {
 	Reinst *y;
 };
 
-static unsigned int count(Renode *node)
+static int count(Renode *node)
 {
-	unsigned int min, max;
+	int min, max;
 	if (!node) return 0;
 	switch (node->type) {
 	default: return 1;
@@ -631,7 +631,7 @@ static Reinst *emit(Reprog *prog, int opcode)
 static void compile(Reprog *prog, Renode *node)
 {
 	Reinst *inst, *split, *jump;
-	unsigned int i;
+	int i;
 
 	if (!node)
 		return;
@@ -909,7 +909,7 @@ static int incclasscanon(Reclass *cc, Rune c)
 	return 0;
 }
 
-static int strncmpcanon(const char *a, const char *b, unsigned int n)
+static int strncmpcanon(const char *a, const char *b, int n)
 {
 	Rune ra, rb;
 	int c;
@@ -944,7 +944,7 @@ static int match(Reinst *pc, const char *sp, const char *bol, int flags, Resub *
 	Resub scratch;
 	Resub sub;
 	Rune c;
-	unsigned int nready;
+	int nready;
 	int i;
 
 	/* queue initial thread */
@@ -1112,7 +1112,7 @@ int main(int argc, char **argv)
 	const char *s;
 	Reprog *p;
 	Resub m;
-	unsigned int i;
+	int i;
 
 	if (argc > 1) {
 		p = regcomp(argv[1], 0, &error);

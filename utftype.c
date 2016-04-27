@@ -1,7 +1,7 @@
 #include "utf.h"
 
 #define bsearch jsU_bsearch
-#define nelem(a) (sizeof (a) / sizeof (a)[0])
+#define nelem(a) (int)(sizeof (a) / sizeof (a)[0])
 
 /*
  * alpha ranges -

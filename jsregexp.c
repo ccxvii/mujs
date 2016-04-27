@@ -29,7 +29,7 @@ void js_newregexp(js_State *J, const char *pattern, int flags)
 
 void js_RegExp_prototype_exec(js_State *J, js_Regexp *re, const char *text)
 {
-	unsigned int i;
+	int i;
 	int opts;
 	Resub m;
 

@@ -231,7 +231,7 @@ void jsV_delproperty(js_State *J, js_Object *obj, const char *name)
 
 static int itshadow(js_State *J, js_Object *top, js_Object *bot, const char *name)
 {
-	unsigned int k;
+	int k;
 	while (top != bot) {
 		js_Property *prop = lookup(top->properties, name);
 		if (prop && !(prop->atts & JS_DONTENUM))
@@ -249,7 +249,7 @@ static void itwalk(js_State *J, js_Object *io, js_Object *top, int own)
 	js_Object *obj = top;
 	js_Iterator *tail = NULL;
 	char buf[32];
-	unsigned int k;
+	int k;
 
 #define ITADD(x) \
 	js_Iterator *node = js_malloc(J, sizeof *node); \
@@ -297,7 +297,7 @@ js_Object *jsV_newiterator(js_State *J, js_Object *obj, int own)
 
 const char *jsV_nextiterator(js_State *J, js_Object *io)
 {
-	unsigned int k;
+	int k;
 	if (io->type != JS_CITERATOR)
 		js_typeerror(J, "not an iterator");
 	while (io->u.iter.head) {
@@ -316,16 +316,16 @@ const char *jsV_nextiterator(js_State *J, js_Object *io)
 
 /* Walk all the properties and delete them one by one for arrays */
 
-void jsV_resizearray(js_State *J, js_Object *obj, unsigned int newlen)
+void jsV_resizearray(js_State *J, js_Object *obj, int newlen)
 {
 	char buf[32];
 	const char *s;
-	unsigned int k;
+	int k;
 	if (newlen < obj->u.a.length) {
 		if (obj->u.a.length > obj->count * 2) {
 			js_Object *it = jsV_newiterator(J, obj, 1);
 			while ((s = jsV_nextiterator(J, it))) {
-				k = jsV_numbertouint32(jsV_stringtonumber(J, s));
+				k = jsV_numbertointeger(jsV_stringtonumber(J, s));
 				if (k >= newlen && !strcmp(s, jsV_numbertostring(J, buf, k)))
 					jsV_delproperty(J, obj, s);
 			}

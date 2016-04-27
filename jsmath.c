@@ -96,7 +96,7 @@ static void Math_tan(js_State *J)
 
 static void Math_max(js_State *J)
 {
-	unsigned int i, n = js_gettop(J);
+	int i, n = js_gettop(J);
 	double x = -INFINITY;
 	for (i = 1; i < n; ++i) {
 		double y = js_tonumber(J, i);
@@ -114,7 +114,7 @@ static void Math_max(js_State *J)
 
 static void Math_min(js_State *J)
 {
-	unsigned int i, n = js_gettop(J);
+	int i, n = js_gettop(J);
 	double x = INFINITY;
 	for (i = 1; i < n; ++i) {
 		double y = js_tonumber(J, i);

@@ -7,15 +7,15 @@
 
 #include <assert.h>
 
-static void *js_defaultalloc(void *actx, void *ptr, unsigned int size)
+static void *js_defaultalloc(void *actx, void *ptr, int size)
 {
 	if (size == 0) {
 		free(ptr);
 		return NULL;
 	}
 	if (!ptr)
-		return malloc(size);
-	return realloc(ptr, size);
+		return malloc((size_t)size);
+	return realloc(ptr, (size_t)size);
 }
 
 static void js_defaultpanic(js_State *J)
@@ -103,7 +103,7 @@ void js_loadfile(js_State *J, const char *filename)
 		js_error(J, "cannot allocate storage for file contents: '%s'", filename);
 	}
 
-	t = fread(s, 1, n, f);
+	t = fread(s, 1, (size_t)n, f);
 	if (t != n) {
 		js_free(J, s);
 		fclose(f);
@@ -177,7 +177,7 @@ js_State *js_newstate(js_Alloc alloc, void *actx, int flags)
 	js_State *J;
 
 	assert(sizeof(js_Value) == 16);
-	assert(offsetof(js_Value, type) == 15);
+	assert(soffsetof(js_Value, type) == 15);
 
 	if (!alloc)
 		alloc = js_defaultalloc;

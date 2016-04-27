@@ -82,17 +82,17 @@ struct js_Object
 	int extensible;
 	js_Property *properties;
 	js_Property *head, **tailp; /* for enumeration */
-	unsigned int count; /* number of properties, for array sparseness check */
+	int count; /* number of properties, for array sparseness check */
 	js_Object *prototype;
 	union {
 		int boolean;
 		double number;
 		struct {
 			const char *string;
-			unsigned int length;
+			int length;
 		} s;
 		struct {
-			unsigned int length;
+			int length;
 		} a;
 		struct {
 			js_Function *function;
@@ -102,7 +102,7 @@ struct js_Object
 			const char *name;
 			js_CFunction function;
 			js_CFunction constructor;
-			unsigned int length;
+			int length;
 		} c;
 		js_Regexp r;
 		struct {
@@ -156,9 +156,9 @@ const char *jsV_tostring(js_State *J, js_Value *v);
 js_Object *jsV_toobject(js_State *J, js_Value *v);
 void jsV_toprimitive(js_State *J, js_Value *v, int preferred);
 
-const char *js_itoa(char buf[32], unsigned int a);
+const char *js_itoa(char buf[32], int a);
 double js_stringtofloat(const char *s, char **ep);
-double jsV_numbertointeger(double n);
+int jsV_numbertointeger(double n);
 int jsV_numbertoint32(double n);
 unsigned int jsV_numbertouint32(double n);
 short jsV_numbertoint16(double n);
@@ -178,7 +178,7 @@ void jsV_delproperty(js_State *J, js_Object *obj, const char *name);
 js_Object *jsV_newiterator(js_State *J, js_Object *obj, int own);
 const char *jsV_nextiterator(js_State *J, js_Object *iter);
 
-void jsV_resizearray(js_State *J, js_Object *obj, unsigned int newlen);
+void jsV_resizearray(js_State *J, js_Object *obj, int newlen);
 
 /* jsdump.c */
 void js_dumpobject(js_State *J, js_Object *obj);

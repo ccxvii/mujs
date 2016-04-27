@@ -135,7 +135,7 @@ static void O_getOwnPropertyNames(js_State *J)
 {
 	js_Object *obj;
 	js_Property *ref;
-	unsigned int k;
+	int k;
 	int i;
 
 	if (!js_isobject(J, 1))
@@ -292,7 +292,7 @@ static void O_keys(js_State *J)
 {
 	js_Object *obj;
 	js_Property *ref;
-	unsigned int k;
+	int k;
 	int i;
 
 	if (!js_isobject(J, 1))

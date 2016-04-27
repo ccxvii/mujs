@@ -2,40 +2,40 @@
 #include "jsvalue.h"
 #include "jsbuiltin.h"
 
-unsigned int js_getlength(js_State *J, int idx)
+int js_getlength(js_State *J, int idx)
 {
-	unsigned int len;
+	int len;
 	js_getproperty(J, idx, "length");
-	len = js_touint32(J, -1);
+	len = js_tointeger(J, -1);
 	js_pop(J, 1);
 	return len;
 }
 
-void js_setlength(js_State *J, int idx, unsigned int len)
+void js_setlength(js_State *J, int idx, int len)
 {
 	js_pushnumber(J, len);
-	js_setproperty(J, idx < 0 ? idx - 1: idx, "length");
+	js_setproperty(J, idx < 0 ? idx - 1 : idx, "length");
 }
 
-int js_hasindex(js_State *J, int idx, unsigned int i)
+int js_hasindex(js_State *J, int idx, int i)
 {
 	char buf[32];
 	return js_hasproperty(J, idx, js_itoa(buf, i));
 }
 
-void js_getindex(js_State *J, int idx, unsigned int i)
+void js_getindex(js_State *J, int idx, int i)
 {
 	char buf[32];
 	js_getproperty(J, idx, js_itoa(buf, i));
 }
 
-void js_setindex(js_State *J, int idx, unsigned int i)
+void js_setindex(js_State *J, int idx, int i)
 {
 	char buf[32];
 	js_setproperty(J, idx, js_itoa(buf, i));
 }
 
-void js_delindex(js_State *J, int idx, unsigned int i)
+void js_delindex(js_State *J, int idx, int i)
 {
 	char buf[32];
 	js_delproperty(J, idx, js_itoa(buf, i));
@@ -43,7 +43,7 @@ void js_delindex(js_State *J, int idx, unsigned int i)
 
 static void jsB_new_Array(js_State *J)
 {
-	unsigned int i, top = js_gettop(J);
+	int i, top = js_gettop(J);
 
 	js_newarray(J);
 
@@ -65,8 +65,8 @@ static void jsB_new_Array(js_State *J)
 
 static void Ap_concat(js_State *J)
 {
-	unsigned int i, top = js_gettop(J);
-	unsigned int n, k, len;
+	int i, top = js_gettop(J);
+	int n, k, len;
 
 	js_newarray(J);
 	n = 0;
@@ -90,8 +90,8 @@ static void Ap_join(js_State *J)
 	char * volatile out = NULL;
 	const char *sep;
 	const char *r;
-	unsigned int seplen;
-	unsigned int k, n, len;
+	int seplen;
+	int k, n, len;
 
 	len = js_getlength(J, 0);
 
@@ -142,7 +142,7 @@ static void Ap_join(js_State *J)
 
 static void Ap_pop(js_State *J)
 {
-	unsigned int n;
+	int n;
 
 	n = js_getlength(J, 0);
 
@@ -158,8 +158,8 @@ static void Ap_pop(js_State *J)
 
 static void Ap_push(js_State *J)
 {
-	unsigned int i, top = js_gettop(J);
-	unsigned int n;
+	int i, top = js_gettop(J);
+	int n;
 
 	n = js_getlength(J, 0);
 
@@ -175,14 +175,14 @@ static void Ap_push(js_State *J)
 
 static void Ap_reverse(js_State *J)
 {
-	unsigned int len, middle, lower;
+	int len, middle, lower;
 
 	len = js_getlength(J, 0);
 	middle = len / 2;
 	lower = 0;
 
 	while (lower != middle) {
-		unsigned int upper = len - lower - 1;
+		int upper = len - lower - 1;
 		int haslower = js_hasindex(J, 0, lower);
 		int hasupper = js_hasindex(J, 0, upper);
 		if (haslower && hasupper) {
@@ -203,7 +203,7 @@ static void Ap_reverse(js_State *J)
 
 static void Ap_shift(js_State *J)
 {
-	unsigned int k, len;
+	int k, len;
 
 	len = js_getlength(J, 0);
 
@@ -228,7 +228,7 @@ static void Ap_shift(js_State *J)
 
 static void Ap_slice(js_State *J)
 {
-	unsigned int len, s, e, n;
+	int len, s, e, n;
 	double sv, ev;
 
 	js_newarray(J);
@@ -248,7 +248,7 @@ static void Ap_slice(js_State *J)
 			js_setindex(J, -2, n);
 }
 
-static int compare(js_State *J, unsigned int x, unsigned int y, int *hasx, int *hasy, int hasfn)
+static int compare(js_State *J, int x, int y, int *hasx, int *hasy, int hasfn)
 {
 	const char *sx, *sy;
 	int c;
@@ -286,7 +286,7 @@ static int compare(js_State *J, unsigned int x, unsigned int y, int *hasx, int *
 
 static void Ap_sort(js_State *J)
 {
-	unsigned int len, i, k;
+	int len, i, k;
 	int hasx, hasy, hasfn;
 
 	len = js_getlength(J, 0);
@@ -315,8 +315,8 @@ static void Ap_sort(js_State *J)
 
 static void Ap_splice(js_State *J)
 {
-	unsigned int top = js_gettop(J);
-	unsigned int len, start, del, add, k;
+	int top = js_gettop(J);
+	int len, start, del, add, k;
 	double f;
 
 	js_newarray(J);
@@ -367,8 +367,8 @@ static void Ap_splice(js_State *J)
 
 static void Ap_unshift(js_State *J)
 {
-	unsigned int i, top = js_gettop(J);
-	unsigned int k, len;
+	int i, top = js_gettop(J);
+	int k, len;
 
 	len = js_getlength(J, 0);
 
@@ -393,7 +393,7 @@ static void Ap_unshift(js_State *J)
 
 static void Ap_toString(js_State *J)
 {
-	unsigned int top = js_gettop(J);
+	int top = js_gettop(J);
 	js_pop(J, top - 1);
 	Ap_join(J);
 }

@@ -25,7 +25,7 @@ enum {
 };
 
 struct Resub {
-	unsigned int nsub;
+	int nsub;
 	struct {
 		const char *sp;
 		const char *ep;

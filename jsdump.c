@@ -188,6 +188,7 @@ static void pobject(int d, js_Ast *list)
 		js_Ast *kv = list->a;
 		assert(list->type == AST_LIST);
 		switch (kv->type) {
+		default: break;
 		case EXP_PROP_VAL:
 			pexpi(d, COMMA, kv->a);
 			ps(": ");
@@ -649,6 +650,7 @@ static void snode(int d, js_Ast *node)
 	pc('(');
 	ps(astname[node->type]);
 	switch (node->type) {
+	default: break;
 	case AST_IDENTIFIER: pc(' '); ps(node->string); break;
 	case EXP_IDENTIFIER: pc(' '); ps(node->string); break;
 	case EXP_STRING: pc(' '); pstr(node->string); break;
@@ -713,7 +715,7 @@ void jsC_dumpfunction(js_State *J, js_Function *F)
 {
 	js_Instruction *p = F->code;
 	js_Instruction *end = F->code + F->codelen;
-	unsigned int i;
+	int i;
 
 	printf("%s(%d)\n", F->name, F->numparams);
 	if (F->lightweight) printf("\tlightweight\n");

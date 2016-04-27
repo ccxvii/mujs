@@ -49,10 +49,11 @@ static __inline int signbit(double x) {union{double d;__int64 i;}u;u.d=x;return 
 #endif
 #endif
 
-#define nelem(a) (sizeof (a) / sizeof (a)[0])
+#define soffsetof(x,y) ((int)offsetof(x,y))
+#define nelem(a) (int)(sizeof (a) / sizeof (a)[0])
 
-void *js_malloc(js_State *J, unsigned int size);
-void *js_realloc(js_State *J, void *ptr, unsigned int size);
+void *js_malloc(js_State *J, int size);
+void *js_realloc(js_State *J, void *ptr, int size);
 void js_free(js_State *J, void *ptr);
 
 typedef struct js_Regexp js_Regexp;
@@ -73,7 +74,7 @@ typedef struct js_StackTrace js_StackTrace;
 #define JS_TRYLIMIT 64		/* exception stack size */
 #define JS_GCLIMIT 10000	/* run gc cycle every N allocations */
 
-/* instruction size -- change to unsigned int if you get integer overflow syntax errors */
+/* instruction size -- change to int if you get integer overflow syntax errors */
 typedef unsigned short js_Instruction;
 
 /* String interning */
@@ -95,7 +96,7 @@ void js_newscript(js_State *J, js_Function *function, js_Environment *scope);
 void js_loadeval(js_State *J, const char *filename, const char *source);
 
 js_Regexp *js_toregexp(js_State *J, int idx);
-int js_isarrayindex(js_State *J, const char *str, unsigned int *idx);
+int js_isarrayindex(js_State *J, const char *str, int *idx);
 int js_runeat(js_State *J, const char *s, int i);
 int js_utfptrtoidx(const char *s, const char *p);
 const char *js_utfidxtoptr(const char *s, int i);
@@ -159,7 +160,7 @@ struct js_State
 	int line;
 
 	/* lexer state */
-	struct { char *text; unsigned int len, cap; } lexbuf;
+	struct { char *text; int len, cap; } lexbuf;
 	int lexline;
 	int lexchar;
 	int lasttoken;

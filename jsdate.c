@@ -405,7 +405,7 @@ static void jsB_Date(js_State *J)
 
 static void jsB_new_Date(js_State *J)
 {
-	unsigned int top = js_gettop(J);
+	int top = js_gettop(J);
 	js_Object *obj;
 	double t;
 

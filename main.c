@@ -22,7 +22,7 @@ static void jsB_load(js_State *J)
 
 static void jsB_print(js_State *J)
 {
-	unsigned int i, top = js_gettop(J);
+	int i, top = js_gettop(J);
 	for (i = 1; i < top; ++i) {
 		const char *s = js_tostring(J, i);
 		if (i > 1) putchar(' ');
@@ -34,7 +34,7 @@ static void jsB_print(js_State *J)
 
 static void jsB_write(js_State *J)
 {
-	unsigned int i, top = js_gettop(J);
+	int i, top = js_gettop(J);
 	for (i = 1; i < top; ++i) {
 		const char *s = js_tostring(J, i);
 		if (i > 1) putchar(' ');

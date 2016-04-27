@@ -42,7 +42,7 @@ enum
 	Bad	= Runeerror,
 };
 
-unsigned int
+int
 chartorune(Rune *rune, const char *str)
 {
 	int c, c1, c2;
@@ -98,10 +98,10 @@ bad:
 	return 1;
 }
 
-unsigned int
+int
 runetochar(char *str, const Rune *rune)
 {
-	unsigned int c;
+	int c;
 
 	/*
 	 * one character sequence
@@ -133,7 +133,7 @@ runetochar(char *str, const Rune *rune)
 	return 3;
 }
 
-unsigned int
+int
 runelen(int c)
 {
 	Rune rune;
@@ -143,11 +143,11 @@ runelen(int c)
 	return runetochar(str, &rune);
 }
 
-unsigned int
+int
 utflen(const char *s)
 {
-	unsigned int c;
-	unsigned int n;
+	int c;
+	int n;
 	Rune rune;
 
 	n = 0;

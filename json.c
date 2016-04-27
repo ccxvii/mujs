@@ -182,7 +182,7 @@ static void fmtobject(js_State *J, js_Buffer **sb, js_Object *obj, const char *g
 
 static void fmtarray(js_State *J, js_Buffer **sb, const char *gap, int level)
 {
-	unsigned int n, k;
+	int n, k;
 	char buf[32];
 
 	n = js_getlength(J, -1);

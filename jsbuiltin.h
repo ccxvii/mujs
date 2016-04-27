@@ -18,7 +18,7 @@ void jsB_propf(js_State *J, const char *name, js_CFunction cfun, int n);
 void jsB_propn(js_State *J, const char *name, double number);
 void jsB_props(js_State *J, const char *name, const char *string);
 
-typedef struct js_Buffer { unsigned int n, m; char s[64]; } js_Buffer;
+typedef struct js_Buffer { int n, m; char s[64]; } js_Buffer;
 
 static void js_putc(js_State *J, js_Buffer **sbp, int c)
 {
@@ -29,7 +29,7 @@ static void js_putc(js_State *J, js_Buffer **sbp, int c)
 		sb->m = sizeof sb->s;
 		*sbp = sb;
 	} else if (sb->n == sb->m) {
-		sb = js_realloc(J, sb, (sb->m *= 2) + offsetof(js_Buffer, s));
+		sb = js_realloc(J, sb, (sb->m *= 2) + soffsetof(js_Buffer, s));
 		*sbp = sb;
 	}
 	sb->s[sb->n++] = c;

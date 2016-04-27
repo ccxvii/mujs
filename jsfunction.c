@@ -6,7 +6,7 @@
 
 static void jsB_Function(js_State *J)
 {
-	unsigned int i, top = js_gettop(J);
+	int i, top = js_gettop(J);
 	js_Buffer *sb = NULL;
 	const char *body;
 	js_Ast *parse;
@@ -50,7 +50,7 @@ static void Fp_toString(js_State *J)
 {
 	js_Object *self = js_toobject(J, 0);
 	char *s;
-	unsigned int i, n;
+	int i, n;
 
 	if (!js_iscallable(J, 0))
 		js_typeerror(J, "not a function");
@@ -101,7 +101,7 @@ static void Fp_apply(js_State *J)
 
 static void Fp_call(js_State *J)
 {
-	unsigned int i, top = js_gettop(J);
+	int i, top = js_gettop(J);
 
 	if (!js_iscallable(J, 0))
 		js_typeerror(J, "not a function");
@@ -114,8 +114,8 @@ static void Fp_call(js_State *J)
 
 static void callbound(js_State *J)
 {
-	unsigned int top = js_gettop(J);
-	unsigned int i, fun, args, n;
+	int top = js_gettop(J);
+	int i, fun, args, n;
 
 	fun = js_gettop(J);
 	js_currentfunction(J);
@@ -137,8 +137,8 @@ static void callbound(js_State *J)
 
 static void constructbound(js_State *J)
 {
-	unsigned int top = js_gettop(J);
-	unsigned int i, fun, args, n;
+	int top = js_gettop(J);
+	int i, fun, args, n;
 
 	fun = js_gettop(J);
 	js_currentfunction(J);
@@ -159,8 +159,8 @@ static void constructbound(js_State *J)
 
 static void Fp_bind(js_State *J)
 {
-	unsigned int i, top = js_gettop(J);
-	unsigned int n;
+	int i, top = js_gettop(J);
+	int n;
 
 	if (!js_iscallable(J, 0))
 		js_typeerror(J, "not a function");

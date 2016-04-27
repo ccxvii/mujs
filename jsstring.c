@@ -99,8 +99,8 @@ static void Sp_charCodeAt(js_State *J)
 
 static void Sp_concat(js_State *J)
 {
-	unsigned int i, top = js_gettop(J);
-	unsigned int n;
+	int i, top = js_gettop(J);
+	int n;
 	char * volatile out;
 	const char *s;
 
@@ -283,7 +283,7 @@ static void Sp_trim(js_State *J)
 
 static void S_fromCharCode(js_State *J)
 {
-	unsigned int i, top = js_gettop(J);
+	int i, top = js_gettop(J);
 	Rune c;
 	char *s, *p;
 
@@ -309,7 +309,7 @@ static void Sp_match(js_State *J)
 {
 	js_Regexp *re;
 	const char *text;
-	unsigned int len;
+	int len;
 	const char *a, *b, *c, *e;
 	Resub m;
 
@@ -379,7 +379,7 @@ static void Sp_replace_regexp(js_State *J)
 	js_Regexp *re;
 	const char *source, *s, *r;
 	js_Buffer *sb = NULL;
-	unsigned int n, x;
+	int n, x;
 	Resub m;
 
 	source = js_tostring(J, 0);
@@ -545,13 +545,13 @@ static void Sp_split_regexp(js_State *J)
 {
 	js_Regexp *re;
 	const char *text;
-	unsigned int limit, len, k;
+	int limit, len, k;
 	const char *p, *a, *b, *c, *e;
 	Resub m;
 
 	text = js_tostring(J, 0);
 	re = js_toregexp(J, 1);
-	limit = js_isdefined(J, 2) ? js_touint32(J, 2) : 1 << 30;
+	limit = js_isdefined(J, 2) ? js_tointeger(J, 2) : 1 << 30;
 
 	js_newarray(J);
 	len = 0;
@@ -604,8 +604,8 @@ static void Sp_split_string(js_State *J)
 {
 	const char *str = js_tostring(J, 0);
 	const char *sep = js_tostring(J, 1);
-	unsigned int limit = js_isdefined(J, 2) ? js_touint32(J, 2) : 1 << 30;
-	unsigned int i, n;
+	int limit = js_isdefined(J, 2) ? js_tointeger(J, 2) : 1 << 30;
+	int i, n;
 
 	js_newarray(J);
 

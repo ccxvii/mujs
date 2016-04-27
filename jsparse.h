@@ -125,7 +125,7 @@ struct js_JumpList
 
 struct js_Ast
 {
-	int type;
+	enum js_AstType type;
 	int line;
 	js_Ast *parent, *a, *b, *c, *d;
 	double number;
