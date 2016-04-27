@@ -120,7 +120,7 @@ static void Sp_concat(js_State *J)
 	for (i = 1; i < top; ++i) {
 		s = js_tostring(J, i);
 		n += strlen(s);
-		out = realloc(out, n + 1);
+		out = js_realloc(J, out, n + 1);
 		strcat(out, s);
 	}
 

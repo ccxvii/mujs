@@ -127,7 +127,7 @@ static void Ap_join(js_State *J)
 			strcpy(out, r);
 		} else {
 			n += seplen;
-			out = realloc(out, n);
+			out = js_realloc(J, out, n);
 			strcat(out, sep);
 			strcat(out, r);
 		}
