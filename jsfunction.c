@@ -92,9 +92,13 @@ static void Fp_apply(js_State *J)
 	js_copy(J, 0);
 	js_copy(J, 1);
 
-	n = js_getlength(J, 2);
-	for (i = 0; i < n; ++i)
-		js_getindex(J, 2, i);
+	if (js_isnull(J, 2) || js_isundefined(J, 2)) {
+		n = 0;
+	} else {
+		n = js_getlength(J, 2);
+		for (i = 0; i < n; ++i)
+			js_getindex(J, 2, i);
+	}
 
 	js_call(J, n);
 }
