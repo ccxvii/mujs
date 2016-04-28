@@ -192,8 +192,8 @@ js_State *js_newstate(js_Alloc alloc, void *actx, int flags)
 	if (flags & JS_STRICT)
 		J->strict = 1;
 
-	J->trace[0].name = "?";
-	J->trace[0].file = "[C]";
+	J->trace[0].name = "-top-";
+	J->trace[0].file = "native";
 	J->trace[0].line = 0;
 
 	J->panic = js_defaultpanic;

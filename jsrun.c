@@ -1052,7 +1052,7 @@ void js_call(js_State *J, int n)
 		jsR_callscript(J, n, obj->u.f.function, obj->u.f.scope);
 		--J->tracetop;
 	} else if (obj->type == JS_CCFUNCTION) {
-		jsR_pushtrace(J, obj->u.c.name, "[C]", 0);
+		jsR_pushtrace(J, obj->u.c.name, "native", 0);
 		jsR_callcfunction(J, n, obj->u.c.length, obj->u.c.function);
 		--J->tracetop;
 	}
@@ -1079,7 +1079,7 @@ void js_construct(js_State *J, int n)
 			js_rot(J, n + 1);
 		BOT = TOP - n - 1;
 
-		jsR_pushtrace(J, obj->u.c.name, "[C]", 0);
+		jsR_pushtrace(J, obj->u.c.name, "native", 0);
 		jsR_callcfunction(J, n, obj->u.c.length, obj->u.c.constructor);
 		--J->tracetop;
 
@@ -1233,10 +1233,13 @@ void js_stacktrace(js_State *J)
 		const char *name = J->trace[n].name;
 		const char *file = J->trace[n].file;
 		int line = J->trace[n].line;
-		if (line > 0)
-			printf("\t%s:%d: in function '%s'\n", file, line, name);
-		else
-			printf("\t%s: in function '%s'\n", file, name);
+		if (line > 0) {
+			if (name[0])
+				printf("\tat %s (%s:%d)\n", name, file, line);
+			else
+				printf("\tat %s:%d\n", file, line);
+		} else
+			printf("\tat %s (%s)\n", name, file);
 	}
 }
 
