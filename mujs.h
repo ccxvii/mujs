@@ -160,6 +160,7 @@ int js_isprimitive(js_State *J, int idx);
 int js_isobject(js_State *J, int idx);
 int js_isarray(js_State *J, int idx);
 int js_isregexp(js_State *J, int idx);
+int js_iscoercible(js_State *J, int idx);
 int js_iscallable(js_State *J, int idx);
 int js_isuserdata(js_State *J, int idx, const char *tag);
 
