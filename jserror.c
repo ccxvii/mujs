@@ -99,7 +99,7 @@ void jsB_initerror(js_State *J)
 	{
 			jsB_props(J, "name", "Error");
 			jsB_props(J, "message", "an error has occurred");
-			jsB_propf(J, "toString", Ep_toString, 0);
+			jsB_propf(J, "Error.prototype.toString", Ep_toString, 0);
 	}
 	js_newcconstructor(J, jsB_Error, jsB_Error, "Error", 1);
 	js_defglobal(J, "Error", JS_DONTENUM);

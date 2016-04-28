@@ -12,8 +12,10 @@ static void jsB_globalf(js_State *J, const char *name, js_CFunction cfun, int n)
 
 void jsB_propf(js_State *J, const char *name, js_CFunction cfun, int n)
 {
+	const char *pname = strrchr(name, '.');
+	pname = pname ? pname + 1 : name;
 	js_newcfunction(J, cfun, name, n);
-	js_defproperty(J, -2, name, JS_DONTENUM);
+	js_defproperty(J, -2, pname, JS_DONTENUM);
 }
 
 void jsB_propn(js_State *J, const char *name, double number)

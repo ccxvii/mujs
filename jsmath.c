@@ -143,24 +143,24 @@ void jsB_initmath(js_State *J)
 		jsB_propn(J, "SQRT1_2", 0.7071067811865476);
 		jsB_propn(J, "SQRT2", 1.4142135623730951);
 
-		jsB_propf(J, "abs", Math_abs, 1);
-		jsB_propf(J, "acos", Math_acos, 1);
-		jsB_propf(J, "asin", Math_asin, 1);
-		jsB_propf(J, "atan", Math_atan, 1);
-		jsB_propf(J, "atan2", Math_atan2, 2);
-		jsB_propf(J, "ceil", Math_ceil, 1);
-		jsB_propf(J, "cos", Math_cos, 1);
-		jsB_propf(J, "exp", Math_exp, 1);
-		jsB_propf(J, "floor", Math_floor, 1);
-		jsB_propf(J, "log", Math_log, 1);
-		jsB_propf(J, "max", Math_max, 0); /* 2 */
-		jsB_propf(J, "min", Math_min, 0); /* 2 */
-		jsB_propf(J, "pow", Math_pow, 2);
-		jsB_propf(J, "random", Math_random, 0);
-		jsB_propf(J, "round", Math_round, 1);
-		jsB_propf(J, "sin", Math_sin, 1);
-		jsB_propf(J, "sqrt", Math_sqrt, 1);
-		jsB_propf(J, "tan", Math_tan, 1);
+		jsB_propf(J, "Math.abs", Math_abs, 1);
+		jsB_propf(J, "Math.acos", Math_acos, 1);
+		jsB_propf(J, "Math.asin", Math_asin, 1);
+		jsB_propf(J, "Math.atan", Math_atan, 1);
+		jsB_propf(J, "Math.atan2", Math_atan2, 2);
+		jsB_propf(J, "Math.ceil", Math_ceil, 1);
+		jsB_propf(J, "Math.cos", Math_cos, 1);
+		jsB_propf(J, "Math.exp", Math_exp, 1);
+		jsB_propf(J, "Math.floor", Math_floor, 1);
+		jsB_propf(J, "Math.log", Math_log, 1);
+		jsB_propf(J, "Math.max", Math_max, 0); /* 2 */
+		jsB_propf(J, "Math.min", Math_min, 0); /* 2 */
+		jsB_propf(J, "Math.pow", Math_pow, 2);
+		jsB_propf(J, "Math.random", Math_random, 0);
+		jsB_propf(J, "Math.round", Math_round, 1);
+		jsB_propf(J, "Math.sin", Math_sin, 1);
+		jsB_propf(J, "Math.sqrt", Math_sqrt, 1);
+		jsB_propf(J, "Math.tan", Math_tan, 1);
 	}
 	js_defglobal(J, "Math", JS_DONTENUM);
 }
