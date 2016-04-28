@@ -4,6 +4,13 @@
 #include "utf.h"
 #include "regexp.h"
 
+static const char *checkstring(js_State *J, int idx)
+{
+	if (!js_iscoercible(J, idx))
+		js_typeerror(J, "string function called on null or undefined");
+	return js_tostring(J, idx);
+}
+
 int js_runeat(js_State *J, const char *s, int i)
 {
 	Rune rune = 0;
@@ -75,7 +82,7 @@ static void Sp_valueOf(js_State *J)
 static void Sp_charAt(js_State *J)
 {
 	char buf[UTFmax + 1];
-	const char *s = js_tostring(J, 0);
+	const char *s = checkstring(J, 0);
 	int pos = js_tointeger(J, 1);
 	Rune rune = js_runeat(J, s, pos);
 	if (rune > 0) {
@@ -88,7 +95,7 @@ static void Sp_charAt(js_State *J)
 
 static void Sp_charCodeAt(js_State *J)
 {
-	const char *s = js_tostring(J, 0);
+	const char *s = checkstring(J, 0);
 	int pos = js_tointeger(J, 1);
 	Rune rune = js_runeat(J, s, pos);
 	if (rune > 0)
@@ -107,7 +114,7 @@ static void Sp_concat(js_State *J)
 	if (top == 1)
 		return;
 
-	s = js_tostring(J, 0);
+	s = checkstring(J, 0);
 	n = strlen(s);
 	out = js_malloc(J, n + 1);
 	strcpy(out, s);
@@ -131,7 +138,7 @@ static void Sp_concat(js_State *J)
 
 static void Sp_indexOf(js_State *J)
 {
-	const char *haystack = js_tostring(J, 0);
+	const char *haystack = checkstring(J, 0);
 	const char *needle = js_tostring(J, 1);
 	int pos = js_tointeger(J, 2);
 	int len = strlen(needle);
@@ -150,7 +157,7 @@ static void Sp_indexOf(js_State *J)
 
 static void Sp_lastIndexOf(js_State *J)
 {
-	const char *haystack = js_tostring(J, 0);
+	const char *haystack = checkstring(J, 0);
 	const char *needle = js_tostring(J, 1);
 	int pos = js_isdefined(J, 2) ? js_tointeger(J, 2) : strlen(haystack);
 	int len = strlen(needle);
@@ -167,14 +174,14 @@ static void Sp_lastIndexOf(js_State *J)
 
 static void Sp_localeCompare(js_State *J)
 {
-	const char *a = js_tostring(J, 0);
+	const char *a = checkstring(J, 0);
 	const char *b = js_tostring(J, 1);
 	js_pushnumber(J, strcmp(a, b));
 }
 
 static void Sp_slice(js_State *J)
 {
-	const char *str = js_tostring(J, 0);
+	const char *str = checkstring(J, 0);
 	const char *ss, *ee;
 	int len = utflen(str);
 	int s = js_tointeger(J, 1);
@@ -199,7 +206,7 @@ static void Sp_slice(js_State *J)
 
 static void Sp_substring(js_State *J)
 {
-	const char *str = js_tostring(J, 0);
+	const char *str = checkstring(J, 0);
 	const char *ss, *ee;
 	int len = utflen(str);
 	int s = js_tointeger(J, 1);
@@ -221,7 +228,7 @@ static void Sp_substring(js_State *J)
 
 static void Sp_toLowerCase(js_State *J)
 {
-	const char *src = js_tostring(J, 0);
+	const char *src = checkstring(J, 0);
 	char *dst = js_malloc(J, UTFmax * strlen(src) + 1);
 	const char *s = src;
 	char *d = dst;
@@ -243,7 +250,7 @@ static void Sp_toLowerCase(js_State *J)
 
 static void Sp_toUpperCase(js_State *J)
 {
-	const char *src = js_tostring(J, 0);
+	const char *src = checkstring(J, 0);
 	char *dst = js_malloc(J, UTFmax * strlen(src) + 1);
 	const char *s = src;
 	char *d = dst;
@@ -272,7 +279,7 @@ static int istrim(int c)
 static void Sp_trim(js_State *J)
 {
 	const char *s, *e;
-	s = js_tostring(J, 0);
+	s = checkstring(J, 0);
 	while (istrim(*s))
 		++s;
 	e = s + strlen(s);
@@ -313,7 +320,7 @@ static void Sp_match(js_State *J)
 	const char *a, *b, *c, *e;
 	Resub m;
 
-	text = js_tostring(J, 0);
+	text = checkstring(J, 0);
 
 	if (js_isregexp(J, 1))
 		js_copy(J, 1);
@@ -357,7 +364,7 @@ static void Sp_search(js_State *J)
 	const char *text;
 	Resub m;
 
-	text = js_tostring(J, 0);
+	text = checkstring(J, 0);
 
 	if (js_isregexp(J, 1))
 		js_copy(J, 1);
@@ -382,7 +389,7 @@ static void Sp_replace_regexp(js_State *J)
 	int n, x;
 	Resub m;
 
-	source = js_tostring(J, 0);
+	source = checkstring(J, 0);
 	re = js_toregexp(J, 1);
 
 	if (js_regexec(re->prog, source, &m, 0)) {
@@ -480,7 +487,7 @@ static void Sp_replace_string(js_State *J)
 	js_Buffer *sb = NULL;
 	int n;
 
-	source = js_tostring(J, 0);
+	source = checkstring(J, 0);
 	needle = js_tostring(J, 1);
 
 	s = strstr(source, needle);
@@ -549,7 +556,7 @@ static void Sp_split_regexp(js_State *J)
 	const char *p, *a, *b, *c, *e;
 	Resub m;
 
-	text = js_tostring(J, 0);
+	text = checkstring(J, 0);
 	re = js_toregexp(J, 1);
 	limit = js_isdefined(J, 2) ? js_tointeger(J, 2) : 1 << 30;
 
@@ -602,7 +609,7 @@ static void Sp_split_regexp(js_State *J)
 
 static void Sp_split_string(js_State *J)
 {
-	const char *str = js_tostring(J, 0);
+	const char *str = checkstring(J, 0);
 	const char *sep = js_tostring(J, 1);
 	int limit = js_isdefined(J, 2) ? js_tointeger(J, 2) : 1 << 30;
 	int i, n;
