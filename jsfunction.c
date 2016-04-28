@@ -171,11 +171,9 @@ static void Fp_bind(js_State *J)
 	else
 		n = 0;
 
-	js_newcconstructor(J, callbound, constructbound, "[bind]", n);
-
 	/* Reuse target function's prototype for HasInstance check. */
 	js_getproperty(J, 0, "prototype");
-	js_defproperty(J, -2, "prototype", JS_READONLY | JS_DONTENUM | JS_DONTCONF);
+	js_newcconstructor(J, callbound, constructbound, "[bind]", n);
 
 	/* target function */
 	js_copy(J, 0);
