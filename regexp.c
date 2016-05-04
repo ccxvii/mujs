@@ -212,8 +212,7 @@ static void addranges_D(struct cstate *g)
 
 static void addranges_s(struct cstate *g)
 {
-	addrange(g, 0x9, 0x9);
-	addrange(g, 0xA, 0xD);
+	addrange(g, 0x9, 0xD);
 	addrange(g, 0x20, 0x20);
 	addrange(g, 0xA0, 0xA0);
 	addrange(g, 0x2028, 0x2029);
@@ -223,7 +222,6 @@ static void addranges_s(struct cstate *g)
 static void addranges_S(struct cstate *g)
 {
 	addrange(g, 0, 0x9-1);
-	addrange(g, 0x9+1, 0xA-1);
 	addrange(g, 0xD+1, 0x20-1);
 	addrange(g, 0x20+1, 0xA0-1);
 	addrange(g, 0xA0+1, 0x2028-1);
