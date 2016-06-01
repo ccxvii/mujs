@@ -5,11 +5,13 @@
 #define QQ(X) #X
 #define Q(X) QQ(X)
 
-static void jsB_stacktrace(js_State *J, int skip)
+static int jsB_stacktrace(js_State *J, int skip)
 {
-	int n;
 	char buf[256];
-	for (n = J->tracetop - skip; n > 0; --n) {
+	int n = J->tracetop - skip;
+	if (n <= 0)
+		return 0;
+	for (; n > 0; --n) {
 		const char *name = J->trace[n].name;
 		const char *file = J->trace[n].file;
 		int line = J->trace[n].line;
@@ -24,6 +26,7 @@ static void jsB_stacktrace(js_State *J, int skip)
 		if (n < J->tracetop - skip)
 			js_concat(J);
 	}
+	return 1;
 }
 
 static void Ep_toString(js_State *J)
@@ -55,8 +58,8 @@ static int jsB_ErrorX(js_State *J, js_Object *prototype)
 		js_pushstring(J, js_tostring(J, 1));
 		js_setproperty(J, -2, "message");
 	}
-	jsB_stacktrace(J, 1);
-	js_setproperty(J, -2, "stackTrace");
+	if (jsB_stacktrace(J, 1))
+		js_setproperty(J, -2, "stackTrace");
 	return 1;
 }
 
@@ -65,8 +68,8 @@ static void js_newerrorx(js_State *J, const char *message, js_Object *prototype)
 	js_pushobject(J, jsV_newobject(J, JS_CERROR, prototype));
 	js_pushstring(J, message);
 	js_setproperty(J, -2, "message");
-	jsB_stacktrace(J, 0);
-	js_setproperty(J, -2, "stackTrace");
+	if (jsB_stacktrace(J, 0))
+		js_setproperty(J, -2, "stackTrace");
 }
 
 #define DERROR(name, Name) \
