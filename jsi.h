@@ -38,7 +38,7 @@ static int jsW_snprintf(char *str, size_t size, const char *fmt, ...)
 	return n;
 }
 #endif
-#if _MSC_VER < 1700 /* MSVC 2012 */
+#if _MSC_VER <= 1700 /* <= MSVC 2012 */
 #define round(x) floor((x) < 0 ? (x) - 0.5 : (x) + 0.5)
 #define isnan(x) _isnan(x)
 #define isinf(x) (!_finite(x))
