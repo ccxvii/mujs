@@ -129,7 +129,7 @@ static void fmtstr(js_State *J, js_Buffer **sb, const char *s)
 		case '\r': js_puts(J, sb, "\\r"); break;
 		case '\t': js_puts(J, sb, "\\t"); break;
 		default:
-			if (c < ' ') {
+			if (c < ' ' || c > 127) {
 				js_puts(J, sb, "\\u");
 				js_putc(J, sb, HEX[(c>>12)&15]);
 				js_putc(J, sb, HEX[(c>>8)&15]);
