@@ -1020,8 +1020,9 @@ static void jsR_callcfunction(js_State *J, int n, int min, js_CFunction F)
 
 static void jsR_pushtrace(js_State *J, const char *name, const char *file, int line)
 {
-	if (++J->tracetop == JS_ENVLIMIT)
+	if (J->tracetop == JS_ENVLIMIT-1)
 		js_error(J, "call stack overflow");
+	J->tracetop++;
 	J->trace[J->tracetop].name = name;
 	J->trace[J->tracetop].file = file;
 	J->trace[J->tracetop].line = line;
