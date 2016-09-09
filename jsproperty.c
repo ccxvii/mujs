@@ -154,7 +154,6 @@ static js_Property *delete(js_State *J, js_Object *obj, js_Property *node, const
 	return node;
 }
 
-
 js_Object *jsV_newobject(js_State *J, enum js_Class type, js_Object *prototype)
 {
 	js_Object *obj = js_malloc(J, sizeof *obj);
