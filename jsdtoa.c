@@ -332,7 +332,7 @@ js_dtoa(double f, char *s, int *exp, int *neg, int *ns)
 	errno = oerrno;
 }
 
-static ulong
+static inline ulong
 umuldiv(ulong a, ulong b, ulong c)
 {
 	double d;
@@ -696,7 +696,7 @@ fpcmp(char *a, ulong* f)
 	}
 }
 
-static void
+static inline void
 divby(char *a, int *na, int b)
 {
 	int n, c;
@@ -771,7 +771,7 @@ divascii(char *a, int *na, int *dp, int *bp)
 	divby(a, na, b);
 }
 
-static void
+static inline void
 mulby(char *a, char *p, char *q, int b)
 {
 	int n, c;
