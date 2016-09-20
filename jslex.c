@@ -225,7 +225,8 @@ static int lexcomment(js_State *J)
 			if (jsY_accept(J, '/'))
 				return 0;
 		}
-		jsY_next(J);
+		else
+			jsY_next(J);
 	}
 	return -1;
 }
