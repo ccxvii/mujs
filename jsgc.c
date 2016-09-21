@@ -44,8 +44,10 @@ static void jsG_freeobject(js_State *J, js_Object *obj)
 {
 	if (obj->head)
 		jsG_freeproperty(J, obj->head);
-	if (obj->type == JS_CREGEXP)
+	if (obj->type == JS_CREGEXP) {
+		js_free(J, obj->u.r.source);
 		js_regfree(obj->u.r.prog);
+	}
 	if (obj->type == JS_CITERATOR)
 		jsG_freeiterator(J, obj->u.iter.head);
 	if (obj->type == JS_CUSERDATA && obj->u.user.finalize)

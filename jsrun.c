@@ -45,6 +45,14 @@ void *js_realloc(js_State *J, void *ptr, int size)
 	return ptr;
 }
 
+char *js_strdup(js_State *J, const char *s)
+{
+	int n = strlen(s) + 1;
+	char *p = js_malloc(J, n);
+	memcpy(p, s, n);
+	return p;
+}
+
 void js_free(js_State *J, void *ptr)
 {
 	J->alloc(J->actx, ptr, 0);

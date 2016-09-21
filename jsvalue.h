@@ -71,7 +71,7 @@ struct js_String
 struct js_Regexp
 {
 	void *prog;
-	const char *source;
+	char *source;
 	unsigned short flags;
 	unsigned short last;
 };

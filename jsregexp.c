@@ -21,7 +21,7 @@ void js_newregexp(js_State *J, const char *pattern, int flags)
 		js_syntaxerror(J, "regular expression: %s", error);
 
 	obj->u.r.prog = prog;
-	obj->u.r.source = pattern;
+	obj->u.r.source = js_strdup(J, pattern);
 	obj->u.r.flags = flags;
 	obj->u.r.last = 0;
 	js_pushobject(J, obj);

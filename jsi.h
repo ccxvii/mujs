@@ -79,6 +79,7 @@ typedef unsigned short js_Instruction;
 
 /* String interning */
 
+char *js_strdup(js_State *J, const char *s);
 const char *js_intern(js_State *J, const char *s);
 void jsS_dumpstrings(js_State *J);
 void jsS_freestrings(js_State *J);
