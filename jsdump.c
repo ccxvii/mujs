@@ -750,6 +750,7 @@ void jsC_dumpfunction(js_State *J, js_Function *F)
 		case OP_INITVAR:
 		case OP_DEFVAR:
 		case OP_GETVAR:
+		case OP_HASVAR:
 		case OP_SETVAR:
 		case OP_DELVAR:
 		case OP_GETPROP_S:
