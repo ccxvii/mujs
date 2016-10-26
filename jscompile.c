@@ -1102,11 +1102,11 @@ static void cstm(JF, js_Ast *stm)
 
 	case STM_BREAK:
 		if (stm->a) {
-			target = breaktarget(J, F, stm, stm->a->string);
+			target = breaktarget(J, F, stm->parent, stm->a->string);
 			if (!target)
 				jsC_error(J, stm, "break label '%s' not found", stm->a->string);
 		} else {
-			target = breaktarget(J, F, stm, NULL);
+			target = breaktarget(J, F, stm->parent, NULL);
 			if (!target)
 				jsC_error(J, stm, "unlabelled break must be inside loop or switch");
 		}
@@ -1116,11 +1116,11 @@ static void cstm(JF, js_Ast *stm)
 
 	case STM_CONTINUE:
 		if (stm->a) {
-			target = continuetarget(J, F, stm, stm->a->string);
+			target = continuetarget(J, F, stm->parent, stm->a->string);
 			if (!target)
 				jsC_error(J, stm, "continue label '%s' not found", stm->a->string);
 		} else {
-			target = continuetarget(J, F, stm, NULL);
+			target = continuetarget(J, F, stm->parent, NULL);
 			if (!target)
 				jsC_error(J, stm, "continue must be inside loop");
 		}
@@ -1133,7 +1133,7 @@ static void cstm(JF, js_Ast *stm)
 			cexp(J, F, stm->a);
 		else
 			emit(J, F, OP_UNDEF);
-		target = returntarget(J, F, stm);
+		target = returntarget(J, F, stm->parent);
 		if (!target)
 			jsC_error(J, stm, "return not in function");
 		cexit(J, F, STM_RETURN, stm, target);
