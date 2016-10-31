@@ -157,7 +157,7 @@ static int lexcount(struct cstate *g)
 		g->yymin = g->yymin * 10 + dec(g, g->yychar);
 		g->yychar = *g->source++;
 	}
-	if (g->yymin >= REPINF)
+	if (g->yymin < 0 || g->yymin >= REPINF)
 		die(g, "numeric overflow");
 
 	if (g->yychar == ',') {
@@ -171,7 +171,7 @@ static int lexcount(struct cstate *g)
 				g->yymax = g->yymax * 10 + dec(g, g->yychar);
 				g->yychar = *g->source++;
 			}
-			if (g->yymax >= REPINF)
+			if (g->yymax < 0 || g->yymax >= REPINF)
 				die(g, "numeric overflow");
 		}
 	} else {
