@@ -377,6 +377,7 @@ static int lexescape(js_State *J)
 		return 0;
 
 	switch (J->lexchar) {
+	case 0: jsY_error(J, "unterminated escape sequence");
 	case 'u':
 		jsY_next(J);
 		if (!jsY_ishex(J->lexchar)) return 1; else { x |= jsY_tohex(J->lexchar) << 12; jsY_next(J); }
