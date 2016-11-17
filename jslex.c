@@ -172,10 +172,10 @@ static void jsY_unescape(js_State *J)
 	if (jsY_accept(J, '\\')) {
 		if (jsY_accept(J, 'u')) {
 			int x = 0;
-			if (!jsY_ishex(J->lexchar)) goto error; x |= jsY_tohex(J->lexchar) << 12; jsY_next(J);
-			if (!jsY_ishex(J->lexchar)) goto error; x |= jsY_tohex(J->lexchar) << 8; jsY_next(J);
-			if (!jsY_ishex(J->lexchar)) goto error; x |= jsY_tohex(J->lexchar) << 4; jsY_next(J);
-			if (!jsY_ishex(J->lexchar)) goto error; x |= jsY_tohex(J->lexchar);
+			if (!jsY_ishex(J->lexchar)) { goto error; } x |= jsY_tohex(J->lexchar) << 12; jsY_next(J);
+			if (!jsY_ishex(J->lexchar)) { goto error; } x |= jsY_tohex(J->lexchar) << 8; jsY_next(J);
+			if (!jsY_ishex(J->lexchar)) { goto error; } x |= jsY_tohex(J->lexchar) << 4; jsY_next(J);
+			if (!jsY_ishex(J->lexchar)) { goto error; } x |= jsY_tohex(J->lexchar);
 			J->lexchar = x;
 			return;
 		}
