@@ -16,7 +16,7 @@ void js_newregexp(js_State *J, const char *pattern, int flags)
 	if (flags & JS_REGEXP_I) opts |= REG_ICASE;
 	if (flags & JS_REGEXP_M) opts |= REG_NEWLINE;
 
-	prog = js_regcomp(pattern, opts, &error);
+	prog = js_regcompx(J->alloc, J->actx, pattern, opts, &error);
 	if (!prog)
 		js_syntaxerror(J, "regular expression: %s", error);
 

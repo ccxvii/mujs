@@ -807,22 +807,30 @@ static void dumpprog(Reprog *prog)
 }
 #endif
 
-Reprog *regcomp(const char *pattern, int cflags, const char **errorp)
+Reprog *regcompx(void *(*alloc)(void *ctx, void *p, int n), void *ctx,
+	const char *pattern, int cflags, const char **errorp)
 {
 	struct cstate g;
 	Renode *node;
 	Reinst *split, *jump;
 	int i;
 
-	g.prog = malloc(sizeof (Reprog));
-	g.pstart = g.pend = malloc(sizeof (Renode) * strlen(pattern) * 2);
+	g.pstart = NULL;
+	g.prog = NULL;
 
 	if (setjmp(g.kaboom)) {
 		if (errorp) *errorp = g.error;
-		free(g.pstart);
-		free(g.prog);
+		alloc(ctx, g.pstart, 0);
+		alloc(ctx, g.prog, 0);
 		return NULL;
 	}
+
+	g.prog = alloc(ctx, NULL, sizeof (Reprog));
+	if (!g.prog)
+		die(&g, "cannot allocate regular expression");
+	g.pstart = g.pend = alloc(ctx, NULL, sizeof (Renode) * strlen(pattern) * 2);
+	if (!g.pstart)
+		die(&g, "cannot allocate regular expression parse list");
 
 	g.source = pattern;
 	g.ncclass = 0;
@@ -840,7 +848,9 @@ Reprog *regcomp(const char *pattern, int cflags, const char **errorp)
 		die(&g, "syntax error");
 
 	g.prog->nsub = g.nsub;
-	g.prog->start = g.prog->end = malloc((count(node) + 6) * sizeof (Reinst));
+	g.prog->start = g.prog->end = alloc(ctx, NULL, (count(node) + 6) * sizeof (Reinst));
+	if (!g.prog->start)
+		die(&g, "cannot allocate regular expression instruction list");
 
 	split = emit(g.prog, I_SPLIT);
 	split->x = split + 3;
@@ -859,18 +869,33 @@ Reprog *regcomp(const char *pattern, int cflags, const char **errorp)
 	dumpprog(g.prog);
 #endif
 
-	free(g.pstart);
+	alloc(ctx, g.pstart, 0);
 
 	if (errorp) *errorp = NULL;
 	return g.prog;
 }
 
-void regfree(Reprog *prog)
+void regfreex(void *(*alloc)(void *ctx, void *p, int n), void *ctx, Reprog *prog)
 {
 	if (prog) {
-		free(prog->start);
-		free(prog);
+		alloc(ctx, prog->start, 0);
+		alloc(ctx, prog, 0);
 	}
+}
+
+static void *default_alloc(void *ctx, void *p, int n)
+{
+	return realloc(p, (size_t)n);
+}
+
+Reprog *regcomp(const char *pattern, int cflags, const char **errorp)
+{
+	return regcompx(default_alloc, NULL, pattern, cflags, errorp);
+}
+
+void regfree(Reprog *prog)
+{
+	regfreex(default_alloc, NULL, prog);
 }
 
 /* Match */
