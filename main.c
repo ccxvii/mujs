@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "mujs.h"
 
@@ -119,7 +120,7 @@ static const char *require_js =
 	"require.cache = Object.create(null);\n"
 ;
 
-int eval_print(js_State *J, const char *source)
+static int eval_print(js_State *J, const char *source)
 {
 	if (js_ploadstring(J, "[string]", source)) {
 		fprintf(stderr, "%s\n", js_tostring(J, -1));
@@ -136,6 +137,36 @@ int eval_print(js_State *J, const char *source)
 		printf("%s\n", js_tostring(J, -1));
 	js_pop(J, 1);
 	return 0;
+}
+
+static char *read_stdin(void)
+{
+	int n = 0;
+	int t = 512;
+	char *s = NULL;
+
+	for (;;) {
+		char *ss = realloc(s, t);
+		if (!ss) {
+			free(s);
+			fprintf(stderr, "cannot allocate storage for stdin contents\n");
+			return NULL;
+		}
+		s = ss;
+		n += fread(s + n, 1, t - n - 1, stdin);
+		if (n < t - 1)
+			break;
+		t *= 2;
+	}
+
+	if (ferror(stdin)) {
+		free(s);
+		fprintf(stderr, "error reading stdin\n");
+		return NULL;
+	}
+
+	s[n] = 0;
+	return s;
 }
 
 int
@@ -177,13 +208,22 @@ main(int argc, char **argv)
 			js_gc(J, 0);
 		}
 	} else {
-		fputs(PS1, stdout);
-		while (fgets(line, sizeof line, stdin)) {
-			eval_print(J, line);
+		if (isatty(0)) {
 			fputs(PS1, stdout);
+			while (fgets(line, sizeof line, stdin)) {
+				eval_print(J, line);
+				fputs(PS1, stdout);
+			}
+			putchar('\n');
+			js_gc(J, 1);
+		} else {
+			char *input = read_stdin();
+			if (!input)
+				return 1;
+			if (js_dostring(J, input))
+				return 1;
+			js_gc(J, 0);
 		}
-		putchar('\n');
-		js_gc(J, 1);
 	}
 
 	js_freestate(J);
