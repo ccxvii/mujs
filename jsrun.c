@@ -937,7 +937,7 @@ static void jsR_calllwfunction(js_State *J, int n, js_Function *F, js_Environmen
 	jsR_savescope(J, scope);
 
 	if (n > F->numparams) {
-		js_pop(J, F->numparams - n);
+		js_pop(J, n - F->numparams);
 		n = F->numparams;
 	}
 	for (i = n; i < F->varlen; ++i)
