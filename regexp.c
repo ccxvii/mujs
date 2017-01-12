@@ -16,6 +16,7 @@
 #define REPINF 255
 #define MAXTHREAD 1000
 #define MAXSUB REG_MAXSUB
+#define MAXPROG (32 << 10)
 
 typedef struct Reclass Reclass;
 typedef struct Renode Renode;
@@ -595,23 +596,25 @@ struct Reinst {
 	Reinst *y;
 };
 
-static int count(Renode *node)
+static int count(struct cstate *g, Renode *node)
 {
-	int min, max;
+	int min, max, n;
 	if (!node) return 0;
 	switch (node->type) {
 	default: return 1;
-	case P_CAT: return count(node->x) + count(node->y);
-	case P_ALT: return count(node->x) + count(node->y) + 2;
+	case P_CAT: return count(g, node->x) + count(g, node->y);
+	case P_ALT: return count(g, node->x) + count(g, node->y) + 2;
 	case P_REP:
 		min = node->m;
 		max = node->n;
-		if (min == max) return count(node->x) * min;
-		if (max < REPINF) return count(node->x) * max + (max - min);
-		return count(node->x) * (min + 1) + 2;
-	case P_PAR: return count(node->x) + 2;
-	case P_PLA: return count(node->x) + 2;
-	case P_NLA: return count(node->x) + 2;
+		if (min == max) n = count(g, node->x) * min;
+		else if (max < REPINF) n = count(g, node->x) * max + (max - min);
+		else n = count(g, node->x) * (min + 1) + 2;
+		if (n < 0 || n > MAXPROG) die(g, "program too large");
+		return n;
+	case P_PAR: return count(g, node->x) + 2;
+	case P_PLA: return count(g, node->x) + 2;
+	case P_NLA: return count(g, node->x) + 2;
 	}
 }
 
@@ -813,7 +816,7 @@ Reprog *regcompx(void *(*alloc)(void *ctx, void *p, int n), void *ctx,
 	struct cstate g;
 	Renode *node;
 	Reinst *split, *jump;
-	int i;
+	int i, n;
 
 	g.pstart = NULL;
 	g.prog = NULL;
@@ -847,8 +850,17 @@ Reprog *regcompx(void *(*alloc)(void *ctx, void *p, int n), void *ctx,
 	if (g.lookahead != 0)
 		die(&g, "syntax error");
 
+#ifdef TEST
+	dumpnode(node);
+	putchar('\n');
+#endif
+
+	n = 6 + count(&g, node);
+	if (n < 0 || n > MAXPROG)
+		die(&g, "program too large");
+
 	g.prog->nsub = g.nsub;
-	g.prog->start = g.prog->end = alloc(ctx, NULL, (count(node) + 6) * sizeof (Reinst));
+	g.prog->start = g.prog->end = alloc(ctx, NULL, n * sizeof (Reinst));
 	if (!g.prog->start)
 		die(&g, "cannot allocate regular expression instruction list");
 
@@ -864,8 +876,6 @@ Reprog *regcompx(void *(*alloc)(void *ctx, void *p, int n), void *ctx,
 	emit(g.prog, I_END);
 
 #ifdef TEST
-	dumpnode(node);
-	putchar('\n');
 	dumpprog(g.prog);
 #endif
 
