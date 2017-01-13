@@ -146,7 +146,7 @@ Destroy the state and free all dynamic memory used by the state.
 The interpreter uses a host provided function for all memory allocation needs:
 
 <pre>
-typedef void *(*js_Alloc)(void *memctx, void *ptr, unsigned int size);
+typedef void *(*js_Alloc)(void *memctx, void *ptr, int size);
 </pre>
 
 <p>
@@ -504,18 +504,18 @@ Delete the named property from the object.
 <h3>Array properties</h3>
 
 <pre>
-unsigned int js_getlength(js_State *J, int idx);
-void js_setlength(js_State *J, int idx, unsigned int len);
+int js_getlength(js_State *J, int idx);
+void js_setlength(js_State *J, int idx, int len);
 </pre>
 
 <p>
 Wrappers to get and set the "length" property of an object.
 
 <pre>
-int js_hasindex(js_State *J, int idx, unsigned int i);
-void js_getindex(js_State *J, int idx, unsigned int i);
-void js_setindex(js_State *J, int idx, unsigned int i);
-void js_delindex(js_State *J, int idx, unsigned int i);
+int js_hasindex(js_State *J, int idx, int i);
+void js_getindex(js_State *J, int idx, int i);
+void js_setindex(js_State *J, int idx, int i);
+void js_delindex(js_State *J, int idx, int i);
 </pre>
 
 <p>
@@ -543,7 +543,7 @@ Wrappers around js_pushglobal and js_get/set/defproperty to read and write the v
 <h3>C Functions</h3>
 
 <pre>
-void js_newcfunction(js_State *J, js_CFunction fun, unsigned int length);
+void js_newcfunction(js_State *J, js_CFunction fun, const char *name, int length);
 </pre>
 
 <p>
@@ -555,7 +555,8 @@ If the function is called with fewer arguments, the argument list will be padded
 
 <pre>
 void js_newcconstructor(js_State *J,
-	js_CFunction fun, js_CFunction con, unsigned int length);
+	js_CFunction fun, js_CFunction con,
+	const char *name, int length);
 </pre>
 
 <p>

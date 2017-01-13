@@ -41,7 +41,7 @@ int main(int argc, char **argv)
 {
 	js_State *J = js_newstate(NULL, NULL, JS_STRICT);
 
-	js_newcfunction(J, hello, 1);
+	js_newcfunction(J, hello, "hello", 1);
 	js_setglobal(J, "hello");
 
 	js_dostring(J, "hello('world');");
@@ -155,16 +155,16 @@ void initfile(js_State *J)
 	js_getproperty(J, -1, "prototype");	// File.prototype.[[Prototype]] = Object.prototype
 	js_newuserdata(J, TAG, stdin);		// File.prototype.[[Userdata]] = stdin
 	{
-		js_newcfunction(J, File_prototype_readByte, 0);
+		js_newcfunction(J, File_prototype_readByte, "File.prototype.readByte", 0);
 		js_defproperty(J, -2, "readByte", JS_DONTENUM);
 
-		js_newcfunction(J, File_prototype_readLine, 0);
+		js_newcfunction(J, File_prototype_readLine, "File.prototype.readLine", 0);
 		js_defproperty(J, -2, "readLine", JS_DONTENUM);
 
-		js_newcfunction(J, File_prototype_close, 0);
+		js_newcfunction(J, File_prototype_close, "File.prototype.close", 0);
 		js_defproperty(J, -2, "close", JS_DONTENUM);
 	}
-	js_newcconstructor(J, new_File, new_File, 1);
+	js_newcconstructor(J, new_File, new_File, "File", 1);
 	js_defglobal(J, "File", JS_DONTENUM);
 }
 </pre>
