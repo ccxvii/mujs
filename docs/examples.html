@@ -75,6 +75,35 @@ js_newobject(J);
 js_setglobal(J, "t");
 </pre>
 
+<h2>Callbacks from C to JS (by name)</h2>
+
+<pre>
+static int call_callback(js_State *J, const char *arg1, int arg2)
+{
+	int result;
+
+	/* Find the function to call. */
+	js_getglobal(J, "my_callback");
+
+	/* Push arguments to function. */
+	js_pushnull(J); /* the 'this' object to use */
+	js_pushstring(J, arg1);
+	js_pushnumber(J, arg2);
+
+	/* Call function and check for exceptions. */
+	if (js_pcall(J, 2)) {
+		fprintf(stderr, "an exception occurred in the javascript callback\n");
+		js_pop(J, 1);
+		return -1;
+	}
+
+	/* Retrieve return value. */
+	result = js_tonumber(J, -1);
+	js_pop(J, 1);
+
+	return result;
+}
+
 <h2>Callbacks from C to JS</h2>
 
 <pre>
