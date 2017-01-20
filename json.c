@@ -98,7 +98,7 @@ static void JSON_parse(js_State *J)
 	jsY_initlex(J, "JSON", source);
 	jsonnext(J);
 	jsonvalue(J);
-	// TODO: reviver Walk()
+	/* TODO: reviver Walk() */
 }
 
 static void fmtnum(js_State *J, js_Buffer **sb, double n)
@@ -221,7 +221,7 @@ static int fmtvalue(js_State *J, js_Buffer **sb, const char *key, const char *ga
 	}
 	js_endtry(J);
 
-	// TODO: replacer()
+	/* TODO: replacer() */
 
 	if (js_isobject(J, -1) && !js_iscallable(J, -1)) {
 		js_Object *obj = js_toobject(J, -1);
@@ -272,7 +272,7 @@ static void JSON_stringify(js_State *J)
 		if (n > 0) gap = buf;
 	}
 
-	// TODO: replacer
+	/* TODO: replacer */
 
 	if (js_isdefined(J, 1)) {
 		js_copy(J, 1);

@@ -43,7 +43,7 @@ static double LocalTZA(void)
 
 static double DaylightSavingTA(double t)
 {
-	return 0; // TODO
+	return 0; /* TODO */
 }
 
 /* Helpers from the ECMA 262 specification */
@@ -303,7 +303,7 @@ static double parseDateTime(const char *s)
 	if (H > 24 || M > 59 || S > 59) return NAN;
 	if (H == 24 && (M != 0 || S != 0 || ms != 0)) return NAN;
 
-	// TODO: DaylightSavingTA on local times
+	/* TODO: DaylightSavingTA on local times */
 	t = MakeDate(MakeDay(y, m-1, d), MakeTime(H, M, S, ms));
 	return t - tza;
 }
