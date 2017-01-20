@@ -69,14 +69,20 @@ static void Math_random(js_State *J)
 	js_pushnumber(J, rand() / (RAND_MAX + 1.0));
 }
 
+static double do_round(double x)
+{
+	if (isnan(x)) return x;
+	if (isinf(x)) return x;
+	if (x == 0) return x;
+	if (x > 0 && x < 0.5) return 0;
+	if (x < 0 && x >= -0.5) return -0;
+	return floor(x + 0.5);
+}
+
 static void Math_round(js_State *J)
 {
 	double x = js_tonumber(J, 1);
-	double r = round(x);
-	if (r - x == -0.5)
-		js_pushnumber(J, x == -0.5 ? -0.0 : r + 1.0);
-	else
-		js_pushnumber(J, r);
+	js_pushnumber(J, do_round(x));
 }
 
 static void Math_sin(js_State *J)
