@@ -9,22 +9,24 @@
 
 static const char *astname[] = {
 #include "astnames.h"
+NULL
 };
 
 static const char *opname[] = {
 #include "opnames.h"
+NULL
 };
 
 const char *jsP_aststring(enum js_AstType type)
 {
-	if (type < nelem(astname))
+	if (type < nelem(astname)-1)
 		return astname[type];
 	return "<unknown>";
 }
 
 const char *jsC_opcodestring(enum js_OpCode opcode)
 {
-	if (opcode < nelem(opname))
+	if (opcode < nelem(opname)-1)
 		return opname[opcode];
 	return "<unknown>";
 }
