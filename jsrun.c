@@ -544,7 +544,7 @@ static void jsR_setproperty(js_State *J, js_Object *obj, const char *name)
 		if (!strcmp(name, "length")) {
 			double rawlen = jsV_tonumber(J, value);
 			int newlen = jsV_numbertointeger(rawlen);
-			if (newlen != rawlen)
+			if (newlen != rawlen || newlen < 0)
 				js_rangeerror(J, "array length");
 			jsV_resizearray(J, obj, newlen);
 			return;
