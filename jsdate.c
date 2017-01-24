@@ -207,12 +207,17 @@ static double MakeDay(double y, double m, double date)
 	};
 
 	double yd, md;
+	int im;
 
 	y += floor(m / 12);
 	m = pmod(m, 12);
 
+	im = (int)m;
+	if (im < 0 || im >= 12)
+		return NAN;
+
 	yd = floor(TimeFromYear(y) / msPerDay);
-	md = firstDayOfMonth[InLeapYear(y)][(int)m];
+	md = firstDayOfMonth[InLeapYear(y)][im];
 
 	return yd + md + date - 1;
 }
