@@ -303,9 +303,12 @@ static double parseDateTime(const char *s)
 
 	if (*s) return NAN;
 
-	if (m > 11) return NAN;
+	if (m < 1 || m > 12) return NAN;
 	if (d < 1 || d > 31) return NAN;
-	if (H > 24 || M > 59 || S > 59) return NAN;
+	if (H < 0 || H > 24) return NAN;
+	if (M < 0 || M > 59) return NAN;
+	if (S < 0 || S > 59) return NAN;
+	if (ms < 0 || ms > 999) return NAN;
 	if (H == 24 && (M != 0 || S != 0 || ms != 0)) return NAN;
 
 	/* TODO: DaylightSavingTA on local times */
