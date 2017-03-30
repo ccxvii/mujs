@@ -1026,14 +1026,16 @@ static int match(Reinst *pc, const char *sp, const char *bol, int flags, Resub *
 				sp += chartorune(&c, sp);
 				if (c == 0)
 					goto dead;
-				break;
+				pc = pc + 1;
+				continue;
 			case I_ANY:
 				sp += chartorune(&c, sp);
 				if (c == 0)
 					goto dead;
 				if (isnewline(c))
 					goto dead;
-				break;
+				pc = pc + 1;
+				continue;
 			case I_CHAR:
 				sp += chartorune(&c, sp);
 				if (c == 0)
@@ -1042,7 +1044,8 @@ static int match(Reinst *pc, const char *sp, const char *bol, int flags, Resub *
 					c = canon(c);
 				if (c != pc->c)
 					goto dead;
-				break;
+				pc = pc + 1;
+				continue;
 			case I_CCLASS:
 				sp += chartorune(&c, sp);
 				if (c == 0)
@@ -1054,7 +1057,8 @@ static int match(Reinst *pc, const char *sp, const char *bol, int flags, Resub *
 					if (!incclass(pc->cc, c))
 						goto dead;
 				}
-				break;
+				pc = pc + 1;
+				continue;
 			case I_NCCLASS:
 				sp += chartorune(&c, sp);
 				if (c == 0)
@@ -1066,7 +1070,8 @@ static int match(Reinst *pc, const char *sp, const char *bol, int flags, Resub *
 					if (incclass(pc->cc, c))
 						goto dead;
 				}
-				break;
+				pc = pc + 1;
+				continue;
 			case I_REF:
 				i = sub.sub[pc->n].ep - sub.sub[pc->n].sp;
 				if (flags & REG_ICASE) {
@@ -1078,45 +1083,59 @@ static int match(Reinst *pc, const char *sp, const char *bol, int flags, Resub *
 				}
 				if (i > 0)
 					sp += i;
-				break;
+				pc = pc + 1;
+				continue;
 
 			case I_BOL:
-				if (sp == bol && !(flags & REG_NOTBOL))
-					break;
-				if (flags & REG_NEWLINE)
-					if (sp > bol && isnewline(sp[-1]))
-						break;
+				if (sp == bol && !(flags & REG_NOTBOL)) {
+					pc = pc + 1;
+					continue;
+				}
+				if (flags & REG_NEWLINE) {
+					if (sp > bol && isnewline(sp[-1])) {
+						pc = pc + 1;
+						continue;
+					}
+				}
 				goto dead;
 			case I_EOL:
-				if (*sp == 0)
-					break;
-				if (flags & REG_NEWLINE)
-					if (isnewline(*sp))
-						break;
+				if (*sp == 0) {
+					pc = pc + 1;
+					continue;
+				}
+				if (flags & REG_NEWLINE) {
+					if (isnewline(*sp)) {
+						pc = pc + 1;
+						continue;
+					}
+				}
 				goto dead;
 			case I_WORD:
 				i = sp > bol && iswordchar(sp[-1]);
 				i ^= iswordchar(sp[0]);
-				if (i)
-					break;
-				goto dead;
+				if (!i)
+					goto dead;
+				pc = pc + 1;
+				continue;
 			case I_NWORD:
 				i = sp > bol && iswordchar(sp[-1]);
 				i ^= iswordchar(sp[0]);
-				if (!i)
-					break;
-				goto dead;
+				if (i)
+					goto dead;
+				pc = pc + 1;
+				continue;
 
 			case I_LPAR:
 				sub.sub[pc->n].sp = sp;
-				break;
+				pc = pc + 1;
+				continue;
 			case I_RPAR:
 				sub.sub[pc->n].ep = sp;
-				break;
+				pc = pc + 1;
+				continue;
 			default:
 				goto dead;
 			}
-			pc = pc + 1;
 		}
 dead: ;
 	}
