@@ -353,8 +353,11 @@ static int lexnumber(js_State *J)
 	if (jsY_accept(J, 'e') || jsY_accept(J, 'E')) {
 		if (J->lexchar == '-' || J->lexchar == '+')
 			jsY_next(J);
-		while (jsY_isdec(J->lexchar))
-			jsY_next(J);
+		if (jsY_isdec(J->lexchar))
+			while (jsY_isdec(J->lexchar))
+				jsY_next(J);
+		else
+			jsY_error(J, "missing exponent");
 	}
 
 	if (jsY_isidentifierstart(J->lexchar))
@@ -362,7 +365,6 @@ static int lexnumber(js_State *J)
 
 	J->number = js_strtod(s, NULL);
 	return TK_NUMBER;
-
 }
 
 #endif
@@ -723,6 +725,43 @@ int jsY_lex(js_State *J)
 	return J->lasttoken = jsY_lexx(J);
 }
 
+static int lexjsonnumber(js_State *J)
+{
+	const char *s = J->source - 1;
+
+	if (J->lexchar == '-')
+		jsY_next(J);
+
+	if (J->lexchar == '0')
+		jsY_next(J);
+	else if (J->lexchar >= '1' && J->lexchar <= '9')
+		while (isdigit(J->lexchar))
+			jsY_next(J);
+	else
+		jsY_error(J, "unexpected non-digit");
+	if (jsY_accept(J, '.'))
+	{
+		if (isdigit(J->lexchar))
+			while (isdigit(J->lexchar))
+				jsY_next(J);
+		else
+			jsY_error(J, "missing digits after decimal point");
+	}
+
+	if (jsY_accept(J, 'e') || jsY_accept(J, 'E')) {
+		if (J->lexchar == '-' || J->lexchar == '+')
+			jsY_next(J);
+		if (isdigit(J->lexchar))
+			while (isdigit(J->lexchar))
+				jsY_next(J);
+		else
+			jsY_error(J, "missing digits after exponent indicator");
+	}
+
+	J->number = js_strtod(s, NULL);
+	return TK_NUMBER;
+}
+
 int jsY_lexjson(js_State *J)
 {
 	while (1) {
@@ -731,9 +770,8 @@ int jsY_lexjson(js_State *J)
 		while (jsY_iswhite(J->lexchar) || J->lexchar == '\n')
 			jsY_next(J);
 
-		if (J->lexchar >= '0' && J->lexchar <= '9') {
-			return lexnumber(J);
-		}
+		if ((J->lexchar >= '0' && J->lexchar <= '9') || J->lexchar == '-')
+			return lexjsonnumber(J);
 
 		switch (J->lexchar) {
 		case ',': jsY_next(J); return ',';
@@ -745,9 +783,6 @@ int jsY_lexjson(js_State *J)
 
 		case '"':
 			return lexstring(J);
-
-		case '.':
-			return lexnumber(J);
 
 		case 'f':
 			jsY_next(J); jsY_expect(J, 'a'); jsY_expect(J, 'l'); jsY_expect(J, 's'); jsY_expect(J, 'e');
