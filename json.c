@@ -108,8 +108,7 @@ static void fmtnum(js_State *J, js_Buffer **sb, double n)
 	else if (n == 0) js_puts(J, sb, "0");
 	else {
 		char buf[40];
-		sprintf(buf, "%.17g", n);
-		js_puts(J, sb, buf);
+		js_puts(J, sb, jsV_numbertostring(J, buf, n));
 	}
 }
 
