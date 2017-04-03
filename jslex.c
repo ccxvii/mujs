@@ -762,6 +762,59 @@ static int lexjsonnumber(js_State *J)
 	return TK_NUMBER;
 }
 
+static int lexjsonescape(js_State *J)
+{
+	int x = 0;
+
+	/* already consumed '\' */
+
+	switch (J->lexchar) {
+	default: jsY_error(J, "invalid escape sequence");
+	case 'u':
+		jsY_next(J);
+		if (!jsY_ishex(J->lexchar)) return 1; else { x |= jsY_tohex(J->lexchar) << 12; jsY_next(J); }
+		if (!jsY_ishex(J->lexchar)) return 1; else { x |= jsY_tohex(J->lexchar) << 8; jsY_next(J); }
+		if (!jsY_ishex(J->lexchar)) return 1; else { x |= jsY_tohex(J->lexchar) << 4; jsY_next(J); }
+		if (!jsY_ishex(J->lexchar)) return 1; else { x |= jsY_tohex(J->lexchar); jsY_next(J); }
+		textpush(J, x);
+		break;
+	case '"': textpush(J, '"'); jsY_next(J); break;
+	case '\\': textpush(J, '\\'); jsY_next(J); break;
+	case 'b': textpush(J, '\b'); jsY_next(J); break;
+	case 'f': textpush(J, '\f'); jsY_next(J); break;
+	case 'n': textpush(J, '\n'); jsY_next(J); break;
+	case 'r': textpush(J, '\r'); jsY_next(J); break;
+	case 't': textpush(J, '\t'); jsY_next(J); break;
+	}
+	return 0;
+}
+
+static int lexjsonstring(js_State *J)
+{
+	const char *s;
+
+	textinit(J);
+
+	while (J->lexchar != '"') {
+		if (J->lexchar == 0)
+			jsY_error(J, "unterminated string");
+		else if (J->lexchar < 32)
+			jsY_error(J, "invalid control character in string");
+		else if (jsY_accept(J, '\\'))
+			lexjsonescape(J);
+		else {
+			textpush(J, J->lexchar);
+			jsY_next(J);
+		}
+	}
+	jsY_expect(J, '"');
+
+	s = textend(J);
+
+	J->text = js_intern(J, s);
+	return TK_STRING;
+}
+
 int jsY_lexjson(js_State *J)
 {
 	while (1) {
@@ -782,7 +835,8 @@ int jsY_lexjson(js_State *J)
 		case '}': jsY_next(J); return '}';
 
 		case '"':
-			return lexstring(J);
+			jsY_next(J);
+			return lexjsonstring(J);
 
 		case 'f':
 			jsY_next(J); jsY_expect(J, 'a'); jsY_expect(J, 'l'); jsY_expect(J, 's'); jsY_expect(J, 'e');
