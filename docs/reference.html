@@ -47,7 +47,11 @@ Custom properties on userdata objects can be implemented using getter and setter
 Numbers are represented using double precision floating point values.
 
 <p>
-Strings in the C interface are zero-terminated byte arrays in UTF-8 encoding.
+Strings in the C interface are zero-terminated byte arrays in CESU-8 encoding.
+CESU-8 is a variant of UTF-8 which encodes supplementary unicode characters as
+surrogate pairs. This maintains compatibility with the UTF-16 nature of
+JavaScript, but requires attention when passing strings using supplementary
+unicode characters to and from the MuJS library.
 
 <h3>Environments</h3>
 
