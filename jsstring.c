@@ -405,7 +405,7 @@ loop:
 
 	if (js_iscallable(J, 2)) {
 		js_copy(J, 2);
-		js_pushundefinedthis(J);
+		js_pushundefined(J);
 		for (x = 0; m.sub[x].sp; ++x) /* arg 0..x: substring and subexps that matched */
 			js_pushlstring(J, m.sub[x].sp, m.sub[x].ep - m.sub[x].sp);
 		js_pushnumber(J, s - source); /* arg x+2: offset within search string */
@@ -500,7 +500,7 @@ static void Sp_replace_string(js_State *J)
 
 	if (js_iscallable(J, 2)) {
 		js_copy(J, 2);
-		js_pushundefinedthis(J);
+		js_pushundefined(J);
 		js_pushlstring(J, s, n); /* arg 1: substring that matched */
 		js_pushnumber(J, s - source); /* arg 2: offset within search string */
 		js_copy(J, 0); /* arg 3: search string */

@@ -19,7 +19,6 @@
 "true",
 "false",
 "this",
-"global",
 "current",
 "initlocal",
 "getlocal",

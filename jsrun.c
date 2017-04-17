@@ -161,14 +161,6 @@ void js_pushglobal(js_State *J)
 	js_pushobject(J, J->G);
 }
 
-void js_pushundefinedthis(js_State *J)
-{
-	if (J->strict)
-		js_pushundefined(J);
-	else
-		js_pushobject(J, J->G);
-}
-
 void js_currentfunction(js_State *J)
 {
 	CHECKSTACK(1);
@@ -1319,9 +1311,20 @@ static void jsR_run(js_State *J, js_Function *F)
 		case OP_TRUE: js_pushboolean(J, 1); break;
 		case OP_FALSE: js_pushboolean(J, 0); break;
 
-		case OP_THIS: js_copy(J, 0); break;
-		case OP_GLOBAL: js_pushobject(J, J->G); break;
-		case OP_CURRENT: js_currentfunction(J); break;
+		case OP_THIS:
+			if (J->strict) {
+				js_copy(J, 0);
+			} else {
+				if (js_iscoercible(J, 0))
+					js_copy(J, 0);
+				else
+					js_pushglobal(J);
+			}
+			break;
+
+		case OP_CURRENT:
+			js_currentfunction(J);
+			break;
 
 		case OP_INITLOCAL:
 			STACK[BOT + *pc++] = STACK[--TOP];

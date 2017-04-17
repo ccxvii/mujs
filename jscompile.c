@@ -517,7 +517,7 @@ static void ccall(JF, js_Ast *fun, js_Ast *args)
 		/* fall through */
 	default:
 		cexp(J, F, fun);
-		emit(J, F, J->strict ? OP_UNDEF : OP_GLOBAL);
+		emit(J, F, OP_UNDEF);
 		break;
 	}
 	n = cargs(J, F, args);
