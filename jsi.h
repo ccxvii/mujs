@@ -131,6 +131,7 @@ struct js_Jumpbuf
 	int envtop;
 	int tracetop;
 	int top, bot;
+	int strict;
 	js_Instruction *pc;
 };
 

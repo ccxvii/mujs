@@ -1167,6 +1167,7 @@ void *js_savetrypc(js_State *J, js_Instruction *pc)
 	J->trybuf[J->trytop].tracetop = J->tracetop;
 	J->trybuf[J->trytop].top = J->top;
 	J->trybuf[J->trytop].bot = J->bot;
+	J->trybuf[J->trytop].strict = J->strict;
 	J->trybuf[J->trytop].pc = pc;
 	return J->trybuf[J->trytop++].buf;
 }
@@ -1180,6 +1181,7 @@ void *js_savetry(js_State *J)
 	J->trybuf[J->trytop].tracetop = J->tracetop;
 	J->trybuf[J->trytop].top = J->top;
 	J->trybuf[J->trytop].bot = J->bot;
+	J->trybuf[J->trytop].strict = J->strict;
 	J->trybuf[J->trytop].pc = NULL;
 	return J->trybuf[J->trytop++].buf;
 }
@@ -1201,6 +1203,7 @@ void js_throw(js_State *J)
 		J->tracetop = J->trybuf[J->trytop].tracetop;
 		J->top = J->trybuf[J->trytop].top;
 		J->bot = J->trybuf[J->trytop].bot;
+		J->strict = J->trybuf[J->trytop].strict;
 		js_pushvalue(J, v);
 		longjmp(J->trybuf[J->trytop].buf, 1);
 	}
@@ -1271,6 +1274,7 @@ static void jsR_run(js_State *J, js_Function *F)
 	js_Instruction *pc = F->code;
 	enum js_OpCode opcode;
 	int offset;
+	int savestrict;
 
 	const char *str;
 	js_Object *obj;
@@ -1278,6 +1282,9 @@ static void jsR_run(js_State *J, js_Function *F)
 	unsigned int ux, uy;
 	int ix, iy, okay;
 	int b;
+
+	savestrict = J->strict;
+	J->strict = F->strict;
 
 	while (1) {
 		if (J->gccounter > JS_GCLIMIT) {
@@ -1723,6 +1730,7 @@ static void jsR_run(js_State *J, js_Function *F)
 			break;
 
 		case OP_RETURN:
+			J->strict = savestrict;
 			return;
 
 		case OP_LINE:
