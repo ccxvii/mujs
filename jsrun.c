@@ -580,13 +580,19 @@ static void jsR_setproperty(js_State *J, js_Object *obj, const char *name)
 
 	/* First try to find a setter in prototype chain */
 	ref = jsV_getpropertyx(J, obj, name, &own);
-	if (ref && ref->setter) {
-		js_pushobject(J, ref->setter);
-		js_pushobject(J, obj);
-		js_pushvalue(J, *value);
-		js_call(J, 1);
-		js_pop(J, 1);
-		return;
+	if (ref) {
+		if (ref->setter) {
+			js_pushobject(J, ref->setter);
+			js_pushobject(J, obj);
+			js_pushvalue(J, *value);
+			js_call(J, 1);
+			js_pop(J, 1);
+			return;
+		} else {
+			if (J->strict)
+				if (ref->getter)
+					js_typeerror(J, "setting property '%s' that only has a getter", name);
+		}
 	}
 
 	/* Property not found on this object, so create one */
