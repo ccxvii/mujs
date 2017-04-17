@@ -16,16 +16,20 @@ endif
 ifeq "$(build)" "debug"
 CFLAGS += -g
 else
-CFLAGS += -O2
+CFLAGS += -Os
+ifeq "$(shell uname)" "Linux"
+CFLAGS += -ffunction-sections -fdata-sections
+LDFLAGS += -Wl,--gc-sections -Wl,-s
+endif
 endif
 
 default: build build/mujs build/mujsone
 
 debug:
-	$(MAKE) build=debug
+	$(MAKE) build=debug clean default
 
 release:
-	$(MAKE) build=release
+	$(MAKE) build=release clean default
 
 astnames.h: jsparse.h
 	grep -E '(AST|EXP|STM)_' jsparse.h | sed 's/^[^A-Z]*\(AST_\)*/"/;s/,.*/",/' | tr A-Z a-z > $@
