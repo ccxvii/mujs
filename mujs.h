@@ -54,7 +54,7 @@ int js_pconstruct(js_State *J, int n);
 void *js_savetry(js_State *J); /* returns a jmp_buf */
 
 #define js_try(J) \
-	setjmp(js_savetry(J))
+	setjmp((int*)js_savetry(J))
 
 void js_endtry(js_State *J);
 
@@ -145,7 +145,7 @@ void js_newstring(js_State *J, const char *v);
 void js_newcfunction(js_State *J, js_CFunction fun, const char *name, int length);
 void js_newcconstructor(js_State *J, js_CFunction fun, js_CFunction con, const char *name, int length);
 void js_newuserdata(js_State *J, const char *tag, void *data, js_Finalize finalize);
-void js_newuserdatax(js_State *J, const char *tag, void *data, js_HasProperty has, js_Put put, js_Delete delete, js_Finalize finalize);
+void js_newuserdatax(js_State *J, const char *tag, void *data, js_HasProperty has, js_Put put, js_Delete _delete, js_Finalize _finalize);
 void js_newregexp(js_State *J, const char *pattern, int flags);
 
 void js_pushiterator(js_State *J, int idx, int own);
