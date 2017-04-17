@@ -149,28 +149,10 @@ static void semicolon(js_State *J)
 
 /* Literals */
 
-static const char *futurewords[] = {
-	"class", "const", "enum", "export", "extends", "import", "super",
-};
-
-static const char *strictfuturewords[] = {
-	"implements", "interface", "let", "package", "private", "protected",
-	"public", "static", "yield",
-};
-
-static void checkfutureword(js_State *J, const char *s)
-{
-	if (jsY_findword(s, futurewords, nelem(futurewords)) >= 0)
-		jsP_error(J, "'%s' is a future reserved word", s);
-	if (J->strict && jsY_findword(s, strictfuturewords, nelem(strictfuturewords)) >= 0)
-		jsP_error(J, "'%s' is a strict mode future reserved word", s);
-}
-
 static js_Ast *identifier(js_State *J)
 {
 	js_Ast *a;
 	if (J->lookahead == TK_IDENTIFIER) {
-		checkfutureword(J, J->text);
 		a = jsP_newstrnode(J, AST_IDENTIFIER, J->text);
 		jsP_next(J);
 		return a;
@@ -328,7 +310,6 @@ static js_Ast *primary(js_State *J)
 	js_Ast *a;
 
 	if (J->lookahead == TK_IDENTIFIER) {
-		checkfutureword(J, J->text);
 		a = jsP_newstrnode(J, EXP_IDENTIFIER, J->text);
 		jsP_next(J);
 		return a;
@@ -760,8 +741,6 @@ static js_Ast *statement(js_State *J)
 	}
 
 	if (jsP_accept(J, TK_WITH)) {
-		if (J->strict)
-			jsP_error(J, "'with' statements are not allowed in strict mode");
 		jsP_expect(J, '(');
 		a = expression(J, 0);
 		jsP_expect(J, ')');

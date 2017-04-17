@@ -150,6 +150,7 @@ struct js_State
 
 	js_StringNode *strings;
 
+	int default_strict;
 	int strict;
 
 	/* parser input source */

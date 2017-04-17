@@ -121,6 +121,7 @@ struct js_Function
 	const char *name;
 	int script;
 	int lightweight;
+	int strict;
 	int arguments;
 	int numparams;
 

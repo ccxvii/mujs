@@ -188,7 +188,7 @@ js_State *js_newstate(js_Alloc alloc, void *actx, int flags)
 	J->alloc = alloc;
 
 	if (flags & JS_STRICT)
-		J->strict = 1;
+		J->strict = J->default_strict = 1;
 
 	J->trace[0].name = "-top-";
 	J->trace[0].file = "native";
