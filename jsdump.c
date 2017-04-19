@@ -826,7 +826,7 @@ void js_dumpvalue(js_State *J, js_Value v)
 		case JS_CBOOLEAN: printf("[Boolean %d]", v.u.object->u.boolean); break;
 		case JS_CNUMBER: printf("[Number %g]", v.u.object->u.number); break;
 		case JS_CSTRING: printf("[String'%s']", v.u.object->u.s.string); break;
-		case JS_CERROR: printf("[Error %s]", v.u.object->u.s.string); break;
+		case JS_CERROR: printf("[Error]"); break;
 		case JS_CITERATOR: printf("[Iterator %p]", (void*)v.u.object); break;
 		case JS_CUSERDATA:
 			printf("[Userdata %s %p]", v.u.object->u.user.tag, v.u.object->u.user.data);
