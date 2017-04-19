@@ -210,10 +210,15 @@ static void fmtobject(js_State *J, js_Buffer **sb, js_Object *obj, const char *g
 {
 	const char *key;
 	int save;
-	int n = 0;
+	int i, n;
 
-	/* TODO: check stack for duplicate value (cyclical structure) */
+	n = js_gettop(J) - 1;
+	for (i = 4; i < n; ++i)
+		if (js_isobject(J, i))
+			if (js_toobject(J, i) == js_toobject(J, -1))
+				js_typeerror(J, "cyclic object value");
 
+	n = 0;
 	js_putc(J, sb, '{');
 	js_pushiterator(J, -1, 1);
 	while ((key = js_nextiterator(J, -1))) {
@@ -237,17 +242,21 @@ static void fmtobject(js_State *J, js_Buffer **sb, js_Object *obj, const char *g
 
 static void fmtarray(js_State *J, js_Buffer **sb, const char *gap, int level)
 {
-	int n, k;
+	int n, i;
 	char buf[32];
 
-	/* TODO: check stack for duplicate value (cyclical structure) */
+	n = js_gettop(J) - 1;
+	for (i = 4; i < n; ++i)
+		if (js_isobject(J, i))
+			if (js_toobject(J, i) == js_toobject(J, -1))
+				js_typeerror(J, "cyclic object value");
 
 	js_putc(J, sb, '[');
 	n = js_getlength(J, -1);
-	for (k = 0; k < n; ++k) {
-		if (k) js_putc(J, sb, ',');
+	for (i = 0; i < n; ++i) {
+		if (i) js_putc(J, sb, ',');
 		if (gap) fmtindent(J, sb, gap, level + 1);
-		if (!fmtvalue(J, sb, js_itoa(buf, k), gap, level + 1))
+		if (!fmtvalue(J, sb, js_itoa(buf, i), gap, level + 1))
 			js_puts(J, sb, "null");
 	}
 	if (gap && n) fmtindent(J, sb, gap, level);
