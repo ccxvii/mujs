@@ -471,8 +471,10 @@ static int jsR_hasproperty(js_State *J, js_Object *obj, const char *name)
 			return 1;
 		}
 		if (js_isarrayindex(J, name, &k)) {
-			js_pushrune(J, js_runeat(J, obj->u.s.string, k));
-			return 1;
+			if (k >= 0 && k < obj->u.s.length) {
+				js_pushrune(J, js_runeat(J, obj->u.s.string, k));
+				return 1;
+			}
 		}
 	}
 
@@ -550,7 +552,7 @@ static void jsR_setproperty(js_State *J, js_Object *obj, const char *name)
 		if (!strcmp(name, "length"))
 			goto readonly;
 		if (js_isarrayindex(J, name, &k))
-			if (js_runeat(J, obj->u.s.string, k))
+			if (k >= 0 && k < obj->u.s.length)
 				goto readonly;
 	}
 
@@ -620,7 +622,7 @@ static void jsR_defproperty(js_State *J, js_Object *obj, const char *name,
 		if (!strcmp(name, "length"))
 			goto readonly;
 		if (js_isarrayindex(J, name, &k))
-			if (js_runeat(J, obj->u.s.string, k))
+			if (k >= 0 && k < obj->u.s.length)
 				goto readonly;
 	}
 
@@ -681,7 +683,7 @@ static int jsR_delproperty(js_State *J, js_Object *obj, const char *name)
 		if (!strcmp(name, "length"))
 			goto dontconf;
 		if (js_isarrayindex(J, name, &k))
-			if (js_runeat(J, obj->u.s.string, k))
+			if (k >= 0 && k < obj->u.s.length)
 				goto dontconf;
 	}
 
