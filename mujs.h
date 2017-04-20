@@ -1,6 +1,8 @@
 #ifndef mujs_h
 #define mujs_h
 
+#include <setjmp.h> /* required for setjmp in fz_try macro */
+
 /* noreturn is a GCC extension */
 #ifdef __GNUC__
 #define JS_NORETURN __attribute__((noreturn))
