@@ -137,10 +137,20 @@ static void O_getOwnPropertyDescriptor(js_State *J)
 	}
 }
 
+static int O_getOwnPropertyNames_walk(js_State *J, js_Property *ref, int i)
+{
+	if (ref->left->level)
+		i = O_getOwnPropertyNames_walk(J, ref->left, i);
+	js_pushliteral(J, ref->name);
+	js_setindex(J, -2, i++);
+	if (ref->right->level)
+		i = O_getOwnPropertyNames_walk(J, ref->right, i);
+	return i;
+}
+
 static void O_getOwnPropertyNames(js_State *J)
 {
 	js_Object *obj;
-	js_Property *ref;
 	int k;
 	int i;
 
@@ -150,11 +160,10 @@ static void O_getOwnPropertyNames(js_State *J)
 
 	js_newarray(J);
 
-	i = 0;
-	for (ref = obj->head; ref; ref = ref->next) {
-		js_pushliteral(J, ref->name);
-		js_setindex(J, -2, i++);
-	}
+	if (obj->properties->level)
+		i = O_getOwnPropertyNames_walk(J, obj->properties, 0);
+	else
+		i = 0;
 
 	if (obj->type == JS_CARRAY) {
 		js_pushliteral(J, "length");
@@ -245,24 +254,44 @@ static void O_defineProperty(js_State *J)
 	js_copy(J, 1);
 }
 
+static void O_defineProperties_walk(js_State *J, js_Property *ref)
+{
+	if (ref->left->level)
+		O_defineProperties_walk(J, ref->left);
+	if (!(ref->atts & JS_DONTENUM)) {
+		js_pushvalue(J, ref->value);
+		ToPropertyDescriptor(J, js_toobject(J, 1), ref->name, js_toobject(J, -1));
+		js_pop(J, 1);
+	}
+	if (ref->right->level)
+		O_defineProperties_walk(J, ref->right);
+}
+
 static void O_defineProperties(js_State *J)
 {
 	js_Object *props;
-	js_Property *ref;
 
 	if (!js_isobject(J, 1)) js_typeerror(J, "not an object");
 	if (!js_isobject(J, 2)) js_typeerror(J, "not an object");
 
 	props = js_toobject(J, 2);
-	for (ref = props->head; ref; ref = ref->next) {
-		if (!(ref->atts & JS_DONTENUM)) {
-			js_pushvalue(J, ref->value);
-			ToPropertyDescriptor(J, js_toobject(J, 1), ref->name, js_toobject(J, -1));
-			js_pop(J, 1);
-		}
-	}
+	if (props->properties->level)
+		O_defineProperties_walk(J, props->properties);
 
 	js_copy(J, 1);
+}
+
+static void O_create_walk(js_State *J, js_Object *obj, js_Property *ref)
+{
+	if (ref->left->level)
+		O_create_walk(J, obj, ref->left);
+	if (!(ref->atts & JS_DONTENUM)) {
+		if (ref->value.type != JS_TOBJECT)
+			js_typeerror(J, "not an object");
+		ToPropertyDescriptor(J, obj, ref->name, ref->value.u.object);
+	}
+	if (ref->right->level)
+		O_create_walk(J, obj, ref->right);
 }
 
 static void O_create(js_State *J)
@@ -270,7 +299,6 @@ static void O_create(js_State *J)
 	js_Object *obj;
 	js_Object *proto;
 	js_Object *props;
-	js_Property *ref;
 
 	if (js_isobject(J, 1))
 		proto = js_toobject(J, 1);
@@ -283,23 +311,31 @@ static void O_create(js_State *J)
 	js_pushobject(J, obj);
 
 	if (js_isdefined(J, 2)) {
-		if (!js_isobject(J, 2)) js_typeerror(J, "not an object");
+		if (!js_isobject(J, 2))
+			js_typeerror(J, "not an object");
 		props = js_toobject(J, 2);
-		for (ref = props->head; ref; ref = ref->next) {
-			if (!(ref->atts & JS_DONTENUM)) {
-				if (ref->value.type != JS_TOBJECT) js_typeerror(J, "not an object");
-				ToPropertyDescriptor(J, obj, ref->name, ref->value.u.object);
-			}
-		}
+		if (props->properties->level)
+			O_create_walk(J, obj, props->properties);
 	}
+}
+
+static int O_keys_walk(js_State *J, js_Property *ref, int i)
+{
+	if (ref->left->level)
+		i = O_keys_walk(J, ref->left, i);
+	if (!(ref->atts & JS_DONTENUM)) {
+		js_pushliteral(J, ref->name);
+		js_setindex(J, -2, i++);
+	}
+	if (ref->right->level)
+		i = O_keys_walk(J, ref->right, i);
+	return i;
 }
 
 static void O_keys(js_State *J)
 {
 	js_Object *obj;
-	js_Property *ref;
-	int k;
-	int i;
+	int i, k;
 
 	if (!js_isobject(J, 1))
 		js_typeerror(J, "not an object");
@@ -307,13 +343,10 @@ static void O_keys(js_State *J)
 
 	js_newarray(J);
 
-	i = 0;
-	for (ref = obj->head; ref; ref = ref->next) {
-		if (!(ref->atts & JS_DONTENUM)) {
-			js_pushliteral(J, ref->name);
-			js_setindex(J, -2, i++);
-		}
-	}
+	if (obj->properties->level)
+		i = O_keys_walk(J, obj->properties, 0);
+	else
+		i = 0;
 
 	if (obj->type == JS_CSTRING) {
 		for (k = 0; k < obj->u.s.length; ++k) {
@@ -338,10 +371,18 @@ static void O_isExtensible(js_State *J)
 	js_pushboolean(J, js_toobject(J, 1)->extensible);
 }
 
+static void O_seal_walk(js_State *J, js_Property *ref)
+{
+	if (ref->left->level)
+		O_seal_walk(J, ref->left);
+	ref->atts |= JS_DONTCONF;
+	if (ref->right->level)
+		O_seal_walk(J, ref->right);
+}
+
 static void O_seal(js_State *J)
 {
 	js_Object *obj;
-	js_Property *ref;
 
 	if (!js_isobject(J, 1))
 		js_typeerror(J, "not an object");
@@ -349,16 +390,28 @@ static void O_seal(js_State *J)
 	obj = js_toobject(J, 1);
 	obj->extensible = 0;
 
-	for (ref = obj->head; ref; ref = ref->next)
-		ref->atts |= JS_DONTCONF;
+	if (obj->properties->level)
+		O_seal_walk(J, obj->properties);
 
 	js_copy(J, 1);
+}
+
+static int O_isSealed_walk(js_State *J, js_Property *ref)
+{
+	if (ref->left->level)
+		if (!O_isSealed_walk(J, ref->left))
+			return 0;
+	if (!(ref->atts & JS_DONTCONF))
+		return 0;
+	if (ref->right->level)
+		if (!O_isSealed_walk(J, ref->right))
+			return 0;
+	return 1;
 }
 
 static void O_isSealed(js_State *J)
 {
 	js_Object *obj;
-	js_Property *ref;
 
 	if (!js_isobject(J, 1))
 		js_typeerror(J, "not an object");
@@ -369,20 +422,24 @@ static void O_isSealed(js_State *J)
 		return;
 	}
 
-	for (ref = obj->head; ref; ref = ref->next) {
-		if (!(ref->atts & JS_DONTCONF)) {
-			js_pushboolean(J, 0);
-			return;
-		}
-	}
+	if (obj->properties->level)
+		js_pushboolean(J, O_isSealed_walk(J, obj->properties));
+	else
+		js_pushboolean(J, 1);
+}
 
-	js_pushboolean(J, 1);
+static void O_freeze_walk(js_State *J, js_Property *ref)
+{
+	if (ref->left->level)
+		O_freeze_walk(J, ref->left);
+	ref->atts |= JS_READONLY | JS_DONTCONF;
+	if (ref->right->level)
+		O_freeze_walk(J, ref->right);
 }
 
 static void O_freeze(js_State *J)
 {
 	js_Object *obj;
-	js_Property *ref;
 
 	if (!js_isobject(J, 1))
 		js_typeerror(J, "not an object");
@@ -390,16 +447,28 @@ static void O_freeze(js_State *J)
 	obj = js_toobject(J, 1);
 	obj->extensible = 0;
 
-	for (ref = obj->head; ref; ref = ref->next)
-		ref->atts |= JS_READONLY | JS_DONTCONF;
+	if (obj->properties->level)
+		O_freeze_walk(J, obj->properties);
 
 	js_copy(J, 1);
+}
+
+static int O_isFrozen_walk(js_State *J, js_Property *ref)
+{
+	if (ref->left->level)
+		if (!O_isFrozen_walk(J, ref->left))
+			return 0;
+	if (!(ref->atts & (JS_READONLY | JS_DONTCONF)))
+		return 0;
+	if (ref->right->level)
+		if (!O_isFrozen_walk(J, ref->right))
+			return 0;
+	return 1;
 }
 
 static void O_isFrozen(js_State *J)
 {
 	js_Object *obj;
-	js_Property *ref;
 
 	if (!js_isobject(J, 1))
 		js_typeerror(J, "not an object");
@@ -410,14 +479,10 @@ static void O_isFrozen(js_State *J)
 		return;
 	}
 
-	for (ref = obj->head; ref; ref = ref->next) {
-		if (!(ref->atts & (JS_READONLY | JS_DONTCONF))) {
-			js_pushboolean(J, 0);
-			return;
-		}
-	}
-
-	js_pushboolean(J, 1);
+	if (obj->properties->level)
+		js_pushboolean(J, O_isFrozen_walk(J, obj->properties));
+	else
+		js_pushboolean(J, 1);
 }
 
 void jsB_initobject(js_State *J)

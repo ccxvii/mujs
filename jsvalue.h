@@ -81,7 +81,6 @@ struct js_Object
 	enum js_Class type;
 	int extensible;
 	js_Property *properties;
-	js_Property *head, **tailp; /* for enumeration */
 	int count; /* number of properties, for array sparseness check */
 	js_Object *prototype;
 	union {
@@ -126,7 +125,6 @@ struct js_Property
 {
 	const char *name;
 	js_Property *left, *right;
-	js_Property *next, **prevp; /* for enumeration */
 	int level;
 	int atts;
 	js_Value value;
