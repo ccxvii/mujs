@@ -120,6 +120,12 @@ static const char *require_js =
 	"require.cache = Object.create(null);\n"
 ;
 
+static const char *stacktrace_js =
+	"Error.prototype.toString = function() {\n"
+	"return this.name + ': ' + this.message + this.stackTrace;\n"
+	"};\n"
+;
+
 static int eval_print(js_State *J, const char *source)
 {
 	if (js_ploadstring(J, "[string]", source)) {
@@ -200,6 +206,7 @@ main(int argc, char **argv)
 	js_setglobal(J, "quit");
 
 	js_dostring(J, require_js);
+	js_dostring(J, stacktrace_js);
 
 	if (argc > 1) {
 		for (i = 1; i < argc; ++i) {

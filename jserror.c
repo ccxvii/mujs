@@ -53,9 +53,6 @@ static void Ep_toString(js_State *J)
 		js_pushstring(J, message);
 		js_concat(J);
 	}
-
-	if (js_hasproperty(J, 0, "stackTrace"))
-		js_concat(J);
 }
 
 static int jsB_ErrorX(js_State *J, js_Object *prototype)
