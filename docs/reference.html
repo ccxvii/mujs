@@ -51,7 +51,8 @@ Strings in the C interface are zero-terminated byte arrays in CESU-8 encoding.
 CESU-8 is a variant of UTF-8 which encodes supplementary unicode characters as
 surrogate pairs. This maintains compatibility with the UTF-16 nature of
 JavaScript, but requires attention when passing strings using supplementary
-unicode characters to and from the MuJS library.
+unicode characters to and from the MuJS library. It also means that you cannot
+have any JavaScript strings with a zero character value in MuJS.
 
 <h3>Environments</h3>
 
