@@ -236,6 +236,7 @@ static void fmtobject(js_State *J, js_Buffer **sb, js_Object *obj, const char *g
 			++n;
 		js_rot2(J);
 	}
+	js_pop(J, 1);
 	if (gap && n) fmtindent(J, sb, gap, level);
 	js_putc(J, sb, '}');
 }
