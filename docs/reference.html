@@ -93,7 +93,8 @@ Collection is automatically triggered when enough allocations have accumulated.
 You can also force a collection pass from C.
 
 <p>
-TODO: garbage collection of userdata.
+Userdata objects have an associated C finalizer function that is called when
+the correspending object is freed.
 
 <h3>The Stack</h3>
 
@@ -578,13 +579,38 @@ Push the currently executing function object.
 <h3>Userdata</h3>
 
 <pre>
-void js_newuserdata(js_State *J, const char *tag, void *data);
+typedef void (*js_Finalize)(js_State *J, void *data);
+typedef int (*js_HasProperty)(js_State *J, void *data, const char *name);
+typedef int (*js_Put)(js_State *J, void *data, const char *name);
+typedef int (*js_Delete)(js_State *J, void *data, const char *name);
+
+void js_newuserdata(js_State *J, const char *tag, void *data,
+	js_Finalize finalize);
+
+void js_newuserdatax(js_State *J, const char *tag, void *data,
+	js_HasProperty has,
+	js_Put put,
+	js_Delete delete,
+	js_Finalize finalize);
 </pre>
 
 <p>
 Pop an object from the top of the stack to use as the internal prototype property for the new object.
 Push a new userdata object wrapping a pointer to C memory.
 The userdata object is tagged using a string, to represent the type of the C memory.
+
+<p>
+The finalize callback, if it is not NULL, will be called when the object is
+freed by the garbage collector.
+
+<p>
+The extended function also has callback functions for overriding property accesses.
+If these are set, they can be used to override accesses to certain properties.
+Any property accesses that are not overridden will be handled as usual in the runtime.
+The "HasProperty" callback should push a value and return true if it wants to
+handle the property, otherwise it should do nothing and return false. "Put"
+should pop a value and return true if it wants to handle the property.
+Likewise, "Delete" should return true if it wants to handle the property.
 
 <pre>
 int js_isuserdata(js_State *J, int idx, const char *tag);
