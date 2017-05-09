@@ -129,18 +129,18 @@ static const char *stacktrace_js =
 static int eval_print(js_State *J, const char *source)
 {
 	if (js_ploadstring(J, "[string]", source)) {
-		fprintf(stderr, "%s\n", js_tostring(J, -1));
+		fprintf(stderr, "%s\n", js_trystring(J, -1, "Error"));
 		js_pop(J, 1);
 		return 1;
 	}
 	js_pushglobal(J);
 	if (js_pcall(J, 0)) {
-		fprintf(stderr, "%s\n", js_tostring(J, -1));
+		fprintf(stderr, "%s\n", js_trystring(J, -1, "Error"));
 		js_pop(J, 1);
 		return 1;
 	}
 	if (js_isdefined(J, -1))
-		printf("%s\n", js_tostring(J, -1));
+		printf("%s\n", js_trystring(J, -1, "can't convert to string"));
 	js_pop(J, 1);
 	return 0;
 }

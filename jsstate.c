@@ -18,7 +18,7 @@ static void *js_defaultalloc(void *actx, void *ptr, int size)
 
 static void js_defaultpanic(js_State *J)
 {
-	fprintf(stderr, "uncaught exception: %s\n", js_tostring(J, -1));
+	fprintf(stderr, "uncaught exception\n");
 	/* return to javascript to abort */
 }
 
@@ -38,6 +38,18 @@ int js_ploadfile(js_State *J, const char *filename)
 	js_loadfile(J, filename);
 	js_endtry(J);
 	return 0;
+}
+
+const char *js_trystring(js_State *J, int idx, const char *error)
+{
+	const char *s;
+	if (js_try(J)) {
+		js_pop(J, 1);
+		return error;
+	}
+	s = js_tostring(J, idx);
+	js_endtry(J);
+	return s;
 }
 
 static void js_loadstringx(js_State *J, const char *filename, const char *source, int iseval)
@@ -126,7 +138,7 @@ void js_loadfile(js_State *J, const char *filename)
 int js_dostring(js_State *J, const char *source)
 {
 	if (js_try(J)) {
-		fprintf(stderr, "%s\n", js_tostring(J, -1));
+		fprintf(stderr, "%s\n", js_trystring(J, -1, "Error"));
 		js_pop(J, 1);
 		return 1;
 	}
@@ -141,7 +153,7 @@ int js_dostring(js_State *J, const char *source)
 int js_dofile(js_State *J, const char *filename)
 {
 	if (js_try(J)) {
-		fprintf(stderr, "%s\n", js_tostring(J, -1));
+		fprintf(stderr, "%s\n", js_trystring(J, -1, "Error"));
 		js_pop(J, 1);
 		return 1;
 	}
