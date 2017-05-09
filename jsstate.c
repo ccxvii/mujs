@@ -131,7 +131,7 @@ int js_dostring(js_State *J, const char *source)
 		return 1;
 	}
 	js_loadstring(J, "[string]", source);
-	js_pushglobal(J);
+	js_pushundefined(J);
 	js_call(J, 0);
 	js_pop(J, 1);
 	js_endtry(J);
@@ -146,7 +146,7 @@ int js_dofile(js_State *J, const char *filename)
 		return 1;
 	}
 	js_loadfile(J, filename);
-	js_pushglobal(J);
+	js_pushundefined(J);
 	js_call(J, 0);
 	js_pop(J, 1);
 	js_endtry(J);
