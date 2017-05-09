@@ -128,8 +128,8 @@ void jsP_freeparse(js_State *J)
 
 static void jsP_next(js_State *J)
 {
-	J->astline = J->lexline;
 	J->lookahead = jsY_lex(J);
+	J->astline = J->lexline;
 }
 
 #define jsP_accept(J,x) (J->lookahead == x ? (jsP_next(J), 1) : 0)
