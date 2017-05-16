@@ -43,11 +43,15 @@ static void jsP_error(js_State *J, const char *fmt, ...)
 static void jsP_warning(js_State *J, const char *fmt, ...)
 {
 	va_list ap;
-	fprintf(stderr, "%s:%d: warning: ", J->filename, J->lexline);
+	char buf[512];
+	char msg[256];
+
 	va_start(ap, fmt);
-	vfprintf(stderr, fmt, ap);
+	vsnprintf(msg, sizeof msg, fmt, ap);
 	va_end(ap);
-	fprintf(stderr, "\n");
+
+	snprintf(buf, sizeof buf, "%s:%d: warning: %s", J->filename, J->lexline, msg);
+	js_report(J, buf);
 }
 
 static js_Ast *jsP_newnode(js_State *J, enum js_AstType type, js_Ast *a, js_Ast *b, js_Ast *c, js_Ast *d)

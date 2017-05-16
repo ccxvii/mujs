@@ -1003,7 +1003,7 @@ static int match(Reinst *pc, const char *sp, const char *bol, int flags, Resub *
 				continue;
 			case I_SPLIT:
 				if (nready >= MAXTHREAD) {
-					fprintf(stderr, "regexec: backtrack overflow!\n");
+					/* fprintf(stderr, "regexec: backtrack overflow!\n"); */
 					return 0;
 				}
 				spawn(&ready[nready++], pc->y, sp, &sub);

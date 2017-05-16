@@ -16,9 +16,15 @@ static void *js_defaultalloc(void *actx, void *ptr, int size)
 	return realloc(ptr, (size_t)size);
 }
 
+static void js_defaultreport(js_State *J, const char *message)
+{
+	fputs(message, stderr);
+	fputc('\n', stderr);
+}
+
 static void js_defaultpanic(js_State *J)
 {
-	fprintf(stderr, "uncaught exception\n");
+	js_report(J, "uncaught exception");
 	/* return to javascript to abort */
 }
 
@@ -138,7 +144,7 @@ void js_loadfile(js_State *J, const char *filename)
 int js_dostring(js_State *J, const char *source)
 {
 	if (js_try(J)) {
-		fprintf(stderr, "%s\n", js_trystring(J, -1, "Error"));
+		js_report(J, js_trystring(J, -1, "Error"));
 		js_pop(J, 1);
 		return 1;
 	}
@@ -153,7 +159,7 @@ int js_dostring(js_State *J, const char *source)
 int js_dofile(js_State *J, const char *filename)
 {
 	if (js_try(J)) {
-		fprintf(stderr, "%s\n", js_trystring(J, -1, "Error"));
+		js_report(J, js_trystring(J, -1, "Error"));
 		js_pop(J, 1);
 		return 1;
 	}
@@ -170,6 +176,17 @@ js_Panic js_atpanic(js_State *J, js_Panic panic)
 	js_Panic old = J->panic;
 	J->panic = panic;
 	return old;
+}
+
+void js_report(js_State *J, const char *message)
+{
+	if (J->report)
+		J->report(J, message);
+}
+
+void js_setreport(js_State *J, js_Report report)
+{
+	J->report = report;
 }
 
 void js_setcontext(js_State *J, void *uctx)
@@ -206,6 +223,7 @@ js_State *js_newstate(js_Alloc alloc, void *actx, int flags)
 	J->trace[0].file = "native";
 	J->trace[0].line = 0;
 
+	J->report = js_defaultreport;
 	J->panic = js_defaultpanic;
 
 	J->stack = alloc(actx, NULL, JS_STACKSIZE * sizeof *J->stack);

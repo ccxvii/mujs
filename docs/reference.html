@@ -255,7 +255,7 @@ int js_dostring(js_State *J, const char *source);
 
 <p>
 Compile and execute the script in the zero-terminated string in source argument.
-If any errors occur, print the error message to stderr and return 1.
+If any errors occur, call the report callback function and return 1.
 Return 0 on success.
 
 <pre>
@@ -264,7 +264,7 @@ int js_dofile(js_State *J, const char *filename);
 
 <p>
 Load the script from the file with the given filename, then compile and execute it.
-If any errors occur, print the error message to stderr and return 1.
+If any errors occur, call the report callback function and return 1.
 Return 0 on success.
 
 <h3>Protected environments</h3>

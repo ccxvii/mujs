@@ -210,9 +210,12 @@ void js_gc(js_State *J, int report)
 		++nstr;
 	}
 
-	if (report)
-		printf("garbage collected: %d/%d envs, %d/%d funs, %d/%d objs, %d/%d strs\n",
+	if (report) {
+		char buf[256];
+		snprintf(buf, sizeof buf, "garbage collected: %d/%d envs, %d/%d funs, %d/%d objs, %d/%d strs",
 			genv, nenv, gfun, nfun, gobj, nobj, gstr, nstr);
+		js_report(J, buf);
+	}
 }
 
 void js_freestate(js_State *J)

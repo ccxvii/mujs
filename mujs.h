@@ -39,11 +39,13 @@ typedef void (*js_Finalize)(js_State *J, void *p);
 typedef int (*js_HasProperty)(js_State *J, void *p, const char *name);
 typedef int (*js_Put)(js_State *J, void *p, const char *name);
 typedef int (*js_Delete)(js_State *J, void *p, const char *name);
+typedef void (*js_Report)(js_State *J, const char *message);
 
 /* Basic functions */
 js_State *js_newstate(js_Alloc alloc, void *actx, int flags);
 void js_setcontext(js_State *J, void *uctx);
 void *js_getcontext(js_State *J);
+void js_setreport(js_State *J, js_Report report);
 js_Panic js_atpanic(js_State *J, js_Panic panic);
 void js_freestate(js_State *J);
 void js_gc(js_State *J, int report);
@@ -82,6 +84,8 @@ enum {
 	JS_DONTENUM = 2,
 	JS_DONTCONF = 4,
 };
+
+void js_report(js_State *J, const char *message);
 
 void js_newerror(js_State *J, const char *message);
 void js_newevalerror(js_State *J, const char *message);
