@@ -288,6 +288,7 @@ static void carray(JF, js_Ast *list)
 	while (list) {
 		if (list->a->type != EXP_UNDEF) {
 			emitnumber(J, F, i++);
+			emitline(J, F, list->a);
 			cexp(J, F, list->a);
 			emit(J, F, OP_INITPROP);
 		} else {
@@ -342,6 +343,7 @@ static void cobject(JF, js_Ast *list)
 		switch (kv->type) {
 		default: /* impossible */ break;
 		case EXP_PROP_VAL:
+			emitline(J, F, kv->b);
 			cexp(J, F, kv->b);
 			emit(J, F, OP_INITPROP);
 			break;
