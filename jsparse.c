@@ -23,6 +23,9 @@ static js_Ast *funbody(js_State *J);
 
 JS_NORETURN static void jsP_error(js_State *J, const char *fmt, ...) JS_PRINTFLIKE(2,3);
 
+#define INCREC() if (++J->astdepth > JS_ASTLIMIT) jsP_error(J, "too much recursion")
+#define DECREC() --J->astdepth
+
 static void jsP_error(js_State *J, const char *fmt, ...)
 {
 	va_list ap;
@@ -380,10 +383,13 @@ static js_Ast *newexp(js_State *J)
 
 static js_Ast *memberexp(js_State *J)
 {
-	js_Ast *a = newexp(J);
+	js_Ast *a;
+	INCREC();
+	a = newexp(J);
 loop:
 	if (jsP_accept(J, '.')) { a = EXP2(MEMBER, a, identifiername(J)); goto loop; }
 	if (jsP_accept(J, '[')) { a = EXP2(INDEX, a, expression(J, 0)); jsP_expect(J, ']'); goto loop; }
+	DECREC();
 	return a;
 }
 
@@ -527,27 +533,33 @@ static js_Ast *conditional(js_State *J, int notin)
 
 static js_Ast *assignment(js_State *J, int notin)
 {
-	js_Ast *a = conditional(J, notin);
-	if (jsP_accept(J, '=')) return EXP2(ASS, a, assignment(J, notin));
-	if (jsP_accept(J, TK_MUL_ASS)) return EXP2(ASS_MUL, a, assignment(J, notin));
-	if (jsP_accept(J, TK_DIV_ASS)) return EXP2(ASS_DIV, a, assignment(J, notin));
-	if (jsP_accept(J, TK_MOD_ASS)) return EXP2(ASS_MOD, a, assignment(J, notin));
-	if (jsP_accept(J, TK_ADD_ASS)) return EXP2(ASS_ADD, a, assignment(J, notin));
-	if (jsP_accept(J, TK_SUB_ASS)) return EXP2(ASS_SUB, a, assignment(J, notin));
-	if (jsP_accept(J, TK_SHL_ASS)) return EXP2(ASS_SHL, a, assignment(J, notin));
-	if (jsP_accept(J, TK_SHR_ASS)) return EXP2(ASS_SHR, a, assignment(J, notin));
-	if (jsP_accept(J, TK_USHR_ASS)) return EXP2(ASS_USHR, a, assignment(J, notin));
-	if (jsP_accept(J, TK_AND_ASS)) return EXP2(ASS_BITAND, a, assignment(J, notin));
-	if (jsP_accept(J, TK_XOR_ASS)) return EXP2(ASS_BITXOR, a, assignment(J, notin));
-	if (jsP_accept(J, TK_OR_ASS)) return EXP2(ASS_BITOR, a, assignment(J, notin));
+	js_Ast *a;
+	INCREC();
+	a = conditional(J, notin);
+	if (jsP_accept(J, '=')) a = EXP2(ASS, a, assignment(J, notin));
+	else if (jsP_accept(J, TK_MUL_ASS)) a = EXP2(ASS_MUL, a, assignment(J, notin));
+	else if (jsP_accept(J, TK_DIV_ASS)) a = EXP2(ASS_DIV, a, assignment(J, notin));
+	else if (jsP_accept(J, TK_MOD_ASS)) a = EXP2(ASS_MOD, a, assignment(J, notin));
+	else if (jsP_accept(J, TK_ADD_ASS)) a = EXP2(ASS_ADD, a, assignment(J, notin));
+	else if (jsP_accept(J, TK_SUB_ASS)) a = EXP2(ASS_SUB, a, assignment(J, notin));
+	else if (jsP_accept(J, TK_SHL_ASS)) a = EXP2(ASS_SHL, a, assignment(J, notin));
+	else if (jsP_accept(J, TK_SHR_ASS)) a = EXP2(ASS_SHR, a, assignment(J, notin));
+	else if (jsP_accept(J, TK_USHR_ASS)) a = EXP2(ASS_USHR, a, assignment(J, notin));
+	else if (jsP_accept(J, TK_AND_ASS)) a = EXP2(ASS_BITAND, a, assignment(J, notin));
+	else if (jsP_accept(J, TK_XOR_ASS)) a = EXP2(ASS_BITXOR, a, assignment(J, notin));
+	else if (jsP_accept(J, TK_OR_ASS)) a = EXP2(ASS_BITOR, a, assignment(J, notin));
+	DECREC();
 	return a;
 }
 
 static js_Ast *expression(js_State *J, int notin)
 {
-	js_Ast *a = assignment(J, notin);
+	js_Ast *a;
+	INCREC();
+	a = assignment(J, notin);
 	while (jsP_accept(J, ','))
 		a = EXP2(COMMA, a, assignment(J, notin));
+	DECREC();
 	return a;
 }
 
@@ -673,23 +685,26 @@ static js_Ast *forstatement(js_State *J)
 static js_Ast *statement(js_State *J)
 {
 	js_Ast *a, *b, *c, *d;
+	js_Ast *stm;
+
+	INCREC();
 
 	if (J->lookahead == '{') {
-		return block(J);
+		stm = block(J);
 	}
 
-	if (jsP_accept(J, TK_VAR)) {
+	else if (jsP_accept(J, TK_VAR)) {
 		a = vardeclist(J, 0);
 		semicolon(J);
-		return STM1(VAR, a);
+		stm = STM1(VAR, a);
 	}
 
 	/* empty statement */
-	if (jsP_accept(J, ';')) {
-		return STM0(EMPTY);
+	else if (jsP_accept(J, ';')) {
+		stm = STM0(EMPTY);
 	}
 
-	if (jsP_accept(J, TK_IF)) {
+	else if (jsP_accept(J, TK_IF)) {
 		jsP_expect(J, '(');
 		a = expression(J, 0);
 		jsP_expect(J, ')');
@@ -698,77 +713,77 @@ static js_Ast *statement(js_State *J)
 			c = statement(J);
 		else
 			c = NULL;
-		return STM3(IF, a, b, c);
+		stm = STM3(IF, a, b, c);
 	}
 
-	if (jsP_accept(J, TK_DO)) {
+	else if (jsP_accept(J, TK_DO)) {
 		a = statement(J);
 		jsP_expect(J, TK_WHILE);
 		jsP_expect(J, '(');
 		b = expression(J, 0);
 		jsP_expect(J, ')');
 		semicolon(J);
-		return STM2(DO, a, b);
+		stm = STM2(DO, a, b);
 	}
 
-	if (jsP_accept(J, TK_WHILE)) {
+	else if (jsP_accept(J, TK_WHILE)) {
 		jsP_expect(J, '(');
 		a = expression(J, 0);
 		jsP_expect(J, ')');
 		b = statement(J);
-		return STM2(WHILE, a, b);
+		stm = STM2(WHILE, a, b);
 	}
 
-	if (jsP_accept(J, TK_FOR)) {
-		return forstatement(J);
+	else if (jsP_accept(J, TK_FOR)) {
+		stm = forstatement(J);
 	}
 
-	if (jsP_accept(J, TK_CONTINUE)) {
+	else if (jsP_accept(J, TK_CONTINUE)) {
 		a = identifieropt(J);
 		semicolon(J);
-		return STM1(CONTINUE, a);
+		stm = STM1(CONTINUE, a);
 	}
 
-	if (jsP_accept(J, TK_BREAK)) {
+	else if (jsP_accept(J, TK_BREAK)) {
 		a = identifieropt(J);
 		semicolon(J);
-		return STM1(BREAK, a);
+		stm = STM1(BREAK, a);
 	}
 
-	if (jsP_accept(J, TK_RETURN)) {
+	else if (jsP_accept(J, TK_RETURN)) {
 		if (J->lookahead != ';' && J->lookahead != '}' && J->lookahead != 0)
 			a = expression(J, 0);
 		else
 			a = NULL;
 		semicolon(J);
-		return STM1(RETURN, a);
+		stm = STM1(RETURN, a);
 	}
 
-	if (jsP_accept(J, TK_WITH)) {
+	else if (jsP_accept(J, TK_WITH)) {
 		jsP_expect(J, '(');
 		a = expression(J, 0);
 		jsP_expect(J, ')');
 		b = statement(J);
-		return STM2(WITH, a, b);
+		stm = STM2(WITH, a, b);
 	}
 
-	if (jsP_accept(J, TK_SWITCH)) {
+	else if (jsP_accept(J, TK_SWITCH)) {
 		jsP_expect(J, '(');
 		a = expression(J, 0);
 		jsP_expect(J, ')');
 		jsP_expect(J, '{');
 		b = caselist(J);
 		jsP_expect(J, '}');
-		return STM2(SWITCH, a, b);
+		stm = STM2(SWITCH, a, b);
 	}
 
-	if (jsP_accept(J, TK_THROW)) {
+	else if (jsP_accept(J, TK_THROW)) {
 		a = expression(J, 0);
 		semicolon(J);
-		return STM1(THROW, a);
+		stm = STM1(THROW, a);
 	}
 
-	if (jsP_accept(J, TK_TRY)) {
+	else if (jsP_accept(J, TK_TRY)) {
 		a = block(J);
 		b = c = d = NULL;
 		if (jsP_accept(J, TK_CATCH)) {
@@ -782,35 +797,40 @@ static js_Ast *statement(js_State *J)
 		}
 		if (!b && !d)
 			jsP_error(J, "unexpected token in try: %s (expected 'catch' or 'finally')", jsY_tokenstring(J->lookahead));
-		return STM4(TRY, a, b, c, d);
+		stm = STM4(TRY, a, b, c, d);
 	}
 
-	if (jsP_accept(J, TK_DEBUGGER)) {
+	else if (jsP_accept(J, TK_DEBUGGER)) {
 		semicolon(J);
-		return STM0(DEBUGGER);
+		stm = STM0(DEBUGGER);
 	}
 
-	if (jsP_accept(J, TK_FUNCTION)) {
+	else if (jsP_accept(J, TK_FUNCTION)) {
 		jsP_warning(J, "function statements are not standard");
-		return funstm(J);
+		stm = funstm(J);
 	}
 
 	/* labelled statement or expression statement */
-	if (J->lookahead == TK_IDENTIFIER) {
+	else if (J->lookahead == TK_IDENTIFIER) {
 		a = expression(J, 0);
 		if (a->type == EXP_IDENTIFIER && jsP_accept(J, ':')) {
 			a->type = AST_IDENTIFIER;
 			b = statement(J);
-			return STM2(LABEL, a, b);
+			stm = STM2(LABEL, a, b);
+		} else {
+			semicolon(J);
+			stm = a;
 		}
-		semicolon(J);
-		return a;
 	}
 
 	/* expression statement */
-	a = expression(J, 0);
-	semicolon(J);
-	return a;
+	else {
+		stm = expression(J, 0);
+		semicolon(J);
+	}
+
+	DECREC();
+	return stm;
 }
 
 /* Program */
@@ -925,6 +945,7 @@ js_Ast *jsP_parse(js_State *J, const char *filename, const char *source)
 
 	jsY_initlex(J, filename, source);
 	jsP_next(J);
+	J->astdepth = 0;
 	p = script(J, 0);
 	if (p)
 		jsP_foldconst(p);
@@ -938,6 +959,7 @@ js_Ast *jsP_parsefunction(js_State *J, const char *filename, const char *params,
 	if (params) {
 		jsY_initlex(J, filename, params);
 		jsP_next(J);
+		J->astdepth = 0;
 		p = parameters(J);
 	}
 	return EXP3(FUN, NULL, p, jsP_parse(J, filename, body));

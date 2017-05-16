@@ -72,6 +72,7 @@ typedef struct js_StackTrace js_StackTrace;
 #define JS_ENVLIMIT 64		/* environment stack size */
 #define JS_TRYLIMIT 64		/* exception stack size */
 #define JS_GCLIMIT 10000	/* run gc cycle every N allocations */
+#define JS_ASTLIMIT 100		/* max nested expressions */
 
 /* instruction size -- change to int if you get integer overflow syntax errors */
 typedef unsigned short js_Instruction;
@@ -168,6 +169,7 @@ struct js_State
 	int newline;
 
 	/* parser state */
+	int astdepth;
 	int astline;
 	int lookahead;
 	const char *text;
