@@ -122,7 +122,8 @@ static const char *require_js =
 
 static const char *stacktrace_js =
 	"Error.prototype.toString = function() {\n"
-	"return this.name + ': ' + this.message + this.stackTrace;\n"
+	"if (this.stackTrace) return this.name + ': ' + this.message + this.stackTrace;\n"
+	"return this.name + ': ' + this.message;\n"
 	"};\n"
 ;
 
