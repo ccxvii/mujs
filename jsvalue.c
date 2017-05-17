@@ -222,6 +222,14 @@ const char *jsV_numbertostring(js_State *J, char buf[32], double f)
 	char digits[32], *p = buf, *s = digits;
 	int exp, neg, ndigits, point;
 
+	double uf = f < 0 ? -f : f;
+	if (isnormal(uf) && uf <= INT_MAX && uf == (int)uf) {
+		if (f < 0)
+			*p++ = '-';
+		js_itoa(p, uf);
+		return buf;
+	}
+
 	if (isnan(f)) return "NaN";
 	if (isinf(f)) return f < 0 ? "-Infinity" : "Infinity";
 	if (f == 0) return "0";
