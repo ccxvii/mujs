@@ -15,6 +15,9 @@ endif
 
 ifeq "$(build)" "debug"
 CFLAGS += -g
+else ifeq "$(build)" "sanitize"
+CFLAGS += -pipe -g -fsanitize=address -fno-omit-frame-pointer
+LDFLAGS += -fsanitize=address
 else
 CFLAGS += -Os
 ifeq "$(shell uname)" "Linux"
@@ -27,6 +30,9 @@ default: build build/mujs build/mujsone
 
 debug:
 	$(MAKE) build=debug clean default
+
+sanitize:
+	$(MAKE) build=sanitize clean default
 
 release:
 	$(MAKE) build=release clean default
