@@ -230,6 +230,7 @@ main(int argc, char **argv)
 				return 1;
 			if (js_dostring(J, input))
 				return 1;
+			free(input);
 			js_gc(J, 0);
 		}
 	}
