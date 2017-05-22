@@ -220,16 +220,16 @@ double jsV_tointeger(js_State *J, js_Value *v)
 const char *jsV_numbertostring(js_State *J, char buf[32], double f)
 {
 	char digits[32], *p = buf, *s = digits;
-	int exp, neg, ndigits, point;
+	int exp, ndigits, point;
 
 	if (isnan(f)) return "NaN";
 	if (isinf(f)) return f < 0 ? "-Infinity" : "Infinity";
 	if (f == 0) return "0";
 
-	js_dtoa(f, digits, &exp, &neg, &ndigits);
+	ndigits = js_grisu2(f, digits, &exp);
 	point = ndigits + exp;
 
-	if (neg)
+	if (signbit(f))
 		*p++ = '-';
 
 	if (point < -5 || point > 21) {
