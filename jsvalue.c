@@ -128,10 +128,17 @@ int jsV_toboolean(js_State *J, js_Value *v)
 	}
 }
 
-const char *js_itoa(char *out, int a)
+const char *js_itoa(char *out, int v)
 {
 	char buf[32], *s = out;
+	unsigned int a;
 	int i = 0;
+	if (v < 0) {
+		a = -v;
+		*s++ = '-';
+	} else {
+		a = v;
+	}
 	while (a) {
 		buf[i++] = (a % 10) + '0';
 		a /= 10;
@@ -222,9 +229,18 @@ const char *jsV_numbertostring(js_State *J, char buf[32], double f)
 	char digits[32], *p = buf, *s = digits;
 	int exp, ndigits, point;
 
+	if (f == 0) return "0";
 	if (isnan(f)) return "NaN";
 	if (isinf(f)) return f < 0 ? "-Infinity" : "Infinity";
-	if (f == 0) return "0";
+
+	/* Fast case for integers. This only works assuming all integers can be
+	 * exactly represented by a float. This is true for 32-bit integers and
+	 * 64-bit floats. */
+	if (f >= INT_MIN && f <= INT_MAX) {
+		int i = (int)f;
+		if ((double)i == f)
+			return js_itoa(buf, i);
+	}
 
 	ndigits = js_grisu2(f, digits, &exp);
 	point = ndigits + exp;

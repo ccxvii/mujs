@@ -11,6 +11,7 @@
 #include <setjmp.h>
 #include <math.h>
 #include <float.h>
+#include <limits.h>
 
 /* Microsoft Visual C */
 #ifdef _MSC_VER
