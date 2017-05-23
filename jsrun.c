@@ -434,12 +434,20 @@ void js_rot(js_State *J, int n)
 
 /* Property access that takes care of attributes and getters/setters */
 
-int js_isarrayindex(js_State *J, const char *str, int *idx)
+int js_isarrayindex(js_State *J, const char *p, int *idx)
 {
-	char buf[32];
-	*idx = jsV_numbertointeger(jsV_stringtonumber(J, str));
-	sprintf(buf, "%u", *idx);
-	return !strcmp(buf, str);
+	int n = 0;
+	while (*p) {
+		int c = *p++;
+		if (c >= '0' && c <= '9') {
+			if (n > INT_MAX / 10 - 1)
+				return 0;
+			n = n * 10 + (c - '0');
+		} else {
+			return 0;
+		}
+	}
+	return *idx = n, 1;
 }
 
 static void js_pushrune(js_State *J, Rune rune)
