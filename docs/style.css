@@ -1,16 +1,33 @@
-@import url(http://fonts.googleapis.com/css?family=Source+Sans+Pro:400,400italic,600,600italic|Source+Code+Pro);
+h1, nav, footer { font-family: sans-serif; }
 
-body {
-	font-family: 'Source Sans Pro', sans-serif;
-	font-size: 12pt;
-	margin: 3pc;
-	max-width: 45em;
-	text-align: justify;
+a { text-decoration: none; }
+a:hover { text-decoration: underline; }
+h2 { font-size: 1.25rem; }
+h3 { font-size: 1.12rem; }
+ul li { list-style-type: circle; }
+pre, table, ol, dl { margin-left: 2rem; }
+li { margin: 0; }
+th, td { text-align: left; vertical-align: top; }
+
+body { margin: 0; }
+h1 {
+	font-weight: normal;
+	margin: 0;
+	padding: 1rem 2rem;
+	background-color: #36648b;
+	color: white;
 }
-pre, tt, code {
-	font-family: 'Source Code Pro', monospaced;
-	font-size: 11pt;
+nav {
+	padding: 1rem 2rem;
+	background-color: #ddd;
 }
-h2 {
-	border-bottom: 2px solid black;
+nav a { color: #303030; padding-right: 2rem; }
+article {
+	max-width: 50rem;
+	margin: 2rem;
+}
+footer {
+	background-color: #ddd;
+	color: #303030;
+	padding: 1rem 2rem;
 }

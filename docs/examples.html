@@ -2,11 +2,24 @@
 <html>
 <head>
 <link href="style.css" rel="stylesheet">
-<title>MuJS: examples</title>
+<title>MuJS Examples</title>
 </head>
+
 <body>
 
+<header>
 <h1>MuJS Examples</h1>
+</header>
+
+<nav>
+<a href="/index.html">ABOUT</a>
+<a href="/docs/reference.html">REFERENCE</a>
+<a href="/docs/examples.html">EXAMPLES</a>
+<a href="http://git.ghostscript.com/?p=mujs.git;a=summary">SOURCE</a>
+<a href="https://bugs.ghostscript.com/">BUGS</a>
+</nav>
+
+<article>
 
 <h2>A stand-alone interpreter</h2>
 
@@ -103,6 +116,7 @@ static int call_callback(js_State *J, const char *arg1, int arg2)
 
 	return result;
 }
+</pre>
 
 <h2>Callbacks from C to JS</h2>
 
@@ -198,4 +212,12 @@ void initfile(js_State *J)
 }
 </pre>
 
+</article>
+
+<footer>
+<a href="http://artifex.com"><img src="artifex-logo.png" align="right"></a>
+Copyright &copy; 2013-2017 Artifex Software Inc.
+</footer>
+
 </body>
+</html>

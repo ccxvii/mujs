@@ -2,11 +2,24 @@
 <html>
 <head>
 <link href="style.css" rel="stylesheet">
-<title>MuJS: reference manual</title>
+<title>MuJS Reference Manual</title>
 </head>
+
 <body>
 
+<header>
 <h1>MuJS Reference Manual</h1>
+</header>
+
+<nav>
+<a href="/index.html">ABOUT</a>
+<a href="/docs/reference.html">REFERENCE</a>
+<a href="/docs/examples.html">EXAMPLES</a>
+<a href="http://git.ghostscript.com/?p=mujs.git;a=summary">SOURCE</a>
+<a href="https://bugs.ghostscript.com/">BUGS</a>
+</nav>
+
+<article>
 
 <h2>Introduction</h2>
 
@@ -171,6 +184,18 @@ js_Panic js_atpanic(js_State *J, js_Panic panic);
 
 Set a new panic function, and return the old one.
 
+<h3>Report</h3>
+
+<pre>
+typedef void (*js_Report)(js_State *J, const char *message);
+
+void js_setreport(js_State *J, js_Report report);
+</pre>
+
+<p>
+Set a callback function for reporting various warnings
+and garbage collection statistics.
+
 <h3>Garbage collection</h3>
 
 <pre>
@@ -179,7 +204,8 @@ js_gc(js_State *J, int report);
 
 <p>
 Force a garbage collection pass.
-If the report argument is non-zero, print a summary of garbage collection statistics to stdout.
+If the report argument is non-zero, send a summary of garbage collection statistics to
+the report callback function.
 
 <h3>Loading and compiling scripts</h3>
 
@@ -658,4 +684,12 @@ void js_unref(js_State *J, const char *ref);
 <p>
 WIP: Delete the reference from the registry.
 
+</article>
+
+<footer>
+<a href="http://artifex.com"><img src="artifex-logo.png" align="right"></a>
+Copyright &copy; 2013-2017 Artifex Software Inc.
+</footer>
+
 </body>
+</html>
