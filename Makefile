@@ -1,6 +1,7 @@
 SRCS := $(wildcard js*.c utf*.c regexp.c)
 HDRS := $(wildcard js*.h mujs.h utf.h regexp.h)
-OBJS := $(SRCS:%.c=build/%.o)
+
+VERSION = $(shell git describe --tags --always)
 
 prefix ?= /usr/local
 bindir ?= $(prefix)/bin
@@ -13,6 +14,11 @@ ifeq "$(CC)" "clang"
 CFLAGS += -Wunreachable-code
 endif
 
+ifeq "$(shell uname)" "Linux"
+CFLAGS += -ffunction-sections -fdata-sections
+LDFLAGS += -Wl,--gc-sections -Wl,-s
+endif
+
 ifeq "$(build)" "debug"
 CFLAGS += -g
 else ifeq "$(build)" "sanitize"
@@ -20,22 +26,9 @@ CFLAGS += -pipe -g -fsanitize=address -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=address
 else
 CFLAGS += -Os
-ifeq "$(shell uname)" "Linux"
-CFLAGS += -ffunction-sections -fdata-sections
-LDFLAGS += -Wl,--gc-sections -Wl,-s
-endif
 endif
 
-default: build build/mujs build/mujsone
-
-debug:
-	$(MAKE) build=debug clean default
-
-sanitize:
-	$(MAKE) build=sanitize clean default
-
-release:
-	$(MAKE) build=release clean default
+default: build build/mujs build/libmujs.a build/libmujs.so build/mujs.pc
 
 astnames.h: jsparse.h
 	grep -E '(AST|EXP|STM)_' jsparse.h | sed 's/^[^A-Z]*\(AST_\)*/"/;s/,.*/",/' | tr A-Z a-z > $@
@@ -51,27 +44,41 @@ jsdump.c: astnames.h opnames.h
 build:
 	mkdir -p build
 
-build/%.o: %.c $(HDRS)
+build/main.o: main.c $(HDRS)
 	$(CC) $(CFLAGS) -o $@ -c $<
 
-build/libmujs.a: $(OBJS)
+build/libmujs.o: one.c $(HDRS)
+	$(CC) $(CFLAGS) -o $@ -c $<
+
+build/libmujs.a: build/libmujs.o
 	$(AR) cru $@ $^
 
-build/mujs: build/main.o build/libmujs.a
+build/libmujs.so: one.c $(HDRS)
+	$(CC) $(CFLAGS) -fPIC -shared -o $@ $< -lm
+
+build/mujs: build/libmujs.o build/main.o
 	$(CC) $(LDFLAGS) -o $@ $^ -lm
 
-build/mujsone: build/main.o build/one.o
-	$(CC) $(LDFLAGS) -o $@ $^ -lm
+build/mujs.pc:
+	@ echo Creating $@
+	@ echo > $@ Name: mujs
+	@ echo >> $@ Description: MuJS embeddable Javascript interpreter
+	@ echo >> $@ Version: $(VERSION)
+	@ echo >> $@ URL: http://dev.mujs.com/
+	@ echo >> $@ Cflags: -I$(incdir)
+	@ echo >> $@ Libs: -L$(libdir) -lmujs
+	@ echo >> $@ Libs.private: -lm
 
 install: release
 	install -d $(DESTDIR)$(incdir)
 	install -d $(DESTDIR)$(libdir)
+	install -d $(DESTDIR)$(libdir)/pkgconfig
 	install -d $(DESTDIR)$(bindir)
-	install mujs.h $(DESTDIR)$(incdir)
-	install build/libmujs.a $(DESTDIR)$(libdir)
-	install build/mujs $(DESTDIR)$(bindir)
-
-VERSION = $(shell git describe --tags --always)
+	install -m 644 mujs.h $(DESTDIR)$(incdir)
+	install -m 644 build/libmujs.a $(DESTDIR)$(libdir)
+	install -m 755 build/libmujs.so $(DESTDIR)$(libdir)
+	install -m 644 build/mujs.pc $(DESTDIR)$(libdir)/pkgconfig
+	install -m 755 build/mujs $(DESTDIR)$(bindir)
 
 tarball:
 	git archive --format=zip --prefix=mujs-$(VERSION)/ HEAD > mujs-$(VERSION).zip
@@ -81,10 +88,16 @@ tarball:
 tags: $(SRCS) main.c $(HDRS)
 	ctags $^
 
-test: build/mujs
-	python tests/sputniktests/tools/sputnik.py --tests=tests/sputniktests --command ./build/mujs --summary
-
 clean:
 	rm -f astnames.h opnames.h one.c build/*
 
-.PHONY: default test clean install debug release
+debug:
+	$(MAKE) build=debug clean default
+
+sanitize:
+	$(MAKE) build=sanitize clean default
+
+release:
+	$(MAKE) build=release clean default
+
+.PHONY: default clean install debug sanitize release
