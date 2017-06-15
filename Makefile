@@ -69,16 +69,22 @@ build/mujs.pc:
 	@ echo >> $@ Libs: -L$(libdir) -lmujs
 	@ echo >> $@ Libs.private: -lm
 
-install: release
+install-common: release
 	install -d $(DESTDIR)$(incdir)
 	install -d $(DESTDIR)$(libdir)
 	install -d $(DESTDIR)$(libdir)/pkgconfig
 	install -d $(DESTDIR)$(bindir)
 	install -m 644 mujs.h $(DESTDIR)$(incdir)
-	install -m 644 build/libmujs.a $(DESTDIR)$(libdir)
-	install -m 755 build/libmujs.so $(DESTDIR)$(libdir)
 	install -m 644 build/mujs.pc $(DESTDIR)$(libdir)/pkgconfig
 	install -m 755 build/mujs $(DESTDIR)$(bindir)
+
+install-static: install-common
+	install -m 644 build/libmujs.a $(DESTDIR)$(libdir)
+
+install-shared: install-common
+	install -m 755 build/libmujs.so $(DESTDIR)$(libdir)
+
+install: install-static install-shared
 
 tarball:
 	git archive --format=zip --prefix=mujs-$(VERSION)/ HEAD > mujs-$(VERSION).zip
@@ -100,4 +106,4 @@ sanitize:
 release:
 	$(MAKE) build=release clean default
 
-.PHONY: default clean install debug sanitize release
+.PHONY: default clean debug sanitize release install install-common install-shared install-static
