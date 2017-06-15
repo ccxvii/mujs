@@ -7,7 +7,7 @@ other software to extend them with scripting capabilities.
 
 LICENSE
 
-MuJS is Copyright 2013, 2017 Artifex Software, Inc.
+MuJS is Copyright 2013-2017 Artifex Software, Inc.
 
 Permission to use, copy, modify, and/or distribute this software for any
 purpose with or without fee is hereby granted, provided that the above
@@ -29,7 +29,7 @@ If you are building from source you can either use the provided Unix Makefile:
 
 Or compile the source with your preferred compiler:
 
-	cc -O3 -c one.c -o libmujs.o
+	cc -O2 -c one.c -o libmujs.o
 
 INSTALLING
 
@@ -49,5 +49,4 @@ Report bugs on the ghostscript bugzilla, with MuJS as the selected component.
 
 	http://bugs.ghostscript.com/
 
-The MuJS developers hang out on IRC in the #ghostscript channel on
-irc.freenode.net.
+The MuJS developers hang out on IRC in the #mupdf channel on irc.freenode.net.
