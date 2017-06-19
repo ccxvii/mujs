@@ -251,7 +251,7 @@ static int lexclass(struct cstate *g)
 {
 	int type = L_CCLASS;
 	int quoted, havesave, havedash;
-	Rune save;
+	Rune save = 0;
 
 	newcclass(g);
 
@@ -654,6 +654,7 @@ static void compile(Reprog *prog, Renode *node)
 		break;
 
 	case P_REP:
+		inst = NULL; /* silence compiler warning. assert(node->m > 0). */
 		for (i = 0; i < node->m; ++i) {
 			inst = prog->end;
 			compile(prog, node->x);
