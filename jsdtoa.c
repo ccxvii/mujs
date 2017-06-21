@@ -690,7 +690,7 @@ js_strtod(const char *string, char **endPtr)
 			}
 			expSign = FALSE;
 		}
-		while ((*p >= 0) && (*p <= '9')) {
+		while ((*p >= '0') && (*p <= '9')) {
 			exp = exp * 10 + (*p - '0');
 			p += 1;
 		}
