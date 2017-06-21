@@ -19,7 +19,7 @@ endif
 
 ifeq "$(shell uname)" "Linux"
 CFLAGS += -ffunction-sections -fdata-sections
-LDFLAGS += -Wl,--gc-sections -Wl,-s
+LDFLAGS += -Wl,--gc-sections
 endif
 
 ifeq "$(build)" "debug"
@@ -29,6 +29,7 @@ CFLAGS += -pipe -g -fsanitize=address -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=address
 else
 CFLAGS += -Os
+LDFLAGS += -Wl,-s
 endif
 
 # You shouldn't need to edit anything below here.
