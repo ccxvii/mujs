@@ -225,6 +225,9 @@ void js_freestate(js_State *J)
 	js_Environment *env, *nextenv;
 	js_String *str, *nextstr;
 
+	if (!J)
+		return;
+
 	for (env = J->gcenv; env; env = nextenv)
 		nextenv = env->gcnext, jsG_freeenvironment(J, env);
 	for (fun = J->gcfun; fun; fun = nextfun)
