@@ -519,16 +519,16 @@ static void pstm(int d, js_Ast *stm)
 
 	case STM_FOR:
 		ps("for (");
-		pexp(d, stm->a); ps("; ");
-		pexp(d, stm->b); ps("; ");
-		pexp(d, stm->c); ps(")");
+		if (stm->a) pexp(d, stm->a); ps("; ");
+		if (stm->b) pexp(d, stm->b); ps("; ");
+		if (stm->c) pexp(d, stm->c); ps(")");
 		pstmh(d, stm->d);
 		break;
 	case STM_FOR_VAR:
 		ps("for (var ");
 		pvarlist(d, stm->a); ps("; ");
-		pexp(d, stm->b); ps("; ");
-		pexp(d, stm->c); ps(")");
+		if (stm->b) pexp(d, stm->b); ps("; ");
+		if (stm->c) pexp(d, stm->c); ps(")");
 		pstmh(d, stm->d);
 		break;
 	case STM_FOR_IN:
