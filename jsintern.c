@@ -1,5 +1,34 @@
 #include "jsi.h"
 
+/* Dynamically grown string buffer */
+
+void js_putc(js_State *J, js_Buffer **sbp, int c)
+{
+	js_Buffer *sb = *sbp;
+	if (!sb) {
+		sb = js_malloc(J, sizeof *sb);
+		sb->n = 0;
+		sb->m = sizeof sb->s;
+		*sbp = sb;
+	} else if (sb->n == sb->m) {
+		sb = js_realloc(J, sb, (sb->m *= 2) + soffsetof(js_Buffer, s));
+		*sbp = sb;
+	}
+	sb->s[sb->n++] = c;
+}
+
+void js_puts(js_State *J, js_Buffer **sb, const char *s)
+{
+	while (*s)
+		js_putc(J, sb, *s++);
+}
+
+void js_putm(js_State *J, js_Buffer **sb, const char *s, const char *e)
+{
+	while (s < e)
+		js_putc(J, sb, *s++);
+}
+
 /* Use an AA-tree to quickly look up interned strings. */
 
 struct js_StringNode

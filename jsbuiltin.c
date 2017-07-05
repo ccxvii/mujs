@@ -103,6 +103,11 @@ static void Encode(js_State *J, const char *str, const char *unescaped)
 
 	static const char *HEX = "0123456789ABCDEF";
 
+	if (js_try(J)) {
+		js_free(J, sb);
+		js_throw(J);
+	}
+
 	while (*str) {
 		int c = (unsigned char) *str++;
 		if (strchr(unescaped, c))
@@ -115,10 +120,6 @@ static void Encode(js_State *J, const char *str, const char *unescaped)
 	}
 	js_putc(J, &sb, 0);
 
-	if (js_try(J)) {
-		js_free(J, sb);
-		js_throw(J);
-	}
 	js_pushstring(J, sb ? sb->s : "");
 	js_endtry(J);
 	js_free(J, sb);
@@ -128,6 +129,11 @@ static void Decode(js_State *J, const char *str, const char *reserved)
 {
 	js_Buffer *sb = NULL;
 	int a, b;
+
+	if (js_try(J)) {
+		js_free(J, sb);
+		js_throw(J);
+	}
 
 	while (*str) {
 		int c = (unsigned char) *str++;
@@ -152,10 +158,6 @@ static void Decode(js_State *J, const char *str, const char *reserved)
 	}
 	js_putc(J, &sb, 0);
 
-	if (js_try(J)) {
-		js_free(J, sb);
-		js_throw(J);
-	}
 	js_pushstring(J, sb ? sb->s : "");
 	js_endtry(J);
 	js_free(J, sb);

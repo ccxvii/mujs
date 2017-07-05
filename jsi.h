@@ -142,6 +142,14 @@ void *js_savetrypc(js_State *J, js_Instruction *pc);
 #define js_trypc(J, PC) \
 	setjmp(js_savetrypc(J, PC))
 
+/* String buffer */
+
+typedef struct js_Buffer { int n, m; char s[64]; } js_Buffer;
+
+void js_putc(js_State *J, js_Buffer **sbp, int c);
+void js_puts(js_State *J, js_Buffer **sb, const char *s);
+void js_putm(js_State *J, js_Buffer **sb, const char *s, const char *e);
+
 /* State struct */
 
 struct js_State

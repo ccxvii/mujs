@@ -12,6 +12,12 @@ static void jsB_Function(js_State *J)
 	js_Ast *parse;
 	js_Function *fun;
 
+	if (js_try(J)) {
+		js_free(J, sb);
+		jsP_freeparse(J);
+		js_throw(J);
+	}
+
 	/* p1, p2, ..., pn */
 	if (top > 2) {
 		for (i = 1; i < top - 1; ++i) {
@@ -24,12 +30,6 @@ static void jsB_Function(js_State *J)
 
 	/* body */
 	body = js_isdefined(J, top - 1) ? js_tostring(J, top - 1) : "";
-
-	if (js_try(J)) {
-		js_free(J, sb);
-		jsP_freeparse(J);
-		js_throw(J);
-	}
 
 	parse = jsP_parsefunction(J, "[string]", sb ? sb->s : NULL, body);
 	fun = jsC_compilefunction(J, parse);
