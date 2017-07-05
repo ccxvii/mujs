@@ -9,10 +9,12 @@
 
 int jsV_numbertointeger(double n)
 {
-	double sign = n < 0 ? -1 : 1;
+	if (n == 0) return 0;
 	if (isnan(n)) return 0;
-	if (n == 0 || isinf(n)) return n;
-	return sign * floor(fabs(n));
+	n = (n < 0) ? -floor(-n) : floor(n);
+	if (n < INT_MIN) return INT_MIN;
+	if (n > INT_MAX) return INT_MAX;
+	return (int)n;
 }
 
 int jsV_numbertoint32(double n)
