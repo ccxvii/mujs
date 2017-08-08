@@ -1261,14 +1261,18 @@ static int listlength(js_Ast *list)
 	return n;
 }
 
-static void cparams(JF, js_Ast *list)
+static int cparams(JF, js_Ast *list, js_Ast *fname)
 {
+	int shadow = 0;
 	F->numparams = listlength(list);
 	while (list) {
 		checkfutureword(J, F, list->a);
 		addlocal(J, F, list->a, 0);
+		if (fname && !strcmp(fname->string, list->a->string))
+			shadow = 1;
 		list = list->b;
 	}
+	return shadow;
 }
 
 static void cvardecs(JF, js_Ast *node)
@@ -1304,6 +1308,8 @@ static void cfundecs(JF, js_Ast *list)
 
 static void cfunbody(JF, js_Ast *name, js_Ast *params, js_Ast *body)
 {
+	int shadow;
+
 	F->lightweight = 1;
 	F->arguments = 0;
 
@@ -1318,9 +1324,9 @@ static void cfunbody(JF, js_Ast *name, js_Ast *params, js_Ast *body)
 		if (!strcmp(body->a->string, "use strict"))
 			F->strict = 1;
 
-	cparams(J, F, params);
+	shadow = cparams(J, F, params, name);
 
-	if (name) {
+	if (name && !shadow) {
 		checkfutureword(J, F, name);
 		emit(J, F, OP_CURRENT);
 		if (F->lightweight) {
