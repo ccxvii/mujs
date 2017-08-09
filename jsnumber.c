@@ -2,7 +2,7 @@
 #include "jsvalue.h"
 #include "jsbuiltin.h"
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && (_MSC_VER < 1700) /* VS2012 has stdint.h */
 typedef unsigned __int64 uint64_t;
 #else
 #include <stdint.h>
