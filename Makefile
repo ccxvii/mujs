@@ -7,7 +7,11 @@ bindir ?= $(prefix)/bin
 incdir ?= $(prefix)/include
 libdir ?= $(prefix)/lib
 
-VERSION = $(shell git describe --tags --always)
+ifeq "$(wildcard .git)" ".git"
+VERSION := $(shell git describe --tags --always)
+else
+VERSION := $(shell basename $$PWD | sed -e s,^mujs-,,)
+endif
 
 # Compiler flags for various configurations:
 
