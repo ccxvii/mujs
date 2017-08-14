@@ -14,7 +14,6 @@
 #define nelem(a) (int)(sizeof (a) / sizeof (a)[0])
 
 #define REPINF 255
-#define MAXTHREAD 1000
 #define MAXSUB REG_MAXSUB
 #define MAXPROG (32 << 10)
 
@@ -959,188 +958,155 @@ static int strncmpcanon(const char *a, const char *b, int n)
 	return 0;
 }
 
-struct Rethread {
-	Reinst *pc;
-	const char *sp;
-	Resub sub;
-};
-
-static void spawn(Rethread *t, Reinst *pc, const char *sp, Resub *sub)
-{
-	t->pc = pc;
-	t->sp = sp;
-	memcpy(&t->sub, sub, sizeof t->sub);
-}
-
 static int match(Reinst *pc, const char *sp, const char *bol, int flags, Resub *out)
 {
-	Rethread ready[MAXTHREAD];
 	Resub scratch;
-	Resub sub;
-	Rune c;
-	int nready;
 	int i;
+	Rune c;
 
-	/* queue initial thread */
-	spawn(ready + 0, pc, sp, out);
-	nready = 1;
-
-	/* run threads in stack order */
-	while (nready > 0) {
-		--nready;
-		pc = ready[nready].pc;
-		sp = ready[nready].sp;
-		memcpy(&sub, &ready[nready].sub, sizeof sub);
-		for (;;) {
-			switch (pc->opcode) {
-			case I_END:
-				for (i = 0; i < MAXSUB; ++i) {
-					out->sub[i].sp = sub.sub[i].sp;
-					out->sub[i].ep = sub.sub[i].ep;
-				}
+	for (;;) {
+		switch (pc->opcode) {
+		case I_END:
+			return 1;
+		case I_JUMP:
+			pc = pc->x;
+			break;
+		case I_SPLIT:
+			scratch = *out;
+			if (match(pc->x, sp, bol, flags, &scratch)) {
+				*out = scratch;
 				return 1;
-			case I_JUMP:
-				pc = pc->x;
-				continue;
-			case I_SPLIT:
-				if (nready >= MAXTHREAD) {
-					/* fprintf(stderr, "regexec: backtrack overflow!\n"); */
-					return 0;
-				}
-				spawn(&ready[nready++], pc->y, sp, &sub);
-				pc = pc->x;
-				continue;
-
-			case I_PLA:
-				if (!match(pc->x, sp, bol, flags, &sub))
-					goto dead;
-				pc = pc->y;
-				continue;
-			case I_NLA:
-				memcpy(&scratch, &sub, sizeof scratch);
-				if (match(pc->x, sp, bol, flags, &scratch))
-					goto dead;
-				pc = pc->y;
-				continue;
-
-			case I_ANYNL:
-				sp += chartorune(&c, sp);
-				if (c == 0)
-					goto dead;
-				pc = pc + 1;
-				continue;
-			case I_ANY:
-				sp += chartorune(&c, sp);
-				if (c == 0)
-					goto dead;
-				if (isnewline(c))
-					goto dead;
-				pc = pc + 1;
-				continue;
-			case I_CHAR:
-				sp += chartorune(&c, sp);
-				if (c == 0)
-					goto dead;
-				if (flags & REG_ICASE)
-					c = canon(c);
-				if (c != pc->c)
-					goto dead;
-				pc = pc + 1;
-				continue;
-			case I_CCLASS:
-				sp += chartorune(&c, sp);
-				if (c == 0)
-					goto dead;
-				if (flags & REG_ICASE) {
-					if (!incclasscanon(pc->cc, canon(c)))
-						goto dead;
-				} else {
-					if (!incclass(pc->cc, c))
-						goto dead;
-				}
-				pc = pc + 1;
-				continue;
-			case I_NCCLASS:
-				sp += chartorune(&c, sp);
-				if (c == 0)
-					goto dead;
-				if (flags & REG_ICASE) {
-					if (incclasscanon(pc->cc, canon(c)))
-						goto dead;
-				} else {
-					if (incclass(pc->cc, c))
-						goto dead;
-				}
-				pc = pc + 1;
-				continue;
-			case I_REF:
-				i = sub.sub[pc->n].ep - sub.sub[pc->n].sp;
-				if (flags & REG_ICASE) {
-					if (strncmpcanon(sp, sub.sub[pc->n].sp, i))
-						goto dead;
-				} else {
-					if (strncmp(sp, sub.sub[pc->n].sp, i))
-						goto dead;
-				}
-				if (i > 0)
-					sp += i;
-				pc = pc + 1;
-				continue;
-
-			case I_BOL:
-				if (sp == bol && !(flags & REG_NOTBOL)) {
-					pc = pc + 1;
-					continue;
-				}
-				if (flags & REG_NEWLINE) {
-					if (sp > bol && isnewline(sp[-1])) {
-						pc = pc + 1;
-						continue;
-					}
-				}
-				goto dead;
-			case I_EOL:
-				if (*sp == 0) {
-					pc = pc + 1;
-					continue;
-				}
-				if (flags & REG_NEWLINE) {
-					if (isnewline(*sp)) {
-						pc = pc + 1;
-						continue;
-					}
-				}
-				goto dead;
-			case I_WORD:
-				i = sp > bol && iswordchar(sp[-1]);
-				i ^= iswordchar(sp[0]);
-				if (!i)
-					goto dead;
-				pc = pc + 1;
-				continue;
-			case I_NWORD:
-				i = sp > bol && iswordchar(sp[-1]);
-				i ^= iswordchar(sp[0]);
-				if (i)
-					goto dead;
-				pc = pc + 1;
-				continue;
-
-			case I_LPAR:
-				sub.sub[pc->n].sp = sp;
-				pc = pc + 1;
-				continue;
-			case I_RPAR:
-				sub.sub[pc->n].ep = sp;
-				pc = pc + 1;
-				continue;
-			default:
-				goto dead;
 			}
+			pc = pc->y;
+			break;
+
+		case I_PLA:
+			if (!match(pc->x, sp, bol, flags, out))
+				return 0;
+			pc = pc->y;
+			break;
+		case I_NLA:
+			scratch = *out;
+			if (match(pc->x, sp, bol, flags, &scratch))
+				return 0;
+			pc = pc->y;
+			break;
+
+		case I_ANYNL:
+			sp += chartorune(&c, sp);
+			if (c == 0)
+				return 0;
+			pc = pc + 1;
+			break;
+		case I_ANY:
+			sp += chartorune(&c, sp);
+			if (c == 0)
+				return 0;
+			if (isnewline(c))
+				return 0;
+			pc = pc + 1;
+			break;
+		case I_CHAR:
+			sp += chartorune(&c, sp);
+			if (c == 0)
+				return 0;
+			if (flags & REG_ICASE)
+				c = canon(c);
+			if (c != pc->c)
+				return 0;
+			pc = pc + 1;
+			break;
+		case I_CCLASS:
+			sp += chartorune(&c, sp);
+			if (c == 0)
+				return 0;
+			if (flags & REG_ICASE) {
+				if (!incclasscanon(pc->cc, canon(c)))
+					return 0;
+			} else {
+				if (!incclass(pc->cc, c))
+					return 0;
+			}
+			pc = pc + 1;
+			break;
+		case I_NCCLASS:
+			sp += chartorune(&c, sp);
+			if (c == 0)
+				return 0;
+			if (flags & REG_ICASE) {
+				if (incclasscanon(pc->cc, canon(c)))
+					return 0;
+			} else {
+				if (incclass(pc->cc, c))
+					return 0;
+			}
+			pc = pc + 1;
+			break;
+		case I_REF:
+			i = out->sub[pc->n].ep - out->sub[pc->n].sp;
+			if (flags & REG_ICASE) {
+				if (strncmpcanon(sp, out->sub[pc->n].sp, i))
+					return 0;
+			} else {
+				if (strncmp(sp, out->sub[pc->n].sp, i))
+					return 0;
+			}
+			if (i > 0)
+				sp += i;
+			pc = pc + 1;
+			break;
+
+		case I_BOL:
+			if (sp == bol && !(flags & REG_NOTBOL)) {
+				pc = pc + 1;
+				break;
+			}
+			if (flags & REG_NEWLINE) {
+				if (sp > bol && isnewline(sp[-1])) {
+					pc = pc + 1;
+					break;
+				}
+			}
+			return 0;
+		case I_EOL:
+			if (*sp == 0) {
+				pc = pc + 1;
+				break;
+			}
+			if (flags & REG_NEWLINE) {
+				if (isnewline(*sp)) {
+					pc = pc + 1;
+					break;
+				}
+			}
+			return 0;
+		case I_WORD:
+			i = sp > bol && iswordchar(sp[-1]);
+			i ^= iswordchar(sp[0]);
+			if (!i)
+				return 0;
+			pc = pc + 1;
+			break;
+		case I_NWORD:
+			i = sp > bol && iswordchar(sp[-1]);
+			i ^= iswordchar(sp[0]);
+			if (i)
+				return 0;
+			pc = pc + 1;
+			break;
+
+		case I_LPAR:
+			out->sub[pc->n].sp = sp;
+			pc = pc + 1;
+			break;
+		case I_RPAR:
+			out->sub[pc->n].ep = sp;
+			pc = pc + 1;
+			break;
+		default:
+			return 0;
 		}
-dead: ;
 	}
-	return 0;
 }
 
 int regexec(Reprog *prog, const char *sp, Resub *sub, int eflags)
