@@ -82,6 +82,9 @@ $(OUT)/mujs.pc:
 	@ echo >> $@ Libs: -L$(libdir) -lmujs
 	@ echo >> $@ Libs.private: -lm
 
+watch:
+	@ while ! inotifywait -q -e modify $(SRCS) $(HDRS) ; do time -p $(MAKE) ; done
+
 install-common: release
 	install -d $(DESTDIR)$(incdir)
 	install -d $(DESTDIR)$(libdir)
