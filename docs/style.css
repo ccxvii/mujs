@@ -25,6 +25,7 @@ header{
 nav {
 	padding: 1rem 2rem;
 	background-color: #ddd;
+	no-text-transform: uppercase;
 }
 nav a { color: #303030; padding-right: 2rem; }
 article {
