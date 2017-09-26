@@ -41,7 +41,7 @@ static void Np_toString(js_State *J)
 
 	/* lame number to string conversion for any radix from 2 to 36 */
 	{
-		static const char digits[36] = "0123456789abcdefghijklmnopqrstuvwxyz";
+		static const char digits[] = "0123456789abcdefghijklmnopqrstuvwxyz";
 		char buf[100];
 		double number = self->u.number;
 		int sign = self->u.number < 0;
