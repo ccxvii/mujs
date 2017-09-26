@@ -181,7 +181,7 @@ main(int argc, char **argv)
 {
 	char line[256];
 	js_State *J;
-	int i;
+	int i, status = 0;
 
 	J = js_newstate(NULL, NULL, JS_STRICT);
 
@@ -210,11 +210,9 @@ main(int argc, char **argv)
 	js_dostring(J, stacktrace_js);
 
 	if (argc > 1) {
-		for (i = 1; i < argc; ++i) {
+		for (i = 1; i < argc; ++i)
 			if (js_dofile(J, argv[i]))
-				return 1;
-			js_gc(J, 0);
-		}
+				status = 1;
 	} else {
 		if (isatty(0)) {
 			fputs(PS1, stdout);
@@ -223,19 +221,16 @@ main(int argc, char **argv)
 				fputs(PS1, stdout);
 			}
 			putchar('\n');
-			js_gc(J, 1);
 		} else {
 			char *input = read_stdin();
-			if (!input)
-				return 1;
-			if (js_dostring(J, input))
-				return 1;
+			if (!input || !js_dostring(J, input))
+				status = 1;
 			free(input);
-			js_gc(J, 0);
 		}
 	}
 
+	js_gc(J, 0);
 	js_freestate(J);
 
-	return 0;
+	return status;
 }
