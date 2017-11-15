@@ -109,6 +109,9 @@ void jsV_toprimitive(js_State *J, js_Value *v, int preferred)
 		}
 	}
 
+	if (J->strict)
+		js_typeerror(J, "cannot convert object to primitive");
+
 	v->type = JS_TLITSTR;
 	v->u.litstr = "[object]";
 	return;
