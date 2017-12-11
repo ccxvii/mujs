@@ -292,6 +292,7 @@ static void Ap_sort(js_State *J)
 	len = js_getlength(J, 0);
 
 	hasfn = js_iscallable(J, 1);
+	hasx = hasy = 0;
 
 	for (i = 1; i < len; ++i) {
 		k = i;
@@ -306,8 +307,11 @@ static void Ap_sort(js_State *J)
 				js_setindex(J, 0, k - 1);
 				js_delindex(J, 0, k);
 			}
+			hasx = hasy = 0;
 			--k;
 		}
+		if (hasx + hasy > 0)
+			js_pop(J, hasx + hasy);
 	}
 
 	js_copy(J, 0);
