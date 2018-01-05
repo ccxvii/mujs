@@ -81,7 +81,6 @@ $(OUT)/mujs.pc:
 	@ echo > $@ Name: mujs
 	@ echo >> $@ Description: MuJS embeddable Javascript interpreter
 	@ echo >> $@ Version: $(VERSION)
-	@ echo >> $@ URL: http://dev.mujs.com/
 	@ echo >> $@ Cflags: -I$(incdir)
 	@ echo >> $@ Libs: -L$(libdir) -lmujs
 	@ echo >> $@ Libs.private: -lm
