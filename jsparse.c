@@ -413,16 +413,20 @@ static js_Ast *postfix(js_State *J)
 
 static js_Ast *unary(js_State *J)
 {
-	if (jsP_accept(J, TK_DELETE)) return EXP1(DELETE, unary(J));
-	if (jsP_accept(J, TK_VOID)) return EXP1(VOID, unary(J));
-	if (jsP_accept(J, TK_TYPEOF)) return EXP1(TYPEOF, unary(J));
-	if (jsP_accept(J, TK_INC)) return EXP1(PREINC, unary(J));
-	if (jsP_accept(J, TK_DEC)) return EXP1(PREDEC, unary(J));
-	if (jsP_accept(J, '+')) return EXP1(POS, unary(J));
-	if (jsP_accept(J, '-')) return EXP1(NEG, unary(J));
-	if (jsP_accept(J, '~')) return EXP1(BITNOT, unary(J));
-	if (jsP_accept(J, '!')) return EXP1(LOGNOT, unary(J));
-	return postfix(J);
+	js_Ast *a;
+	INCREC();
+	if (jsP_accept(J, TK_DELETE)) a = EXP1(DELETE, unary(J));
+	else if (jsP_accept(J, TK_VOID)) a = EXP1(VOID, unary(J));
+	else if (jsP_accept(J, TK_TYPEOF)) a = EXP1(TYPEOF, unary(J));
+	else if (jsP_accept(J, TK_INC)) a = EXP1(PREINC, unary(J));
+	else if (jsP_accept(J, TK_DEC)) a = EXP1(PREDEC, unary(J));
+	else if (jsP_accept(J, '+')) a = EXP1(POS, unary(J));
+	else if (jsP_accept(J, '-')) a = EXP1(NEG, unary(J));
+	else if (jsP_accept(J, '~')) a = EXP1(BITNOT, unary(J));
+	else if (jsP_accept(J, '!')) a = EXP1(LOGNOT, unary(J));
+	else a = postfix(J);
+	DECREC();
+	return a;
 }
 
 static js_Ast *multiplicative(js_State *J)
