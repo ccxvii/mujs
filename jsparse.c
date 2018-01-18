@@ -25,6 +25,8 @@ JS_NORETURN static void jsP_error(js_State *J, const char *fmt, ...) JS_PRINTFLI
 
 #define INCREC() if (++J->astdepth > JS_ASTLIMIT) jsP_error(J, "too much recursion")
 #define DECREC() --J->astdepth
+#define SAVEREC() int SAVE=J->astdepth
+#define POPREC() J->astdepth=SAVE
 
 static void jsP_error(js_State *J, const char *fmt, ...)
 {
@@ -383,23 +385,26 @@ static js_Ast *newexp(js_State *J)
 
 static js_Ast *memberexp(js_State *J)
 {
-	js_Ast *a;
-	INCREC();
-	a = newexp(J);
+	js_Ast *a = newexp(J);
+	SAVEREC();
 loop:
+	INCREC();
 	if (jsP_accept(J, '.')) { a = EXP2(MEMBER, a, identifiername(J)); goto loop; }
 	if (jsP_accept(J, '[')) { a = EXP2(INDEX, a, expression(J, 0)); jsP_expect(J, ']'); goto loop; }
-	DECREC();
+	POPREC();
 	return a;
 }
 
 static js_Ast *callexp(js_State *J)
 {
 	js_Ast *a = newexp(J);
+	SAVEREC();
 loop:
+	INCREC();
 	if (jsP_accept(J, '.')) { a = EXP2(MEMBER, a, identifiername(J)); goto loop; }
 	if (jsP_accept(J, '[')) { a = EXP2(INDEX, a, expression(J, 0)); jsP_expect(J, ']'); goto loop; }
 	if (jsP_accept(J, '(')) { a = EXP2(CALL, a, arguments(J)); jsP_expect(J, ')'); goto loop; }
+	POPREC();
 	return a;
 }
 
@@ -432,104 +437,139 @@ static js_Ast *unary(js_State *J)
 static js_Ast *multiplicative(js_State *J)
 {
 	js_Ast *a = unary(J);
+	SAVEREC();
 loop:
+	INCREC();
 	if (jsP_accept(J, '*')) { a = EXP2(MUL, a, unary(J)); goto loop; }
 	if (jsP_accept(J, '/')) { a = EXP2(DIV, a, unary(J)); goto loop; }
 	if (jsP_accept(J, '%')) { a = EXP2(MOD, a, unary(J)); goto loop; }
+	POPREC();
 	return a;
 }
 
 static js_Ast *additive(js_State *J)
 {
 	js_Ast *a = multiplicative(J);
+	SAVEREC();
 loop:
+	INCREC();
 	if (jsP_accept(J, '+')) { a = EXP2(ADD, a, multiplicative(J)); goto loop; }
 	if (jsP_accept(J, '-')) { a = EXP2(SUB, a, multiplicative(J)); goto loop; }
+	POPREC();
 	return a;
 }
 
 static js_Ast *shift(js_State *J)
 {
 	js_Ast *a = additive(J);
+	SAVEREC();
 loop:
+	INCREC();
 	if (jsP_accept(J, TK_SHL)) { a = EXP2(SHL, a, additive(J)); goto loop; }
 	if (jsP_accept(J, TK_SHR)) { a = EXP2(SHR, a, additive(J)); goto loop; }
 	if (jsP_accept(J, TK_USHR)) { a = EXP2(USHR, a, additive(J)); goto loop; }
+	POPREC();
 	return a;
 }
 
 static js_Ast *relational(js_State *J, int notin)
 {
 	js_Ast *a = shift(J);
+	SAVEREC();
 loop:
+	INCREC();
 	if (jsP_accept(J, '<')) { a = EXP2(LT, a, shift(J)); goto loop; }
 	if (jsP_accept(J, '>')) { a = EXP2(GT, a, shift(J)); goto loop; }
 	if (jsP_accept(J, TK_LE)) { a = EXP2(LE, a, shift(J)); goto loop; }
 	if (jsP_accept(J, TK_GE)) { a = EXP2(GE, a, shift(J)); goto loop; }
 	if (jsP_accept(J, TK_INSTANCEOF)) { a = EXP2(INSTANCEOF, a, shift(J)); goto loop; }
 	if (!notin && jsP_accept(J, TK_IN)) { a = EXP2(IN, a, shift(J)); goto loop; }
+	POPREC();
 	return a;
 }
 
 static js_Ast *equality(js_State *J, int notin)
 {
 	js_Ast *a = relational(J, notin);
+	SAVEREC();
 loop:
+	INCREC();
 	if (jsP_accept(J, TK_EQ)) { a = EXP2(EQ, a, relational(J, notin)); goto loop; }
 	if (jsP_accept(J, TK_NE)) { a = EXP2(NE, a, relational(J, notin)); goto loop; }
 	if (jsP_accept(J, TK_STRICTEQ)) { a = EXP2(STRICTEQ, a, relational(J, notin)); goto loop; }
 	if (jsP_accept(J, TK_STRICTNE)) { a = EXP2(STRICTNE, a, relational(J, notin)); goto loop; }
+	POPREC();
 	return a;
 }
 
 static js_Ast *bitand(js_State *J, int notin)
 {
 	js_Ast *a = equality(J, notin);
-	while (jsP_accept(J, '&'))
+	SAVEREC();
+	while (jsP_accept(J, '&')) {
+		INCREC();
 		a = EXP2(BITAND, a, equality(J, notin));
+	}
+	POPREC();
 	return a;
 }
 
 static js_Ast *bitxor(js_State *J, int notin)
 {
 	js_Ast *a = bitand(J, notin);
-	while (jsP_accept(J, '^'))
+	SAVEREC();
+	while (jsP_accept(J, '^')) {
+		INCREC();
 		a = EXP2(BITXOR, a, bitand(J, notin));
+	}
+	POPREC();
 	return a;
 }
 
 static js_Ast *bitor(js_State *J, int notin)
 {
 	js_Ast *a = bitxor(J, notin);
-	while (jsP_accept(J, '|'))
+	SAVEREC();
+	while (jsP_accept(J, '|')) {
+		INCREC();
 		a = EXP2(BITOR, a, bitxor(J, notin));
+	}
+	POPREC();
 	return a;
 }
 
 static js_Ast *logand(js_State *J, int notin)
 {
 	js_Ast *a = bitor(J, notin);
-	if (jsP_accept(J, TK_AND))
+	if (jsP_accept(J, TK_AND)) {
+		INCREC();
 		a = EXP2(LOGAND, a, logand(J, notin));
+		DECREC();
+	}
 	return a;
 }
 
 static js_Ast *logor(js_State *J, int notin)
 {
 	js_Ast *a = logand(J, notin);
-	if (jsP_accept(J, TK_OR))
+	if (jsP_accept(J, TK_OR)) {
+		INCREC();
 		a = EXP2(LOGOR, a, logor(J, notin));
+		DECREC();
+	}
 	return a;
 }
 
 static js_Ast *conditional(js_State *J, int notin)
 {
-	js_Ast *a, *b, *c;
-	a = logor(J, notin);
+	js_Ast *a = logor(J, notin);
 	if (jsP_accept(J, '?')) {
+		js_Ast *b, *c;
+		INCREC();
 		b = assignment(J, 0);
 		jsP_expect(J, ':');
 		c = assignment(J, notin);
+		DECREC();
 		return EXP3(COND, a, b, c);
 	}
 	return a;
@@ -537,9 +577,8 @@ static js_Ast *conditional(js_State *J, int notin)
 
 static js_Ast *assignment(js_State *J, int notin)
 {
-	js_Ast *a;
+	js_Ast *a = conditional(J, notin);
 	INCREC();
-	a = conditional(J, notin);
 	if (jsP_accept(J, '=')) a = EXP2(ASS, a, assignment(J, notin));
 	else if (jsP_accept(J, TK_MUL_ASS)) a = EXP2(ASS_MUL, a, assignment(J, notin));
 	else if (jsP_accept(J, TK_DIV_ASS)) a = EXP2(ASS_DIV, a, assignment(J, notin));
@@ -558,12 +597,13 @@ static js_Ast *assignment(js_State *J, int notin)
 
 static js_Ast *expression(js_State *J, int notin)
 {
-	js_Ast *a;
-	INCREC();
-	a = assignment(J, notin);
-	while (jsP_accept(J, ','))
+	js_Ast *a = assignment(J, notin);
+	SAVEREC();
+	while (jsP_accept(J, ',')) {
+		INCREC();
 		a = EXP2(COMMA, a, assignment(J, notin));
-	DECREC();
+	}
+	POPREC();
 	return a;
 }
 
