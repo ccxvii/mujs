@@ -276,8 +276,12 @@ static void puna(int d, int p, js_Ast *exp, const char *pre, const char *suf)
 
 static void pexpi(int d, int p, js_Ast *exp)
 {
-	int tp = prec(exp->type);
-	int paren = 0;
+	int tp, paren;
+
+	if (!exp) return;
+
+	tp = prec(exp->type);
+	paren = 0;
 	if (tp < p) {
 		pc('(');
 		paren = 1;
@@ -389,7 +393,7 @@ static void pexpi(int d, int p, js_Ast *exp)
 	case EXP_FUN:
 		if (p == 0) pc('(');
 		ps("function ");
-		if (exp->a) pexpi(d, 0, exp->a);
+		pexpi(d, 0, exp->a);
 		pc('(');
 		pargs(d, exp->b);
 		ps(") {\n");
@@ -519,16 +523,16 @@ static void pstm(int d, js_Ast *stm)
 
 	case STM_FOR:
 		ps("for (");
-		if (stm->a) pexp(d, stm->a); ps("; ");
-		if (stm->b) pexp(d, stm->b); ps("; ");
-		if (stm->c) pexp(d, stm->c); ps(")");
+		pexp(d, stm->a); ps("; ");
+		pexp(d, stm->b); ps("; ");
+		pexp(d, stm->c); ps(")");
 		pstmh(d, stm->d);
 		break;
 	case STM_FOR_VAR:
 		ps("for (var ");
 		pvarlist(d, stm->a); ps("; ");
-		if (stm->b) pexp(d, stm->b); ps("; ");
-		if (stm->c) pexp(d, stm->c); ps(")");
+		pexp(d, stm->b); ps("; ");
+		pexp(d, stm->c); ps(")");
 		pstmh(d, stm->d);
 		break;
 	case STM_FOR_IN:
