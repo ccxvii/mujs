@@ -134,7 +134,7 @@ static int eval_print(js_State *J, const char *source)
 		js_pop(J, 1);
 		return 1;
 	}
-	js_pushglobal(J);
+	js_pushundefined(J);
 	if (js_pcall(J, 0)) {
 		fprintf(stderr, "%s\n", js_trystring(J, -1, "Error"));
 		js_pop(J, 1);
