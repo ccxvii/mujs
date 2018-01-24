@@ -36,6 +36,8 @@ CFLAGS += -Os
 LDFLAGS += -Wl,-s
 endif
 
+CFLAGS += $(XCFLAGS)
+
 # You shouldn't need to edit anything below here.
 
 OUT := build/$(build)
