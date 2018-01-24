@@ -709,15 +709,19 @@ js_strtod(const char *string, char **endPtr)
 	 * fraction.
 	 */
 
-	if (exp < 0) {
+	if (exp < -maxExponent) {
+		exp = maxExponent;
+		expSign = TRUE;
+		errno = ERANGE;
+	} else if (exp > maxExponent) {
+		exp = maxExponent;
+		expSign = FALSE;
+		errno = ERANGE;
+	} else if (exp < 0) {
 		expSign = TRUE;
 		exp = -exp;
 	} else {
 		expSign = FALSE;
-	}
-	if (exp > maxExponent) {
-		exp = maxExponent;
-		errno = ERANGE;
 	}
 	dblExp = 1.0;
 	for (d = powersOf10; exp != 0; exp >>= 1, d += 1) {
