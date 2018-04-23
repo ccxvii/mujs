@@ -8,9 +8,9 @@ incdir ?= $(prefix)/include
 libdir ?= $(prefix)/lib
 
 ifeq "$(wildcard .git)" ".git"
-VERSION := $(shell git describe --tags --always)
+  VERSION := $(shell git describe --tags --always)
 else
-VERSION := $(shell basename $$PWD | sed -e s,^mujs-,,)
+  VERSION := $(shell basename $$PWD | sed -e s,^mujs-,,)
 endif
 
 # Compiler flags for various configurations:
@@ -18,22 +18,22 @@ endif
 CFLAGS := -std=c99 -pedantic -Wall -Wextra -Wno-unused-parameter
 
 ifeq "$(CC)" "clang"
-CFLAGS += -Wunreachable-code
+  CFLAGS += -Wunreachable-code
 endif
 
 ifeq "$(shell uname)" "Linux"
-CFLAGS += -ffunction-sections -fdata-sections
-LDFLAGS += -Wl,--gc-sections
+  CFLAGS += -ffunction-sections -fdata-sections
+  LDFLAGS += -Wl,--gc-sections
 endif
 
 ifeq "$(build)" "debug"
-CFLAGS += -g
+  CFLAGS += -g
 else ifeq "$(build)" "sanitize"
-CFLAGS += -pipe -g -fsanitize=address -fno-omit-frame-pointer
-LDFLAGS += -fsanitize=address
+  CFLAGS += -pipe -g -fsanitize=address -fno-omit-frame-pointer
+  LDFLAGS += -fsanitize=address
 else
-CFLAGS += -Os
-LDFLAGS += -Wl,-s
+  CFLAGS += -Os
+  LDFLAGS += -Wl,-s
 endif
 
 CFLAGS += $(XCFLAGS)
@@ -46,7 +46,7 @@ SRCS := $(wildcard js*.c utf*.c regexp.c)
 HDRS := $(wildcard js*.h mujs.h utf.h regexp.h)
 
 default: static
-static: $(OUT) $(OUT)/mujs $(OUT)/libmujs.a $(OUT)/mujs.pc
+static: $(OUT)/mujs-pp $(OUT)/mujs $(OUT)/libmujs.a $(OUT)/mujs.pc
 shared: static $(OUT)/libmujs.so
 
 astnames.h: jsparse.h
@@ -60,22 +60,28 @@ one.c: $(SRCS)
 
 jsdump.c: astnames.h opnames.h
 
-$(OUT):
-	mkdir -p $(OUT)
-
-$(OUT)/main.o: main.c $(HDRS)
+$(OUT)/%.o: %.c $(HDRS)
+	@ mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 $(OUT)/libmujs.o: one.c $(HDRS)
+	@ mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 $(OUT)/libmujs.a: $(OUT)/libmujs.o
+	@ mkdir -p $(dir $@)
 	$(AR) cru $@ $^
 
 $(OUT)/libmujs.so: one.c $(HDRS)
+	@ mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -fPIC -shared -o $@ $< -lm
 
 $(OUT)/mujs: $(OUT)/libmujs.o $(OUT)/main.o
+	@ mkdir -p $(dir $@)
+	$(CC) $(LDFLAGS) -o $@ $^ -lm
+
+$(OUT)/mujs-pp: $(OUT)/libmujs.o $(OUT)/pp.o
+	@ mkdir -p $(dir $@)
 	$(CC) $(LDFLAGS) -o $@ $^ -lm
 
 $(OUT)/mujs.pc:
