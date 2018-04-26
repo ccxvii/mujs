@@ -356,6 +356,11 @@ static void Sp_match(js_State *J)
 		if (c - b == 0)
 			++a;
 	}
+
+	if (len == 0) {
+		js_pop(J, 1);
+		js_pushnull(J);
+	}
 }
 
 static void Sp_search(js_State *J)
