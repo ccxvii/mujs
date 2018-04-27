@@ -274,9 +274,15 @@ static int compare(js_State *J, int x, int y, int *hasx, int *hasy, int hasfn)
 			return c;
 		}
 
+		/* Ap_sort expects the original values to remain on the stack,
+		 * but because js_tostring may mutate the stack slot, make a copy first. */
+		js_copy(J, -2);
+		js_copy(J, -2);
 		sx = js_tostring(J, -2);
 		sy = js_tostring(J, -1);
-		return strcmp(sx, sy);
+		c = strcmp(sx, sy);
+		js_pop(J, 2);
+		return c;
 	}
 
 	if (*hasx) return -1;
