@@ -58,6 +58,42 @@ const char *js_trystring(js_State *J, int idx, const char *error)
 	return s;
 }
 
+double js_trynumber(js_State *J, int idx, double error)
+{
+	double v;
+	if (js_try(J)) {
+		js_pop(J, 1);
+		return error;
+	}
+	v = js_tonumber(J, idx);
+	js_endtry(J);
+	return v;
+}
+
+int js_tryinteger(js_State *J, int idx, int error)
+{
+	int v;
+	if (js_try(J)) {
+		js_pop(J, 1);
+		return error;
+	}
+	v = js_tointeger(J, idx);
+	js_endtry(J);
+	return v;
+}
+
+int js_tryboolean(js_State *J, int idx, int error)
+{
+	int v;
+	if (js_try(J)) {
+		js_pop(J, 1);
+		return error;
+	}
+	v = js_toboolean(J, idx);
+	js_endtry(J);
+	return v;
+}
+
 static void js_loadstringx(js_State *J, const char *filename, const char *source, int iseval)
 {
 	js_Ast *P;

@@ -313,7 +313,7 @@ Use the following example as a guide for how to use js_try:
 
 <pre>
 if (js_try(J)) {
-	fprintf(stderr, "error: %s", js_tostring(J, -1));
+	fprintf(stderr, "error: %s", js_trystring(J, -1, "Error"));
 	js_pop(J, 1);
 	return;
 }
@@ -422,7 +422,7 @@ Test if a primitive value is of a given type.
 <pre>
 int js_toboolean(js_State *J, int idx);
 double js_tonumber(js_State *J, int idx);
-double js_tointeger(js_State *J, int idx);
+int js_tointeger(js_State *J, int idx);
 int js_toint32(js_State *J, int idx);
 unsigned int js_touint32(js_State *J, int idx);
 short js_toint16(js_State *J, int idx);
@@ -440,6 +440,19 @@ The conversion may <i>change the actual value in the stack</i>!
 <p>
 There is no guarantee that the pointer returned by js_tostring will be valid after
 the corresponding value is removed from the stack.
+
+<p>
+Note that the toString and valueOf methods that may be invoked by these functions
+can throw exceptions. If you want to catch and ignore exceptions, use the following
+functions instead. The 'error' argument is the default value that will be returned
+if a toString/valueOf method throws an exception.
+
+<pre>
+int js_tryboolean(js_State *J, int idx, int error);
+double js_trynumber(js_State *J, int idx, double error);
+int js_tryinteger(js_State *J, int idx, int error);
+const char *js_trystring(js_State *J, int idx, const char *error);
+</pre>
 
 <h3>Objects</h3>
 
