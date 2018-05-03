@@ -116,12 +116,15 @@ static void jsB_new_RegExp(js_State *J)
 		pattern = old->source;
 		flags = old->flags;
 	} else if (js_isundefined(J, 1)) {
-		pattern = "";
+		pattern = "(?:)";
 		flags = 0;
 	} else {
 		pattern = js_tostring(J, 1);
 		flags = 0;
 	}
+
+	if (strlen(pattern) == 0)
+		pattern = "(?:)";
 
 	if (js_isdefined(J, 2)) {
 		const char *s = js_tostring(J, 2);
