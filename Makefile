@@ -23,7 +23,9 @@ endif
 
 ifeq "$(shell uname)" "Linux"
   CFLAGS += -ffunction-sections -fdata-sections
+  CFLAGS += -DHAVE_READLINE
   LDFLAGS += -Wl,--gc-sections
+  LIBREADLINE += -lreadline
 endif
 
 ifeq "$(build)" "debug"
@@ -78,7 +80,7 @@ $(OUT)/libmujs.so: one.c $(HDRS)
 
 $(OUT)/mujs: $(OUT)/libmujs.o $(OUT)/main.o
 	@ mkdir -p $(dir $@)
-	$(CC) $(LDFLAGS) -o $@ $^ -lm
+	$(CC) $(LDFLAGS) -o $@ $^ $(LIBREADLINE) -lm
 
 $(OUT)/mujs-pp: $(OUT)/libmujs.o $(OUT)/pp.o
 	@ mkdir -p $(dir $@)

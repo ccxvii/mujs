@@ -5,6 +5,32 @@
 
 #include "mujs.h"
 
+#ifdef HAVE_READLINE
+#include <readline/readline.h>
+#include <readline/history.h>
+#else
+void using_history(void) { }
+void add_history(const char *string) { }
+void rl_bind_key(int key, void (*fun)(void)) { }
+void rl_insert(void) { }
+char *readline(const char *prompt)
+{
+	static char line[500], *p;
+	int n;
+	fputs(prompt, stdout);
+	p = fgets(line, sizeof line, stdin);
+	if (p) {
+		n = strlen(line);
+		if (n > 0 && line[n-1] == '\n')
+			line[--n] = 0;
+		p = malloc(n+1);
+		memcpy(p, line, n+1);
+		return p;
+	}
+	return NULL;
+}
+#endif
+
 #define PS1 "> "
 
 static void jsB_gc(js_State *J)
@@ -93,14 +119,13 @@ static void jsB_read(js_State *J)
 
 static void jsB_readline(js_State *J)
 {
-	char line[256];
-	int n;
-	if (!fgets(line, sizeof line, stdin))
+	char *line = readline("");
+	if (!line)
 		js_error(J, "cannot read line from stdin");
-	n = strlen(line);
-	if (n > 0 && line[n-1] == '\n')
-		line[n-1] = 0;
 	js_pushstring(J, line);
+	if (*line)
+		add_history(line);
+	free(line);
 }
 
 static void jsB_quit(js_State *J)
@@ -179,7 +204,7 @@ static char *read_stdin(void)
 int
 main(int argc, char **argv)
 {
-	char line[256];
+	char *input;
 	js_State *J;
 	int i, status = 0;
 
@@ -215,14 +240,19 @@ main(int argc, char **argv)
 				status = 1;
 	} else {
 		if (isatty(0)) {
-			fputs(PS1, stdout);
-			while (fgets(line, sizeof line, stdin)) {
-				eval_print(J, line);
-				fputs(PS1, stdout);
+			using_history();
+			rl_bind_key('\t', rl_insert);
+			input = readline(PS1);
+			while (input) {
+				eval_print(J, input);
+				if (*input)
+					add_history(input);
+				free(input);
+				input = readline(PS1);
 			}
 			putchar('\n');
 		} else {
-			char *input = read_stdin();
+			input = read_stdin();
 			if (!input || !js_dostring(J, input))
 				status = 1;
 			free(input);
