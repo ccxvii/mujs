@@ -248,77 +248,72 @@ static void Ap_slice(js_State *J)
 			js_setindex(J, -2, n);
 }
 
-static int compare(js_State *J, int x, int y, int *hasx, int *hasy, int hasfn)
+struct sortslot {
+	js_Value v;
+	js_State *J;
+};
+
+static int sortcmp(const void *avoid, const void *bvoid)
 {
+	const struct sortslot *aslot = avoid, *bslot = bvoid;
+	const js_Value *a = &aslot->v, *b = &bslot->v;
+	js_State *J = aslot->J;
 	const char *sx, *sy;
 	int c;
 
-	*hasx = js_hasindex(J, 0, x);
-	*hasy = js_hasindex(J, 0, y);
+	int unx = (a->type == JS_TUNDEFINED);
+	int uny = (b->type == JS_TUNDEFINED);
+	if (unx) return !uny;
+	if (uny) return -1;
 
-	if (*hasx && *hasy) {
-		int unx = js_isundefined(J, -2);
-		int uny = js_isundefined(J, -1);
-		if (unx && uny) return 0;
-		if (unx) return 1;
-		if (uny) return -1;
-
-		if (hasfn) {
-			js_copy(J, 1); /* copy function */
-			js_pushundefined(J); /* set this object */
-			js_copy(J, -4); /* copy x */
-			js_copy(J, -4); /* copy y */
-			js_call(J, 2);
-			c = js_tonumber(J, -1);
-			js_pop(J, 1);
-			return c;
-		}
-
-		/* Ap_sort expects the original values to remain on the stack,
-		 * but because js_tostring may mutate the stack slot, make a copy first. */
-		js_copy(J, -2);
-		js_copy(J, -2);
+	if (js_iscallable(J, 1)) {
+		js_copy(J, 1); /* copy function */
+		js_pushundefined(J);
+		js_pushvalue(J, *a);
+		js_pushvalue(J, *b);
+		js_call(J, 2);
+		c = js_tonumber(J, -1);
+		js_pop(J, 1);
+	} else {
+		js_pushvalue(J, *a);
+		js_pushvalue(J, *b);
 		sx = js_tostring(J, -2);
 		sy = js_tostring(J, -1);
 		c = strcmp(sx, sy);
 		js_pop(J, 2);
-		return c;
 	}
-
-	if (*hasx) return -1;
-	if (*hasy) return 1;
-	return 0;
+	return c;
 }
 
 static void Ap_sort(js_State *J)
 {
-	int len, i, k;
-	int hasx, hasy, hasfn;
+	struct sortslot *array = NULL;
+	int i, len;
 
 	len = js_getlength(J, 0);
 
-	hasfn = js_iscallable(J, 1);
-	hasx = hasy = 0;
-
-	for (i = 1; i < len; ++i) {
-		k = i;
-		while (k > 0 && compare(J, k - 1, k, &hasx, &hasy, hasfn) > 0) {
-			if (hasx && hasy) {
-				js_setindex(J, 0, k - 1);
-				js_setindex(J, 0, k);
-			} else if (hasx) {
-				js_delindex(J, 0, k - 1);
-				js_setindex(J, 0, k);
-			} else if (hasy) {
-				js_setindex(J, 0, k - 1);
-				js_delindex(J, 0, k);
-			}
-			hasx = hasy = 0;
-			--k;
-		}
-		if (hasx + hasy > 0)
-			js_pop(J, hasx + hasy);
+	array = js_malloc(J, len * sizeof *array);
+	if (js_try(J)) {
+		js_free(J, array);
+		js_throw(J);
 	}
+
+	for (i = 0; i < len; ++i) {
+		js_getindex(J, 0, i);
+		array[i].v = *js_tovalue(J, -1);
+		array[i].J = J;
+		js_pop(J, 1);
+	}
+
+	qsort(array, len, sizeof *array, sortcmp);
+
+	for (i = 0; i < len; ++i) {
+		js_pushvalue(J, array[i].v);
+		js_setindex(J, 0, i);
+	}
+
+	js_endtry(J);
+	js_free(J, array);
 
 	js_copy(J, 0);
 }
