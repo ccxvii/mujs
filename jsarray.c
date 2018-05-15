@@ -288,7 +288,7 @@ static int sortcmp(const void *avoid, const void *bvoid)
 static void Ap_sort(js_State *J)
 {
 	struct sortslot *array = NULL;
-	int i, len;
+	int i, n, len;
 
 	len = js_getlength(J, 0);
 
@@ -298,18 +298,24 @@ static void Ap_sort(js_State *J)
 		js_throw(J);
 	}
 
+	n = 0;
 	for (i = 0; i < len; ++i) {
-		js_getindex(J, 0, i);
-		array[i].v = *js_tovalue(J, -1);
-		array[i].J = J;
-		js_pop(J, 1);
+		if (js_hasindex(J, 0, i)) {
+			array[n].v = *js_tovalue(J, -1);
+			array[n].J = J;
+			js_pop(J, 1);
+			++n;
+		}
 	}
 
-	qsort(array, len, sizeof *array, sortcmp);
+	qsort(array, n, sizeof *array, sortcmp);
 
-	for (i = 0; i < len; ++i) {
+	for (i = 0; i < n; ++i) {
 		js_pushvalue(J, array[i].v);
 		js_setindex(J, 0, i);
+	}
+	for (i = n; i < len; ++i) {
+		js_delindex(J, 0, i);
 	}
 
 	js_endtry(J);
