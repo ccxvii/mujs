@@ -291,6 +291,10 @@ static void Ap_sort(js_State *J)
 	int i, n, len;
 
 	len = js_getlength(J, 0);
+	if (len <= 0) {
+		js_copy(J, 0);
+		return;
+	}
 
 	array = js_malloc(J, len * sizeof *array);
 	if (js_try(J)) {
