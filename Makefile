@@ -72,7 +72,7 @@ $(OUT)/libmujs.o: one.c $(HDRS)
 
 $(OUT)/libmujs.a: $(OUT)/libmujs.o
 	@ mkdir -p $(dir $@)
-	$(AR) cru $@ $^
+	$(AR) cr $@ $^
 
 $(OUT)/libmujs.so: one.c $(HDRS)
 	@ mkdir -p $(dir $@)
