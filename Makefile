@@ -22,8 +22,6 @@ ifeq "$(CC)" "clang"
 endif
 
 ifeq "$(shell uname)" "Linux"
-  CFLAGS += -ffunction-sections -fdata-sections
-  LDFLAGS += -Wl,--gc-sections
   HAVE_READLINE := yes
 endif
 
