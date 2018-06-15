@@ -23,9 +23,8 @@ endif
 
 ifeq "$(shell uname)" "Linux"
   CFLAGS += -ffunction-sections -fdata-sections
-  CFLAGS += -DHAVE_READLINE
   LDFLAGS += -Wl,--gc-sections
-  LIBREADLINE += -lreadline
+  HAVE_READLINE := yes
 endif
 
 ifeq "$(build)" "debug"
@@ -36,6 +35,11 @@ else ifeq "$(build)" "sanitize"
 else
   CFLAGS += -Os
   LDFLAGS += -Wl,-s
+endif
+
+ifeq "$(HAVE_READLINE)" "yes"
+  CFLAGS += -DHAVE_READLINE
+  LIBREADLINE += -lreadline
 endif
 
 CFLAGS += $(XCFLAGS)
