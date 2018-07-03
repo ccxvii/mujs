@@ -224,6 +224,12 @@ int js_isuserdata(js_State *J, int idx, const char *tag)
 	return 0;
 }
 
+int js_iserror(js_State *J, int idx)
+{
+	js_Value *v = stackidx(J, idx);
+	return v->type == JS_TOBJECT && v->u.object->type == JS_CERROR;
+}
+
 static const char *js_typeof(js_State *J, int idx)
 {
 	js_Value *v = stackidx(J, idx);
