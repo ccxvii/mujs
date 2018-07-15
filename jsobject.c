@@ -458,7 +458,7 @@ static int O_isFrozen_walk(js_State *J, js_Property *ref)
 	if (ref->left->level)
 		if (!O_isFrozen_walk(J, ref->left))
 			return 0;
-	if (!(ref->atts & (JS_READONLY | JS_DONTCONF)))
+	if ((ref->atts & (JS_READONLY | JS_DONTCONF)) != (JS_READONLY | JS_DONTCONF))
 		return 0;
 	if (ref->right->level)
 		if (!O_isFrozen_walk(J, ref->right))
