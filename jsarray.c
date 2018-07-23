@@ -296,6 +296,9 @@ static void Ap_sort(js_State *J)
 		return;
 	}
 
+	if (len >= INT_MAX / (int)sizeof(*array))
+		js_rangeerror(J, "array is too large to sort");
+
 	array = js_malloc(J, len * sizeof *array);
 	if (js_try(J)) {
 		js_free(J, array);

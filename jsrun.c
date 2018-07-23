@@ -446,7 +446,7 @@ int js_isarrayindex(js_State *J, const char *p, int *idx)
 	while (*p) {
 		int c = *p++;
 		if (c >= '0' && c <= '9') {
-			if (n > INT_MAX / 10 - 1)
+			if (n >= INT_MAX / 10)
 				return 0;
 			n = n * 10 + (c - '0');
 		} else {
@@ -553,7 +553,7 @@ static void jsR_setproperty(js_State *J, js_Object *obj, const char *name)
 			double rawlen = jsV_tonumber(J, value);
 			int newlen = jsV_numbertointeger(rawlen);
 			if (newlen != rawlen || newlen < 0)
-				js_rangeerror(J, "array length");
+				js_rangeerror(J, "invalid array length");
 			jsV_resizearray(J, obj, newlen);
 			return;
 		}
