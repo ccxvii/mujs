@@ -214,6 +214,7 @@ struct js_State
 	js_Value *stack;
 
 	/* garbage collector list */
+	int gcpause;
 	int gcmark;
 	int gccounter;
 	js_Environment *gcenv;

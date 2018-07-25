@@ -300,7 +300,15 @@ static void Ap_sort(js_State *J)
 		js_rangeerror(J, "array is too large to sort");
 
 	array = js_malloc(J, len * sizeof *array);
+
+	/* Holding objects where the GC cannot see them is illegal, but if we
+	 * don't allow the GC to run we can use qsort() on a temporary array of
+	 * js_Values for fast sorting.
+	 */
+	++J->gcpause;
+
 	if (js_try(J)) {
+		--J->gcpause;
 		js_free(J, array);
 		js_throw(J);
 	}
@@ -324,6 +332,8 @@ static void Ap_sort(js_State *J)
 	for (i = n; i < len; ++i) {
 		js_delindex(J, 0, i);
 	}
+
+	--J->gcpause;
 
 	js_endtry(J);
 	js_free(J, array);
