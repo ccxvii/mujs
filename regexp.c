@@ -550,16 +550,19 @@ static Renode *parserep(struct cstate *g)
 
 static Renode *parsecat(struct cstate *g)
 {
-	Renode *cat, *x;
+	Renode *cat, *head, **tail;
 	if (g->lookahead && g->lookahead != '|' && g->lookahead != ')') {
-		cat = parserep(g);
+		/* Build a right-leaning tree by splicing in new 'cat' at the tail. */
+		head = parserep(g);
+		tail = &head;
 		while (g->lookahead && g->lookahead != '|' && g->lookahead != ')') {
-			x = cat;
 			cat = newnode(g, P_CAT);
-			cat->x = x;
+			cat->x = *tail;
 			cat->y = parserep(g);
+			*tail = cat;
+			tail = &cat->y;
 		}
-		return cat;
+		return head;
 	}
 	return NULL;
 }
@@ -636,11 +639,12 @@ static void compile(Reprog *prog, Renode *node)
 	if (!node)
 		return;
 
+loop:
 	switch (node->type) {
 	case P_CAT:
 		compile(prog, node->x);
-		compile(prog, node->y);
-		break;
+		node = node->y;
+		goto loop;
 
 	case P_ALT:
 		split = emit(prog, I_SPLIT);
