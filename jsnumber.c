@@ -172,7 +172,11 @@ void jsB_initnumber(js_State *J)
 	js_newcconstructor(J, jsB_Number, jsB_new_Number, "Number", 0); /* 1 */
 	{
 		jsB_propn(J, "MAX_VALUE", 1.7976931348623157e+308);
+#ifdef __POCC__
+		jsB_propn(J, "MIN_VALUE", DBL_MIN);
+#else
 		jsB_propn(J, "MIN_VALUE", 5e-324);
+#endif
 		jsB_propn(J, "NaN", NAN);
 		jsB_propn(J, "NEGATIVE_INFINITY", -INFINITY);
 		jsB_propn(J, "POSITIVE_INFINITY", INFINITY);
