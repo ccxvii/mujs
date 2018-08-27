@@ -120,8 +120,10 @@ static void jsB_read(js_State *J)
 static void jsB_readline(js_State *J)
 {
 	char *line = readline("");
-	if (!line)
-		js_error(J, "cannot read line from stdin");
+	if (!line) {
+		js_pushnull(J);
+		return;
+	}
 	js_pushstring(J, line);
 	if (*line)
 		add_history(line);
