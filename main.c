@@ -208,9 +208,16 @@ main(int argc, char **argv)
 {
 	char *input;
 	js_State *J;
-	int i, status = 0;
+	int status = 0;
+	int flags = 0;
+	int i = 1;
 
-	J = js_newstate(NULL, NULL, JS_STRICT);
+	if (i < argc && !strcmp(argv[i], "-s")) {
+		flags |= JS_STRICT;
+		++i;
+	}
+
+	J = js_newstate(NULL, NULL, flags);
 
 	js_newcfunction(J, jsB_gc, "gc", 0);
 	js_setglobal(J, "gc");
@@ -236,10 +243,12 @@ main(int argc, char **argv)
 	js_dostring(J, require_js);
 	js_dostring(J, stacktrace_js);
 
-	if (argc > 1) {
-		for (i = 1; i < argc; ++i)
+	if (i < argc) {
+		while (i < argc) {
 			if (js_dofile(J, argv[i]))
 				status = 1;
+			++i;
+		}
 	} else {
 		if (isatty(0)) {
 			using_history();
