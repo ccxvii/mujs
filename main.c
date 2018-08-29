@@ -5,6 +5,57 @@
 
 #include "mujs.h"
 
+static char *optarg; /* Global argument pointer. */
+static int optind = 0; /* Global argv index. */
+static int getopt(int argc, char *argv[], char *optstring)
+{
+	static char *scan = NULL; /* Private scan pointer. */
+
+	char c;
+	char *place;
+
+	optarg = NULL;
+
+	if (!scan || *scan == '\0') {
+		if (optind == 0)
+			optind++;
+
+		if (optind >= argc || argv[optind][0] != '-' || argv[optind][1] == '\0')
+			return EOF;
+		if (argv[optind][1] == '-' && argv[optind][2] == '\0') {
+			optind++;
+			return EOF;
+		}
+
+		scan = argv[optind]+1;
+		optind++;
+	}
+
+	c = *scan++;
+	place = strchr(optstring, c);
+
+	if (!place || c == ':') {
+		fprintf(stderr, "%s: unknown option -%c\n", argv[0], c);
+		return '?';
+	}
+
+	place++;
+	if (*place == ':') {
+		if (*scan != '\0') {
+			optarg = scan;
+			scan = NULL;
+		} else if( optind < argc ) {
+			optarg = argv[optind];
+			optind++;
+		} else {
+			fprintf(stderr, "%s: option requires argument -%c\n", argv[0], c);
+			return ':';
+		}
+	}
+
+	return c;
+}
+
 #ifdef HAVE_READLINE
 #include <readline/readline.h>
 #include <readline/history.h>
@@ -203,21 +254,33 @@ static char *read_stdin(void)
 	return s;
 }
 
+static void usage(void)
+{
+	fprintf(stderr, "Usage: mujs [options] [script [scriptArgs*]]\n");
+	fprintf(stderr, "\t-i: Enter interactive prompt after running code.\n");
+	fprintf(stderr, "\t-s: Check strictness.\n");
+	exit(1);
+}
+
 int
 main(int argc, char **argv)
 {
 	char *input;
 	js_State *J;
 	int status = 0;
-	int flags = 0;
-	int i = 1;
+	int strict = 0;
+	int interactive = 0;
+	int i, c;
 
-	if (i < argc && !strcmp(argv[i], "-s")) {
-		flags |= JS_STRICT;
-		++i;
+	while ((c = getopt(argc, argv, "is")) != -1) {
+		switch (c) {
+		default: usage(); break;
+		case 'i': interactive = 1; break;
+		case 's': strict = 1; break;
+		}
 	}
 
-	J = js_newstate(NULL, NULL, flags);
+	J = js_newstate(NULL, NULL, strict ? JS_STRICT : 0);
 
 	js_newcfunction(J, jsB_gc, "gc", 0);
 	js_setglobal(J, "gc");
@@ -243,13 +306,24 @@ main(int argc, char **argv)
 	js_dostring(J, require_js);
 	js_dostring(J, stacktrace_js);
 
-	if (i < argc) {
-		while (i < argc) {
-			if (js_dofile(J, argv[i]))
-				status = 1;
-			++i;
-		}
+	if (optind == argc) {
+		interactive = 1;
 	} else {
+		c = optind++;
+
+		js_newarray(J);
+		i = 0;
+		while (optind < argc) {
+			js_pushstring(J, argv[optind++]);
+			js_setindex(J, -2, i++);
+		}
+		js_setglobal(J, "scriptArgs");
+
+		if (js_dofile(J, argv[c]))
+			status = 1;
+	}
+
+	if (interactive) {
 		if (isatty(0)) {
 			using_history();
 			rl_bind_key('\t', rl_insert);
