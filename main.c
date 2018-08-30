@@ -103,6 +103,13 @@ static void jsB_load(js_State *J)
 	js_pushundefined(J);
 }
 
+static void jsB_compile(js_State *J)
+{
+	const char *source = js_tostring(J, 1);
+	const char *filename = js_isdefined(J, 2) ? js_tostring(J, 2) : "[string]";
+	js_loadstring(J, filename, source);
+}
+
 static void jsB_print(js_State *J)
 {
 	int i, top = js_gettop(J);
@@ -292,6 +299,9 @@ main(int argc, char **argv)
 
 	js_newcfunction(J, jsB_load, "load", 1);
 	js_setglobal(J, "load");
+
+	js_newcfunction(J, jsB_compile, "compile", 2);
+	js_setglobal(J, "compile");
 
 	js_newcfunction(J, jsB_print, "print", 0);
 	js_setglobal(J, "print");
