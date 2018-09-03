@@ -93,9 +93,14 @@ static void jsB_gc(js_State *J)
 
 static void jsB_load(js_State *J)
 {
-	const char *filename = js_tostring(J, 1);
-	int rv = js_dofile(J, filename);
-	js_pushboolean(J, !rv);
+	int i, n = js_gettop(J);
+	for (i = 1; i < n; ++i) {
+		js_loadfile(J, js_tostring(J, i));
+		js_pushundefined(J);
+		js_call(J, 0);
+		js_pop(J, 1);
+	}
+	js_pushundefined(J);
 }
 
 static void jsB_print(js_State *J)
