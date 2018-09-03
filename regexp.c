@@ -110,7 +110,7 @@ static int nextrune(struct cstate *g)
 	if (g->yychar == '\\') {
 		g->source += chartorune(&g->yychar, g->source);
 		switch (g->yychar) {
-		case 0: die(g, "unterminated escape sequence");
+		case 0: die(g, "unterminated escape sequence"); break;
 		case 'f': g->yychar = '\f'; return 0;
 		case 'n': g->yychar = '\n'; return 0;
 		case 'r': g->yychar = '\r'; return 0;

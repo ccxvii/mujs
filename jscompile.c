@@ -538,7 +538,7 @@ static void ccall(JF, js_Ast *fun, js_Ast *args)
 			ceval(J, F, fun, args);
 			return;
 		}
-		/* fall through */
+		/* fallthrough */
 	default:
 		cexp(J, F, fun);
 		emit(J, F, OP_UNDEF);
