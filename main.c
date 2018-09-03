@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include "mujs.h"
 
@@ -142,36 +143,36 @@ static void jsB_read(js_State *J)
 
 	f = fopen(filename, "rb");
 	if (!f) {
-		js_error(J, "cannot open file: '%s'", filename);
+		js_error(J, "cannot open file '%s': %s", filename, strerror(errno));
 	}
 
 	if (fseek(f, 0, SEEK_END) < 0) {
 		fclose(f);
-		js_error(J, "cannot seek in file: '%s'", filename);
+		js_error(J, "cannot seek in file '%s': %s", filename, strerror(errno));
 	}
 
 	n = ftell(f);
 	if (n < 0) {
 		fclose(f);
-		js_error(J, "cannot tell in file: '%s'", filename);
+		js_error(J, "cannot tell in file '%s': %s", filename, strerror(errno));
 	}
 
 	if (fseek(f, 0, SEEK_SET) < 0) {
 		fclose(f);
-		js_error(J, "cannot seek in file: '%s'", filename);
+		js_error(J, "cannot seek in file '%s': %s", filename, strerror(errno));
 	}
 
 	s = malloc(n + 1);
 	if (!s) {
 		fclose(f);
-		js_error(J, "cannot allocate storage for file contents: '%s'", filename);
+		js_error(J, "out of memory");
 	}
 
 	t = fread(s, 1, n, f);
 	if (t != n) {
 		free(s);
 		fclose(f);
-		js_error(J, "cannot read data from file: '%s'", filename);
+		js_error(J, "cannot read data from file '%s': %s", filename, strerror(errno));
 	}
 	s[n] = 0;
 
