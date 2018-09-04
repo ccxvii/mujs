@@ -5,30 +5,30 @@
 
 #include "mujs.h"
 
-static char *optarg; /* Global argument pointer. */
-static int optind = 0; /* Global argv index. */
-static int getopt(int argc, char *argv[], char *optstring)
+static char *xoptarg; /* Global argument pointer. */
+static int xoptind = 0; /* Global argv index. */
+static int xgetopt(int argc, char *argv[], char *optstring)
 {
 	static char *scan = NULL; /* Private scan pointer. */
 
 	char c;
 	char *place;
 
-	optarg = NULL;
+	xoptarg = NULL;
 
 	if (!scan || *scan == '\0') {
-		if (optind == 0)
-			optind++;
+		if (xoptind == 0)
+			xoptind++;
 
-		if (optind >= argc || argv[optind][0] != '-' || argv[optind][1] == '\0')
+		if (xoptind >= argc || argv[xoptind][0] != '-' || argv[xoptind][1] == '\0')
 			return EOF;
-		if (argv[optind][1] == '-' && argv[optind][2] == '\0') {
-			optind++;
+		if (argv[xoptind][1] == '-' && argv[xoptind][2] == '\0') {
+			xoptind++;
 			return EOF;
 		}
 
-		scan = argv[optind]+1;
-		optind++;
+		scan = argv[xoptind]+1;
+		xoptind++;
 	}
 
 	c = *scan++;
@@ -42,11 +42,11 @@ static int getopt(int argc, char *argv[], char *optstring)
 	place++;
 	if (*place == ':') {
 		if (*scan != '\0') {
-			optarg = scan;
+			xoptarg = scan;
 			scan = NULL;
-		} else if( optind < argc ) {
-			optarg = argv[optind];
-			optind++;
+		} else if (xoptind < argc) {
+			xoptarg = argv[xoptind];
+			xoptind++;
 		} else {
 			fprintf(stderr, "%s: option requires argument -%c\n", argv[0], c);
 			return ':';
@@ -272,7 +272,7 @@ main(int argc, char **argv)
 	int interactive = 0;
 	int i, c;
 
-	while ((c = getopt(argc, argv, "is")) != -1) {
+	while ((c = xgetopt(argc, argv, "is")) != -1) {
 		switch (c) {
 		default: usage(); break;
 		case 'i': interactive = 1; break;
@@ -306,15 +306,15 @@ main(int argc, char **argv)
 	js_dostring(J, require_js);
 	js_dostring(J, stacktrace_js);
 
-	if (optind == argc) {
+	if (xoptind == argc) {
 		interactive = 1;
 	} else {
-		c = optind++;
+		c = xoptind++;
 
 		js_newarray(J);
 		i = 0;
-		while (optind < argc) {
-			js_pushstring(J, argv[optind++]);
+		while (xoptind < argc) {
+			js_pushstring(J, argv[xoptind++]);
 			js_setindex(J, -2, i++);
 		}
 		js_setglobal(J, "scriptArgs");
