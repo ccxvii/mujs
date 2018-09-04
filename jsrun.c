@@ -610,6 +610,8 @@ static void jsR_setproperty(js_State *J, js_Object *obj, const char *name)
 			if (J->strict)
 				if (ref->getter)
 					js_typeerror(J, "setting property '%s' that only has a getter", name);
+			if (ref->atts & JS_READONLY)
+				goto readonly;
 		}
 	}
 
