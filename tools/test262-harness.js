@@ -92,6 +92,8 @@
     // the actual test
     var source = mujs.read(test_path);
     var negative = !!source.match(/@negative/);
+    if (negative)
+        var neg_str = (source.match(/@negative (.*)/) || [])[1];
     var as_file = test_path;
     if (!full_mode) {
         as_file = test_path.replace(/\\/g, "/");
@@ -101,8 +103,13 @@
     }
 
     var result = load(mujs.read(test_path), as_file);
-    if (!!result == negative)
-        mujs.quit(0);
+    if (!!result == negative) {
+        // The docs don't really help about matching str, but this covers all cases
+        if (neg_str)
+            var err_for_match =  /NotEarlyError/.test(neg_str) ? result.err.message : result.err.name;
+        if (!negative || !neg_str || RegExp(neg_str).exec(err_for_match))
+            mujs.quit(0);
+    }
 
     // failed
     var desc = source.match(/@description (.*)/);
@@ -112,7 +119,9 @@
 
     if (result) {
         var err = result.err;
-        info += (result.runtime ? "[run]   " : "[load]  ") + err;
+        var msg = !neg_str ? err : "[Mismatch @negative " + neg_str + "]" + "\n        " + err;
+
+        info += (result.runtime ? "[run]   " : "[load]  ") + msg;
         if (err && err.stackTrace && (result.runtime || full_mode)) {
             if (full_mode) {
                 info += err.stackTrace;
