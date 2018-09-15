@@ -22,8 +22,7 @@ ifeq "$(CC)" "clang"
 endif
 
 ifeq "$(shell uname)" "Linux"
-  CFLAGS += -ffunction-sections -fdata-sections
-  LDFLAGS += -Wl,--gc-sections
+  HAVE_READLINE := yes
 endif
 
 ifeq "$(build)" "debug"
@@ -34,6 +33,11 @@ else ifeq "$(build)" "sanitize"
 else
   CFLAGS += -Os
   LDFLAGS += -Wl,-s
+endif
+
+ifeq "$(HAVE_READLINE)" "yes"
+  CFLAGS += -DHAVE_READLINE
+  LIBREADLINE += -lreadline
 endif
 
 CFLAGS += $(XCFLAGS)
@@ -70,7 +74,7 @@ $(OUT)/libmujs.o: one.c $(HDRS)
 
 $(OUT)/libmujs.a: $(OUT)/libmujs.o
 	@ mkdir -p $(dir $@)
-	$(AR) cru $@ $^
+	$(AR) cr $@ $^
 
 $(OUT)/libmujs.so: one.c $(HDRS)
 	@ mkdir -p $(dir $@)
@@ -78,7 +82,7 @@ $(OUT)/libmujs.so: one.c $(HDRS)
 
 $(OUT)/mujs: $(OUT)/libmujs.o $(OUT)/main.o
 	@ mkdir -p $(dir $@)
-	$(CC) $(LDFLAGS) -o $@ $^ -lm
+	$(CC) $(LDFLAGS) -o $@ $^ $(LIBREADLINE) -lm
 
 $(OUT)/mujs-pp: $(OUT)/libmujs.o $(OUT)/pp.o
 	@ mkdir -p $(dir $@)

@@ -2,8 +2,86 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include "mujs.h"
+
+static char *xoptarg; /* Global argument pointer. */
+static int xoptind = 0; /* Global argv index. */
+static int xgetopt(int argc, char *argv[], char *optstring)
+{
+	static char *scan = NULL; /* Private scan pointer. */
+
+	char c;
+	char *place;
+
+	xoptarg = NULL;
+
+	if (!scan || *scan == '\0') {
+		if (xoptind == 0)
+			xoptind++;
+
+		if (xoptind >= argc || argv[xoptind][0] != '-' || argv[xoptind][1] == '\0')
+			return EOF;
+		if (argv[xoptind][1] == '-' && argv[xoptind][2] == '\0') {
+			xoptind++;
+			return EOF;
+		}
+
+		scan = argv[xoptind]+1;
+		xoptind++;
+	}
+
+	c = *scan++;
+	place = strchr(optstring, c);
+
+	if (!place || c == ':') {
+		fprintf(stderr, "%s: unknown option -%c\n", argv[0], c);
+		return '?';
+	}
+
+	place++;
+	if (*place == ':') {
+		if (*scan != '\0') {
+			xoptarg = scan;
+			scan = NULL;
+		} else if (xoptind < argc) {
+			xoptarg = argv[xoptind];
+			xoptind++;
+		} else {
+			fprintf(stderr, "%s: option requires argument -%c\n", argv[0], c);
+			return ':';
+		}
+	}
+
+	return c;
+}
+
+#ifdef HAVE_READLINE
+#include <readline/readline.h>
+#include <readline/history.h>
+#else
+void using_history(void) { }
+void add_history(const char *string) { }
+void rl_bind_key(int key, void (*fun)(void)) { }
+void rl_insert(void) { }
+char *readline(const char *prompt)
+{
+	static char line[500], *p;
+	int n;
+	fputs(prompt, stdout);
+	p = fgets(line, sizeof line, stdin);
+	if (p) {
+		n = strlen(line);
+		if (n > 0 && line[n-1] == '\n')
+			line[--n] = 0;
+		p = malloc(n+1);
+		memcpy(p, line, n+1);
+		return p;
+	}
+	return NULL;
+}
+#endif
 
 #define PS1 "> "
 
@@ -16,9 +94,21 @@ static void jsB_gc(js_State *J)
 
 static void jsB_load(js_State *J)
 {
-	const char *filename = js_tostring(J, 1);
-	int rv = js_dofile(J, filename);
-	js_pushboolean(J, !rv);
+	int i, n = js_gettop(J);
+	for (i = 1; i < n; ++i) {
+		js_loadfile(J, js_tostring(J, i));
+		js_pushundefined(J);
+		js_call(J, 0);
+		js_pop(J, 1);
+	}
+	js_pushundefined(J);
+}
+
+static void jsB_compile(js_State *J)
+{
+	const char *source = js_tostring(J, 1);
+	const char *filename = js_isdefined(J, 2) ? js_tostring(J, 2) : "[string]";
+	js_loadstring(J, filename, source);
 }
 
 static void jsB_print(js_State *J)
@@ -53,36 +143,36 @@ static void jsB_read(js_State *J)
 
 	f = fopen(filename, "rb");
 	if (!f) {
-		js_error(J, "cannot open file: '%s'", filename);
+		js_error(J, "cannot open file '%s': %s", filename, strerror(errno));
 	}
 
 	if (fseek(f, 0, SEEK_END) < 0) {
 		fclose(f);
-		js_error(J, "cannot seek in file: '%s'", filename);
+		js_error(J, "cannot seek in file '%s': %s", filename, strerror(errno));
 	}
 
 	n = ftell(f);
 	if (n < 0) {
 		fclose(f);
-		js_error(J, "cannot tell in file: '%s'", filename);
+		js_error(J, "cannot tell in file '%s': %s", filename, strerror(errno));
 	}
 
 	if (fseek(f, 0, SEEK_SET) < 0) {
 		fclose(f);
-		js_error(J, "cannot seek in file: '%s'", filename);
+		js_error(J, "cannot seek in file '%s': %s", filename, strerror(errno));
 	}
 
 	s = malloc(n + 1);
 	if (!s) {
 		fclose(f);
-		js_error(J, "cannot allocate storage for file contents: '%s'", filename);
+		js_error(J, "out of memory");
 	}
 
 	t = fread(s, 1, n, f);
 	if (t != n) {
 		free(s);
 		fclose(f);
-		js_error(J, "cannot read data from file: '%s'", filename);
+		js_error(J, "cannot read data from file '%s': %s", filename, strerror(errno));
 	}
 	s[n] = 0;
 
@@ -93,14 +183,15 @@ static void jsB_read(js_State *J)
 
 static void jsB_readline(js_State *J)
 {
-	char line[256];
-	int n;
-	if (!fgets(line, sizeof line, stdin))
-		js_error(J, "cannot read line from stdin");
-	n = strlen(line);
-	if (n > 0 && line[n-1] == '\n')
-		line[n-1] = 0;
+	char *line = readline("");
+	if (!line) {
+		js_pushnull(J);
+		return;
+	}
 	js_pushstring(J, line);
+	if (*line)
+		add_history(line);
+	free(line);
 }
 
 static void jsB_quit(js_State *J)
@@ -176,20 +267,42 @@ static char *read_stdin(void)
 	return s;
 }
 
+static void usage(void)
+{
+	fprintf(stderr, "Usage: mujs [options] [script [scriptArgs*]]\n");
+	fprintf(stderr, "\t-i: Enter interactive prompt after running code.\n");
+	fprintf(stderr, "\t-s: Check strictness.\n");
+	exit(1);
+}
+
 int
 main(int argc, char **argv)
 {
-	char line[256];
+	char *input;
 	js_State *J;
-	int i, status = 0;
+	int status = 0;
+	int strict = 0;
+	int interactive = 0;
+	int i, c;
 
-	J = js_newstate(NULL, NULL, JS_STRICT);
+	while ((c = xgetopt(argc, argv, "is")) != -1) {
+		switch (c) {
+		default: usage(); break;
+		case 'i': interactive = 1; break;
+		case 's': strict = 1; break;
+		}
+	}
+
+	J = js_newstate(NULL, NULL, strict ? JS_STRICT : 0);
 
 	js_newcfunction(J, jsB_gc, "gc", 0);
 	js_setglobal(J, "gc");
 
 	js_newcfunction(J, jsB_load, "load", 1);
 	js_setglobal(J, "load");
+
+	js_newcfunction(J, jsB_compile, "compile", 2);
+	js_setglobal(J, "compile");
 
 	js_newcfunction(J, jsB_print, "print", 0);
 	js_setglobal(J, "print");
@@ -209,20 +322,38 @@ main(int argc, char **argv)
 	js_dostring(J, require_js);
 	js_dostring(J, stacktrace_js);
 
-	if (argc > 1) {
-		for (i = 1; i < argc; ++i)
-			if (js_dofile(J, argv[i]))
-				status = 1;
+	if (xoptind == argc) {
+		interactive = 1;
 	} else {
+		c = xoptind++;
+
+		js_newarray(J);
+		i = 0;
+		while (xoptind < argc) {
+			js_pushstring(J, argv[xoptind++]);
+			js_setindex(J, -2, i++);
+		}
+		js_setglobal(J, "scriptArgs");
+
+		if (js_dofile(J, argv[c]))
+			status = 1;
+	}
+
+	if (interactive) {
 		if (isatty(0)) {
-			fputs(PS1, stdout);
-			while (fgets(line, sizeof line, stdin)) {
-				eval_print(J, line);
-				fputs(PS1, stdout);
+			using_history();
+			rl_bind_key('\t', rl_insert);
+			input = readline(PS1);
+			while (input) {
+				eval_print(J, input);
+				if (*input)
+					add_history(input);
+				free(input);
+				input = readline(PS1);
 			}
 			putchar('\n');
 		} else {
-			char *input = read_stdin();
+			input = read_stdin();
 			if (!input || !js_dostring(J, input))
 				status = 1;
 			free(input);

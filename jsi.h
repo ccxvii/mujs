@@ -43,7 +43,7 @@ static int jsW_snprintf(char *str, size_t size, const char *fmt, ...)
 #define isnan(x) _isnan(x)
 #define isinf(x) (!_finite(x))
 #define isfinite(x) _finite(x)
-static __inline int signbit(double x) {union{double d;__int64 i;}u;u.d=x;return u.i>>63;}
+static __inline int signbit(double x) { __int64 i; memcpy(&i, &x, 8); return i>>63; }
 #define INFINITY (DBL_MAX+DBL_MAX)
 #define NAN (INFINITY-INFINITY)
 #endif
@@ -214,6 +214,7 @@ struct js_State
 	js_Value *stack;
 
 	/* garbage collector list */
+	int gcpause;
 	int gcmark;
 	int gccounter;
 	js_Environment *gcenv;

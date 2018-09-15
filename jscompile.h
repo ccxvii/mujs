@@ -148,7 +148,7 @@ struct js_Function
 };
 
 js_Function *jsC_compilefunction(js_State *J, js_Ast *prog);
-js_Function *jsC_compile(js_State *J, js_Ast *prog);
+js_Function *jsC_compilescript(js_State *J, js_Ast *prog, int default_strict);
 const char *jsC_opcodestring(enum js_OpCode opcode);
 void jsC_dumpfunction(js_State *J, js_Function *fun);
 

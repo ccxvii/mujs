@@ -458,7 +458,9 @@ static int O_isFrozen_walk(js_State *J, js_Property *ref)
 	if (ref->left->level)
 		if (!O_isFrozen_walk(J, ref->left))
 			return 0;
-	if (!(ref->atts & (JS_READONLY | JS_DONTCONF)))
+	if (!(ref->atts & JS_READONLY))
+		return 0;
+	if (!(ref->atts & JS_DONTCONF))
 		return 0;
 	if (ref->right->level)
 		if (!O_isFrozen_walk(J, ref->right))
@@ -474,15 +476,15 @@ static void O_isFrozen(js_State *J)
 		js_typeerror(J, "not an object");
 
 	obj = js_toobject(J, 1);
-	if (obj->extensible) {
-		js_pushboolean(J, 0);
-		return;
+
+	if (obj->properties->level) {
+		if (!O_isFrozen_walk(J, obj->properties)) {
+			js_pushboolean(J, 0);
+			return;
+		}
 	}
 
-	if (obj->properties->level)
-		js_pushboolean(J, O_isFrozen_walk(J, obj->properties));
-	else
-		js_pushboolean(J, 1);
+	js_pushboolean(J, !obj->extensible);
 }
 
 void jsB_initobject(js_State *J)

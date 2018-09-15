@@ -407,9 +407,9 @@ static diy_fp_t multiply(diy_fp_t x, diy_fp_t y)
 
 static uint64_t double_to_uint64(double d)
 {
-	union { double d; uint64_t n; } tmp;
-	tmp.d = d;
-	return tmp.n;
+	uint64_t n;
+	memcpy(&n, &d, 8);
+	return n;
 }
 
 #define DP_SIGNIFICAND_SIZE 52

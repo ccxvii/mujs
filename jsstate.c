@@ -105,7 +105,7 @@ static void js_loadstringx(js_State *J, const char *filename, const char *source
 	}
 
 	P = jsP_parse(J, filename, source);
-	F = jsC_compile(J, P);
+	F = jsC_compilescript(J, P, iseval ? J->strict : J->default_strict);
 	jsP_freeparse(J);
 	js_newscript(J, F, iseval ? (J->strict ? J->E : NULL) : J->GE);
 
@@ -130,36 +130,37 @@ void js_loadfile(js_State *J, const char *filename)
 
 	f = fopen(filename, "rb");
 	if (!f) {
-		js_error(J, "cannot open file: '%s'", filename);
+		js_error(J, "cannot open file '%s': %s", filename, strerror(errno));
 	}
 
 	if (fseek(f, 0, SEEK_END) < 0) {
 		fclose(f);
-		js_error(J, "cannot seek in file: '%s'", filename);
+		js_error(J, "cannot seek in file '%s': %s", filename, strerror(errno));
 	}
 
 	n = ftell(f);
 	if (n < 0) {
 		fclose(f);
-		js_error(J, "cannot tell in file: '%s'", filename);
+		js_error(J, "cannot tell in file '%s': %s", filename, strerror(errno));
 	}
 
 	if (fseek(f, 0, SEEK_SET) < 0) {
 		fclose(f);
-		js_error(J, "cannot seek in file: '%s'", filename);
+		js_error(J, "cannot seek in file '%s': %s", filename, strerror(errno));
 	}
 
-	s = js_malloc(J, n + 1); /* add space for string terminator */
-	if (!s) {
+	if (js_try(J)) {
 		fclose(f);
-		js_error(J, "cannot allocate storage for file contents: '%s'", filename);
+		js_throw(J);
 	}
+	s = js_malloc(J, n + 1); /* add space for string terminator */
+	js_endtry(J);
 
 	t = fread(s, 1, (size_t)n, f);
 	if (t != n) {
 		js_free(J, s);
 		fclose(f);
-		js_error(J, "cannot read data from file: '%s'", filename);
+		js_error(J, "cannot read data from file '%s': %s", filename, strerror(errno));
 	}
 
 	s[n] = 0; /* zero-terminate string containing file data */

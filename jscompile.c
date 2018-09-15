@@ -538,7 +538,7 @@ static void ccall(JF, js_Ast *fun, js_Ast *args)
 			ceval(J, F, fun, args);
 			return;
 		}
-		/* fall through */
+		/* fallthrough */
 	default:
 		cexp(J, F, fun);
 		emit(J, F, OP_UNDEF);
@@ -1359,7 +1359,7 @@ js_Function *jsC_compilefunction(js_State *J, js_Ast *prog)
 	return newfun(J, prog->a, prog->b, prog->c, 0, J->default_strict);
 }
 
-js_Function *jsC_compile(js_State *J, js_Ast *prog)
+js_Function *jsC_compilescript(js_State *J, js_Ast *prog, int default_strict)
 {
-	return newfun(J, NULL, NULL, prog, 1, J->default_strict);
+	return newfun(J, NULL, NULL, prog, 1, default_strict);
 }

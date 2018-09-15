@@ -224,6 +224,12 @@ int js_isuserdata(js_State *J, int idx, const char *tag)
 	return 0;
 }
 
+int js_iserror(js_State *J, int idx)
+{
+	js_Value *v = stackidx(J, idx);
+	return v->type == JS_TOBJECT && v->u.object->type == JS_CERROR;
+}
+
 static const char *js_typeof(js_State *J, int idx)
 {
 	js_Value *v = stackidx(J, idx);
@@ -440,7 +446,7 @@ int js_isarrayindex(js_State *J, const char *p, int *idx)
 	while (*p) {
 		int c = *p++;
 		if (c >= '0' && c <= '9') {
-			if (n > INT_MAX / 10 - 1)
+			if (n >= INT_MAX / 10)
 				return 0;
 			n = n * 10 + (c - '0');
 		} else {
@@ -547,7 +553,7 @@ static void jsR_setproperty(js_State *J, js_Object *obj, const char *name)
 			double rawlen = jsV_tonumber(J, value);
 			int newlen = jsV_numbertointeger(rawlen);
 			if (newlen != rawlen || newlen < 0)
-				js_rangeerror(J, "array length");
+				js_rangeerror(J, "invalid array length");
 			jsV_resizearray(J, obj, newlen);
 			return;
 		}
@@ -1297,10 +1303,8 @@ static void jsR_run(js_State *J, js_Function *F)
 	J->strict = F->strict;
 
 	while (1) {
-		if (J->gccounter > JS_GCLIMIT) {
-			J->gccounter = 0;
+		if (J->gccounter > JS_GCLIMIT)
 			js_gc(J, 0);
-		}
 
 		opcode = *pc++;
 		switch (opcode) {
