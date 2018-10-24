@@ -66,6 +66,14 @@ static void Math_pow(js_State *J)
 
 static void Math_random(js_State *J)
 {
+	// only seed once
+	static int already_seeded = 0;
+	if (already_seeded == 0) 
+	{
+		srand((unsigned)time(NULL));
+		already_seeded = 1;
+	}
+	
 	js_pushnumber(J, rand() / (RAND_MAX + 1.0));
 }
 
