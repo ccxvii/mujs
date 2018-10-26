@@ -2,6 +2,8 @@
 #include "jsvalue.h"
 #include "jsbuiltin.h"
 
+#include <time.h>
+
 static void Math_abs(js_State *J)
 {
 	js_pushnumber(J, fabs(js_tonumber(J, 1)));
@@ -138,6 +140,8 @@ static void Math_min(js_State *J)
 
 void jsB_initmath(js_State *J)
 {
+	srand(time(NULL));
+
 	js_pushobject(J, jsV_newobject(J, JS_CMATH, J->Object_prototype));
 	{
 		jsB_propn(J, "E", 2.7182818284590452354);
