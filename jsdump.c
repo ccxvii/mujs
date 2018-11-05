@@ -814,8 +814,6 @@ void jsC_dumpfunction(js_State *J, js_Function *F)
 			p += 2;
 			break;
 
-		case OP_INITVAR:
-		case OP_DEFVAR:
 		case OP_GETVAR:
 		case OP_HASVAR:
 		case OP_SETVAR:
@@ -828,11 +826,13 @@ void jsC_dumpfunction(js_State *J, js_Function *F)
 			ps(F->strtab[*p++]);
 			break;
 
-		case OP_CLOSURE:
-		case OP_INITLOCAL:
 		case OP_GETLOCAL:
 		case OP_SETLOCAL:
 		case OP_DELLOCAL:
+			printf(" %s", F->vartab[*p++ - 1]);
+			break;
+
+		case OP_CLOSURE:
 		case OP_CALL:
 		case OP_NEW:
 		case OP_JUMP:

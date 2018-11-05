@@ -857,11 +857,6 @@ static void js_initvar(js_State *J, const char *name, int idx)
 	jsR_defproperty(J, J->E->variables, name, JS_DONTENUM | JS_DONTCONF, stackidx(J, idx), NULL, NULL);
 }
 
-static void js_defvar(js_State *J, const char *name)
-{
-	jsR_defproperty(J, J->E->variables, name, JS_DONTENUM | JS_DONTCONF, NULL, NULL, NULL);
-}
-
 static int js_hasvar(js_State *J, const char *name)
 {
 	js_Environment *E = J->E;
@@ -954,6 +949,7 @@ static void jsR_calllwfunction(js_State *J, int n, js_Function *F, js_Environmen
 		js_pop(J, n - F->numparams);
 		n = F->numparams;
 	}
+
 	for (i = n; i < F->varlen; ++i)
 		js_pushundefined(J);
 
@@ -990,16 +986,15 @@ static void jsR_callfunction(js_State *J, int n, js_Function *F, js_Environment 
 		js_pop(J, 1);
 	}
 
-	for (i = 0; i < F->numparams; ++i) {
-		if (i < n)
-			js_initvar(J, F->vartab[i], i + 1);
-		else {
-			js_pushundefined(J);
-			js_initvar(J, F->vartab[i], -1);
-			js_pop(J, 1);
-		}
-	}
+	for (i = 0; i < n && i < F->numparams; ++i)
+		js_initvar(J, F->vartab[i], i + 1);
 	js_pop(J, n);
+
+	for (; i < F->varlen; ++i) {
+		js_pushundefined(J);
+		js_initvar(J, F->vartab[i], -1);
+		js_pop(J, 1);
+	}
 
 	jsR_run(J, F);
 	v = *stackidx(J, -1);
@@ -1012,11 +1007,20 @@ static void jsR_callfunction(js_State *J, int n, js_Function *F, js_Environment 
 static void jsR_callscript(js_State *J, int n, js_Function *F, js_Environment *scope)
 {
 	js_Value v;
+	int i;
 
 	if (scope)
 		jsR_savescope(J, scope);
 
+	/* scripts take no arguments */
 	js_pop(J, n);
+
+	for (i = 0; i < F->varlen; ++i) {
+		js_pushundefined(J);
+		js_initvar(J, F->vartab[i], -1);
+		js_pop(J, 1);
+	}
+
 	jsR_run(J, F);
 	v = *stackidx(J, -1);
 	TOP = --BOT; /* clear stack */
@@ -1286,6 +1290,8 @@ static void jsR_run(js_State *J, js_Function *F)
 	js_Function **FT = F->funtab;
 	double *NT = F->numtab;
 	const char **ST = F->strtab;
+	const char **VT = F->vartab-1;
+	int lightweight = F->lightweight;
 	js_Instruction *pcstart = F->code;
 	js_Instruction *pc = F->code;
 	enum js_OpCode opcode;
@@ -1347,32 +1353,33 @@ static void jsR_run(js_State *J, js_Function *F)
 			js_currentfunction(J);
 			break;
 
-		case OP_INITLOCAL:
-			STACK[BOT + *pc++] = STACK[--TOP];
-			break;
-
 		case OP_GETLOCAL:
-			CHECKSTACK(1);
-			STACK[TOP++] = STACK[BOT + *pc++];
+			if (lightweight) {
+				CHECKSTACK(1);
+				STACK[TOP++] = STACK[BOT + *pc++];
+			} else {
+				str = VT[*pc++];
+				if (!js_hasvar(J, str))
+					js_referenceerror(J, "'%s' is not defined", str);
+			}
 			break;
 
 		case OP_SETLOCAL:
-			STACK[BOT + *pc++] = STACK[TOP-1];
+			if (lightweight) {
+				STACK[BOT + *pc++] = STACK[TOP-1];
+			} else {
+				js_setvar(J, VT[*pc++]);
+			}
 			break;
 
 		case OP_DELLOCAL:
-			++pc;
-			js_pushboolean(J, 0);
-			break;
-
-		case OP_INITVAR:
-			js_initvar(J, ST[*pc++], -1);
-			js_pop(J, 1);
-			break;
-
-		case OP_DEFVAR:
-			js_defvar(J, ST[*pc++]);
-			break;
+			if (lightweight) {
+				++pc;
+				js_pushboolean(J, 0);
+			} else {
+				b = js_delvar(J, VT[*pc++]);
+				js_pushboolean(J, b);
+			}
 
 		case OP_GETVAR:
 			str = ST[*pc++];

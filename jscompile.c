@@ -138,7 +138,7 @@ static int addstring(JF, const char *value)
 	return F->strlen++;
 }
 
-static void addlocal(JF, js_Ast *ident, int reuse)
+static int addlocal(JF, js_Ast *ident, int reuse)
 {
 	const char *name = ident->string;
 	if (F->strict) {
@@ -146,13 +146,16 @@ static void addlocal(JF, js_Ast *ident, int reuse)
 			jsC_error(J, ident, "redefining 'arguments' is not allowed in strict mode");
 		if (!strcmp(name, "eval"))
 			jsC_error(J, ident, "redefining 'eval' is not allowed in strict mode");
+	} else {
+		if (!strcmp(name, "eval"))
+			js_evalerror(J, "%s:%d: invalid use of 'eval'", J->filename, ident->line);
 	}
 	if (reuse || F->strict) {
 		int i;
 		for (i = 0; i < F->varlen; ++i) {
 			if (!strcmp(F->vartab[i], name)) {
 				if (reuse)
-					return;
+					return i+1;
 				if (F->strict)
 					jsC_error(J, ident, "duplicate formal parameter '%s'", name);
 			}
@@ -162,7 +165,8 @@ static void addlocal(JF, js_Ast *ident, int reuse)
 		F->varcap = F->varcap ? F->varcap * 2 : 16;
 		F->vartab = js_realloc(J, F->vartab, F->varcap * sizeof *F->vartab);
 	}
-	F->vartab[F->varlen++] = name;
+	F->vartab[F->varlen] = name;
+	return ++F->varlen;
 }
 
 static int findlocal(JF, const char *name)
@@ -176,6 +180,7 @@ static int findlocal(JF, const char *name)
 
 static void emitfunction(JF, js_Function *fun)
 {
+	F->lightweight = 0;
 	emit(J, F, OP_CLOSURE);
 	emitarg(J, F, addfunction(J, F, fun));
 }
@@ -208,23 +213,32 @@ static void emitstring(JF, int opcode, const char *str)
 
 static void emitlocal(JF, int oploc, int opvar, js_Ast *ident)
 {
+	int is_arguments = !strcmp(ident->string, "arguments");
+	int is_eval = !strcmp(ident->string, "eval");
 	int i;
+
+	if (is_arguments) {
+		F->lightweight = 0;
+		F->arguments = 1;
+	}
+
 	checkfutureword(J, F, ident);
 	if (F->strict && oploc == OP_SETLOCAL) {
-		if (!strcmp(ident->string, "arguments"))
+		if (is_arguments)
 			jsC_error(J, ident, "'arguments' is read-only in strict mode");
-		if (!strcmp(ident->string, "eval"))
+		if (is_eval)
 			jsC_error(J, ident, "'eval' is read-only in strict mode");
 	}
-	if (F->lightweight) {
-		i = findlocal(J, F, ident->string);
-		if (i >= 0) {
-			emit(J, F, oploc);
-			emitarg(J, F, i);
-			return;
-		}
+	if (is_eval)
+		js_evalerror(J, "%s:%d: invalid use of 'eval'", J->filename, ident->line);
+
+	i = findlocal(J, F, ident->string);
+	if (i < 0) {
+		emitstring(J, F, opvar, ident->string);
+	} else {
+		emit(J, F, oploc);
+		emitarg(J, F, i);
 	}
-	emitstring(J, F, opvar, ident->string);
 }
 
 static int here(JF)
@@ -540,6 +554,7 @@ static void cdelete(JF, js_Ast *exp)
 
 static void ceval(JF, js_Ast *fun, js_Ast *args)
 {
+	F->lightweight = 0;
 	int n = cargs(J, F, args);
 	if (n == 0)
 		emit(J, F, OP_UNDEF);
@@ -1270,6 +1285,7 @@ static void cstm(JF, js_Ast *stm)
 		break;
 
 	case STM_WITH:
+		F->lightweight = 0;
 		if (F->strict)
 			jsC_error(J, stm->a, "'with' statements are not allowed in strict mode");
 		cexp(J, F, stm->a);
@@ -1283,6 +1299,7 @@ static void cstm(JF, js_Ast *stm)
 	case STM_TRY:
 		emitline(J, F, stm);
 		if (stm->b && stm->c) {
+			F->lightweight = 0;
 			if (stm->d)
 				ctrycatchfinally(J, F, stm->a, stm->b, stm->c, stm->d);
 			else
@@ -1319,49 +1336,6 @@ static void cstmlist(JF, js_Ast *list)
 	}
 }
 
-/* Analyze */
-
-static void analyze(JF, js_Ast *node)
-{
-	if (node->type == AST_LIST) {
-		while (node) {
-			analyze(J, F, node->a);
-			node = node->b;
-		}
-		return;
-	}
-
-	if (isfun(node->type)) {
-		F->lightweight = 0;
-		return; /* don't scan inner functions */
-	}
-
-	if (node->type == STM_WITH) {
-		F->lightweight = 0;
-	}
-
-	if (node->type == STM_TRY && node->c) {
-		F->lightweight = 0;
-	}
-
-	if (node->type == EXP_IDENTIFIER) {
-		if (!strcmp(node->string, "arguments")) {
-			F->lightweight = 0;
-			F->arguments = 1;
-		} else if (!strcmp(node->string, "eval")) {
-			/* eval may only be used as a direct function call */
-			if (!node->parent || node->parent->type != EXP_CALL || node->parent->a != node)
-				js_evalerror(J, "%s:%d: invalid use of 'eval'", J->filename, node->line);
-			F->lightweight = 0;
-		}
-	}
-
-	if (node->a) analyze(J, F, node->a);
-	if (node->b) analyze(J, F, node->b);
-	if (node->c) analyze(J, F, node->c);
-	if (node->d) analyze(J, F, node->d);
-}
-
 /* Declarations and programs */
 
 static int listlength(js_Ast *list)
@@ -1371,18 +1345,14 @@ static int listlength(js_Ast *list)
 	return n;
 }
 
-static int cparams(JF, js_Ast *list, js_Ast *fname)
+static void cparams(JF, js_Ast *list, js_Ast *fname)
 {
-	int shadow = 0;
 	F->numparams = listlength(list);
 	while (list) {
 		checkfutureword(J, F, list->a);
 		addlocal(J, F, list->a, 0);
-		if (fname && !strcmp(fname->string, list->a->string))
-			shadow = 1;
 		list = list->b;
 	}
-	return shadow;
 }
 
 static void cvardecs(JF, js_Ast *node)
@@ -1400,10 +1370,7 @@ static void cvardecs(JF, js_Ast *node)
 
 	if (node->type == EXP_VAR) {
 		checkfutureword(J, F, node->a);
-		if (F->lightweight)
-			addlocal(J, F, node->a, 1);
-		else
-			emitstring(J, F, OP_DEFVAR, node->a->string);
+		addlocal(J, F, node->a, 1);
 	}
 
 	if (node->a) cvardecs(J, F, node->a);
@@ -1420,7 +1387,10 @@ static void cfundecs(JF, js_Ast *list)
 			emitline(J, F, stm);
 			emitfunction(J, F, newfun(J, stm->line, stm->a, stm->b, stm->c, 0, F->strict));
 			emitline(J, F, stm);
-			emitstring(J, F, OP_INITVAR, stm->a->string);
+			emit(J, F, OP_SETLOCAL);
+			int v = addlocal(J, F, stm->a, 0);
+			emitarg(J, F, v);
+			emit(J, F, OP_POP);
 		}
 		list = list->b;
 	}
@@ -1428,16 +1398,11 @@ static void cfundecs(JF, js_Ast *list)
 
 static void cfunbody(JF, js_Ast *name, js_Ast *params, js_Ast *body)
 {
-	int shadow;
-
 	F->lightweight = 1;
 	F->arguments = 0;
 
 	if (F->script)
 		F->lightweight = 0;
-
-	if (body)
-		analyze(J, F, body);
 
 	/* Check if first statement is 'use strict': */
 	if (body && body->type == AST_LIST && body->a && body->a->type == EXP_STRING)
@@ -1446,23 +1411,21 @@ static void cfunbody(JF, js_Ast *name, js_Ast *params, js_Ast *body)
 
 	F->lastline = F->line;
 
-	shadow = cparams(J, F, params, name);
-
-	if (name && !shadow) {
-		checkfutureword(J, F, name);
-		emit(J, F, OP_CURRENT);
-		if (F->lightweight) {
-			addlocal(J, F, name, 0);
-			emit(J, F, OP_INITLOCAL);
-			emitarg(J, F, findlocal(J, F, name->string));
-		} else {
-			emitstring(J, F, OP_INITVAR, name->string);
-		}
-	}
+	cparams(J, F, params, name);
 
 	if (body) {
 		cvardecs(J, F, body);
 		cfundecs(J, F, body);
+	}
+
+	if (name) {
+		checkfutureword(J, F, name);
+		if (findlocal(J, F, name->string) < 0) {
+			emit(J, F, OP_CURRENT);
+			emit(J, F, OP_SETLOCAL);
+			emitarg(J, F, addlocal(J, F, name, 0));
+			emit(J, F, OP_POP);
+		}
 	}
 
 	if (F->script) {

@@ -27,13 +27,10 @@ enum js_OpCode
 	OP_THIS,
 	OP_CURRENT,	/* currently executing function object */
 
-	OP_INITLOCAL,	/* <value> -K- */
 	OP_GETLOCAL,	/* -K- <value> */
 	OP_SETLOCAL,	/* <value> -K- <value> */
 	OP_DELLOCAL,	/* -K- false */
 
-	OP_INITVAR,	/* <value> -S- */
-	OP_DEFVAR,	/* -S- */
 	OP_HASVAR,	/* -S- ( <value> | undefined ) */
 	OP_GETVAR,	/* -S- <value> */
 	OP_SETVAR,	/* <value> -S- <value> */

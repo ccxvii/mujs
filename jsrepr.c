@@ -116,9 +116,10 @@ static void reprarray(js_State *J, js_Buffer **sb)
 	for (i = 0; i < n; ++i) {
 		if (i > 0)
 			js_puts(J, sb, ", ");
-		js_getindex(J, -1, i);
-		reprvalue(J, sb);
-		js_pop(J, 1);
+		if (js_hasindex(J, -1, i)) {
+			reprvalue(J, sb);
+			js_pop(J, 1);
+		}
 	}
 	js_putc(J, sb, ']');
 }
