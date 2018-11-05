@@ -942,6 +942,14 @@ static int jsP_foldconst(js_Ast *node)
 	double x, y;
 	int a, b;
 
+	if (node->type == AST_LIST) {
+		while (node) {
+			jsP_foldconst(node->a);
+			node = node->b;
+		}
+		return 0;
+	}
+
 	if (node->type == EXP_NUMBER)
 		return 1;
 

@@ -1221,6 +1221,14 @@ static void cstmlist(JF, js_Ast *list)
 
 static void analyze(JF, js_Ast *node)
 {
+	if (node->type == AST_LIST) {
+		while (node) {
+			analyze(J, F, node->a);
+			node = node->b;
+		}
+		return;
+	}
+
 	if (isfun(node->type)) {
 		F->lightweight = 0;
 		return; /* don't scan inner functions */
@@ -1277,6 +1285,14 @@ static int cparams(JF, js_Ast *list, js_Ast *fname)
 
 static void cvardecs(JF, js_Ast *node)
 {
+	if (node->type == AST_LIST) {
+		while (node) {
+			cvardecs(J, F, node->a);
+			node = node->b;
+		}
+		return;
+	}
+
 	if (isfun(node->type))
 		return; /* stop at inner functions */
 
