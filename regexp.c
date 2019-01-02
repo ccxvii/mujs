@@ -836,6 +836,8 @@ Reprog *regcompx(void *(*alloc)(void *ctx, void *p, int n), void *ctx,
 	if (!g.prog)
 		die(&g, "cannot allocate regular expression");
 	n = strlen(pattern) * 2;
+	if (n > MAXPROG)
+		die(&g, "program too large");
 	if (n > 0) {
 		g.pstart = g.pend = alloc(ctx, NULL, sizeof (Renode) * n);
 		if (!g.pstart)
