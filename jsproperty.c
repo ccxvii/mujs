@@ -252,6 +252,14 @@ static js_Iterator *itflatten(js_State *J, js_Object *obj)
 	return iter;
 }
 
+js_Object *jsV_emptyiterator(js_State *J)
+{
+	js_Object *io = jsV_newobject(J, JS_CITERATOR, NULL);
+	io->u.iter.target = NULL;
+	io->u.iter.head = NULL;
+	return io;
+}
+
 js_Object *jsV_newiterator(js_State *J, js_Object *obj, int own)
 {
 	char buf[32];
