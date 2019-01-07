@@ -173,7 +173,6 @@ js_Property *jsV_setproperty(js_State *J, js_Object *obj, const char *name);
 js_Property *jsV_nextproperty(js_State *J, js_Object *obj, const char *name);
 void jsV_delproperty(js_State *J, js_Object *obj, const char *name);
 
-js_Object *jsV_emptyiterator(js_State *J);
 js_Object *jsV_newiterator(js_State *J, js_Object *obj, int own);
 const char *jsV_nextiterator(js_State *J, js_Object *iter);
 
