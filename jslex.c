@@ -739,8 +739,8 @@ static int lexjsonnumber(js_State *J)
 			jsY_next(J);
 	else
 		jsY_error(J, "unexpected non-digit");
-	if (jsY_accept(J, '.'))
-	{
+
+	if (jsY_accept(J, '.')) {
 		if (isdigit(J->lexchar))
 			while (isdigit(J->lexchar))
 				jsY_next(J);
@@ -780,6 +780,7 @@ static int lexjsonescape(js_State *J)
 		break;
 	case '"': textpush(J, '"'); jsY_next(J); break;
 	case '\\': textpush(J, '\\'); jsY_next(J); break;
+	case '/': textpush(J, '/'); jsY_next(J); break;
 	case 'b': textpush(J, '\b'); jsY_next(J); break;
 	case 'f': textpush(J, '\f'); jsY_next(J); break;
 	case 'n': textpush(J, '\n'); jsY_next(J); break;
