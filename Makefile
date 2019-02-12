@@ -50,7 +50,7 @@ SRCS := $(wildcard js*.c utf*.c regexp.c)
 HDRS := $(wildcard js*.h mujs.h utf.h regexp.h)
 
 default: static
-static: $(OUT)/mujs-pp $(OUT)/mujs $(OUT)/libmujs.a $(OUT)/mujs.pc
+static: $(OUT)/mujs-pp $(OUT)/mujs $(OUT)/libmujs.a
 shared: static $(OUT)/libmujs.so
 
 astnames.h: jsparse.h
@@ -88,19 +88,20 @@ $(OUT)/mujs-pp: $(OUT)/libmujs.o $(OUT)/pp.o
 	@ mkdir -p $(dir $@)
 	$(CC) $(LDFLAGS) -o $@ $^ -lm
 
+.PHONY: $(OUT)/mujs.pc
 $(OUT)/mujs.pc:
 	@ echo Creating $@
 	@ echo > $@ Name: mujs
 	@ echo >> $@ Description: MuJS embeddable Javascript interpreter
 	@ echo >> $@ Version: $(VERSION)
-	@ echo >> $@ Cflags: -I$(incdir)
-	@ echo >> $@ Libs: -L$(libdir) -lmujs
+	@ echo >> $@ Cflags: -I$(DESTDIR)$(incdir)
+	@ echo >> $@ Libs: -L$(DESTDIR)$(libdir) -lmujs
 	@ echo >> $@ Libs.private: -lm
 
 watch:
 	@ while ! inotifywait -q -e modify $(SRCS) $(HDRS) ; do time -p $(MAKE) ; done
 
-install-common: release
+install-common: release $(OUT)/mujs.pc
 	install -d $(DESTDIR)$(incdir)
 	install -d $(DESTDIR)$(libdir)
 	install -d $(DESTDIR)$(libdir)/pkgconfig
