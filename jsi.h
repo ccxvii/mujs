@@ -203,6 +203,8 @@ struct js_State
 	js_Object *TypeError_prototype;
 	js_Object *URIError_prototype;
 
+	unsigned int seed; /* Math.random seed */
+
 	int nextref; /* for js_ref use */
 	js_Object *R; /* registry of hidden values */
 	js_Object *G; /* the global object */
