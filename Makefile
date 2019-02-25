@@ -25,6 +25,11 @@ ifeq "$(shell uname)" "Linux"
   HAVE_READLINE := yes
 endif
 
+ifeq "$(shell uname)" "FreeBSD"
+  HAVE_READLINE := yes
+  CFLAGS += -I$(prefix)/include
+endif
+
 ifeq "$(build)" "debug"
   CFLAGS += -g
 else ifeq "$(build)" "sanitize"
