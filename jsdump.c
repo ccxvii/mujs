@@ -143,6 +143,11 @@ static void ps(const char *s)
 	fputs(s, stdout);
 }
 
+static void pn(int n)
+{
+	printf("%d", n);
+}
+
 static void in(int d)
 {
 	if (minify < 1)
@@ -702,6 +707,8 @@ static void snode(int d, js_Ast *node)
 
 	pc('(');
 	ps(astname[node->type]);
+	pc(':');
+	pn(node->line);
 	switch (node->type) {
 	default: break;
 	case AST_IDENTIFIER: pc(' '); ps(node->string); break;

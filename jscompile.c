@@ -51,7 +51,7 @@ static void checkfutureword(JF, js_Ast *exp)
 	}
 }
 
-static js_Function *newfun(js_State *J, js_Ast *name, js_Ast *params, js_Ast *body, int script, int default_strict)
+static js_Function *newfun(js_State *J, int line, js_Ast *name, js_Ast *params, js_Ast *body, int script, int default_strict)
 {
 	js_Function *F = js_malloc(J, sizeof *F);
 	memset(F, 0, sizeof *F);
@@ -61,7 +61,7 @@ static js_Function *newfun(js_State *J, js_Ast *name, js_Ast *params, js_Ast *bo
 	++J->gccounter;
 
 	F->filename = js_intern(J, J->filename);
-	F->line = name ? name->line : params ? params->line : body ? body->line : 1;
+	F->line = line;
 	F->script = script;
 	F->strict = default_strict;
 	F->name = name ? name->string : "";
@@ -354,11 +354,11 @@ static void cobject(JF, js_Ast *list)
 			emit(J, F, OP_INITPROP);
 			break;
 		case EXP_PROP_GET:
-			emitfunction(J, F, newfun(J, NULL, NULL, kv->c, 0, F->strict));
+			emitfunction(J, F, newfun(J, prop->line, NULL, NULL, kv->c, 0, F->strict));
 			emit(J, F, OP_INITGETTER);
 			break;
 		case EXP_PROP_SET:
-			emitfunction(J, F, newfun(J, NULL, kv->b, kv->c, 0, F->strict));
+			emitfunction(J, F, newfun(J, prop->line, NULL, kv->b, kv->c, 0, F->strict));
 			emit(J, F, OP_INITSETTER);
 			break;
 		}
@@ -586,7 +586,7 @@ static void cexp(JF, js_Ast *exp)
 		break;
 
 	case EXP_FUN:
-		emitfunction(J, F, newfun(J, exp->a, exp->b, exp->c, 0, F->strict));
+		emitfunction(J, F, newfun(J, exp->line, exp->a, exp->b, exp->c, 0, F->strict));
 		break;
 
 	case EXP_IDENTIFIER:
@@ -1321,7 +1321,7 @@ static void cfundecs(JF, js_Ast *list)
 	while (list) {
 		js_Ast *stm = list->a;
 		if (stm->type == AST_FUNDEC) {
-			emitfunction(J, F, newfun(J, stm->a, stm->b, stm->c, 0, F->strict));
+			emitfunction(J, F, newfun(J, stm->line, stm->a, stm->b, stm->c, 0, F->strict));
 			emitstring(J, F, OP_INITVAR, stm->a->string);
 		}
 		list = list->b;
@@ -1378,10 +1378,10 @@ static void cfunbody(JF, js_Ast *name, js_Ast *params, js_Ast *body)
 
 js_Function *jsC_compilefunction(js_State *J, js_Ast *prog)
 {
-	return newfun(J, prog->a, prog->b, prog->c, 0, J->default_strict);
+	return newfun(J, prog->line, prog->a, prog->b, prog->c, 0, J->default_strict);
 }
 
 js_Function *jsC_compilescript(js_State *J, js_Ast *prog, int default_strict)
 {
-	return newfun(J, NULL, NULL, prog, 1, default_strict);
+	return newfun(J, prog->line, NULL, NULL, prog, 1, default_strict);
 }

@@ -179,7 +179,6 @@ struct js_State
 
 	/* parser state */
 	int astdepth;
-	int astline;
 	int lookahead;
 	const char *text;
 	double number;
