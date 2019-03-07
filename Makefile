@@ -108,14 +108,14 @@ install-common: shell $(OUT)/mujs.pc
 	install -d $(DESTDIR)$(libdir)/pkgconfig
 	install -d $(DESTDIR)$(bindir)
 	install -m 644 mujs.h $(DESTDIR)$(incdir)
-	install -m 644 build/release/mujs.pc $(DESTDIR)$(libdir)/pkgconfig
-	install -m 755 build/release/mujs $(DESTDIR)$(bindir)
+	install -m 644 $(OUT)/mujs.pc $(DESTDIR)$(libdir)/pkgconfig
+	install -m 755 $(OUT)/mujs $(DESTDIR)$(bindir)
 
 install-static: install-common static
-	install -m 644 build/release/libmujs.a $(DESTDIR)$(libdir)
+	install -m 644 $(OUT)/mujs.a $(DESTDIR)$(libdir)
 
 install-shared: install-common shared
-	install -m 755 build/release/libmujs.so $(DESTDIR)$(libdir)
+	install -m 755 $(OUT)/mujs.so $(DESTDIR)$(libdir)
 
 install: install-static
 
