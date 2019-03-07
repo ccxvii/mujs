@@ -89,6 +89,11 @@ static void emit(JF, int value)
 	emitraw(J, F, value);
 }
 
+static void emitarg(JF, int value)
+{
+	emitraw(J, F, value);
+}
+
 static void emitline(JF, js_Ast *node)
 {
 	if (F->lastline != node->line) {
@@ -175,7 +180,7 @@ static int findlocal(JF, const char *name)
 static void emitfunction(JF, js_Function *fun)
 {
 	emit(J, F, OP_CLOSURE);
-	emitraw(J, F, addfunction(J, F, fun));
+	emitarg(J, F, addfunction(J, F, fun));
 }
 
 static void emitnumber(JF, double num)
@@ -188,20 +193,20 @@ static void emitnumber(JF, double num)
 		emit(J, F, OP_NUMBER_1);
 	} else if (num == (js_Instruction)num) {
 		emit(J, F, OP_NUMBER_POS);
-		emitraw(J, F, (js_Instruction)num);
+		emitarg(J, F, (js_Instruction)num);
 	} else if (num < 0 && -num == (js_Instruction)(-num)) {
 		emit(J, F, OP_NUMBER_NEG);
-		emitraw(J, F, (js_Instruction)(-num));
+		emitarg(J, F, (js_Instruction)(-num));
 	} else {
 		emit(J, F, OP_NUMBER);
-		emitraw(J, F, addnumber(J, F, num));
+		emitarg(J, F, addnumber(J, F, num));
 	}
 }
 
 static void emitstring(JF, int opcode, const char *str)
 {
 	emit(J, F, opcode);
-	emitraw(J, F, addstring(J, F, str));
+	emitarg(J, F, addstring(J, F, str));
 }
 
 static void emitlocal(JF, int oploc, int opvar, js_Ast *ident)
@@ -218,7 +223,7 @@ static void emitlocal(JF, int oploc, int opvar, js_Ast *ident)
 		i = findlocal(J, F, ident->string);
 		if (i >= 0) {
 			emit(J, F, oploc);
-			emitraw(J, F, i);
+			emitarg(J, F, i);
 			return;
 		}
 	}
@@ -232,9 +237,10 @@ static int here(JF)
 
 static int emitjump(JF, int opcode)
 {
-	int inst = F->codelen + 1;
+	int inst;
 	emit(J, F, opcode);
-	emitraw(J, F, 0);
+	inst = F->codelen;
+	emitarg(J, F, 0);
 	return inst;
 }
 
@@ -243,7 +249,7 @@ static void emitjumpto(JF, int opcode, int dest)
 	emit(J, F, opcode);
 	if (dest != (js_Instruction)dest)
 		js_syntaxerror(J, "jump address integer overflow");
-	emitraw(J, F, dest);
+	emitarg(J, F, dest);
 }
 
 static void labelto(JF, int inst, int addr)
@@ -546,7 +552,7 @@ static void ccall(JF, js_Ast *fun, js_Ast *args)
 	}
 	n = cargs(J, F, args);
 	emit(J, F, OP_CALL);
-	emitraw(J, F, n);
+	emitarg(J, F, n);
 }
 
 static void cexp(JF, js_Ast *exp)
@@ -565,8 +571,8 @@ static void cexp(JF, js_Ast *exp)
 
 	case EXP_REGEXP:
 		emit(J, F, OP_NEWREGEXP);
-		emitraw(J, F, addstring(J, F, exp->string));
-		emitraw(J, F, exp->number);
+		emitarg(J, F, addstring(J, F, exp->string));
+		emitarg(J, F, exp->number);
 		break;
 
 	case EXP_OBJECT:
@@ -606,7 +612,7 @@ static void cexp(JF, js_Ast *exp)
 		cexp(J, F, exp->a);
 		n = cargs(J, F, exp->b);
 		emit(J, F, OP_NEW);
-		emitraw(J, F, n);
+		emitarg(J, F, n);
 		break;
 
 	case EXP_DELETE:
@@ -1348,7 +1354,7 @@ static void cfunbody(JF, js_Ast *name, js_Ast *params, js_Ast *body)
 		if (F->lightweight) {
 			addlocal(J, F, name, 0);
 			emit(J, F, OP_INITLOCAL);
-			emitraw(J, F, findlocal(J, F, name->string));
+			emitarg(J, F, findlocal(J, F, name->string));
 		} else {
 			emitstring(J, F, OP_INITVAR, name->string);
 		}
