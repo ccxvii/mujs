@@ -86,6 +86,7 @@ static void emitraw(JF, int value)
 
 static void emit(JF, int value)
 {
+	emitraw(J, F, F->lastline);
 	emitraw(J, F, value);
 }
 
@@ -96,11 +97,7 @@ static void emitarg(JF, int value)
 
 static void emitline(JF, js_Ast *node)
 {
-	if (F->lastline != node->line) {
-		F->lastline = node->line;
-		emit(J, F, OP_LINE);
-		emitraw(J, F, node->line);
-	}
+	F->lastline = node->line;
 }
 
 static int addfunction(JF, js_Function *value)
@@ -232,7 +229,6 @@ static void emitlocal(JF, int oploc, int opvar, js_Ast *ident)
 
 static int here(JF)
 {
-	F->lastline = -1; /* force the next emitline */
 	return F->codelen;
 }
 
@@ -1448,8 +1444,6 @@ static void cfunbody(JF, js_Ast *name, js_Ast *params, js_Ast *body)
 		if (!strcmp(body->a->string, "use strict"))
 			F->strict = 1;
 
-	emit(J, F, OP_LINE);
-	emitraw(J, F, F->line);
 	F->lastline = F->line;
 
 	shadow = cparams(J, F, params, name);

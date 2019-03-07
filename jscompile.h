@@ -108,8 +108,6 @@ enum js_OpCode
 	OP_JTRUE,
 	OP_JFALSE,
 	OP_RETURN,
-
-	OP_LINE,	/* -K- */
 };
 
 struct js_Function

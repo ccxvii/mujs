@@ -1306,7 +1306,10 @@ static void jsR_run(js_State *J, js_Function *F)
 		if (J->gccounter > JS_GCLIMIT)
 			js_gc(J, 0);
 
+		J->trace[J->tracetop].line = *pc++;
+
 		opcode = *pc++;
+
 		switch (opcode) {
 		case OP_POP: js_pop(J, 1); break;
 		case OP_DUP: js_dup(J); break;
@@ -1748,10 +1751,6 @@ static void jsR_run(js_State *J, js_Function *F)
 		case OP_RETURN:
 			J->strict = savestrict;
 			return;
-
-		case OP_LINE:
-			J->trace[J->tracetop].line = *pc++;
-			break;
 		}
 	}
 }
