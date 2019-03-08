@@ -366,7 +366,9 @@ js_Object *jsV_toobject(js_State *J, js_Value *v)
 
 void js_newobjectx(js_State *J)
 {
-	js_Object *prototype = js_toobject(J, -1);
+	js_Object *prototype = NULL;
+	if (js_isobject(J, -1))
+		prototype = js_toobject(J, -1);
 	js_pop(J, 1);
 	js_pushobject(J, jsV_newobject(J, JS_COBJECT, prototype));
 }
