@@ -893,14 +893,17 @@ static void cexit(JF, enum js_AstType T, js_Ast *node, js_Ast *target)
 	js_Ast *prev;
 	do {
 		prev = node, node = node->parent;
-		emitline(J, F, node);
 		switch (node->type) {
-		default: /* impossible */ break;
+		default:
+			/* impossible */
+			break;
 		case STM_WITH:
+			emitline(J, F, node);
 			emit(J, F, OP_ENDWITH);
 			break;
 		case STM_FOR_IN:
 		case STM_FOR_IN_VAR:
+			emitline(J, F, node);
 			/* pop the iterator if leaving the loop */
 			if (F->script) {
 				if (T == STM_RETURN || T == STM_BREAK || (T == STM_CONTINUE && target != node)) {
@@ -921,6 +924,7 @@ static void cexit(JF, enum js_AstType T, js_Ast *node, js_Ast *target)
 			}
 			break;
 		case STM_TRY:
+			emitline(J, F, node);
 			/* came from try block */
 			if (prev == node->a) {
 				emit(J, F, OP_ENDTRY);
