@@ -112,10 +112,10 @@ install-common: shell $(OUT)/mujs.pc
 	install -m 755 $(OUT)/mujs $(DESTDIR)$(bindir)
 
 install-static: install-common static
-	install -m 644 $(OUT)/mujs.a $(DESTDIR)$(libdir)
+	install -m 644 $(OUT)/libmujs.a $(DESTDIR)$(libdir)
 
 install-shared: install-common shared
-	install -m 755 $(OUT)/mujs.so $(DESTDIR)$(libdir)
+	install -m 755 $(OUT)/libmujs.so $(DESTDIR)$(libdir)
 
 install: install-static
 
