@@ -1315,10 +1315,7 @@ static void jsR_run(js_State *J, js_Function *F)
 		case OP_ROT3: js_rot3(J); break;
 		case OP_ROT4: js_rot4(J); break;
 
-		case OP_NUMBER_0: js_pushnumber(J, 0); break;
-		case OP_NUMBER_1: js_pushnumber(J, 1); break;
-		case OP_NUMBER_POS: js_pushnumber(J, *pc++); break;
-		case OP_NUMBER_NEG: js_pushnumber(J, -(*pc++)); break;
+		case OP_INTEGER: js_pushnumber(J, *pc++ - 32768); break;
 		case OP_NUMBER: js_pushnumber(J, NT[*pc++]); break;
 		case OP_STRING: js_pushliteral(J, ST[*pc++]); break;
 

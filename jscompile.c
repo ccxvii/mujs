@@ -186,20 +186,20 @@ static void emitfunction(JF, js_Function *fun)
 static void emitnumber(JF, double num)
 {
 	if (num == 0) {
-		emit(J, F, OP_NUMBER_0);
+		emit(J, F, OP_INTEGER);
+		emitarg(J, F, 32768);
 		if (signbit(num))
 			emit(J, F, OP_NEG);
-	} else if (num == 1) {
-		emit(J, F, OP_NUMBER_1);
-	} else if (num == (js_Instruction)num) {
-		emit(J, F, OP_NUMBER_POS);
-		emitarg(J, F, (js_Instruction)num);
-	} else if (num < 0 && -num == (js_Instruction)(-num)) {
-		emit(J, F, OP_NUMBER_NEG);
-		emitarg(J, F, (js_Instruction)(-num));
 	} else {
-		emit(J, F, OP_NUMBER);
-		emitarg(J, F, addnumber(J, F, num));
+		double nv = num + 32768;
+		js_Instruction iv = nv;
+		if (nv == iv) {
+			emit(J, F, OP_INTEGER);
+			emitarg(J, F, iv);
+		} else {
+			emit(J, F, OP_NUMBER);
+			emitarg(J, F, addnumber(J, F, num));
+		}
 	}
 }
 

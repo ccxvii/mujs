@@ -10,11 +10,7 @@ enum js_OpCode
 	OP_ROT3,	/* A B C -- C A B */
 	OP_ROT4,	/* A B C D -- D A B C */
 
-	OP_NUMBER_0,	/* -- 0 */
-	OP_NUMBER_1,	/* -- 1 */
-	OP_NUMBER_POS,	/* -K- K */
-	OP_NUMBER_NEG,	/* -K- -K */
-
+	OP_INTEGER,	/* -K- (number-32768) */
 	OP_NUMBER,	/* -N- <number> */
 	OP_STRING,	/* -S- <string> */
 	OP_CLOSURE,	/* -F- <closure> */
