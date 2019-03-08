@@ -17,6 +17,7 @@
 #include "jsparse.c"
 #include "jsproperty.c"
 #include "jsregexp.c"
+#include "jsrepr.c"
 #include "jsrun.c"
 #include "jsstate.c"
 #include "jsstring.c"

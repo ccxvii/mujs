@@ -117,9 +117,15 @@ int jsY_isnewline(int c)
 	return c == 0xA || c == 0xD || c == 0x2028 || c == 0x2029;
 }
 
+#ifndef isalpha
 #define isalpha(c) ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))
+#endif
+#ifndef isdigit
 #define isdigit(c) (c >= '0' && c <= '9')
+#endif
+#ifndef ishex
 #define ishex(c) ((c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'))
+#endif
 
 static int jsY_isidentifierstart(int c)
 {
