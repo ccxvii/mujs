@@ -378,6 +378,11 @@ void js_newobject(js_State *J)
 	js_pushobject(J, jsV_newobject(J, JS_COBJECT, J->Object_prototype));
 }
 
+void js_newarguments(js_State *J)
+{
+	js_pushobject(J, jsV_newobject(J, JS_CARGUMENTS, J->Object_prototype));
+}
+
 void js_newarray(js_State *J)
 {
 	js_pushobject(J, jsV_newobject(J, JS_CARRAY, J->Array_prototype));

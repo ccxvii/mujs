@@ -975,7 +975,7 @@ static void jsR_callfunction(js_State *J, int n, js_Function *F, js_Environment 
 	jsR_savescope(J, scope);
 
 	if (F->arguments) {
-		js_newobject(J);
+		js_newarguments(J);
 		if (!J->strict) {
 			js_currentfunction(J);
 			js_defproperty(J, -2, "callee", JS_DONTENUM);
