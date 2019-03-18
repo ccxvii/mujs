@@ -213,6 +213,7 @@ int js_compare(js_State *J, int *okay);
 int js_equal(js_State *J);
 int js_strictequal(js_State *J);
 int js_instanceof(js_State *J);
+const char *js_typeof(js_State *J, int idx);
 
 #ifdef __cplusplus
 }

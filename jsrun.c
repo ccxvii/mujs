@@ -230,7 +230,7 @@ int js_iserror(js_State *J, int idx)
 	return v->type == JS_TOBJECT && v->u.object->type == JS_CERROR;
 }
 
-static const char *js_typeof(js_State *J, int idx)
+const char *js_typeof(js_State *J, int idx)
 {
 	js_Value *v = stackidx(J, idx);
 	switch (v->type) {
@@ -1056,7 +1056,7 @@ void js_call(js_State *J, int n)
 	int savebot;
 
 	if (!js_iscallable(J, -n-2))
-		js_typeerror(J, "called object is not a function");
+		js_typeerror(J, "%s is not callable", js_typeof(J, -n-2));
 
 	obj = js_toobject(J, -n-2);
 
@@ -1090,7 +1090,7 @@ void js_construct(js_State *J, int n)
 	js_Object *newobj;
 
 	if (!js_iscallable(J, -n-1))
-		js_typeerror(J, "called object is not a function");
+		js_typeerror(J, "%s is not callable", js_typeof(J, -n-1));
 
 	obj = js_toobject(J, -n-1);
 
