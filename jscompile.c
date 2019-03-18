@@ -269,7 +269,7 @@ static void label(JF, int inst)
 
 static void ctypeof(JF, js_Ast *exp)
 {
-	if (exp->type == EXP_IDENTIFIER) {
+	if (exp->a->type == EXP_IDENTIFIER) {
 		emitline(J, F, exp->a);
 		emitlocal(J, F, OP_GETLOCAL, OP_HASVAR, exp->a);
 	} else {
