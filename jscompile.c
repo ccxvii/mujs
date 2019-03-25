@@ -554,8 +554,8 @@ static void cdelete(JF, js_Ast *exp)
 
 static void ceval(JF, js_Ast *fun, js_Ast *args)
 {
-	F->lightweight = 0;
 	int n = cargs(J, F, args);
+	F->lightweight = 0;
 	if (n == 0)
 		emit(J, F, OP_UNDEF);
 	else while (n-- > 1)
@@ -1388,8 +1388,7 @@ static void cfundecs(JF, js_Ast *list)
 			emitfunction(J, F, newfun(J, stm->line, stm->a, stm->b, stm->c, 0, F->strict));
 			emitline(J, F, stm);
 			emit(J, F, OP_SETLOCAL);
-			int v = addlocal(J, F, stm->a, 0);
-			emitarg(J, F, v);
+			emitarg(J, F, addlocal(J, F, stm->a, 0));
 			emit(J, F, OP_POP);
 		}
 		list = list->b;
