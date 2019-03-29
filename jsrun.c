@@ -1380,6 +1380,7 @@ static void jsR_run(js_State *J, js_Function *F)
 				b = js_delvar(J, VT[*pc++]);
 				js_pushboolean(J, b);
 			}
+			break;
 
 		case OP_GETVAR:
 			str = ST[*pc++];
