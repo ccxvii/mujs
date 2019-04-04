@@ -1023,6 +1023,7 @@ static void ctrycatchfinally(JF, js_Ast *trystm, js_Ast *catchvar, js_Ast *catch
 		emitstring(J, F, OP_CATCH, catchvar->string);
 		cstm(J, F, catchstm);
 		emit(J, F, OP_ENDCATCH);
+		emit(J, F, OP_ENDTRY);
 		L3 = emitjump(J, F, OP_JUMP); /* skip past the try block to the finally block */
 	}
 	label(J, F, L1);
