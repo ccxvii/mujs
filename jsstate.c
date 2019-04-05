@@ -9,10 +9,6 @@
 
 static void *js_defaultalloc(void *actx, void *ptr, int size)
 {
-	if (size == 0) {
-		free(ptr);
-		return NULL;
-	}
 	return realloc(ptr, (size_t)size);
 }
 
