@@ -9,6 +9,14 @@
 
 static void *js_defaultalloc(void *actx, void *ptr, int size)
 {
+#if defined(__has_feature)
+#if __has_feature(address_sanitizer)
+	if (size == 0) {
+		free(ptr);
+		return NULL;
+	}
+#endif
+#endif
 	return realloc(ptr, (size_t)size);
 }
 
