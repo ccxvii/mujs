@@ -421,9 +421,9 @@ void js_newfunction(js_State *J, js_Function *fun, js_Environment *scope)
 	}
 }
 
-void js_newscript(js_State *J, js_Function *fun, js_Environment *scope)
+void js_newscript(js_State *J, js_Function *fun, js_Environment *scope, int type)
 {
-	js_Object *obj = jsV_newobject(J, JS_CSCRIPT, NULL);
+	js_Object *obj = jsV_newobject(J, type, NULL);
 	obj->u.f.function = fun;
 	obj->u.f.scope = scope;
 	js_pushobject(J, obj);
