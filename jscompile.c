@@ -556,6 +556,7 @@ static void ceval(JF, js_Ast *fun, js_Ast *args)
 {
 	int n = cargs(J, F, args);
 	F->lightweight = 0;
+	F->arguments = 1;
 	if (n == 0)
 		emit(J, F, OP_UNDEF);
 	else while (n-- > 1)
