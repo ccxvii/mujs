@@ -121,6 +121,7 @@ void js_delregistry(js_State *J, const char *name);
 void js_getglobal(js_State *J, const char *name);
 void js_setglobal(js_State *J, const char *name);
 void js_defglobal(js_State *J, const char *name, int atts);
+void js_delglobal(js_State *J, const char *name);
 
 int js_hasproperty(js_State *J, int idx, const char *name);
 void js_getproperty(js_State *J, int idx, const char *name);

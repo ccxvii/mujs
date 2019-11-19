@@ -792,6 +792,11 @@ void js_defglobal(js_State *J, const char *name, int atts)
 	js_pop(J, 1);
 }
 
+void js_delglobal(js_State *J, const char *name)
+{
+	jsR_delproperty(J, J->G, name);
+}
+
 void js_getproperty(js_State *J, int idx, const char *name)
 {
 	jsR_getproperty(J, js_toobject(J, idx), name);
