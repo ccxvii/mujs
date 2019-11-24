@@ -1,3 +1,4 @@
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -280,6 +281,7 @@ static int lexclass(struct cstate *g)
 				save = '-';
 				havesave = 1;
 			}
+
 		} else if (quoted && strchr("DSWdsw", g->yychar)) {
 			if (havesave) {
 				addrange(g, save, save);
@@ -1184,3 +1186,4 @@ int main(int argc, char **argv)
 	return 0;
 }
 #endif
+    
