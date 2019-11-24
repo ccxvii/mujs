@@ -799,7 +799,7 @@ void jsC_dumpfunction(js_State *J, js_Function *F)
 
 		switch (c) {
 		case OP_INTEGER:
-			printf(" %d", (*p++) - 32768);
+			printf(" %ld", (long)((*p++) - 32768));
 			break;
 		case OP_NUMBER:
 			printf(" %.9g", F->numtab[*p++]);
@@ -840,7 +840,7 @@ void jsC_dumpfunction(js_State *J, js_Function *F)
 		case OP_JFALSE:
 		case OP_JCASE:
 		case OP_TRY:
-			printf(" %d", *p++);
+			printf(" %ld", (long)*p++);
 			break;
 		}
 
