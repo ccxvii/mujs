@@ -19,16 +19,18 @@ Reprog *regcomp(const char *pattern, int cflags, const char **errorp);
 int regexec(Reprog *prog, const char *string, Resub *sub, int eflags);
 void regfree(Reprog *prog);
 
+#ifndef MAXSUB 
+#define MAXSUB 10
+#endif
+
 enum {
 	/* regcomp flags */
 	REG_ICASE = 1,
 	REG_NEWLINE = 2,
-
 	/* regexec flags */
-	REG_NOTBOL = 4,
-
+	REG_NOTBOL = 4, 
 	/* limits */
-	REG_MAXSUB = 10
+ REG_MAXSUB = MAXSUB
 };
 
 struct Resub {

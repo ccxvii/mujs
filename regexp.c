@@ -14,9 +14,6 @@
 #define nelem(a) (int)(sizeof (a) / sizeof (a)[0])
 
 #define REPINF 255
-#ifndef MAXSUB
-#define MAXSUB REG_MAXSUB
-#endif
 #ifndef MAXPROG
 #define MAXPROG (32 << 10)
 #endif
