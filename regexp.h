@@ -30,7 +30,7 @@ enum {
 	/* regexec flags */
 	REG_NOTBOL = 4, 
 	/* limits */
- REG_MAXSUB = MAXSUB
+	REG_MAXSUB = MAXSUB
 };
 
 struct Resub {
