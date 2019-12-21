@@ -329,14 +329,14 @@ static void JSON_stringify(js_State *J)
 
 	gap = NULL;
 
-	if (js_isnumber(J, 3)) {
+	if (js_isnumber(J, 3) || (js_isobject(J, 3) && js_toobject(J, 3)->type == JS_CNUMBER)) {
 		n = js_tointeger(J, 3);
 		if (n < 0) n = 0;
 		if (n > 10) n = 10;
 		memset(buf, ' ', n);
 		buf[n] = 0;
 		if (n > 0) gap = buf;
-	} else if (js_isstring(J, 3)) {
+	} else if (js_isstring(J, 3) || (js_isobject(J, 3) && js_toobject(J, 3)->type == JS_CSTRING)) {
 		s = js_tostring(J, 3);
 		n = strlen(s);
 		if (n > 10) n = 10;
