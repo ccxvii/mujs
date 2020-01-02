@@ -130,7 +130,7 @@ void js_loadstring(js_State *J, const char *filename, const char *source)
 void js_loadfile(js_State *J, const char *filename)
 {
 	FILE *f;
-	char *s;
+	char *s, *p;
 	int n, t;
 
 	f = fopen(filename, "rb");
@@ -176,7 +176,15 @@ void js_loadfile(js_State *J, const char *filename)
 		js_throw(J);
 	}
 
-	js_loadstring(J, filename, s);
+	/* skip first line if it starts with "#!" */
+	p = s;
+	if (p[0] == '#' && p[1] == '!') {
+		p += 2;
+		while (*p && *p != '\n')
+			++p;
+	}
+
+	js_loadstring(J, filename, p);
 
 	js_free(J, s);
 	fclose(f);
