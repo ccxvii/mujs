@@ -14,20 +14,17 @@
 #define nelem(a) (int)(sizeof (a) / sizeof (a)[0])
 
 #define REPINF 255
-#ifndef MAXSUB
-#define MAXSUB REG_MAXSUB
+#ifndef REG_MAXPROG
+#define REG_MAXPROG (32 << 10)
 #endif
-#ifndef MAXPROG
-#define MAXPROG (32 << 10)
+#ifndef REG_MAXREC
+#define REG_MAXREC 1024
 #endif
-#ifndef MAXREC
-#define MAXREC 1024
+#ifndef REG_MAXSPAN
+#define REG_MAXSPAN 64
 #endif
-#ifndef MAXSPAN
-#define MAXSPAN 64
-#endif
-#ifndef MAXCLASS
-#define MAXCLASS 16
+#ifndef REG_MAXCLASS
+#define REG_MAXCLASS 16
 #endif
 
 typedef struct Reclass Reclass;
@@ -37,14 +34,14 @@ typedef struct Rethread Rethread;
 
 struct Reclass {
 	Rune *end;
-	Rune spans[MAXSPAN];
+	Rune spans[REG_MAXSPAN];
 };
 
 struct Reprog {
 	Reinst *start, *end;
 	int flags;
 	int nsub;
-	Reclass cclass[MAXCLASS];
+	Reclass cclass[REG_MAXCLASS];
 };
 
 struct cstate {
@@ -54,7 +51,7 @@ struct cstate {
 	const char *source;
 	int ncclass;
 	int nsub;
-	Renode *sub[MAXSUB];
+	Renode *sub[REG_MAXSUB];
 
 	int lookahead;
 	Rune yychar;
@@ -505,7 +502,7 @@ static Renode *parseatom(struct cstate *g)
 		return newnode(g, P_ANY);
 	if (accept(g, '(')) {
 		atom = newnode(g, P_PAR);
-		if (g->nsub == MAXSUB)
+		if (g->nsub == REG_MAXSUB)
 			die(g, "too many captures");
 		atom->n = g->nsub++;
 		atom->x = parsealt(g);
@@ -625,7 +622,7 @@ static int count(struct cstate *g, Renode *node)
 		if (min == max) n = count(g, node->x) * min;
 		else if (max < REPINF) n = count(g, node->x) * max + (max - min);
 		else n = count(g, node->x) * (min + 1) + 2;
-		if (n < 0 || n > MAXPROG) die(g, "program too large");
+		if (n < 0 || n > REG_MAXPROG) die(g, "program too large");
 		return n;
 	case P_PAR: return count(g, node->x) + 2;
 	case P_PLA: return count(g, node->x) + 2;
@@ -849,7 +846,7 @@ Reprog *regcompx(void *(*alloc)(void *ctx, void *p, int n), void *ctx,
 	if (!g.prog)
 		die(&g, "cannot allocate regular expression");
 	n = strlen(pattern) * 2;
-	if (n > MAXPROG)
+	if (n > REG_MAXPROG)
 		die(&g, "program too large");
 	if (n > 0) {
 		g.pstart = g.pend = alloc(ctx, NULL, sizeof (Renode) * n);
@@ -860,7 +857,7 @@ Reprog *regcompx(void *(*alloc)(void *ctx, void *p, int n), void *ctx,
 	g.source = pattern;
 	g.ncclass = 0;
 	g.nsub = 1;
-	for (i = 0; i < MAXSUB; ++i)
+	for (i = 0; i < REG_MAXSUB; ++i)
 		g.sub[i] = 0;
 
 	g.prog->flags = cflags;
@@ -878,7 +875,7 @@ Reprog *regcompx(void *(*alloc)(void *ctx, void *p, int n), void *ctx,
 #endif
 
 	n = 6 + count(&g, node);
-	if (n < 0 || n > MAXPROG)
+	if (n < 0 || n > REG_MAXPROG)
 		die(&g, "program too large");
 
 	g.prog->nsub = g.nsub;
@@ -988,7 +985,7 @@ static int match(Reinst *pc, const char *sp, const char *bol, int flags, Resub *
 	Rune c;
 
 	/* stack overflow */
-	if (depth > MAXREC)
+	if (depth > REG_MAXREC)
 		return -1;
 
 	for (;;) {
@@ -1154,7 +1151,7 @@ int regexec(Reprog *prog, const char *sp, Resub *sub, int eflags)
 		sub = &scratch;
 
 	sub->nsub = prog->nsub;
-	for (i = 0; i < MAXSUB; ++i)
+	for (i = 0; i < REG_MAXSUB; ++i)
 		sub->sub[i].sp = sub->sub[i].ep = NULL;
 
 	return match(prog->start, sp, sp, prog->flags | eflags, sub, 0);
