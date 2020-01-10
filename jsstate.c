@@ -6,6 +6,7 @@
 #include "jsbuiltin.h"
 
 #include <assert.h>
+#include <errno.h>
 
 static void *js_defaultalloc(void *actx, void *ptr, int size)
 {
