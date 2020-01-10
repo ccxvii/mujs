@@ -217,7 +217,7 @@ static double MakeDay(double y, double m, double date)
 		return NAN;
 
 	yd = floor(TimeFromYear(y) / msPerDay);
-	md = firstDayOfMonth[InLeapYear(y)][im];
+	md = firstDayOfMonth[DaysInYear(y) == 366][im];
 
 	return yd + md + date - 1;
 }
