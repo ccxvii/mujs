@@ -73,7 +73,7 @@ typedef struct js_StackTrace js_StackTrace;
 #define JS_STACKSIZE 256	/* value stack size */
 #endif
 #ifndef JS_ENVLIMIT
-#define JS_ENVLIMIT 64		/* environment stack size */
+#define JS_ENVLIMIT 128		/* environment stack size */
 #endif
 #ifndef JS_TRYLIMIT
 #define JS_TRYLIMIT 64		/* exception stack size */
