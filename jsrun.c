@@ -445,6 +445,10 @@ int js_isarrayindex(js_State *J, const char *p, int *idx)
 {
 	int n = 0;
 
+	/* check for empty string */
+	if (p[0] == 0)
+		return 0;
+
 	/* check for '0' and integers with leading zero */
 	if (p[0] == '0')
 		return (p[1] == 0) ? *idx = 0, 1 : 0;
