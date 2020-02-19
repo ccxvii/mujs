@@ -310,7 +310,7 @@ static void S_fromCharCode(js_State *J)
 	}
 
 	for (i = 1; i < top; ++i) {
-		c = js_touint16(J, i);
+		c = js_touint32(J, i);
 		p += runetochar(p, &c);
 	}
 	*p = 0;
