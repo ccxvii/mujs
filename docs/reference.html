@@ -197,6 +197,10 @@ void js_setreport(js_State *J, js_Report report);
 Set a callback function for reporting various warnings
 and garbage collection statistics.
 
+<p>
+The report function must <i>not</i> throw an exception
+or call any other MuJS function except js_getcontext().
+
 <h3>Garbage collection</h3>
 
 <pre>
