@@ -312,8 +312,8 @@ const char *jsV_tostring(js_State *J, js_Value *v)
 				v->type = JS_TSHRSTR;
 				return v->u.shrstr;
 			} else {
-				v->type = JS_TMEMSTR;
 				v->u.memstr = jsV_newmemstring(J, p, n);
+				v->type = JS_TMEMSTR;
 				return v->u.memstr->p;
 			}
 		}
