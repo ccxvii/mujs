@@ -652,7 +652,7 @@ If these are set, they can be used to override accesses to certain properties.
 Any property accesses that are not overridden will be handled as usual in the runtime.
 The "HasProperty" callback should push a value and return true if it wants to
 handle the property, otherwise it should do nothing and return false. "Put"
-should pop a value and return true if it wants to handle the property.
+should read the top value and return true if it wants to handle the property.
 Likewise, "Delete" should return true if it wants to handle the property.
 
 <pre>
