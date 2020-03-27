@@ -130,8 +130,8 @@ void js_gc(js_State *J, int report)
 	js_Object *obj, *nextobj, **prevnextobj;
 	js_String *str, *nextstr, **prevnextstr;
 	js_Environment *env, *nextenv, **prevnextenv;
-	int nenv = 0, nfun = 0, nobj = 0, nstr = 0;
-	int genv = 0, gfun = 0, gobj = 0, gstr = 0;
+	int nenv = 0, nfun = 0, nobj = 0, nstr = 0, nprop = 0;
+	int genv = 0, gfun = 0, gobj = 0, gstr = 0, gprop = 0;
 	int mark;
 	int i;
 
@@ -212,8 +212,10 @@ void js_gc(js_State *J, int report)
 
 	prevnextobj = &J->gcobj;
 	for (obj = J->gcobj; obj; obj = nextobj) {
+		nprop += obj->count;
 		nextobj = obj->gcnext;
 		if (obj->gcmark != mark) {
+			gprop += obj->count;
 			*prevnextobj = nextobj;
 			jsG_freeobject(J, obj);
 			++gobj;
@@ -238,8 +240,8 @@ void js_gc(js_State *J, int report)
 
 	if (report) {
 		char buf[256];
-		snprintf(buf, sizeof buf, "garbage collected: %d/%d envs, %d/%d funs, %d/%d objs, %d/%d strs",
-			genv, nenv, gfun, nfun, gobj, nobj, gstr, nstr);
+		snprintf(buf, sizeof buf, "garbage collected: %d/%d envs, %d/%d funs, %d/%d objs, %d/%d props, %d/%d strs",
+			genv, nenv, gfun, nfun, gobj, nobj, gprop, nprop, gstr, nstr);
 		js_report(J, buf);
 	}
 }
