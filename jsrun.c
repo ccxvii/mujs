@@ -1356,7 +1356,7 @@ static void jsR_run(js_State *J, js_Function *F)
 	J->strict = F->strict;
 
 	while (1) {
-		if (J->gccounter > JS_GCLIMIT)
+		if (J->gccounter > J->gcthresh)
 			js_gc(J, 0);
 
 		J->trace[J->tracetop].line = *pc++;

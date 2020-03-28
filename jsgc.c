@@ -130,8 +130,8 @@ void js_gc(js_State *J, int report)
 	js_Object *obj, *nextobj, **prevnextobj;
 	js_String *str, *nextstr, **prevnextstr;
 	js_Environment *env, *nextenv, **prevnextenv;
-	int nenv = 0, nfun = 0, nobj = 0, nstr = 0, nprop = 0;
-	int genv = 0, gfun = 0, gobj = 0, gstr = 0, gprop = 0;
+	unsigned int nenv = 0, nfun = 0, nobj = 0, nstr = 0, nprop = 0;
+	unsigned int genv = 0, gfun = 0, gobj = 0, gstr = 0, gprop = 0;
 	int mark;
 	int i;
 
@@ -140,8 +140,6 @@ void js_gc(js_State *J, int report)
 			js_report(J, "garbage collector is paused");
 		return;
 	}
-
-	J->gccounter = 0;
 
 	mark = J->gcmark = J->gcmark == 1 ? 2 : 1;
 
@@ -238,10 +236,17 @@ void js_gc(js_State *J, int report)
 		++nstr;
 	}
 
+	unsigned int ntot = nenv + nfun + nobj + nstr + nprop;
+	unsigned int gtot = genv + gfun + gobj + gstr + gprop;
+	unsigned int remaining = ntot - gtot;
+
+	J->gccounter = remaining;
+	J->gcthresh = remaining * JS_GCFACTOR;
+
 	if (report) {
 		char buf[256];
-		snprintf(buf, sizeof buf, "garbage collected: %d/%d envs, %d/%d funs, %d/%d objs, %d/%d props, %d/%d strs",
-			genv, nenv, gfun, nfun, gobj, nobj, gprop, nprop, gstr, nstr);
+		snprintf(buf, sizeof buf, "garbage collected (%d%%): %d/%d envs, %d/%d funs, %d/%d objs, %d/%d props, %d/%d strs",
+			100*gtot/ntot, genv, nenv, gfun, nfun, gobj, nobj, gprop, nprop, gstr, nstr);
 		js_report(J, buf);
 	}
 }
