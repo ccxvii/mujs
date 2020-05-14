@@ -5,8 +5,6 @@
 
 #include "regexp.h"
 
-static void jsG_markobject(js_State *J, int mark, js_Object *obj);
-
 static void jsG_freeenvironment(js_State *J, js_Environment *env)
 {
 	js_free(J, env);
@@ -53,6 +51,14 @@ static void jsG_freeobject(js_State *J, js_Object *obj)
 	js_free(J, obj);
 }
 
+/* Mark and add object to scan queue */
+static void jsG_markobject(js_State *J, int mark, js_Object *obj)
+{
+	obj->gcmark = mark;
+	obj->gcroot = J->gcroot;
+	J->gcroot = obj;
+}
+
 static void jsG_markfunction(js_State *J, int mark, js_Function *fun)
 {
 	int i;
@@ -87,9 +93,9 @@ static void jsG_markproperty(js_State *J, int mark, js_Property *node)
 		jsG_markobject(J, mark, node->setter);
 }
 
-static void jsG_markobject(js_State *J, int mark, js_Object *obj)
+/* Mark everything the object can reach. */
+static void jsG_scanobject(js_State *J, int mark, js_Object *obj)
 {
-	obj->gcmark = mark;
 	if (obj->properties->level)
 		jsG_markproperty(J, mark, obj->properties);
 	if (obj->prototype && obj->prototype->gcmark != mark)
@@ -139,6 +145,8 @@ void js_gc(js_State *J, int report)
 
 	mark = J->gcmark = J->gcmark == 1 ? 2 : 1;
 
+	/* Add initial roots. */
+
 	jsG_markobject(J, mark, J->Object_prototype);
 	jsG_markobject(J, mark, J->Array_prototype);
 	jsG_markobject(J, mark, J->Function_prototype);
@@ -165,6 +173,16 @@ void js_gc(js_State *J, int report)
 	jsG_markenvironment(J, mark, J->GE);
 	for (i = 0; i < J->envtop; ++i)
 		jsG_markenvironment(J, mark, J->envstack[i]);
+
+	/* Scan objects until none remain. */
+
+	while ((obj = J->gcroot) != NULL) {
+		J->gcroot = obj->gcroot;
+		obj->gcroot = NULL;
+		jsG_scanobject(J, mark, obj);
+	}
+
+	/* Free everything not marked. */
 
 	prevnextenv = &J->gcenv;
 	for (env = J->gcenv; env; env = nextenv) {

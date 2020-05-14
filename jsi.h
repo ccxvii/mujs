@@ -239,6 +239,8 @@ struct js_State
 	js_Object *gcobj;
 	js_String *gcstr;
 
+	js_Object *gcroot; /* gc scan list */
+
 	/* environments on the call stack but currently not in scope */
 	int envtop;
 	js_Environment *envstack[JS_ENVLIMIT];
