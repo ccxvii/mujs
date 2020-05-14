@@ -469,7 +469,7 @@ int js_isarrayindex(js_State *J, const char *p, int *idx)
 static void js_pushrune(js_State *J, Rune rune)
 {
 	char buf[UTFmax + 1];
-	if (rune > 0) {
+	if (rune >= 0) {
 		buf[runetochar(buf, &rune)] = 0;
 		js_pushstring(J, buf);
 	} else {

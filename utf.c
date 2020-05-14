@@ -48,6 +48,12 @@ chartorune(Rune *rune, const char *str)
 	int c, c1, c2;
 	int l;
 
+	/* overlong null character */
+	if((uchar)str[0] == 0xc0 && (uchar)str[1] == 0x80) {
+		*rune = 0;
+		return 2;
+	}
+
 	/*
 	 * one character sequence
 	 *	00000-0007F => T1
@@ -101,13 +107,19 @@ bad:
 int
 runetochar(char *str, const Rune *rune)
 {
-	int c;
+	int c = *rune;
+
+	/* overlong null character */
+	if (c == 0) {
+		str[0] = 0xc0;
+		str[1] = 0x80;
+		return 2;
+	}
 
 	/*
 	 * one character sequence
 	 *	00000-0007F => 00-7F
 	 */
-	c = *rune;
 	if(c <= Rune1) {
 		str[0] = c;
 		return 1;
