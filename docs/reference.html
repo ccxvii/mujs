@@ -62,7 +62,7 @@ Numbers are represented using double precision floating point values.
 
 <p>
 Strings in the C interface are zero-terminated byte arrays in WTF-8 encoding.
-This allows both arbitary 16-bit values (as required by Javascript) and also
+This allows both arbitrary 16-bit values (as required by Javascript) and also
 extended code points for the full 21-bit Unicode range.
 These extended characters will mostly work as expected in Javascript.
 
@@ -115,7 +115,7 @@ You can also force a collection pass from C.
 
 <p>
 Userdata objects have an associated C finalizer function that is called when
-the correspending object is freed.
+the corresponding object is freed.
 
 <h3>The Stack</h3>
 
@@ -482,7 +482,7 @@ void js_newregexp(js_State *J, const char *pattern, int flags);
 </pre>
 
 <p>
-Creat and push objects on the stack.
+Create and push objects on the stack.
 
 <pre>
 int js_isobject(js_State *J, int idx);
