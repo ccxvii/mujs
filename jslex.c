@@ -180,13 +180,24 @@ static void jsY_unescape(js_State *J)
 {
 	if (jsY_accept(J, '\\')) {
 		if (jsY_accept(J, 'u')) {
-			int x = 0;
-			if (!jsY_ishex(J->lexchar)) { goto error; } x |= jsY_tohex(J->lexchar) << 12; jsY_next(J);
-			if (!jsY_ishex(J->lexchar)) { goto error; } x |= jsY_tohex(J->lexchar) << 8; jsY_next(J);
-			if (!jsY_ishex(J->lexchar)) { goto error; } x |= jsY_tohex(J->lexchar) << 4; jsY_next(J);
-			if (!jsY_ishex(J->lexchar)) { goto error; } x |= jsY_tohex(J->lexchar);
-			J->lexchar = x;
-			return;
+			if (jsY_accept(J, '{')) {
+				int x = 0;
+				while (jsY_ishex(J->lexchar)) {
+					x = (x << 4) | jsY_tohex(J->lexchar);
+					jsY_next(J);
+				}
+				jsY_expect(J, '}');
+				J->lexchar = x;
+				return;
+			} else {
+				int x = 0;
+				if (!jsY_ishex(J->lexchar)) { goto error; } x |= jsY_tohex(J->lexchar) << 12; jsY_next(J);
+				if (!jsY_ishex(J->lexchar)) { goto error; } x |= jsY_tohex(J->lexchar) << 8; jsY_next(J);
+				if (!jsY_ishex(J->lexchar)) { goto error; } x |= jsY_tohex(J->lexchar) << 4; jsY_next(J);
+				if (!jsY_ishex(J->lexchar)) { goto error; } x |= jsY_tohex(J->lexchar);
+				J->lexchar = x;
+				return;
+			}
 		}
 error:
 		jsY_error(J, "unexpected escape sequence");
@@ -398,10 +409,18 @@ static int lexescape(js_State *J)
 	case EOF: jsY_error(J, "unterminated escape sequence");
 	case 'u':
 		jsY_next(J);
-		if (!jsY_ishex(J->lexchar)) return 1; else { x |= jsY_tohex(J->lexchar) << 12; jsY_next(J); }
-		if (!jsY_ishex(J->lexchar)) return 1; else { x |= jsY_tohex(J->lexchar) << 8; jsY_next(J); }
-		if (!jsY_ishex(J->lexchar)) return 1; else { x |= jsY_tohex(J->lexchar) << 4; jsY_next(J); }
-		if (!jsY_ishex(J->lexchar)) return 1; else { x |= jsY_tohex(J->lexchar); jsY_next(J); }
+		if (jsY_accept(J, '{')) {
+			while (jsY_ishex(J->lexchar)) {
+				x = (x << 4) | jsY_tohex(J->lexchar);
+				jsY_next(J);
+			}
+			jsY_expect(J, '}');
+		} else {
+			if (!jsY_ishex(J->lexchar)) return 1; else { x |= jsY_tohex(J->lexchar) << 12; jsY_next(J); }
+			if (!jsY_ishex(J->lexchar)) return 1; else { x |= jsY_tohex(J->lexchar) << 8; jsY_next(J); }
+			if (!jsY_ishex(J->lexchar)) return 1; else { x |= jsY_tohex(J->lexchar) << 4; jsY_next(J); }
+			if (!jsY_ishex(J->lexchar)) return 1; else { x |= jsY_tohex(J->lexchar); jsY_next(J); }
+		}
 		textpush(J, x);
 		break;
 	case 'x':
@@ -723,7 +742,7 @@ static int jsY_lexx(js_State *J)
 
 		if (J->lexchar >= 0x20 && J->lexchar <= 0x7E)
 			jsY_error(J, "unexpected character: '%c'", J->lexchar);
-		jsY_error(J, "unexpected character: \\u%04X", J->lexchar);
+		jsY_error(J, "unexpected character: \\u{%04X}", J->lexchar);
 	}
 }
 
@@ -873,6 +892,6 @@ int jsY_lexjson(js_State *J)
 
 		if (J->lexchar >= 0x20 && J->lexchar <= 0x7E)
 			jsY_error(J, "unexpected character: '%c'", J->lexchar);
-		jsY_error(J, "unexpected character: \\u%04X", J->lexchar);
+		jsY_error(J, "unexpected character: \\u{%04X}", J->lexchar);
 	}
 }
