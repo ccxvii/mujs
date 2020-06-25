@@ -133,8 +133,8 @@ runetochar(char *str, const Rune *rune)
 
 	/* overlong null character */
 	if (c == 0) {
-		str[0] = 0xc0;
-		str[1] = 0x80;
+		str[0] = (char)0xc0;
+		str[1] = (char)0x80;
 		return 2;
 	}
 
