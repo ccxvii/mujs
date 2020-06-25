@@ -228,7 +228,7 @@ static char *textend(js_State *J)
 
 static void lexlinecomment(js_State *J)
 {
-	while (J->lexchar && J->lexchar != '\n')
+	while (J->lexchar != EOF && J->lexchar != '\n')
 		jsY_next(J);
 }
 
