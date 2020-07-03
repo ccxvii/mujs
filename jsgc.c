@@ -100,7 +100,7 @@ static void jsG_scanobject(js_State *J, int mark, js_Object *obj)
 		jsG_markproperty(J, mark, obj->properties);
 	if (obj->prototype && obj->prototype->gcmark != mark)
 		jsG_markobject(J, mark, obj->prototype);
-	if (obj->type == JS_CITERATOR) {
+	if (obj->type == JS_CITERATOR && obj->u.iter.target->gcmark != mark) {
 		jsG_markobject(J, mark, obj->u.iter.target);
 	}
 	if (obj->type == JS_CFUNCTION || obj->type == JS_CSCRIPT || obj->type == JS_CEVAL) {
