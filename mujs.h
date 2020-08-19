@@ -121,6 +121,7 @@ void js_delregistry(js_State *J, const char *name);
 void js_getglobal(js_State *J, const char *name);
 void js_setglobal(js_State *J, const char *name);
 void js_defglobal(js_State *J, const char *name, int atts);
+void js_delglobal(js_State *J, const char *name);
 
 int js_hasproperty(js_State *J, int idx, const char *name);
 void js_getproperty(js_State *J, int idx, const char *name);
@@ -175,6 +176,8 @@ int js_iscoercible(js_State *J, int idx);
 int js_iscallable(js_State *J, int idx);
 int js_isuserdata(js_State *J, int idx, const char *tag);
 int js_iserror(js_State *J, int idx);
+int js_isnumberobject(js_State *J, int idx);
+int js_isstringobject(js_State *J, int idx);
 
 int js_toboolean(js_State *J, int idx);
 double js_tonumber(js_State *J, int idx);
@@ -193,7 +196,6 @@ short js_toint16(js_State *J, int idx);
 unsigned short js_touint16(js_State *J, int idx);
 
 int js_gettop(js_State *J);
-void js_settop(js_State *J, int idx);
 void js_pop(js_State *J, int n);
 void js_rot(js_State *J, int n);
 void js_copy(js_State *J, int idx);
@@ -214,6 +216,11 @@ int js_compare(js_State *J, int *okay);
 int js_equal(js_State *J);
 int js_strictequal(js_State *J);
 int js_instanceof(js_State *J);
+const char *js_typeof(js_State *J, int idx);
+
+void js_repr(js_State *J, int idx);
+const char *js_torepr(js_State *J, int idx);
+const char *js_tryrepr(js_State *J, int idx, const char *error);
 
 #ifdef __cplusplus
 }

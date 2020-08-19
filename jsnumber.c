@@ -27,7 +27,7 @@ static void Np_valueOf(js_State *J)
 
 static void Np_toString(js_State *J)
 {
-	char buf[32];
+	char buf[100];
 	js_Object *self = js_toobject(J, 0);
 	int radix = js_isundefined(J, 1) ? 10 : js_tointeger(J, 1);
 	if (self->type != JS_CNUMBER)
@@ -42,7 +42,6 @@ static void Np_toString(js_State *J)
 	/* lame number to string conversion for any radix from 2 to 36 */
 	{
 		static const char digits[] = "0123456789abcdefghijklmnopqrstuvwxyz";
-		char buf[100];
 		double number = self->u.number;
 		int sign = self->u.number < 0;
 		js_Buffer *sb = NULL;
@@ -115,7 +114,8 @@ static void Np_toString(js_State *J)
 /* Customized ToString() on a number */
 static void numtostr(js_State *J, const char *fmt, int w, double n)
 {
-	char buf[32], *e;
+	/* buf needs to fit printf("%.20f", 1e20) */
+	char buf[50], *e;
 	sprintf(buf, fmt, w, n);
 	e = strchr(buf, 'e');
 	if (e) {

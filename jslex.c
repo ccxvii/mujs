@@ -117,9 +117,15 @@ int jsY_isnewline(int c)
 	return c == 0xA || c == 0xD || c == 0x2028 || c == 0x2029;
 }
 
+#ifndef isalpha
 #define isalpha(c) ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))
+#endif
+#ifndef isdigit
 #define isdigit(c) (c >= '0' && c <= '9')
+#endif
+#ifndef ishex
 #define ishex(c) ((c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'))
+#endif
 
 static int jsY_isidentifierstart(int c)
 {
@@ -152,6 +158,10 @@ int jsY_tohex(int c)
 static void jsY_next(js_State *J)
 {
 	Rune c;
+	if (*J->source == 0) {
+		J->lexchar = EOF;
+		return;
+	}
 	J->source += chartorune(&c, J->source);
 	/* consume CR LF as one unit */
 	if (c == '\r' && *J->source == '\n')
@@ -195,30 +205,37 @@ static void textinit(js_State *J)
 
 static void textpush(js_State *J, Rune c)
 {
-	int n = runelen(c);
+	int n;
+	if (c == EOF)
+		n = 1;
+	else
+		n = runelen(c);
 	if (J->lexbuf.len + n > J->lexbuf.cap) {
 		J->lexbuf.cap = J->lexbuf.cap * 2;
 		J->lexbuf.text = js_realloc(J, J->lexbuf.text, J->lexbuf.cap);
 	}
-	J->lexbuf.len += runetochar(J->lexbuf.text + J->lexbuf.len, &c);
+	if (c == EOF)
+		J->lexbuf.text[J->lexbuf.len++] = 0;
+	else
+		J->lexbuf.len += runetochar(J->lexbuf.text + J->lexbuf.len, &c);
 }
 
 static char *textend(js_State *J)
 {
-	textpush(J, 0);
+	textpush(J, EOF);
 	return J->lexbuf.text;
 }
 
 static void lexlinecomment(js_State *J)
 {
-	while (J->lexchar && J->lexchar != '\n')
+	while (J->lexchar != EOF && J->lexchar != '\n')
 		jsY_next(J);
 }
 
 static int lexcomment(js_State *J)
 {
 	/* already consumed initial '/' '*' sequence */
-	while (J->lexchar != 0) {
+	while (J->lexchar != EOF) {
 		if (jsY_accept(J, '*')) {
 			while (J->lexchar == '*')
 				jsY_next(J);
@@ -379,7 +396,7 @@ static int lexescape(js_State *J)
 		return 0;
 
 	switch (J->lexchar) {
-	case 0: jsY_error(J, "unterminated escape sequence");
+	case EOF: jsY_error(J, "unterminated escape sequence");
 	case 'u':
 		jsY_next(J);
 		if (!jsY_ishex(J->lexchar)) return 1; else { x |= jsY_tohex(J->lexchar) << 12; jsY_next(J); }
@@ -419,7 +436,7 @@ static int lexstring(js_State *J)
 	textinit(J);
 
 	while (J->lexchar != q) {
-		if (J->lexchar == 0 || J->lexchar == '\n')
+		if (J->lexchar == EOF || J->lexchar == '\n')
 			jsY_error(J, "string not terminated");
 		if (jsY_accept(J, '\\')) {
 			if (lexescape(J))
@@ -469,14 +486,14 @@ static int lexregexp(js_State *J)
 
 	/* regexp body */
 	while (J->lexchar != '/' || inclass) {
-		if (J->lexchar == 0 || J->lexchar == '\n') {
+		if (J->lexchar == EOF || J->lexchar == '\n') {
 			jsY_error(J, "regular expression not terminated");
 		} else if (jsY_accept(J, '\\')) {
 			if (jsY_accept(J, '/')) {
 				textpush(J, '/');
 			} else {
 				textpush(J, '\\');
-				if (J->lexchar == 0 || J->lexchar == '\n')
+				if (J->lexchar == EOF || J->lexchar == '\n')
 					jsY_error(J, "regular expression not terminated");
 				textpush(J, J->lexchar);
 				jsY_next(J);
@@ -682,7 +699,7 @@ static int jsY_lexx(js_State *J)
 				return TK_XOR_ASS;
 			return '^';
 
-		case 0:
+		case EOF:
 			return 0; /* EOF */
 		}
 
@@ -797,7 +814,7 @@ static int lexjsonstring(js_State *J)
 	textinit(J);
 
 	while (J->lexchar != '"') {
-		if (J->lexchar == 0)
+		if (J->lexchar == EOF)
 			jsY_error(J, "unterminated string");
 		else if (J->lexchar < 32)
 			jsY_error(J, "invalid control character in string");
@@ -851,7 +868,7 @@ int jsY_lexjson(js_State *J)
 			jsY_next(J); jsY_expect(J, 'r'); jsY_expect(J, 'u'); jsY_expect(J, 'e');
 			return TK_TRUE;
 
-		case 0:
+		case EOF:
 			return 0; /* EOF */
 		}
 

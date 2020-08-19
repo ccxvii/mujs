@@ -26,7 +26,8 @@ enum js_Class {
 	JS_COBJECT,
 	JS_CARRAY,
 	JS_CFUNCTION,
-	JS_CSCRIPT, /* function created from global/eval code */
+	JS_CSCRIPT, /* function created from global code */
+	JS_CEVAL, /* function created from eval code */
 	JS_CCFUNCTION, /* built-in function */
 	JS_CERROR,
 	JS_CBOOLEAN,
@@ -36,6 +37,7 @@ enum js_Class {
 	JS_CDATE,
 	JS_CMATH,
 	JS_CJSON,
+	JS_CARGUMENTS,
 	JS_CITERATOR,
 	JS_CUSERDATA,
 };
@@ -117,7 +119,8 @@ struct js_Object
 			js_Finalize finalize;
 		} user;
 	} u;
-	js_Object *gcnext;
+	js_Object *gcnext; /* allocation list */
+	js_Object *gcroot; /* scan list */
 	int gcmark;
 };
 

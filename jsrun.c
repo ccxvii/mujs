@@ -200,6 +200,7 @@ int js_iscallable(js_State *J, int idx)
 	if (v->type == JS_TOBJECT)
 		return v->u.object->type == JS_CFUNCTION ||
 			v->u.object->type == JS_CSCRIPT ||
+			v->u.object->type == JS_CEVAL ||
 			v->u.object->type == JS_CCFUNCTION;
 	return 0;
 }
@@ -230,7 +231,7 @@ int js_iserror(js_State *J, int idx)
 	return v->type == JS_TOBJECT && v->u.object->type == JS_CERROR;
 }
 
-static const char *js_typeof(js_State *J, int idx)
+const char *js_typeof(js_State *J, int idx)
 {
 	js_Value *v = stackidx(J, idx);
 	switch (v->type) {
@@ -443,6 +444,15 @@ void js_rot(js_State *J, int n)
 int js_isarrayindex(js_State *J, const char *p, int *idx)
 {
 	int n = 0;
+
+	/* check for empty string */
+	if (p[0] == 0)
+		return 0;
+
+	/* check for '0' and integers with leading zero */
+	if (p[0] == '0')
+		return (p[1] == 0) ? *idx = 0, 1 : 0;
+
 	while (*p) {
 		int c = *p++;
 		if (c >= '0' && c <= '9') {
@@ -459,7 +469,7 @@ int js_isarrayindex(js_State *J, const char *p, int *idx)
 static void js_pushrune(js_State *J, Rune rune)
 {
 	char buf[UTFmax + 1];
-	if (rune > 0) {
+	if (rune >= 0) {
 		buf[runetochar(buf, &rune)] = 0;
 		js_pushstring(J, buf);
 	} else {
@@ -600,6 +610,8 @@ static void jsR_setproperty(js_State *J, js_Object *obj, const char *name)
 			if (J->strict)
 				if (ref->getter)
 					js_typeerror(J, "setting property '%s' that only has a getter", name);
+			if (ref->atts & JS_READONLY)
+				goto readonly;
 		}
 	}
 
@@ -792,6 +804,11 @@ void js_defglobal(js_State *J, const char *name, int atts)
 	js_pop(J, 1);
 }
 
+void js_delglobal(js_State *J, const char *name)
+{
+	jsR_delproperty(J, J->G, name);
+}
+
 void js_getproperty(js_State *J, int idx, const char *name)
 {
 	jsR_getproperty(J, js_toobject(J, idx), name);
@@ -855,11 +872,6 @@ js_Environment *jsR_newenvironment(js_State *J, js_Object *vars, js_Environment 
 static void js_initvar(js_State *J, const char *name, int idx)
 {
 	jsR_defproperty(J, J->E->variables, name, JS_DONTENUM | JS_DONTCONF, stackidx(J, idx), NULL, NULL);
-}
-
-static void js_defvar(js_State *J, const char *name)
-{
-	jsR_defproperty(J, J->E->variables, name, JS_DONTENUM | JS_DONTCONF, NULL, NULL, NULL);
 }
 
 static int js_hasvar(js_State *J, const char *name)
@@ -954,6 +966,7 @@ static void jsR_calllwfunction(js_State *J, int n, js_Function *F, js_Environmen
 		js_pop(J, n - F->numparams);
 		n = F->numparams;
 	}
+
 	for (i = n; i < F->varlen; ++i)
 		js_pushundefined(J);
 
@@ -975,7 +988,7 @@ static void jsR_callfunction(js_State *J, int n, js_Function *F, js_Environment 
 	jsR_savescope(J, scope);
 
 	if (F->arguments) {
-		js_newobject(J);
+		js_newarguments(J);
 		if (!J->strict) {
 			js_currentfunction(J);
 			js_defproperty(J, -2, "callee", JS_DONTENUM);
@@ -990,16 +1003,41 @@ static void jsR_callfunction(js_State *J, int n, js_Function *F, js_Environment 
 		js_pop(J, 1);
 	}
 
-	for (i = 0; i < F->numparams; ++i) {
-		if (i < n)
-			js_initvar(J, F->vartab[i], i + 1);
-		else {
-			js_pushundefined(J);
-			js_initvar(J, F->vartab[i], -1);
-			js_pop(J, 1);
-		}
-	}
+	for (i = 0; i < n && i < F->numparams; ++i)
+		js_initvar(J, F->vartab[i], i + 1);
 	js_pop(J, n);
+
+	for (; i < F->varlen; ++i) {
+		js_pushundefined(J);
+		js_initvar(J, F->vartab[i], -1);
+		js_pop(J, 1);
+	}
+
+	jsR_run(J, F);
+	v = *stackidx(J, -1);
+	TOP = --BOT; /* clear stack */
+	js_pushvalue(J, v);
+
+	jsR_restorescope(J);
+}
+
+static void jsR_calleval(js_State *J, int n, js_Function *F, js_Environment *scope)
+{
+	js_Value v;
+	int i;
+
+	scope = jsR_newenvironment(J, jsV_newobject(J, JS_COBJECT, NULL), scope);
+
+	jsR_savescope(J, scope);
+
+	/* scripts take no arguments */
+	js_pop(J, n);
+
+	for (i = 0; i < F->varlen; ++i) {
+		js_pushundefined(J);
+		js_initvar(J, F->vartab[i], -1);
+		js_pop(J, 1);
+	}
 
 	jsR_run(J, F);
 	v = *stackidx(J, -1);
@@ -1012,11 +1050,20 @@ static void jsR_callfunction(js_State *J, int n, js_Function *F, js_Environment 
 static void jsR_callscript(js_State *J, int n, js_Function *F, js_Environment *scope)
 {
 	js_Value v;
+	int i;
 
 	if (scope)
 		jsR_savescope(J, scope);
 
+	/* scripts take no arguments */
 	js_pop(J, n);
+
+	for (i = 0; i < F->varlen; ++i) {
+		js_pushundefined(J);
+		js_initvar(J, F->vartab[i], -1);
+		js_pop(J, 1);
+	}
+
 	jsR_run(J, F);
 	v = *stackidx(J, -1);
 	TOP = --BOT; /* clear stack */
@@ -1056,7 +1103,7 @@ void js_call(js_State *J, int n)
 	int savebot;
 
 	if (!js_iscallable(J, -n-2))
-		js_typeerror(J, "called object is not a function");
+		js_typeerror(J, "%s is not callable", js_typeof(J, -n-2));
 
 	obj = js_toobject(J, -n-2);
 
@@ -1074,6 +1121,10 @@ void js_call(js_State *J, int n)
 		jsR_pushtrace(J, obj->u.f.function->name, obj->u.f.function->filename, obj->u.f.function->line);
 		jsR_callscript(J, n, obj->u.f.function, obj->u.f.scope);
 		--J->tracetop;
+	} else if (obj->type == JS_CEVAL) {
+		jsR_pushtrace(J, obj->u.f.function->name, obj->u.f.function->filename, obj->u.f.function->line);
+		jsR_calleval(J, n, obj->u.f.function, obj->u.f.scope);
+		--J->tracetop;
 	} else if (obj->type == JS_CCFUNCTION) {
 		jsR_pushtrace(J, obj->u.c.name, "native", 0);
 		jsR_callcfunction(J, n, obj->u.c.length, obj->u.c.function);
@@ -1090,7 +1141,7 @@ void js_construct(js_State *J, int n)
 	js_Object *newobj;
 
 	if (!js_iscallable(J, -n-1))
-		js_typeerror(J, "called object is not a function");
+		js_typeerror(J, "%s is not callable", js_typeof(J, -n-1));
 
 	obj = js_toobject(J, -n-1);
 
@@ -1236,7 +1287,7 @@ static void jsR_dumpstack(js_State *J)
 	printf("stack {\n");
 	for (i = 0; i < TOP; ++i) {
 		putchar(i == BOT ? '>' : ' ');
-		printf("% 4d: ", i);
+		printf("%4d: ", i);
 		js_dumpvalue(J, STACK[i]);
 		putchar('\n');
 	}
@@ -1286,6 +1337,8 @@ static void jsR_run(js_State *J, js_Function *F)
 	js_Function **FT = F->funtab;
 	double *NT = F->numtab;
 	const char **ST = F->strtab;
+	const char **VT = F->vartab-1;
+	int lightweight = F->lightweight;
 	js_Instruction *pcstart = F->code;
 	js_Instruction *pc = F->code;
 	enum js_OpCode opcode;
@@ -1303,10 +1356,13 @@ static void jsR_run(js_State *J, js_Function *F)
 	J->strict = F->strict;
 
 	while (1) {
-		if (J->gccounter > JS_GCLIMIT)
+		if (J->gccounter > J->gcthresh)
 			js_gc(J, 0);
 
+		J->trace[J->tracetop].line = *pc++;
+
 		opcode = *pc++;
+
 		switch (opcode) {
 		case OP_POP: js_pop(J, 1); break;
 		case OP_DUP: js_dup(J); break;
@@ -1315,10 +1371,7 @@ static void jsR_run(js_State *J, js_Function *F)
 		case OP_ROT3: js_rot3(J); break;
 		case OP_ROT4: js_rot4(J); break;
 
-		case OP_NUMBER_0: js_pushnumber(J, 0); break;
-		case OP_NUMBER_1: js_pushnumber(J, 1); break;
-		case OP_NUMBER_POS: js_pushnumber(J, *pc++); break;
-		case OP_NUMBER_NEG: js_pushnumber(J, -(*pc++)); break;
+		case OP_INTEGER: js_pushnumber(J, *pc++ - 32768); break;
 		case OP_NUMBER: js_pushnumber(J, NT[*pc++]); break;
 		case OP_STRING: js_pushliteral(J, ST[*pc++]); break;
 
@@ -1347,31 +1400,33 @@ static void jsR_run(js_State *J, js_Function *F)
 			js_currentfunction(J);
 			break;
 
-		case OP_INITLOCAL:
-			STACK[BOT + *pc++] = STACK[--TOP];
-			break;
-
 		case OP_GETLOCAL:
-			CHECKSTACK(1);
-			STACK[TOP++] = STACK[BOT + *pc++];
+			if (lightweight) {
+				CHECKSTACK(1);
+				STACK[TOP++] = STACK[BOT + *pc++];
+			} else {
+				str = VT[*pc++];
+				if (!js_hasvar(J, str))
+					js_referenceerror(J, "'%s' is not defined", str);
+			}
 			break;
 
 		case OP_SETLOCAL:
-			STACK[BOT + *pc++] = STACK[TOP-1];
+			if (lightweight) {
+				STACK[BOT + *pc++] = STACK[TOP-1];
+			} else {
+				js_setvar(J, VT[*pc++]);
+			}
 			break;
 
 		case OP_DELLOCAL:
-			++pc;
-			js_pushboolean(J, 0);
-			break;
-
-		case OP_INITVAR:
-			js_initvar(J, ST[*pc++], -1);
-			js_pop(J, 1);
-			break;
-
-		case OP_DEFVAR:
-			js_defvar(J, ST[*pc++]);
+			if (lightweight) {
+				++pc;
+				js_pushboolean(J, 0);
+			} else {
+				b = js_delvar(J, VT[*pc++]);
+				js_pushboolean(J, b);
+			}
 			break;
 
 		case OP_GETVAR:
@@ -1751,10 +1806,6 @@ static void jsR_run(js_State *J, js_Function *F)
 		case OP_RETURN:
 			J->strict = savestrict;
 			return;
-
-		case OP_LINE:
-			J->trace[J->tracetop].line = *pc++;
-			break;
 		}
 	}
 }
