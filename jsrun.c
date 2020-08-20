@@ -1026,9 +1026,10 @@ static void jsR_calleval(js_State *J, int n, js_Function *F, js_Environment *sco
 	js_Value v;
 	int i;
 
+#if defined(JS_SEPARATED_EVALS)
 	scope = jsR_newenvironment(J, jsV_newobject(J, JS_COBJECT, NULL), scope);
-
 	jsR_savescope(J, scope);
+#endif
 
 	/* scripts take no arguments */
 	js_pop(J, n);
@@ -1044,7 +1045,9 @@ static void jsR_calleval(js_State *J, int n, js_Function *F, js_Environment *sco
 	TOP = --BOT; /* clear stack */
 	js_pushvalue(J, v);
 
+#if defined(JS_SEPARATED_EVALS)
 	jsR_restorescope(J);
+#endif
 }
 
 static void jsR_callscript(js_State *J, int n, js_Function *F, js_Environment *scope)
