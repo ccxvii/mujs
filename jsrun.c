@@ -551,7 +551,7 @@ static void jsR_getproperty(js_State *J, js_Object *obj, const char *name)
 		js_pushundefined(J);
 }
 
-static void jsR_setproperty(js_State *J, js_Object *obj, const char *name)
+static void jsR_setproperty(js_State *J, js_Object *obj, const char *name, int transient)
 {
 	js_Value *value = stackidx(J, -1);
 	js_Property *ref;
@@ -616,8 +616,14 @@ static void jsR_setproperty(js_State *J, js_Object *obj, const char *name)
 	}
 
 	/* Property not found on this object, so create one */
-	if (!ref || !own)
+	if (!ref || !own) {
+		if (transient) {
+			if (J->strict)
+				js_typeerror(J, "cannot create property '%s' on transient object", name);
+			return;
+		}
 		ref = jsV_setproperty(J, obj, name);
+	}
 
 	if (ref) {
 		if (!(ref->atts & JS_READONLY))
@@ -778,7 +784,7 @@ void js_getregistry(js_State *J, const char *name)
 
 void js_setregistry(js_State *J, const char *name)
 {
-	jsR_setproperty(J, J->R, name);
+	jsR_setproperty(J, J->R, name, 0);
 	js_pop(J, 1);
 }
 
@@ -794,7 +800,7 @@ void js_getglobal(js_State *J, const char *name)
 
 void js_setglobal(js_State *J, const char *name)
 {
-	jsR_setproperty(J, J->G, name);
+	jsR_setproperty(J, J->G, name, 0);
 	js_pop(J, 1);
 }
 
@@ -816,7 +822,7 @@ void js_getproperty(js_State *J, int idx, const char *name)
 
 void js_setproperty(js_State *J, int idx, const char *name)
 {
-	jsR_setproperty(J, js_toobject(J, idx), name);
+	jsR_setproperty(J, js_toobject(J, idx), name, !js_isobject(J, idx));
 	js_pop(J, 1);
 }
 
@@ -918,7 +924,7 @@ static void js_setvar(js_State *J, const char *name)
 	} while (E);
 	if (J->strict)
 		js_referenceerror(J, "assignment to undeclared variable '%s'", name);
-	jsR_setproperty(J, J->G, name);
+	jsR_setproperty(J, J->G, name, 0);
 }
 
 static int js_delvar(js_State *J, const char *name)
@@ -1351,6 +1357,7 @@ static void jsR_run(js_State *J, js_Function *F)
 	unsigned int ux, uy;
 	int ix, iy, okay;
 	int b;
+	int transient;
 
 	savestrict = J->strict;
 	J->strict = F->strict;
@@ -1461,7 +1468,7 @@ static void jsR_run(js_State *J, js_Function *F)
 		case OP_INITPROP:
 			obj = js_toobject(J, -3);
 			str = js_tostring(J, -2);
-			jsR_setproperty(J, obj, str);
+			jsR_setproperty(J, obj, str, 0);
 			js_pop(J, 2);
 			break;
 
@@ -1496,14 +1503,16 @@ static void jsR_run(js_State *J, js_Function *F)
 		case OP_SETPROP:
 			str = js_tostring(J, -2);
 			obj = js_toobject(J, -3);
-			jsR_setproperty(J, obj, str);
+			transient = !js_isobject(J, -3);
+			jsR_setproperty(J, obj, str, transient);
 			js_rot3pop2(J);
 			break;
 
 		case OP_SETPROP_S:
 			str = ST[*pc++];
 			obj = js_toobject(J, -2);
-			jsR_setproperty(J, obj, str);
+			transient = !js_isobject(J, -2);
+			jsR_setproperty(J, obj, str, transient);
 			js_rot2pop1(J);
 			break;
 
