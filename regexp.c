@@ -107,7 +107,7 @@ static int dec(struct cstate *g, int c)
 	return 0;
 }
 
-#define ESCAPES "BbDdSsWw^$\\.*+?()[]{}|0123456789"
+#define ESCAPES "BbDdSsWw^$\\.*+?()[]{}|-0123456789"
 
 static int isunicodeletter(int c)
 {
