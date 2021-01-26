@@ -1,3 +1,7 @@
+#ifdef __POCC__		//PellesC requires __POCC__OLDNAMES to be defined for isatty
+#define __POCC__OLDNAMES 1
+#define isatty _isatty
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

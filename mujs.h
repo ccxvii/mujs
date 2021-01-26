@@ -11,7 +11,7 @@ extern "C" {
 #ifdef __GNUC__
 #define JS_NORETURN __attribute__((noreturn))
 #else
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__POCC__)
 #define JS_NORETURN __declspec(noreturn)
 #else
 #define JS_NORETURN
