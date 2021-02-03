@@ -286,7 +286,12 @@ static void pstr(const char *s)
 static void pregexp(const char *prog, int flags)
 {
 	pc('/');
-	ps(prog);
+	while (*prog) {
+		if (*prog == '/')
+			pc('\\');
+		pc(*prog);
+		++prog;
+	}
 	pc('/');
 	if (flags & JS_REGEXP_G) pc('g');
 	if (flags & JS_REGEXP_I) pc('i');
