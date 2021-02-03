@@ -220,10 +220,13 @@ static const char *require_js =
 	"require.cache = Object.create(null);\n"
 ;
 
+
 static const char *stacktrace_js =
 	"Error.prototype.toString = function() {\n"
-	"if (this.stackTrace) return this.name + ': ' + this.message + this.stackTrace;\n"
-	"return this.name + ': ' + this.message;\n"
+	"var s = this.name;\n"
+	"if ('message' in this) s += ': ' + this.message;\n"
+	"if ('stackTrace' in this) s += this.stackTrace;\n"
+	"return s;\n"
 	"};\n"
 ;
 
