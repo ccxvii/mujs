@@ -166,7 +166,7 @@ static void Decode(js_State *J, const char *str, const char *reserved)
 #define URIRESERVED ";/?:@&=+$,"
 #define URIALPHA "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 #define URIDIGIT "0123456789"
-#define URIMARK "-_.!~*`()"
+#define URIMARK "-_.!~*'()"
 #define URIUNESCAPED URIALPHA URIDIGIT URIMARK
 
 static void jsB_decodeURI(js_State *J)
