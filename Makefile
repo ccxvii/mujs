@@ -15,7 +15,7 @@ endif
 
 # Compiler flags for various configurations:
 
-CFLAGS := -std=c99 -pedantic -Wall -Wextra -Wno-unused-parameter
+CFLAGS += -std=c99 -pedantic -Wall -Wextra -Wno-unused-parameter
 
 ifeq "$(CC)" "clang"
   CFLAGS += -Wunreachable-code
@@ -30,7 +30,7 @@ ifeq "$(build)" "debug"
 else ifeq "$(build)" "sanitize"
   CFLAGS += -pipe -g -fsanitize=address -fno-omit-frame-pointer
   LDFLAGS += -fsanitize=address
-else
+else ifeq "$(build)" "release"
   CFLAGS += -Os
   LDFLAGS += -Wl,-s
 endif
@@ -67,11 +67,11 @@ jsdump.c: astnames.h opnames.h
 
 $(OUT)/%.o: %.c $(HDRS)
 	@ mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -o $@ -c $<
+	$(CC) $(CFLAGS) $(CPPFLAGS) -o $@ -c $<
 
 $(OUT)/libmujs.o: one.c $(HDRS)
 	@ mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -o $@ -c $<
+	$(CC) $(CFLAGS) $(CPPFLAGS) -o $@ -c $<
 
 $(OUT)/libmujs.a: $(OUT)/libmujs.o
 	@ mkdir -p $(dir $@)
@@ -79,7 +79,7 @@ $(OUT)/libmujs.a: $(OUT)/libmujs.o
 
 $(OUT)/libmujs.so: one.c $(HDRS)
 	@ mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -fPIC -shared -o $@ $< -lm
+	$(CC) $(CFLAGS) $(CPPFLAGS) -fPIC -shared $(LDFLAGS) -o $@ $< -lm
 
 $(OUT)/mujs: $(OUT)/libmujs.o $(OUT)/main.o
 	@ mkdir -p $(dir $@)
