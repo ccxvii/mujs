@@ -1038,9 +1038,12 @@ static void jsR_callscript(js_State *J, int n, js_Function *F, js_Environment *s
 	js_pop(J, n);
 
 	for (i = 0; i < F->varlen; ++i) {
-		js_pushundefined(J);
-		js_initvar(J, F->vartab[i], -1);
-		js_pop(J, 1);
+		/* Bug 701886: don't redefine existing vars in eval/scripts */
+		if (!js_hasvar(J, F->vartab[i])) {
+			js_pushundefined(J);
+			js_initvar(J, F->vartab[i], -1);
+			js_pop(J, 1);
+		}
 	}
 
 	jsR_run(J, F);
