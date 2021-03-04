@@ -175,7 +175,6 @@ static void reprvalue(js_State *J, js_Buffer **sb)
 			break;
 		case JS_CFUNCTION:
 		case JS_CSCRIPT:
-		case JS_CEVAL:
 			reprfun(J, sb, obj->u.f.function);
 			break;
 		case JS_CCFUNCTION:

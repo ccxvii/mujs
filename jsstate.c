@@ -113,7 +113,7 @@ static void js_loadstringx(js_State *J, const char *filename, const char *source
 	P = jsP_parse(J, filename, source);
 	F = jsC_compilescript(J, P, iseval ? J->strict : J->default_strict);
 	jsP_freeparse(J);
-	js_newscript(J, F, iseval ? (J->strict ? J->E : NULL) : J->GE, iseval ? JS_CEVAL : JS_CSCRIPT);
+	js_newscript(J, F, iseval ? (J->strict ? J->E : NULL) : J->GE);
 
 	js_endtry(J);
 }

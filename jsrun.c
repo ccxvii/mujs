@@ -200,7 +200,6 @@ int js_iscallable(js_State *J, int idx)
 	if (v->type == JS_TOBJECT)
 		return v->u.object->type == JS_CFUNCTION ||
 			v->u.object->type == JS_CSCRIPT ||
-			v->u.object->type == JS_CEVAL ||
 			v->u.object->type == JS_CCFUNCTION;
 	return 0;
 }
@@ -1027,32 +1026,6 @@ static void jsR_callfunction(js_State *J, int n, js_Function *F, js_Environment 
 	jsR_restorescope(J);
 }
 
-static void jsR_calleval(js_State *J, int n, js_Function *F, js_Environment *scope)
-{
-	js_Value v;
-	int i;
-
-	scope = jsR_newenvironment(J, jsV_newobject(J, JS_COBJECT, NULL), scope);
-
-	jsR_savescope(J, scope);
-
-	/* scripts take no arguments */
-	js_pop(J, n);
-
-	for (i = 0; i < F->varlen; ++i) {
-		js_pushundefined(J);
-		js_initvar(J, F->vartab[i], -1);
-		js_pop(J, 1);
-	}
-
-	jsR_run(J, F);
-	v = *stackidx(J, -1);
-	TOP = --BOT; /* clear stack */
-	js_pushvalue(J, v);
-
-	jsR_restorescope(J);
-}
-
 static void jsR_callscript(js_State *J, int n, js_Function *F, js_Environment *scope)
 {
 	js_Value v;
@@ -1126,10 +1099,6 @@ void js_call(js_State *J, int n)
 	} else if (obj->type == JS_CSCRIPT) {
 		jsR_pushtrace(J, obj->u.f.function->name, obj->u.f.function->filename, obj->u.f.function->line);
 		jsR_callscript(J, n, obj->u.f.function, obj->u.f.scope);
-		--J->tracetop;
-	} else if (obj->type == JS_CEVAL) {
-		jsR_pushtrace(J, obj->u.f.function->name, obj->u.f.function->filename, obj->u.f.function->line);
-		jsR_calleval(J, n, obj->u.f.function, obj->u.f.scope);
 		--J->tracetop;
 	} else if (obj->type == JS_CCFUNCTION) {
 		jsR_pushtrace(J, obj->u.c.name, "native", 0);

@@ -890,7 +890,6 @@ void js_dumpvalue(js_State *J, js_Value v)
 				v.u.object->u.f.function->line);
 			break;
 		case JS_CSCRIPT: printf("[Script %s]", v.u.object->u.f.function->filename); break;
-		case JS_CEVAL: printf("[Eval %s]", v.u.object->u.f.function->filename); break;
 		case JS_CCFUNCTION: printf("[CFunction %s]", v.u.object->u.c.name); break;
 		case JS_CBOOLEAN: printf("[Boolean %d]", v.u.object->u.boolean); break;
 		case JS_CNUMBER: printf("[Number %g]", v.u.object->u.number); break;
