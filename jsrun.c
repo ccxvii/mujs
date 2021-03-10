@@ -639,7 +639,8 @@ readonly:
 }
 
 static void jsR_defproperty(js_State *J, js_Object *obj, const char *name,
-	int atts, js_Value *value, js_Object *getter, js_Object *setter)
+	int atts, js_Value *value, js_Object *getter, js_Object *setter,
+	int throw)
 {
 	js_Property *ref;
 	int k;
@@ -696,7 +697,7 @@ static void jsR_defproperty(js_State *J, js_Object *obj, const char *name,
 	return;
 
 readonly:
-	if (J->strict)
+	if (J->strict || throw)
 		js_typeerror(J, "'%s' is read-only or non-configurable", name);
 }
 
@@ -805,7 +806,7 @@ void js_setglobal(js_State *J, const char *name)
 
 void js_defglobal(js_State *J, const char *name, int atts)
 {
-	jsR_defproperty(J, J->G, name, atts, stackidx(J, -1), NULL, NULL);
+	jsR_defproperty(J, J->G, name, atts, stackidx(J, -1), NULL, NULL, 0);
 	js_pop(J, 1);
 }
 
@@ -827,7 +828,7 @@ void js_setproperty(js_State *J, int idx, const char *name)
 
 void js_defproperty(js_State *J, int idx, const char *name, int atts)
 {
-	jsR_defproperty(J, js_toobject(J, idx), name, atts, stackidx(J, -1), NULL, NULL);
+	jsR_defproperty(J, js_toobject(J, idx), name, atts, stackidx(J, -1), NULL, NULL, 1);
 	js_pop(J, 1);
 }
 
@@ -838,7 +839,7 @@ void js_delproperty(js_State *J, int idx, const char *name)
 
 void js_defaccessor(js_State *J, int idx, const char *name, int atts)
 {
-	jsR_defproperty(J, js_toobject(J, idx), name, atts, NULL, jsR_tofunction(J, -2), jsR_tofunction(J, -1));
+	jsR_defproperty(J, js_toobject(J, idx), name, atts, NULL, jsR_tofunction(J, -2), jsR_tofunction(J, -1), 1);
 	js_pop(J, 2);
 }
 
@@ -876,7 +877,7 @@ js_Environment *jsR_newenvironment(js_State *J, js_Object *vars, js_Environment 
 
 static void js_initvar(js_State *J, const char *name, int idx)
 {
-	jsR_defproperty(J, J->E->variables, name, JS_DONTENUM | JS_DONTCONF, stackidx(J, idx), NULL, NULL);
+	jsR_defproperty(J, J->E->variables, name, JS_DONTENUM | JS_DONTCONF, stackidx(J, idx), NULL, NULL, 0);
 }
 
 static int js_hasvar(js_State *J, const char *name)
@@ -1447,14 +1448,14 @@ static void jsR_run(js_State *J, js_Function *F)
 		case OP_INITGETTER:
 			obj = js_toobject(J, -3);
 			str = js_tostring(J, -2);
-			jsR_defproperty(J, obj, str, 0, NULL, jsR_tofunction(J, -1), NULL);
+			jsR_defproperty(J, obj, str, 0, NULL, jsR_tofunction(J, -1), NULL, 0);
 			js_pop(J, 2);
 			break;
 
 		case OP_INITSETTER:
 			obj = js_toobject(J, -3);
 			str = js_tostring(J, -2);
-			jsR_defproperty(J, obj, str, 0, NULL, NULL, jsR_tofunction(J, -1));
+			jsR_defproperty(J, obj, str, 0, NULL, NULL, jsR_tofunction(J, -1), 0);
 			js_pop(J, 2);
 			break;
 
