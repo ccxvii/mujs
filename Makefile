@@ -15,7 +15,7 @@ endif
 
 # Compiler flags for various configurations:
 
-CFLAGS += -std=c99 -pedantic -Wall -Wextra -Wno-unused-parameter
+CFLAGS := -std=c99 -pedantic -Wall -Wextra -Wno-unused-parameter
 
 ifeq "$(CC)" "clang"
   CFLAGS += -Wunreachable-code
@@ -31,7 +31,7 @@ else ifeq "$(build)" "sanitize"
   CFLAGS += -pipe -g -fsanitize=address -fno-omit-frame-pointer
   LDFLAGS += -fsanitize=address
 else ifeq "$(build)" "release"
-  CFLAGS += -Os
+  CFLAGS += -O2
   LDFLAGS += -Wl,-s
 endif
 
@@ -41,6 +41,7 @@ ifeq "$(HAVE_READLINE)" "yes"
 endif
 
 CFLAGS += $(XCFLAGS)
+CPPFLAGS += $(XCPPFLAGS)
 
 # You shouldn't need to edit anything below here.
 
