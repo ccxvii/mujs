@@ -103,7 +103,7 @@ static void Ap_join(js_State *J)
 		seplen = 1;
 	}
 
-	if (len == 0) {
+	if (len <= 0) {
 		js_pushliteral(J, "");
 		return;
 	}
