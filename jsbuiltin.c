@@ -34,7 +34,7 @@ void jsB_props(js_State *J, const char *name, const char *string)
 static void jsB_parseInt(js_State *J)
 {
 	const char *s = js_tostring(J, 1);
-	int radix = js_isdefined(J, 2) ? js_tointeger(J, 2) : 10;
+	int radix = js_isdefined(J, 2) ? js_tointeger(J, 2) : 0;
 	double sign = 1;
 	double n;
 	char *e;
@@ -57,7 +57,7 @@ static void jsB_parseInt(js_State *J)
 		js_pushnumber(J, NAN);
 		return;
 	}
-	n = strtol(s, &e, radix);
+	n = js_strtol(s, &e, radix);
 	if (s == e)
 		js_pushnumber(J, NAN);
 	else

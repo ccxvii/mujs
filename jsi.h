@@ -114,6 +114,8 @@ void js_fmtexp(char *p, int e);
 int js_grisu2(double v, char *buffer, int *K);
 double js_strtod(const char *as, char **aas);
 
+double js_strtol(const char *s, char **ep, int radix);
+
 /* Private stack functions */
 
 void js_newarguments(js_State *J);
