@@ -249,6 +249,25 @@ const char *js_typeof(js_State *J, int idx)
 	}
 }
 
+int js_type(js_State *J, int idx)
+{
+	js_Value *v = stackidx(J, idx);
+	switch (v->type) {
+	default:
+	case JS_TSHRSTR: return JS_ISSTRING;
+	case JS_TUNDEFINED: return JS_ISUNDEFINED;
+	case JS_TNULL: return JS_ISNULL;
+	case JS_TBOOLEAN: return JS_ISBOOLEAN;
+	case JS_TNUMBER: return JS_ISNUMBER;
+	case JS_TLITSTR: return JS_ISSTRING;
+	case JS_TMEMSTR: return JS_ISSTRING;
+	case JS_TOBJECT:
+		if (v->u.object->type == JS_CFUNCTION || v->u.object->type == JS_CCFUNCTION)
+			return JS_ISFUNCTION;
+		return JS_ISOBJECT;
+	}
+}
+
 int js_toboolean(js_State *J, int idx)
 {
 	return jsV_toboolean(J, stackidx(J, idx));
