@@ -1,4 +1,11 @@
-build
-tags
+# Optional testsuites
 tests
 specs
+
+# Generated files:
+build
+tags
+
+# Editor settings:
+.exrc
+.vimrc
