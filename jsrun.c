@@ -1438,6 +1438,10 @@ static void jsR_run(js_State *J, js_Function *F)
 			js_pushboolean(J, b);
 			break;
 
+		case OP_INITARRAY:
+			js_setindex(J, -2, js_getlength(J, -2));
+			break;
+
 		case OP_INITPROP:
 			obj = js_toobject(J, -3);
 			str = js_tostring(J, -2);
