@@ -1,5 +1,7 @@
 # Build type and install directories:
 
+-include user.make
+
 build ?= release
 
 prefix ?= /usr/local

@@ -7,5 +7,6 @@ build
 tags
 
 # Editor settings:
+user.make
 .exrc
 .vimrc
