@@ -13,8 +13,6 @@ static void jsG_freeenvironment(js_State *J, js_Environment *env)
 static void jsG_freefunction(js_State *J, js_Function *fun)
 {
 	js_free(J, fun->funtab);
-	js_free(J, fun->numtab);
-	js_free(J, fun->strtab);
 	js_free(J, fun->vartab);
 	js_free(J, fun->code);
 	js_free(J, fun);

@@ -781,6 +781,8 @@ void jsC_dumpfunction(js_State *J, js_Function *F)
 {
 	js_Instruction *p = F->code;
 	js_Instruction *end = F->code + F->codelen;
+	char *s;
+	double n;
 	int i;
 
 	minify = 0;
@@ -807,16 +809,21 @@ void jsC_dumpfunction(js_State *J, js_Function *F)
 			printf(" %ld", (long)((*p++) - 32768));
 			break;
 		case OP_NUMBER:
-			printf(" %.9g", F->numtab[*p++]);
+			memcpy(&n, p, sizeof(n));
+			p += sizeof(n) / sizeof(*p);
+			printf(" %.9g", n);
 			break;
 		case OP_STRING:
+			memcpy(&s, p, sizeof(s));
+			p += sizeof(s) / sizeof(*p);
 			pc(' ');
-			pstr(F->strtab[*p++]);
+			pstr(s);
 			break;
 		case OP_NEWREGEXP:
 			pc(' ');
-			pregexp(F->strtab[p[0]], p[1]);
-			p += 2;
+			memcpy(&s, p, sizeof(s));
+			p += sizeof(s) / sizeof(*p);
+			pregexp(s, *p++);
 			break;
 
 		case OP_GETVAR:
@@ -827,8 +834,10 @@ void jsC_dumpfunction(js_State *J, js_Function *F)
 		case OP_SETPROP_S:
 		case OP_DELPROP_S:
 		case OP_CATCH:
+			memcpy(&s, p, sizeof(s));
+			p += sizeof(s) / sizeof(*p);
 			pc(' ');
-			ps(F->strtab[*p++]);
+			ps(s);
 			break;
 
 		case OP_GETLOCAL:
