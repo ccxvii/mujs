@@ -29,7 +29,7 @@ double js_strtol(const char *s, char **p, int base)
 		80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80
 	};
 	double x;
-	int c;
+	unsigned char c;
 	if (base == 10)
 		for (x = 0, c = *s++; (0 <= c - '0') && (c - '0' < 10); c = *s++)
 			x = x * 10 + (c - '0');
