@@ -2,12 +2,15 @@
 
 usage() {
     [ "${1-}" ] && { to=2; >&$to printf "Error: %s\n" "$1"; } || to=1
-    >&$to echo "Usage: $(basename "$0") [+s] [-p] [-f] [-l f1.js -l ..] test-file | test-dir"
-    >&$to echo "Run test-262 ES5 test file[s]."
-    >&$to echo "  +s : Don't skip known crashing/hanging tests"
-    >&$to echo "  -p : Print every test name before running it"
-    >&$to echo "  -f : Display full paths and full stack trace when possible"
-    >&$to echo "  -l file.js : load file.js after the harness and before the test"
+    >&$to echo "Usage: ${0##*/} [OPTIONS] test-file | test-dir"
+    >&$to echo "Run test-262 ES5 test file or directory (at the test262 dir)."
+    >&$to echo "  -p          Print every test name before running it"
+    >&$to echo "  -f          Display full paths and full stack trace when possible"
+    >&$to echo "  -l file.js  Load file.js after the harness and before the test"
+    >&$to echo "  -m MUJS     MUJS is [path/to/]mujs binary to test"
+    >&$to echo "                Default is $(dirname "$0")/../build/release/mujs or mujs at \$PATH"
+    >&$to echo "  -b          Don't skip known bad (crashing/hanging) tests"
+    >&$to echo "  -B          Run only known bad tests"
     exit $((to-1))
 }
 
@@ -47,24 +50,28 @@ KNOWN_BAD="
     S15.4.4.5_A4_T3.js
 "
 
-SKIP_KNOWN=yes
+SKIP_KNOWN=yes  # "yes": skip bad  "no": don't skip  "neg": run only bad
 PRINT_ALL=
 EXTRA_ARGS=
-while [ "${1-}" ] && [ -z "${1##-*}" ]; do
-    case $1 in
-        -h|--help) usage ;;
-               +s) SKIP_KNOWN= ;;
-               -p) PRINT_ALL=yes ;;
-               -f) EXTRA_ARGS="$EXTRA_ARGS -f" ;;
-               -l) EXTRA_ARGS="$EXTRA_ARGS -l $2"; shift ;;
-                *) usage "unknown option $1" ;;
+mujs=
+
+while getopts bBfhl:p o; do
+    case $o in
+        h) usage ;;
+        b) SKIP_KNOWN=no ;;
+        B) SKIP_KNOWN=neg ;;
+        p) PRINT_ALL=yes ;;
+        f) EXTRA_ARGS="$EXTRA_ARGS -f" ;;
+        l) EXTRA_ARGS="$EXTRA_ARGS -l $OPTARG"; shift ;;
+        m) mujs=$OPTARG;;
+        *) usage "unknown option -$o" ;;
     esac
-    shift
 done
+shift $((OPTIND-1))
 [ $# = 1 ] || usage "expecting one file/dir"
 
 BAD=
-if [ "$SKIP_KNOWN" ]; then
+if [ "$SKIP_KNOWN" != no ]; then
     for b in $KNOWN_BAD; do
         BAD="$BAD $b "
     done
@@ -93,9 +100,11 @@ else
     FILES_CMD='printf "%s\n" "$1"'
 fi
 
-# try to use a recently built mujs rather than a global one
-mujs=$(dirname "$0")/../build/release/mujs
-[ -e "$mujs" ] || mujs=mujs
+if ! [ "$mujs" ]; then
+    # try to use a recently built mujs rather than a global one
+    mujs=$(dirname "$0")/../build/release/mujs
+    [ -e "$mujs" ] || mujs=mujs
+fi
 jsharness=$(dirname "$0")/test262-harness.js
 
 total=0
@@ -106,15 +115,20 @@ eval "$FILES_CMD" | (
     while read f && [ "$f" ]; do
         total=$((total+1))
         base=${f##*/}
-        [ "$PRINT_ALL" ] && echo "Testing: $f"
 
-        case $BAD in
-        *" $base "*)
+        case $BAD in *" $base "*) bad=yes;; *) bad=no;; esac
+
+        case $bad-$SKIP_KNOWN in
+        yes-yes)
             skipped=$((skipped+1))
             printf "[Skipping: $base]\n\n"
             ;;
+        no-neg)  # not known bad and running only bad - don't print anything
+            skipped=$((skipped+1))
+            ;;
         *)
-            if ! $mujs $jsharness $EXTRA_ARGS "$ROOT" $f; then
+            [ "$PRINT_ALL" ] && echo "Testing: $f"
+            if ! $mujs $jsharness $EXTRA_ARGS "$ROOT" $f 2>&1; then
                 failed=$((failed+1))
                 echo
             fi
@@ -127,4 +141,6 @@ eval "$FILES_CMD" | (
         printf "Skip:  %${#total}s\n" $skipped
         printf "Fail:  %${#total}s\n" $failed
     fi
-) 2>&1
+
+    [ "$failed" = 0 ]
+)
