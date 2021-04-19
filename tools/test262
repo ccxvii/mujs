@@ -55,7 +55,7 @@ while getopts bBfhl:ps o; do
 		p) PRINT_ALL=yes ;;
 		s) EXTRA_ARGS="$EXTRA_ARGS -s" ;;
 		f) EXTRA_ARGS="$EXTRA_ARGS -f" ;;
-		l) EXTRA_ARGS="$EXTRA_ARGS -l $OPTARG"; shift ;;
+		l) EXTRA_ARGS="$EXTRA_ARGS -l $OPTARG" ;;
 		m) mujs=$OPTARG;;
 		*) usage "unknown option -$o" ;;
 	esac
