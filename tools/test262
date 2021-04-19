@@ -4,6 +4,7 @@ usage() {
     [ "${1-}" ] && { to=2; >&$to printf "Error: %s\n" "$1"; } || to=1
     >&$to echo "Usage: ${0##*/} [OPTIONS] test-file | test-dir"
     >&$to echo "Run test-262 ES5 test file or directory (at the test262 dir)."
+    >&$to echo "  -s          Print source code of failed tests."
     >&$to echo "  -p          Print every test name before running it"
     >&$to echo "  -f          Display full paths and full stack trace when possible"
     >&$to echo "  -l file.js  Load file.js after the harness and before the test"
@@ -46,12 +47,13 @@ PRINT_ALL=
 EXTRA_ARGS=
 mujs=
 
-while getopts bBfhl:p o; do
+while getopts bBfhl:ps o; do
     case $o in
         h) usage ;;
         b) SKIP_KNOWN=no ;;
         B) SKIP_KNOWN=neg ;;
         p) PRINT_ALL=yes ;;
+        s) EXTRA_ARGS="$EXTRA_ARGS -s" ;;
         f) EXTRA_ARGS="$EXTRA_ARGS -f" ;;
         l) EXTRA_ARGS="$EXTRA_ARGS -l $OPTARG"; shift ;;
         m) mujs=$OPTARG;;

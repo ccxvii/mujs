@@ -1,6 +1,7 @@
 /*
  * Runs one test file from the ES5 test suite test-262
- * Usage: mujs <this-file> [-f] [-l file1.js -l ...] suit-root test-file
+ * Usage: mujs <this-file> [-s ] [-f] [-l file1.js -l ...] suit-root test-file
+ * -s: print test source on failure
  * -f: print full paths/stacktraces if possible
  * -l: load a js file after the harness and before the test (to override things)
  *
@@ -53,11 +54,14 @@
 
     var args = mujs.scriptArgs;
     var full_mode = false;
+    var print_src = false;
     var overrides = [];
     while ((""+args[0])[0] == "-") {
         switch (args[0]) {
             case "-f": full_mode = true;
                        break;
+            case "-s": print_src = true;
+                       break
             case "-l": args.shift();
                        overrides.push(args[0]);
                        break;
@@ -112,6 +116,7 @@
     }
 
     // failed
+    // FIXME: @description can span lines. E.g. test/suite/bestPractice/Sbp_A3_T2.js
     var desc = source.match(/@description (.*)/);
     var info = "[File]  " + as_file +
                 (desc ? "\n[Desc]  " + desc[1] : "") +
@@ -137,6 +142,9 @@
     } else {
         info += "[run]   [Error expected but none thrown]";
     }
+
+    if (print_src)
+        info += "\n[Source]\n" + source;
 
     mujs.print(info);
     mujs.quit(1);
