@@ -522,7 +522,7 @@ static int jsR_hasproperty(js_State *J, js_Object *obj, const char *name)
 
 	else if (obj->type == JS_CREGEXP) {
 		if (!strcmp(name, "source")) {
-			js_pushliteral(J, obj->u.r.source);
+			js_pushstring(J, obj->u.r.source);
 			return 1;
 		}
 		if (!strcmp(name, "global")) {
