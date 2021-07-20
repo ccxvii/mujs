@@ -23,11 +23,8 @@ typedef int Rune;	/* 32 bits */
 
 #define isalpharune	jsU_isalpharune
 #define islowerrune	jsU_islowerrune
-#define isspacerune	jsU_isspacerune
-#define istitlerune	jsU_istitlerune
 #define isupperrune	jsU_isupperrune
 #define tolowerrune	jsU_tolowerrune
-#define totitlerune	jsU_totitlerune
 #define toupperrune	jsU_toupperrune
 
 enum
@@ -46,11 +43,8 @@ int	utflen(const char *s);
 
 int		isalpharune(Rune c);
 int		islowerrune(Rune c);
-int		isspacerune(Rune c);
-int		istitlerune(Rune c);
 int		isupperrune(Rune c);
 Rune		tolowerrune(Rune c);
-Rune		totitlerune(Rune c);
 Rune		toupperrune(Rune c);
 
 #endif
