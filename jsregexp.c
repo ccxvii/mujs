@@ -193,9 +193,14 @@ static void jsB_RegExp(js_State *J)
 static void Rp_toString(js_State *J)
 {
 	js_Regexp *re;
-	char *out;
+	char * volatile out = NULL;
 
 	re = js_toregexp(J, 0);
+
+	if (js_try(J)) {
+		js_free(J, out);
+		js_throw(J);
+	}
 
 	out = js_malloc(J, strlen(re->source) + 6); /* extra space for //gim */
 	strcpy(out, "/");
@@ -205,10 +210,6 @@ static void Rp_toString(js_State *J)
 	if (re->flags & JS_REGEXP_I) strcat(out, "i");
 	if (re->flags & JS_REGEXP_M) strcat(out, "m");
 
-	if (js_try(J)) {
-		js_free(J, out);
-		js_throw(J);
-	}
 	js_pop(J, 0);
 	js_pushstring(J, out);
 	js_endtry(J);

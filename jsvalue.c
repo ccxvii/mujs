@@ -562,14 +562,15 @@ void js_concat(js_State *J)
 	if (js_isstring(J, -2) || js_isstring(J, -1)) {
 		const char *sa = js_tostring(J, -2);
 		const char *sb = js_tostring(J, -1);
+		char * volatile sab = NULL;
 		/* TODO: create js_String directly */
-		char *sab = js_malloc(J, strlen(sa) + strlen(sb) + 1);
-		strcpy(sab, sa);
-		strcat(sab, sb);
 		if (js_try(J)) {
 			js_free(J, sab);
 			js_throw(J);
 		}
+		sab = js_malloc(J, strlen(sa) + strlen(sb) + 1);
+		strcpy(sab, sa);
+		strcat(sab, sb);
 		js_pop(J, 2);
 		js_pushstring(J, sab);
 		js_endtry(J);
