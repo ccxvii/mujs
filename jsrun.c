@@ -16,7 +16,7 @@ static void jsR_run(js_State *J, js_Function *F);
 static void js_trystackoverflow(js_State *J)
 {
 	STACK[TOP].type = JS_TLITSTR;
-	STACK[TOP].u.litstr = "try stack overflow";
+	STACK[TOP].u.litstr = "exception stack overflow";
 	++TOP;
 	js_throw(J);
 }
