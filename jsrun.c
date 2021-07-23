@@ -13,6 +13,14 @@ static void jsR_run(js_State *J, js_Function *F);
 #define TOP (J->top)
 #define BOT (J->bot)
 
+static void js_trystackoverflow(js_State *J)
+{
+	STACK[TOP].type = JS_TLITSTR;
+	STACK[TOP].u.litstr = "try stack overflow";
+	++TOP;
+	js_throw(J);
+}
+
 static void js_stackoverflow(js_State *J)
 {
 	STACK[TOP].type = JS_TLITSTR;
@@ -1226,7 +1234,7 @@ int js_pcall(js_State *J, int n)
 void *js_savetrypc(js_State *J, js_Instruction *pc)
 {
 	if (J->trytop == JS_TRYLIMIT)
-		js_error(J, "try: exception stack overflow");
+		js_trystackoverflow(J);
 	J->trybuf[J->trytop].E = J->E;
 	J->trybuf[J->trytop].envtop = J->envtop;
 	J->trybuf[J->trytop].tracetop = J->tracetop;
@@ -1240,7 +1248,7 @@ void *js_savetrypc(js_State *J, js_Instruction *pc)
 void *js_savetry(js_State *J)
 {
 	if (J->trytop == JS_TRYLIMIT)
-		js_error(J, "try: exception stack overflow");
+		js_trystackoverflow(J);
 	J->trybuf[J->trytop].E = J->E;
 	J->trybuf[J->trytop].envtop = J->envtop;
 	J->trybuf[J->trytop].tracetop = J->tracetop;
