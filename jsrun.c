@@ -119,7 +119,9 @@ void js_pushnumber(js_State *J, double v)
 
 void js_pushstring(js_State *J, const char *v)
 {
-	int n = strlen(v);
+	size_t n = strlen(v);
+	if (n > JS_STRLIMIT)
+		js_rangeerror(J, "invalid string length");
 	CHECKSTACK(1);
 	if (n <= soffsetof(js_Value, type)) {
 		char *s = STACK[TOP].u.shrstr;
@@ -135,6 +137,8 @@ void js_pushstring(js_State *J, const char *v)
 
 void js_pushlstring(js_State *J, const char *v, int n)
 {
+	if (n > JS_STRLIMIT)
+		js_rangeerror(J, "invalid string length");
 	CHECKSTACK(1);
 	if (n <= soffsetof(js_Value, type)) {
 		char *s = STACK[TOP].u.shrstr;

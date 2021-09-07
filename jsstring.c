@@ -123,20 +123,24 @@ static void Sp_concat(js_State *J)
 		return;
 
 	s = checkstring(J, 0);
-	n = strlen(s);
+	n = 1 + strlen(s);
 
 	if (js_try(J)) {
 		js_free(J, out);
 		js_throw(J);
 	}
 
-	out = js_malloc(J, n + 1);
+	if (n > JS_STRLIMIT)
+		js_rangeerror(J, "invalid string length");
+	out = js_malloc(J, n);
 	strcpy(out, s);
 
 	for (i = 1; i < top; ++i) {
 		s = js_tostring(J, i);
 		n += strlen(s);
-		out = js_realloc(J, out, n + 1);
+		if (n > JS_STRLIMIT)
+			js_rangeerror(J, "invalid string length");
+		out = js_realloc(J, out, n);
 		strcat(out, s);
 	}
 

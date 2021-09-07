@@ -93,6 +93,9 @@ typedef struct js_StackTrace js_StackTrace;
 #ifndef JS_ASTLIMIT
 #define JS_ASTLIMIT 100		/* max nested expressions */
 #endif
+#ifndef JS_STRLIMIT
+#define JS_STRLIMIT (1<<16)	/* max string length */
+#endif
 
 /* instruction size -- change to int if you get integer overflow syntax errors */
 

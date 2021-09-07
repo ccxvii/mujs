@@ -123,11 +123,15 @@ static void Ap_join(js_State *J)
 		n += strlen(r);
 
 		if (k == 0) {
-			out = js_malloc(J, n);
+			if (n > JS_STRLIMIT)
+				js_rangeerror(J, "invalid string length");
+			out = js_malloc(J, (int)n);
 			strcpy(out, r);
 		} else {
 			n += seplen;
-			out = js_realloc(J, out, n);
+			if (n > JS_STRLIMIT)
+				js_rangeerror(J, "invalid string length");
+			out = js_realloc(J, out, (int)n);
 			strcat(out, sep);
 			strcat(out, r);
 		}
