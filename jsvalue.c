@@ -463,13 +463,15 @@ void js_newscript(js_State *J, js_Function *fun, js_Environment *scope)
 	js_pushobject(J, obj);
 }
 
-void js_newcfunction(js_State *J, js_CFunction cfun, const char *name, int length)
+void js_newcfunctionx(js_State *J, js_CFunction cfun, const char *name, int length, void *data, js_Finalize finalize)
 {
 	js_Object *obj = jsV_newobject(J, JS_CCFUNCTION, J->Function_prototype);
 	obj->u.c.name = name;
 	obj->u.c.function = cfun;
 	obj->u.c.constructor = NULL;
 	obj->u.c.length = length;
+	obj->u.c.data = data;
+	obj->u.c.finalize = finalize;
 	js_pushobject(J, obj);
 	{
 		js_pushnumber(J, length);
@@ -481,6 +483,11 @@ void js_newcfunction(js_State *J, js_CFunction cfun, const char *name, int lengt
 		}
 		js_defproperty(J, -2, "prototype", JS_DONTENUM | JS_DONTCONF);
 	}
+}
+
+void js_newcfunction(js_State *J, js_CFunction cfun, const char *name, int length)
+{
+	js_newcfunctionx(J, cfun, name, length, NULL, NULL);
 }
 
 /* prototype -- constructor */

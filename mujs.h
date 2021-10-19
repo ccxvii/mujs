@@ -149,6 +149,7 @@ void js_setindex(js_State *J, int idx, int i);
 void js_delindex(js_State *J, int idx, int i);
 
 void js_currentfunction(js_State *J);
+void *js_currentfunctiondata(js_State *J);
 void js_pushglobal(js_State *J);
 void js_pushundefined(js_State *J);
 void js_pushnull(js_State *J);
@@ -165,6 +166,7 @@ void js_newboolean(js_State *J, int v);
 void js_newnumber(js_State *J, double v);
 void js_newstring(js_State *J, const char *v);
 void js_newcfunction(js_State *J, js_CFunction fun, const char *name, int length);
+void js_newcfunctionx(js_State *J, js_CFunction fun, const char *name, int length, void *data, js_Finalize finalize);
 void js_newcconstructor(js_State *J, js_CFunction fun, js_CFunction con, const char *name, int length);
 void js_newuserdata(js_State *J, const char *tag, void *data, js_Finalize finalize);
 void js_newuserdatax(js_State *J, const char *tag, void *data, js_HasProperty has, js_Put put, js_Delete del, js_Finalize finalize);

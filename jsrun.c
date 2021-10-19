@@ -176,8 +176,18 @@ void js_pushglobal(js_State *J)
 void js_currentfunction(js_State *J)
 {
 	CHECKSTACK(1);
-	STACK[TOP] = STACK[BOT-1];
+	if (BOT > 0)
+		STACK[TOP] = STACK[BOT-1];
+	else
+		STACK[TOP].type = JS_TUNDEFINED;
 	++TOP;
+}
+
+void *js_currentfunctiondata(js_State *J)
+{
+	if (BOT > 0)
+		return STACK[BOT-1].u.object->u.c.data;
+	return NULL;
 }
 
 /* Read values from stack */
