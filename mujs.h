@@ -7,6 +7,13 @@
 extern "C" {
 #endif
 
+#define JS_VERSION_MAJOR 1
+#define JS_VERSION_MINOR 2
+#define JS_VERSION_PATCH 0
+
+#define JS_VERSION (JS_VERSION_MAJOR * 10000 + JS_VERSION_MINOR * 100 + JS_VERSION_PATCH)
+#define JS_CHECKVERSION(x,y,z) (JS_VERSION >= ((x) * 10000 + (y) * 100 + (z)))
+
 /* noreturn is a GCC extension */
 #ifdef __GNUC__
 #define JS_NORETURN __attribute__((noreturn))
