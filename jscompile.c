@@ -41,6 +41,7 @@ static const char *strictfuturewords[] = {
 	"public", "static", "yield",
 };
 
+__attribute__((optimize("O0")))
 static void checkfutureword(JF, js_Ast *exp)
 {
 	if (jsY_findword(exp->string, futurewords, nelem(futurewords)) >= 0)
