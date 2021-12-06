@@ -385,17 +385,21 @@ static js_Object *jsV_newstring(js_State *J, const char *v)
 /* ToObject() on a value */
 js_Object *jsV_toobject(js_State *J, js_Value *v)
 {
+	js_Object *o;
 	switch (v->type) {
 	default:
-	case JS_TSHRSTR: return jsV_newstring(J, v->u.shrstr);
 	case JS_TUNDEFINED: js_typeerror(J, "cannot convert undefined to object");
 	case JS_TNULL: js_typeerror(J, "cannot convert null to object");
-	case JS_TBOOLEAN: return jsV_newboolean(J, v->u.boolean);
-	case JS_TNUMBER: return jsV_newnumber(J, v->u.number);
-	case JS_TLITSTR: return jsV_newstring(J, v->u.litstr);
-	case JS_TMEMSTR: return jsV_newstring(J, v->u.memstr->p);
 	case JS_TOBJECT: return v->u.object;
+	case JS_TSHRSTR: o = jsV_newstring(J, v->u.shrstr); break;
+	case JS_TLITSTR: o = jsV_newstring(J, v->u.litstr); break;
+	case JS_TMEMSTR: o = jsV_newstring(J, v->u.memstr->p); break;
+	case JS_TBOOLEAN: o = jsV_newboolean(J, v->u.boolean); break;
+	case JS_TNUMBER: o = jsV_newnumber(J, v->u.number); break;
 	}
+	v->type = JS_TOBJECT;
+	v->u.object = o;
+	return o;
 }
 
 void js_newobjectx(js_State *J)
