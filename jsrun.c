@@ -1195,13 +1195,18 @@ void js_construct(js_State *J, int n)
 	if (n > 0)
 		js_rot(J, n + 1);
 
+	/* and save a copy to return */
+	js_pushobject(J, newobj);
+	js_rot(J, n + 3);
+
 	/* call the function */
 	js_call(J, n);
 
 	/* if result is not an object, return the original object we created */
 	if (!js_isobject(J, -1)) {
 		js_pop(J, 1);
-		js_pushobject(J, newobj);
+	} else {
+		js_rot2pop1(J);
 	}
 }
 
