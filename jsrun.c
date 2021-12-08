@@ -1126,6 +1126,9 @@ void js_call(js_State *J, int n)
 	js_Object *obj;
 	int savebot;
 
+	if (n < 0)
+		js_rangeerror(J, "number of arguments cannot be negative");
+
 	if (!js_iscallable(J, -n-2))
 		js_typeerror(J, "%s is not callable", js_typeof(J, -n-2));
 
