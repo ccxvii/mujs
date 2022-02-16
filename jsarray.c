@@ -91,7 +91,7 @@ static void Ap_join(js_State *J)
 	const char *sep;
 	const char *r;
 	int seplen;
-	int k, n, len;
+	int k, n, len, outlen, rlen;
 
 	len = js_getlength(J, 0);
 
@@ -120,20 +120,22 @@ static void Ap_join(js_State *J)
 			r = "";
 		else
 			r = js_tostring(J, -1);
-		n += strlen(r);
+		outlen = n - 1;
+		rlen = strlen(r);
+		n += rlen;
 
 		if (k == 0) {
 			if (n > JS_STRLIMIT)
 				js_rangeerror(J, "invalid string length");
 			out = js_malloc(J, (int)n);
-			strcpy(out, r);
+			memcpy(out, r, rlen + 1);
 		} else {
 			n += seplen;
 			if (n > JS_STRLIMIT)
 				js_rangeerror(J, "invalid string length");
 			out = js_realloc(J, out, (int)n);
-			strcat(out, sep);
-			strcat(out, r);
+			memcpy(out + outlen, sep, seplen);
+			memcpy(out + outlen + seplen, r, rlen + 1);
 		}
 
 		js_pop(J, 1);
