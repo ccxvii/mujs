@@ -91,7 +91,7 @@ static void Ap_join(js_State *J)
 	const char *sep;
 	const char *r;
 	int seplen;
-	int k, n, len, outlen, rlen;
+	int k, n, len, rlen;
 
 	len = js_getlength(J, 0);
 
@@ -113,35 +113,40 @@ static void Ap_join(js_State *J)
 		js_throw(J);
 	}
 
-	n = 1;
+	n = 0;
 	for (k = 0; k < len; ++k) {
 		js_getindex(J, 0, k);
-		if (js_isundefined(J, -1) || js_isnull(J, -1))
-			r = "";
-		else
+		if (js_iscoercible(J, -1)) {
 			r = js_tostring(J, -1);
-		outlen = n - 1;
-		rlen = strlen(r);
-		n += rlen;
+			rlen = strlen(r);
+		} else {
+			rlen = 0;
+		}
 
 		if (k == 0) {
-			if (n > JS_STRLIMIT)
-				js_rangeerror(J, "invalid string length");
-			out = js_malloc(J, (int)n);
-			memcpy(out, r, rlen + 1);
+			out = js_malloc(J, rlen + 1);
+			if (rlen > 0) {
+				memcpy(out, r, rlen);
+				n += rlen;
+			}
 		} else {
-			n += seplen;
-			if (n > JS_STRLIMIT)
+			if (n + seplen + rlen > JS_STRLIMIT)
 				js_rangeerror(J, "invalid string length");
-			out = js_realloc(J, out, (int)n);
-			memcpy(out + outlen, sep, seplen);
-			memcpy(out + outlen + seplen, r, rlen + 1);
+			out = js_realloc(J, out, n + seplen + rlen + 1);
+			if (seplen > 0) {
+				memcpy(out + n, sep, seplen);
+				n += seplen;
+			}
+			if (rlen > 0) {
+				memcpy(out + n, r, rlen);
+				n += rlen;
+			}
 		}
 
 		js_pop(J, 1);
 	}
 
-	js_pushstring(J, out);
+	js_pushlstring(J, out, n);
 	js_endtry(J);
 	js_free(J, out);
 }
