@@ -10,9 +10,9 @@
 
 static int js_ptry(js_State *J) {
 	if (J->trytop == JS_TRYLIMIT) {
-		STACK[TOP].type = JS_TLITSTR;
-		STACK[TOP].u.litstr = "exception stack overflow";
-		++TOP;
+		J->stack[J->top].type = JS_TLITSTR;
+		J->stack[J->top].u.litstr = "exception stack overflow";
+		++J->top;
 		return 1;
 	}
 	return 0;
