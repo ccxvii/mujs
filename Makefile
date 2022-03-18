@@ -12,7 +12,7 @@ libdir ?= $(prefix)/lib
 ifeq "$(wildcard .git)" ".git"
   VERSION := $(shell git describe --tags --always)
 else
-  VERSION := $(shell basename $$PWD | sed -e s,^mujs-,,)
+  VERSION := $(patsubst mujs-%,%,$(notdir $(CURDIR)))
 endif
 
 ifeq ($(shell uname),Darwin)
