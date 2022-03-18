@@ -75,27 +75,27 @@ one.c: $(SRCS)
 jsdump.c: astnames.h opnames.h
 
 $(OUT)/%.o: %.c $(HDRS)
-	@ mkdir -p $(dir $@)
+	@ mkdir -p $(@D)
 	$(CC) $(CFLAGS) $(CPPFLAGS) -o $@ -c $<
 
 $(OUT)/libmujs.o: one.c $(HDRS)
-	@ mkdir -p $(dir $@)
+	@ mkdir -p $(@D)
 	$(CC) $(CFLAGS) $(CPPFLAGS) -o $@ -c $<
 
 $(OUT)/libmujs.a: $(OUT)/libmujs.o
-	@ mkdir -p $(dir $@)
+	@ mkdir -p $(@D)
 	$(AR) cr $@ $^
 
 $(OUT)/libmujs.$(SO_EXT): one.c $(HDRS)
-	@ mkdir -p $(dir $@)
+	@ mkdir -p $(@D)
 	$(CC) $(CFLAGS) $(CPPFLAGS) -fPIC -shared $(LDFLAGS) -o $@ $< -lm
 
 $(OUT)/mujs: $(OUT)/libmujs.o $(OUT)/main.o
-	@ mkdir -p $(dir $@)
+	@ mkdir -p $(@D)
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBREADLINE) -lm
 
 $(OUT)/mujs-pp: $(OUT)/libmujs.o $(OUT)/pp.o
-	@ mkdir -p $(dir $@)
+	@ mkdir -p $(@D)
 	$(CC) $(LDFLAGS) -o $@ $^ -lm
 
 .PHONY: $(OUT)/mujs.pc
