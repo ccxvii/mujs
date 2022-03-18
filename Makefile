@@ -90,13 +90,15 @@ $(OUT)/libmujs.$(SO_EXT): one.c $(HDRS)
 	@ mkdir -p $(@D)
 	$(CC) $(CFLAGS) $(CPPFLAGS) -fPIC -shared $(LDFLAGS) -o $@ $< -lm
 
-$(OUT)/mujs: $(OUT)/libmujs.o $(OUT)/main.o
-	@ mkdir -p $(@D)
-	$(CC) $(LDFLAGS) -o $@ $^ $(LIBREADLINE) -lm
+libmujs ?= libmujs.a
 
-$(OUT)/mujs-pp: $(OUT)/libmujs.o $(OUT)/pp.o
+$(OUT)/mujs: $(OUT)/main.o $(OUT)/$(libmujs)
 	@ mkdir -p $(@D)
-	$(CC) $(LDFLAGS) -o $@ $^ -lm
+	$(CC) $(LDFLAGS) -o $@ $< -L$(OUT) -l:$(libmujs) $(LIBREADLINE) -lm
+
+$(OUT)/mujs-pp: $(OUT)/pp.o $(OUT)/$(libmujs)
+	@ mkdir -p $(@D)
+	$(CC) $(LDFLAGS) -o $@ $< -L$(OUT) -l:$(libmujs) -lm
 
 .PHONY: $(OUT)/mujs.pc
 $(OUT)/mujs.pc:
