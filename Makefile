@@ -100,6 +100,7 @@ $(OUT)/mujs-pp: $(OUT)/libmujs.o $(OUT)/pp.o
 
 .PHONY: $(OUT)/mujs.pc
 $(OUT)/mujs.pc:
+	@ mkdir -p $(dir $@)
 	@ echo Creating $@
 	@ echo > $@ Name: mujs
 	@ echo >> $@ Description: MuJS embeddable Javascript interpreter
