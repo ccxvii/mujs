@@ -198,6 +198,8 @@ int js_isuserdata(js_State *J, int idx, const char *tag);
 int js_iserror(js_State *J, int idx);
 int js_isnumberobject(js_State *J, int idx);
 int js_isstringobject(js_State *J, int idx);
+int js_isbooleanobject(js_State *J, int idx);
+int js_isdateobject(js_State *J, int idx);
 
 int js_toboolean(js_State *J, int idx);
 double js_tonumber(js_State *J, int idx);
