@@ -322,6 +322,11 @@ js_State *js_newstate(js_Alloc alloc, void *actx, int flags)
 	J->nextref = 0;
 	J->gcthresh = 0; /* reaches stability within ~ 2-5 GC cycles */
 
+	if (js_try(J)) {
+		js_freestate(J);
+		return NULL;
+	}
+
 	J->R = jsV_newobject(J, JS_COBJECT, NULL);
 	J->G = jsV_newobject(J, JS_COBJECT, NULL);
 	J->E = jsR_newenvironment(J, J->G, NULL);
@@ -329,5 +334,6 @@ js_State *js_newstate(js_Alloc alloc, void *actx, int flags)
 
 	jsB_init(J);
 
+	js_endtry(J);
 	return J;
 }
