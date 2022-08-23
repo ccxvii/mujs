@@ -44,31 +44,26 @@ void js_ppfile(js_State *J, const char *filename, int minify)
 	}
 
 	if (fseek(f, 0, SEEK_END) < 0) {
-		fclose(f);
 		js_error(J, "cannot seek in file: '%s'", filename);
 	}
 
 	n = ftell(f);
 	if (n < 0) {
-		fclose(f);
 		js_error(J, "cannot tell in file: '%s'", filename);
 	}
 
 	if (fseek(f, 0, SEEK_SET) < 0) {
-		fclose(f);
 		js_error(J, "cannot seek in file: '%s'", filename);
 	}
 
 	s = js_malloc(J, n + 1); /* add space for string terminator */
 	if (!s) {
-		fclose(f);
 		js_error(J, "cannot allocate storage for file contents: '%s'", filename);
 	}
 
 	t = fread(s, 1, (size_t)n, f);
 	if (t != n) {
 		js_free(J, s);
-		fclose(f);
 		js_error(J, "cannot read data from file: '%s'", filename);
 	}
 
