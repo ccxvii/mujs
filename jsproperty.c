@@ -1,6 +1,8 @@
 #include "jsi.h"
 #include "jsvalue.h"
 
+#include <assert.h>
+
 /*
 	Use an AA-tree to quickly look up properties in objects:
 
@@ -226,16 +228,28 @@ void jsV_delproperty(js_State *J, js_Object *obj, const char *name)
 
 /* Flatten hierarchy of enumerable properties into an iterator object */
 
+static js_Iterator *itnewnode(js_State *J, const char *name, js_Iterator *next) {
+	js_Iterator *node = js_malloc(J, offsetof(js_Iterator, buf));
+	node->name = name;
+	node->next = next;
+	return node;
+}
+
+static js_Iterator *itnewnodeix(js_State *J, int ix) {
+	js_Iterator *node = js_malloc(J, sizeof(js_Iterator));
+	js_itoa(node->buf, ix);
+	node->name = node->buf;
+	node->next = NULL;
+	return node;
+}
+
 static js_Iterator *itwalk(js_State *J, js_Iterator *iter, js_Property *prop, js_Object *seen)
 {
 	if (prop->right != &sentinel)
 		iter = itwalk(J, iter, prop->right, seen);
 	if (!(prop->atts & JS_DONTENUM)) {
 		if (!seen || !jsV_getenumproperty(J, seen, prop->name)) {
-			js_Iterator *head = js_malloc(J, sizeof *head);
-			head->name = prop->name;
-			head->next = iter;
-			iter = head;
+			iter = itnewnode(J, prop->name, iter);
 		}
 	}
 	if (prop->left != &sentinel)
@@ -266,6 +280,7 @@ js_Object *jsV_newiterator(js_State *J, js_Object *obj, int own)
 	} else {
 		io->u.iter.head = itflatten(J, obj);
 	}
+
 	if (obj->type == JS_CSTRING) {
 		js_Iterator *tail = io->u.iter.head;
 		if (tail)
@@ -274,9 +289,7 @@ js_Object *jsV_newiterator(js_State *J, js_Object *obj, int own)
 		for (k = 0; k < obj->u.s.length; ++k) {
 			js_itoa(buf, k);
 			if (!jsV_getenumproperty(J, obj, buf)) {
-				js_Iterator *node = js_malloc(J, sizeof *node);
-				node->name = js_intern(J, js_itoa(buf, k));
-				node->next = NULL;
+				js_Iterator *node = itnewnodeix(J, k);
 				if (!tail)
 					io->u.iter.head = tail = node;
 				else {
@@ -286,6 +299,23 @@ js_Object *jsV_newiterator(js_State *J, js_Object *obj, int own)
 			}
 		}
 	}
+
+	if (obj->type == JS_CARRAY && obj->u.a.simple) {
+		js_Iterator *tail = io->u.iter.head;
+		if (tail)
+			while (tail->next)
+				tail = tail->next;
+		for (k = 0; k < obj->u.a.length; ++k) {
+			js_Iterator *node = itnewnodeix(J, k);
+			if (!tail)
+				io->u.iter.head = tail = node;
+			else {
+				tail->next = node;
+				tail = node;
+			}
+		}
+	}
+
 	return io;
 }
 
@@ -304,6 +334,9 @@ const char *jsV_nextiterator(js_State *J, js_Object *io)
 		if (io->u.iter.target->type == JS_CSTRING)
 			if (js_isarrayindex(J, name, &k) && k < io->u.iter.target->u.s.length)
 				return name;
+		if (io->u.iter.target->type == JS_CARRAY && io->u.iter.target->u.a.simple)
+			if (js_isarrayindex(J, name, &k) && k < io->u.iter.target->u.a.length)
+				return name;
 	}
 	return NULL;
 }
@@ -315,6 +348,7 @@ void jsV_resizearray(js_State *J, js_Object *obj, int newlen)
 	char buf[32];
 	const char *s;
 	int k;
+	assert(!obj->u.a.simple);
 	if (newlen < obj->u.a.length) {
 		if (obj->u.a.length > obj->count * 2) {
 			js_Object *it = jsV_newiterator(J, obj, 1);

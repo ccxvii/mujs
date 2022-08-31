@@ -93,6 +93,9 @@ struct js_Object
 		} s;
 		struct {
 			int length;
+			int simple; // true if array has only non-sparse array properties
+			int capacity;
+			js_Value *array;
 		} a;
 		struct {
 			js_Function *function;
@@ -140,6 +143,7 @@ struct js_Iterator
 {
 	const char *name;
 	js_Iterator *next;
+	char buf[12]; /* for integer iterators */
 };
 
 /* jsrun.c */
@@ -149,6 +153,7 @@ void js_toprimitive(js_State *J, int idx, int hint);
 js_Object *js_toobject(js_State *J, int idx);
 void js_pushvalue(js_State *J, js_Value v);
 void js_pushobject(js_State *J, js_Object *v);
+void jsR_unflattenarray(js_State *J, js_Object *obj);
 
 /* jsvalue.c */
 int jsV_toboolean(js_State *J, js_Value *v);
@@ -158,7 +163,7 @@ const char *jsV_tostring(js_State *J, js_Value *v);
 js_Object *jsV_toobject(js_State *J, js_Value *v);
 void jsV_toprimitive(js_State *J, js_Value *v, int preferred);
 
-const char *js_itoa(char buf[32], int a);
+const char *js_itoa(char *buf, int a);
 double js_stringtofloat(const char *s, char **ep);
 int jsV_numbertointeger(double n);
 int jsV_numbertoint32(double n);
@@ -181,6 +186,9 @@ js_Object *jsV_newiterator(js_State *J, js_Object *obj, int own);
 const char *jsV_nextiterator(js_State *J, js_Object *iter);
 
 void jsV_resizearray(js_State *J, js_Object *obj, int newlen);
+
+void jsV_unflattenarray(js_State *J, js_Object *obj);
+void jsV_growarray(js_State *J, js_Object *obj);
 
 /* jsdump.c */
 void js_dumpobject(js_State *J, js_Object *obj);

@@ -17,30 +17,6 @@ void js_setlength(js_State *J, int idx, int len)
 	js_setproperty(J, idx < 0 ? idx - 1 : idx, "length");
 }
 
-int js_hasindex(js_State *J, int idx, int i)
-{
-	char buf[32];
-	return js_hasproperty(J, idx, js_itoa(buf, i));
-}
-
-void js_getindex(js_State *J, int idx, int i)
-{
-	char buf[32];
-	js_getproperty(J, idx, js_itoa(buf, i));
-}
-
-void js_setindex(js_State *J, int idx, int i)
-{
-	char buf[32];
-	js_setproperty(J, idx, js_itoa(buf, i));
-}
-
-void js_delindex(js_State *J, int idx, int i)
-{
-	char buf[32];
-	js_delproperty(J, idx, js_itoa(buf, i));
-}
-
 static void jsB_new_Array(js_State *J)
 {
 	int i, top = js_gettop(J);
