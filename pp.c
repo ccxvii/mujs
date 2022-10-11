@@ -63,7 +63,6 @@ void js_ppfile(js_State *J, const char *filename, int minify)
 
 	t = fread(s, 1, (size_t)n, f);
 	if (t != n) {
-		js_free(J, s);
 		js_error(J, "cannot read data from file: '%s'", filename);
 	}
 
