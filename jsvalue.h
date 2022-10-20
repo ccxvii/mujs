@@ -93,7 +93,7 @@ struct js_Object
 		} s;
 		struct {
 			int length;
-			int simple; // true if array has only non-sparse array properties
+			int simple; /* true if array has only non-sparse array properties */
 			int capacity;
 			js_Value *array;
 		} a;
@@ -112,7 +112,8 @@ struct js_Object
 		js_Regexp r;
 		struct {
 			js_Object *target;
-			js_Iterator *head;
+			int i, n; /* for array part */
+			js_Iterator *head; /* for object part */
 		} iter;
 		struct {
 			const char *tag;
@@ -143,7 +144,6 @@ struct js_Iterator
 {
 	const char *name;
 	js_Iterator *next;
-	char buf[12]; /* for integer iterators */
 };
 
 /* jsrun.c */

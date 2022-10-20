@@ -244,6 +244,8 @@ struct js_State
 
 	unsigned int seed; /* Math.random seed */
 
+	char scratch[12]; /* scratch buffer for iterating over array indices */
+
 	int nextref; /* for js_ref use */
 	js_Object *R; /* registry of hidden values */
 	js_Object *G; /* the global object */
