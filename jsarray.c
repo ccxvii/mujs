@@ -583,6 +583,7 @@ static void Ap_map(js_State *J)
 			js_pop(J, 1);
 		}
 	}
+	js_setlength(J, -1, len);
 }
 
 static void Ap_filter(js_State *J)
