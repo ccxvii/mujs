@@ -1736,7 +1736,7 @@ static void jsR_run(js_State *J, js_Function *F)
 				obj = js_toobject(J, -1);
 				str = jsV_nextiterator(J, obj);
 				if (str) {
-					js_pushliteral(J, str);
+					js_pushstring(J, str);
 					js_pushboolean(J, 1);
 				} else {
 					js_pop(J, 1);

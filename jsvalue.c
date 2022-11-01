@@ -377,7 +377,13 @@ static js_Object *jsV_newnumber(js_State *J, double v)
 static js_Object *jsV_newstring(js_State *J, const char *v)
 {
 	js_Object *obj = jsV_newobject(J, JS_CSTRING, J->String_prototype);
-	obj->u.s.string = js_intern(J, v); /* TODO: js_String */
+	size_t n = strlen(v);
+	if (n < sizeof(obj->u.s.shrstr) - 1) {
+		obj->u.s.string = obj->u.s.shrstr;
+		memcpy(obj->u.s.shrstr, v, n + 1);
+	} else {
+		obj->u.s.string = js_strdup(J, v);
+	}
 	obj->u.s.length = utflen(v);
 	return obj;
 }

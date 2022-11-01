@@ -160,7 +160,7 @@ static int O_getOwnPropertyNames_walk(js_State *J, js_Property *ref, int i)
 {
 	if (ref->left->level)
 		i = O_getOwnPropertyNames_walk(J, ref->left, i);
-	js_pushliteral(J, ref->name);
+	js_pushstring(J, ref->name);
 	js_setindex(J, -2, i++);
 	if (ref->right->level)
 		i = O_getOwnPropertyNames_walk(J, ref->right, i);
@@ -352,7 +352,7 @@ static int O_keys_walk(js_State *J, js_Property *ref, int i)
 	if (ref->left->level)
 		i = O_keys_walk(J, ref->left, i);
 	if (!(ref->atts & JS_DONTENUM)) {
-		js_pushliteral(J, ref->name);
+		js_pushstring(J, ref->name);
 		js_setindex(J, -2, i++);
 	}
 	if (ref->right->level)

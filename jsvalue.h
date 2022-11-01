@@ -88,8 +88,9 @@ struct js_Object
 		int boolean;
 		double number;
 		struct {
-			const char *string;
 			int length;
+			char *string;
+			char shrstr[16];
 		} s;
 		struct {
 			int length;
@@ -113,7 +114,7 @@ struct js_Object
 		struct {
 			js_Object *target;
 			int i, n; /* for array part */
-			js_Iterator *head; /* for object part */
+			js_Iterator *head, *current; /* for object part */
 		} iter;
 		struct {
 			const char *tag;
@@ -131,19 +132,19 @@ struct js_Object
 
 struct js_Property
 {
-	const char *name;
 	js_Property *left, *right;
 	int level;
 	int atts;
 	js_Value value;
 	js_Object *getter;
 	js_Object *setter;
+	char name[1];
 };
 
 struct js_Iterator
 {
-	const char *name;
 	js_Iterator *next;
+	char name[1];
 };
 
 /* jsrun.c */
