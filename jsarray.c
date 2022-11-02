@@ -334,18 +334,25 @@ static void Ap_splice(js_State *J)
 {
 	int top = js_gettop(J);
 	int len, start, del, add, k;
-	double f;
-
-	js_newarray(J);
 
 	len = js_getlength(J, 0);
+	start = js_tointeger(J, 1);
+	if (start < 0)
+		start = (len + start) > 0 ? len + start : 0;
+	else if (start > len)
+		start = len;
 
-	f = js_tointeger(J, 1);
-	if (f < 0) f = f + len;
-	start = f < 0 ? 0 : f > len ? len : f;
+	if (js_isdefined(J, 2))
+		del = js_tointeger(J, 2);
+	else
+		del = len - start;
+	if (del > len - start)
+		del = len - start;
+	if (del < 0)
+		del = 0;
 
-	f = js_tointeger(J, 2);
-	del = f < 0 ? 0 : f > len - start ? len - start : f;
+
+	js_newarray(J);
 
 	/* copy deleted items to return array */
 	for (k = 0; k < del; ++k)
@@ -724,7 +731,7 @@ void jsB_initarray(js_State *J)
 		jsB_propf(J, "Array.prototype.shift", Ap_shift, 0);
 		jsB_propf(J, "Array.prototype.slice", Ap_slice, 2);
 		jsB_propf(J, "Array.prototype.sort", Ap_sort, 1);
-		jsB_propf(J, "Array.prototype.splice", Ap_splice, 0); /* 2 */
+		jsB_propf(J, "Array.prototype.splice", Ap_splice, 2);
 		jsB_propf(J, "Array.prototype.unshift", Ap_unshift, 0); /* 1 */
 
 		/* ES5 */
