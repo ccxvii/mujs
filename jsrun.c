@@ -528,14 +528,15 @@ void jsR_unflattenarray(js_State *J, js_Object *obj) {
 			obj->properties = NULL;
 			js_throw(J);
 		}
-		for (i = 0; i < obj->u.a.length; ++i) {
+		for (i = 0; i < obj->u.a.flat_length; ++i) {
 			js_itoa(name, i);
 			ref = jsV_setproperty(J, obj, name);
 			ref->value = obj->u.a.array[i];
 		}
 		js_free(J, obj->u.a.array);
 		obj->u.a.simple = 0;
-		obj->u.a.capacity = 0;
+		obj->u.a.flat_length = 0;
+		obj->u.a.flat_capacity = 0;
 		obj->u.a.array = NULL;
 		js_endtry(J);
 	}
@@ -553,10 +554,11 @@ static int jsR_hasproperty(js_State *J, js_Object *obj, const char *name)
 		}
 		if (obj->u.a.simple) {
 			if (js_isarrayindex(J, name, &k)) {
-				if (k >= 0 && k < obj->u.a.length) {
+				if (k >= 0 && k < obj->u.a.flat_length) {
 					js_pushvalue(J, obj->u.a.array[k]);
 					return 1;
 				}
+				return 0;
 			}
 		}
 	}
@@ -626,9 +628,12 @@ static void jsR_getproperty(js_State *J, js_Object *obj, const char *name)
 static int jsR_hasindex(js_State *J, js_Object *obj, int k)
 {
 	char buf[32];
-	if (obj->type == JS_CARRAY && obj->u.a.simple && k >= 0 && k < obj->u.a.length) {
-		js_pushvalue(J, obj->u.a.array[k]);
-		return 1;
+	if (obj->type == JS_CARRAY && obj->u.a.simple) {
+		if (k >= 0 && k < obj->u.a.flat_length) {
+			js_pushvalue(J, obj->u.a.array[k]);
+			return 1;
+		}
+		return 0;
 	}
 	return jsR_hasproperty(J, obj, js_itoa(buf, k));
 }
@@ -646,19 +651,21 @@ static void jsR_setarrayindex(js_State *J, js_Object *obj, int k, js_Value *valu
 	assert(k >= 0);
 	if (newlen > JS_ARRAYLIMIT)
 		js_rangeerror(J, "array too large");
-	if (newlen > obj->u.a.length) {
-		assert(newlen == obj->u.a.length + 1);
-		if (newlen > obj->u.a.capacity) {
-			int newcap = obj->u.a.capacity;
+	if (newlen > obj->u.a.flat_length) {
+		assert(newlen == obj->u.a.flat_length + 1);
+		if (newlen > obj->u.a.flat_capacity) {
+			int newcap = obj->u.a.flat_capacity;
 			if (newcap == 0)
 				newcap = 8;
 			while (newcap < newlen)
 				newcap <<= 1;
 			obj->u.a.array = js_realloc(J, obj->u.a.array, newcap * sizeof(js_Value));
-			obj->u.a.capacity = newcap;
+			obj->u.a.flat_capacity = newcap;
 		}
-		obj->u.a.length = newlen;
+		obj->u.a.flat_length = newlen;
 	}
+	if (newlen > obj->u.a.length)
+		obj->u.a.length = newlen;
 	obj->u.a.array[k] = *value;
 }
 
@@ -678,26 +685,28 @@ static void jsR_setproperty(js_State *J, js_Object *obj, const char *name, int t
 			if (newlen > JS_ARRAYLIMIT)
 				js_rangeerror(J, "array too large");
 			if (obj->u.a.simple) {
-				if (newlen <= obj->u.a.length) {
-					obj->u.a.length = newlen;
-					return;
-				}
-				jsR_unflattenarray(J, obj);
+				obj->u.a.length = newlen;
+				if (newlen <= obj->u.a.flat_length)
+					obj->u.a.flat_length = newlen;
+			} else  {
+				jsV_resizearray(J, obj, newlen);
 			}
-			jsV_resizearray(J, obj, newlen);
 			return;
 		}
 
 		if (js_isarrayindex(J, name, &k)) {
 			if (obj->u.a.simple) {
-				if (k >= 0 && k <= obj->u.a.length) {
+				if (k >= 0 && k <= obj->u.a.flat_length) {
 					jsR_setarrayindex(J, obj, k, value);
-					return;
+				} else {
+					jsR_unflattenarray(J, obj);
+					if (obj->u.a.length < k + 1)
+						obj->u.a.length = k + 1;
 				}
-				jsR_unflattenarray(J, obj);
+			} else {
+				if (obj->u.a.length < k + 1)
+					obj->u.a.length = k + 1;
 			}
-			if (k + 1 > obj->u.a.length)
-				obj->u.a.length = k + 1;
 		}
 	}
 
@@ -771,7 +780,7 @@ readonly:
 static void jsR_setindex(js_State *J, js_Object *obj, int k, int transient)
 {
 	char buf[32];
-	if (obj->type == JS_CARRAY && obj->u.a.simple && k >= 0 && k <= obj->u.a.length) {
+	if (obj->type == JS_CARRAY && obj->u.a.simple && k >= 0 && k <= obj->u.a.flat_length) {
 		jsR_setarrayindex(J, obj, k, stackidx(J, -1));
 	} else {
 		jsR_setproperty(J, obj, js_itoa(buf, k), transient);
@@ -888,6 +897,16 @@ dontconf:
 	if (J->strict)
 		js_typeerror(J, "'%s' is non-configurable", name);
 	return 0;
+}
+
+static void jsR_delindex(js_State *J, js_Object *obj, int k)
+{
+	char buf[32];
+	/* Allow deleting last element of a simple array without unflattening */
+	if (obj->type == JS_CARRAY && obj->u.a.simple && k == obj->u.a.flat_length - 1)
+		obj->u.a.flat_length = k;
+	else
+		jsR_delproperty(J, obj, js_itoa(buf, k));
 }
 
 /* Registry, global and object property accessors */
@@ -1010,8 +1029,7 @@ void js_setindex(js_State *J, int idx, int i)
 
 void js_delindex(js_State *J, int idx, int i)
 {
-	char buf[32];
-	js_delproperty(J, idx, js_itoa(buf, i));
+	jsR_delindex(J, js_toobject(J, idx), i);
 }
 
 /* Iterator */

@@ -293,7 +293,7 @@ js_Object *jsV_newiterator(js_State *J, js_Object *obj, int own)
 		io->u.iter.n = obj->u.s.length;
 
 	if (obj->type == JS_CARRAY && obj->u.a.simple)
-		io->u.iter.n = obj->u.a.length;
+		io->u.iter.n = obj->u.a.flat_length;
 
 	return io;
 }

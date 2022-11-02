@@ -318,7 +318,7 @@ static void Ap_sort(js_State *J)
 		js_pushvalue(J, array[i].v);
 		js_setindex(J, 0, i);
 	}
-	for (i = n; i < len; ++i) {
+	for (i = len-i; i >= n; --i) {
 		js_delindex(J, 0, i);
 	}
 
@@ -350,7 +350,6 @@ static void Ap_splice(js_State *J)
 		del = len - start;
 	if (del < 0)
 		del = 0;
-
 
 	js_newarray(J);
 

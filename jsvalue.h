@@ -93,9 +93,10 @@ struct js_Object
 			char shrstr[16];
 		} s;
 		struct {
-			int length;
+			int length; /* actual length */
 			int simple; /* true if array has only non-sparse array properties */
-			int capacity;
+			int flat_length; /* used length of simple array part */
+			int flat_capacity; /* allocated length of simple array part */
 			js_Value *array;
 		} a;
 		struct {
