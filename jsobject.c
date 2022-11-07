@@ -134,25 +134,25 @@ static void O_getOwnPropertyDescriptor(js_State *J)
 		js_newobject(J);
 		if (!ref->getter && !ref->setter) {
 			js_pushvalue(J, ref->value);
-			js_setproperty(J, -2, "value");
+			js_defproperty(J, -2, "value", 0);
 			js_pushboolean(J, !(ref->atts & JS_READONLY));
-			js_setproperty(J, -2, "writable");
+			js_defproperty(J, -2, "writable", 0);
 		} else {
 			if (ref->getter)
 				js_pushobject(J, ref->getter);
 			else
 				js_pushundefined(J);
-			js_setproperty(J, -2, "get");
+			js_defproperty(J, -2, "get", 0);
 			if (ref->setter)
 				js_pushobject(J, ref->setter);
 			else
 				js_pushundefined(J);
-			js_setproperty(J, -2, "set");
+			js_defproperty(J, -2, "set", 0);
 		}
 		js_pushboolean(J, !(ref->atts & JS_DONTENUM));
-		js_setproperty(J, -2, "enumerable");
+		js_defproperty(J, -2, "enumerable", 0);
 		js_pushboolean(J, !(ref->atts & JS_DONTCONF));
-		js_setproperty(J, -2, "configurable");
+		js_defproperty(J, -2, "configurable", 0);
 	}
 }
 
@@ -248,7 +248,7 @@ static void ToPropertyDescriptor(js_State *J, js_Object *obj, const char *name, 
 	}
 	if (js_hasproperty(J, -1, "value")) {
 		hasvalue = 1;
-		js_setproperty(J, -3, name);
+		js_defproperty(J, -3, name, 0);
 	}
 
 	if (!writable) atts |= JS_READONLY;
