@@ -10,6 +10,9 @@ typedef unsigned __int64 uint64_t;
 #endif
 
 #include <time.h>
+#include <stdlib.h>//
+
+
 
 static double jsM_round(double x)
 {
@@ -108,6 +111,13 @@ static void Math_round(js_State *J)
 	js_pushnumber(J, jsM_round(x));
 }
 
+static void Math_randInt(js_State *J)
+{
+	int min = js_tonumber(J, 1);
+	int max = js_tonumber(J, 2);
+	js_pushnumber(J, (rand() % (max - min +1)) + min);
+}
+
 static void Math_sin(js_State *J)
 {
 	js_pushnumber(J, sin(js_tonumber(J, 1)));
@@ -161,6 +171,7 @@ static void Math_min(js_State *J)
 
 void jsB_initmath(js_State *J)
 {
+	srand(time(0));
 	Math_init_random(J);
 	js_pushobject(J, jsV_newobject(J, JS_CMATH, J->Object_prototype));
 	{
@@ -191,6 +202,7 @@ void jsB_initmath(js_State *J)
 		jsB_propf(J, "Math.sin", Math_sin, 1);
 		jsB_propf(J, "Math.sqrt", Math_sqrt, 1);
 		jsB_propf(J, "Math.tan", Math_tan, 1);
+		jsB_propf(J, "Math.randInt", Math_randInt, 2);
 	}
 	js_defglobal(J, "Math", JS_DONTENUM);
 }
