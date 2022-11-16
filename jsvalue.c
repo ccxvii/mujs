@@ -378,7 +378,7 @@ static js_Object *jsV_newstring(js_State *J, const char *v)
 {
 	js_Object *obj = jsV_newobject(J, JS_CSTRING, J->String_prototype);
 	size_t n = strlen(v);
-	if (n < sizeof(obj->u.s.shrstr) - 1) {
+	if (n < sizeof(obj->u.s.shrstr)) {
 		obj->u.s.string = obj->u.s.shrstr;
 		memcpy(obj->u.s.shrstr, v, n + 1);
 	} else {
