@@ -64,8 +64,8 @@ static void Ap_concat(js_State *J)
 static void Ap_join(js_State *J)
 {
 	char * volatile out = NULL;
+	const char * volatile r = NULL;
 	const char *sep;
-	const char *r;
 	int seplen;
 	int k, n, len, rlen;
 

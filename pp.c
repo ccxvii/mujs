@@ -75,6 +75,17 @@ void js_ppfile(js_State *J, const char *filename, int minify)
 	fclose(f);
 }
 
+static void js_tryppfile(js_State *J, const char *file, int minify)
+{
+	if (js_try(J)) {
+		js_report(J, js_trystring(J, -1, "Error"));
+		js_pop(J, 1);
+		return;
+	}
+	js_ppfile(J, file, minify);
+	js_endtry(J);
+}
+
 int
 main(int argc, char **argv)
 {
@@ -91,15 +102,8 @@ main(int argc, char **argv)
 			minify = 2;
 		else if (!strcmp(argv[i], "-s"))
 			minify = 3;
-		else {
-			if (js_try(J)) {
-				js_report(J, js_trystring(J, -1, "Error"));
-				js_pop(J, 1);
-				continue;
-			}
-			js_ppfile(J, argv[i], minify);
-			js_endtry(J);
-		}
+		else
+			js_tryppfile(J, argv[i], minify);
 	}
 
 	js_gc(J, 0);
