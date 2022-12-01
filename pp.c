@@ -8,7 +8,6 @@
 #include <stdio.h>
 
 #include "jsi.h"
-#include "jsparse.h"
 
 static void js_ppstring(js_State *J, const char *filename, const char *source, int minify)
 {

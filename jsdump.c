@@ -1,7 +1,4 @@
 #include "jsi.h"
-#include "jsparse.h"
-#include "jscompile.h"
-#include "jsvalue.h"
 
 #include "utf.h"
 

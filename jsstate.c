@@ -1,9 +1,4 @@
 #include "jsi.h"
-#include "jsparse.h"
-#include "jscompile.h"
-#include "jsvalue.h"
-#include "jsrun.h"
-#include "jsbuiltin.h"
 
 #include <assert.h>
 #include <errno.h>

@@ -1,8 +1,4 @@
 #include "jsi.h"
-#include "jscompile.h"
-#include "jsvalue.h"
-#include "jsrun.h"
-
 #include "utf.h"
 
 #include <assert.h>

@@ -1,8 +1,4 @@
 #include "jsi.h"
-#include "jslex.h"
-#include "jsparse.h"
-#include "jscompile.h"
-#include "jsvalue.h" /* for jsV_numbertostring */
 
 #define cexp jsC_cexp /* collision with math.h */
 

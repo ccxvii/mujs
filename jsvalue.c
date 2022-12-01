@@ -1,7 +1,4 @@
 #include "jsi.h"
-#include "jslex.h"
-#include "jscompile.h"
-#include "jsvalue.h"
 #include "utf.h"
 
 #define JSV_ISSTRING(v) (v->type==JS_TSHRSTR || v->type==JS_TMEMSTR || v->type==JS_TLITSTR)

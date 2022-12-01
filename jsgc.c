@@ -1,8 +1,4 @@
 #include "jsi.h"
-#include "jscompile.h"
-#include "jsvalue.h"
-#include "jsrun.h"
-
 #include "regexp.h"
 
 static void jsG_freeenvironment(js_State *J, js_Environment *env)

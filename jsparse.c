@@ -1,6 +1,4 @@
 #include "jsi.h"
-#include "jslex.h"
-#include "jsparse.h"
 
 #define LIST(h)			jsP_newnode(J, AST_LIST, 0, h, 0, 0, 0)
 
