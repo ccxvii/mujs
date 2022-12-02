@@ -775,7 +775,7 @@ static void cexp(JF, js_Ast *exp)
 		break;
 
 	default:
-		jsC_error(J, exp, "unknown expression: (%s)", jsP_aststring(exp->type));
+		jsC_error(J, exp, "unknown expression type");
 	}
 }
 

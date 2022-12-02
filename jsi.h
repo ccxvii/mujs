@@ -483,10 +483,6 @@ void jsV_resizearray(js_State *J, js_Object *obj, int newlen);
 void jsV_unflattenarray(js_State *J, js_Object *obj);
 void jsV_growarray(js_State *J, js_Object *obj);
 
-/* jsdump.c */
-void js_dumpobject(js_State *J, js_Object *obj);
-void js_dumpvalue(js_State *J, js_Value v);
-
 /* Lexer */
 
 enum
@@ -706,10 +702,6 @@ js_Ast *jsP_parsefunction(js_State *J, const char *filename, const char *params,
 js_Ast *jsP_parse(js_State *J, const char *filename, const char *source);
 void jsP_freeparse(js_State *J);
 
-const char *jsP_aststring(enum js_AstType type);
-void jsP_dumpsyntax(js_State *J, js_Ast *prog, int minify);
-void jsP_dumplist(js_State *J, js_Ast *prog);
-
 /* Compiler */
 
 enum js_OpCode
@@ -846,8 +838,6 @@ struct js_Function
 
 js_Function *jsC_compilefunction(js_State *J, js_Ast *prog);
 js_Function *jsC_compilescript(js_State *J, js_Ast *prog, int default_strict);
-const char *jsC_opcodestring(enum js_OpCode opcode);
-void jsC_dumpfunction(js_State *J, js_Function *fun);
 
 /* Builtins */
 

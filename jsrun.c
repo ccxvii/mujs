@@ -1455,28 +1455,49 @@ void js_throw(js_State *J)
 
 /* Main interpreter loop */
 
-static void jsR_dumpstack(js_State *J)
+static void js_dumpvalue(js_State *J, js_Value v)
 {
-	int i;
-	printf("stack {\n");
-	for (i = 0; i < TOP; ++i) {
-		putchar(i == BOT ? '>' : ' ');
-		printf("%4d: ", i);
-		js_dumpvalue(J, STACK[i]);
-		putchar('\n');
+	switch (v.type) {
+	case JS_TUNDEFINED: printf("undefined"); break;
+	case JS_TNULL: printf("null"); break;
+	case JS_TBOOLEAN: printf(v.u.boolean ? "true" : "false"); break;
+	case JS_TNUMBER: printf("%.9g", v.u.number); break;
+	case JS_TSHRSTR: printf("'%s'", v.u.shrstr); break;
+	case JS_TLITSTR: printf("'%s'", v.u.litstr); break;
+	case JS_TMEMSTR: printf("'%s'", v.u.memstr->p); break;
+	case JS_TOBJECT:
+		if (v.u.object == J->G) {
+			printf("[Global]");
+			break;
+		}
+		switch (v.u.object->type) {
+		case JS_COBJECT: printf("[Object %p]", (void*)v.u.object); break;
+		case JS_CARRAY: printf("[Array %p]", (void*)v.u.object); break;
+		case JS_CFUNCTION:
+			printf("[Function %p, %s, %s:%d]",
+				(void*)v.u.object,
+				v.u.object->u.f.function->name,
+				v.u.object->u.f.function->filename,
+				v.u.object->u.f.function->line);
+			break;
+		case JS_CSCRIPT: printf("[Script %s]", v.u.object->u.f.function->filename); break;
+		case JS_CCFUNCTION: printf("[CFunction %s]", v.u.object->u.c.name); break;
+		case JS_CBOOLEAN: printf("[Boolean %d]", v.u.object->u.boolean); break;
+		case JS_CNUMBER: printf("[Number %g]", v.u.object->u.number); break;
+		case JS_CSTRING: printf("[String'%s']", v.u.object->u.s.string); break;
+		case JS_CERROR: printf("[Error]"); break;
+		case JS_CARGUMENTS: printf("[Arguments %p]", (void*)v.u.object); break;
+		case JS_CITERATOR: printf("[Iterator %p]", (void*)v.u.object); break;
+		case JS_CUSERDATA:
+			printf("[Userdata %s %p]", v.u.object->u.user.tag, v.u.object->u.user.data);
+			break;
+		default: printf("[Object %p]", (void*)v.u.object); break;
+		}
+		break;
 	}
-	printf("}\n");
 }
 
-static void jsR_dumpenvironment(js_State *J, js_Environment *E, int d)
-{
-	printf("scope %d ", d);
-	js_dumpobject(J, E->variables);
-	if (E->outer)
-		jsR_dumpenvironment(J, E->outer, d+1);
-}
-
-void js_stacktrace(js_State *J)
+static void js_stacktrace(js_State *J)
 {
 	int n;
 	printf("stack trace:\n");
@@ -1494,15 +1515,22 @@ void js_stacktrace(js_State *J)
 	}
 }
 
+static void js_dumpstack(js_State *J)
+{
+	int i;
+	printf("stack {\n");
+	for (i = 0; i < TOP; ++i) {
+		putchar(i == BOT ? '>' : ' ');
+		printf("%4d: ", i);
+		js_dumpvalue(J, STACK[i]);
+		putchar('\n');
+	}
+	printf("}\n");
+}
+
 void js_trap(js_State *J, int pc)
 {
-	if (pc > 0) {
-		js_Function *F = STACK[BOT-1].u.object->u.f.function;
-		printf("trap at %d in function ", pc);
-		jsC_dumpfunction(J, F);
-	}
-	jsR_dumpstack(J);
-	jsR_dumpenvironment(J, J->E, 0);
+	js_dumpstack(J);
 	js_stacktrace(J);
 }
 
