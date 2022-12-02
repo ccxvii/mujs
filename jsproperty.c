@@ -22,7 +22,7 @@
 static js_Property sentinel = {
 	&sentinel, &sentinel,
 	0, 0,
-	{ {0}, {0}, JS_TUNDEFINED },
+	{ { {0}, JS_TUNDEFINED } },
 	NULL, NULL, ""
 };
 
@@ -33,7 +33,7 @@ static js_Property *newproperty(js_State *J, js_Object *obj, const char *name)
 	node->left = node->right = &sentinel;
 	node->level = 1;
 	node->atts = 0;
-	node->value.type = JS_TUNDEFINED;
+	node->value.t.type = JS_TUNDEFINED;
 	node->value.u.number = 0;
 	node->getter = NULL;
 	node->setter = NULL;

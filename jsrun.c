@@ -13,7 +13,7 @@ static void jsR_run(js_State *J, js_Function *F);
 
 static void js_trystackoverflow(js_State *J)
 {
-	STACK[TOP].type = JS_TLITSTR;
+	STACK[TOP].t.type = JS_TLITSTR;
 	STACK[TOP].u.litstr = "exception stack overflow";
 	++TOP;
 	js_throw(J);
@@ -21,7 +21,7 @@ static void js_trystackoverflow(js_State *J)
 
 static void js_stackoverflow(js_State *J)
 {
-	STACK[TOP].type = JS_TLITSTR;
+	STACK[TOP].t.type = JS_TLITSTR;
 	STACK[TOP].u.litstr = "stack overflow";
 	++TOP;
 	js_throw(J);
@@ -29,7 +29,7 @@ static void js_stackoverflow(js_State *J)
 
 static void js_outofmemory(js_State *J)
 {
-	STACK[TOP].type = JS_TLITSTR;
+	STACK[TOP].t.type = JS_TLITSTR;
 	STACK[TOP].u.litstr = "out of memory";
 	++TOP;
 	js_throw(J);
@@ -88,21 +88,21 @@ void js_pushvalue(js_State *J, js_Value v)
 void js_pushundefined(js_State *J)
 {
 	CHECKSTACK(1);
-	STACK[TOP].type = JS_TUNDEFINED;
+	STACK[TOP].t.type = JS_TUNDEFINED;
 	++TOP;
 }
 
 void js_pushnull(js_State *J)
 {
 	CHECKSTACK(1);
-	STACK[TOP].type = JS_TNULL;
+	STACK[TOP].t.type = JS_TNULL;
 	++TOP;
 }
 
 void js_pushboolean(js_State *J, int v)
 {
 	CHECKSTACK(1);
-	STACK[TOP].type = JS_TBOOLEAN;
+	STACK[TOP].t.type = JS_TBOOLEAN;
 	STACK[TOP].u.boolean = !!v;
 	++TOP;
 }
@@ -110,7 +110,7 @@ void js_pushboolean(js_State *J, int v)
 void js_pushnumber(js_State *J, double v)
 {
 	CHECKSTACK(1);
-	STACK[TOP].type = JS_TNUMBER;
+	STACK[TOP].t.type = JS_TNUMBER;
 	STACK[TOP].u.number = v;
 	++TOP;
 }
@@ -121,13 +121,13 @@ void js_pushstring(js_State *J, const char *v)
 	if (n > JS_STRLIMIT)
 		js_rangeerror(J, "invalid string length");
 	CHECKSTACK(1);
-	if (n <= soffsetof(js_Value, type)) {
+	if (n <= soffsetof(js_Value, t.type)) {
 		char *s = STACK[TOP].u.shrstr;
 		while (n--) *s++ = *v++;
 		*s = 0;
-		STACK[TOP].type = JS_TSHRSTR;
+		STACK[TOP].t.type = JS_TSHRSTR;
 	} else {
-		STACK[TOP].type = JS_TMEMSTR;
+		STACK[TOP].t.type = JS_TMEMSTR;
 		STACK[TOP].u.memstr = jsV_newmemstring(J, v, n);
 	}
 	++TOP;
@@ -138,13 +138,13 @@ void js_pushlstring(js_State *J, const char *v, int n)
 	if (n > JS_STRLIMIT)
 		js_rangeerror(J, "invalid string length");
 	CHECKSTACK(1);
-	if (n <= soffsetof(js_Value, type)) {
+	if (n <= soffsetof(js_Value, t.type)) {
 		char *s = STACK[TOP].u.shrstr;
 		while (n--) *s++ = *v++;
 		*s = 0;
-		STACK[TOP].type = JS_TSHRSTR;
+		STACK[TOP].t.type = JS_TSHRSTR;
 	} else {
-		STACK[TOP].type = JS_TMEMSTR;
+		STACK[TOP].t.type = JS_TMEMSTR;
 		STACK[TOP].u.memstr = jsV_newmemstring(J, v, n);
 	}
 	++TOP;
@@ -153,7 +153,7 @@ void js_pushlstring(js_State *J, const char *v, int n)
 void js_pushliteral(js_State *J, const char *v)
 {
 	CHECKSTACK(1);
-	STACK[TOP].type = JS_TLITSTR;
+	STACK[TOP].t.type = JS_TLITSTR;
 	STACK[TOP].u.litstr = v;
 	++TOP;
 }
@@ -161,7 +161,7 @@ void js_pushliteral(js_State *J, const char *v)
 void js_pushobject(js_State *J, js_Object *v)
 {
 	CHECKSTACK(1);
-	STACK[TOP].type = JS_TOBJECT;
+	STACK[TOP].t.type = JS_TOBJECT;
 	STACK[TOP].u.object = v;
 	++TOP;
 }
@@ -177,7 +177,7 @@ void js_currentfunction(js_State *J)
 	if (BOT > 0)
 		STACK[TOP] = STACK[BOT-1];
 	else
-		STACK[TOP].type = JS_TUNDEFINED;
+		STACK[TOP].t.type = JS_TUNDEFINED;
 	++TOP;
 }
 
@@ -192,7 +192,7 @@ void *js_currentfunctiondata(js_State *J)
 
 static js_Value *stackidx(js_State *J, int idx)
 {
-	static js_Value undefined = { {0}, {0}, JS_TUNDEFINED };
+	static js_Value undefined = { { {0}, JS_TUNDEFINED } };
 	idx = idx < 0 ? TOP + idx : BOT + idx;
 	if (idx < 0 || idx >= TOP)
 		return &undefined;
@@ -204,20 +204,20 @@ js_Value *js_tovalue(js_State *J, int idx)
 	return stackidx(J, idx);
 }
 
-int js_isdefined(js_State *J, int idx) { return stackidx(J, idx)->type != JS_TUNDEFINED; }
-int js_isundefined(js_State *J, int idx) { return stackidx(J, idx)->type == JS_TUNDEFINED; }
-int js_isnull(js_State *J, int idx) { return stackidx(J, idx)->type == JS_TNULL; }
-int js_isboolean(js_State *J, int idx) { return stackidx(J, idx)->type == JS_TBOOLEAN; }
-int js_isnumber(js_State *J, int idx) { return stackidx(J, idx)->type == JS_TNUMBER; }
-int js_isstring(js_State *J, int idx) { enum js_Type t = stackidx(J, idx)->type; return t == JS_TSHRSTR || t == JS_TLITSTR || t == JS_TMEMSTR; }
-int js_isprimitive(js_State *J, int idx) { return stackidx(J, idx)->type != JS_TOBJECT; }
-int js_isobject(js_State *J, int idx) { return stackidx(J, idx)->type == JS_TOBJECT; }
-int js_iscoercible(js_State *J, int idx) { js_Value *v = stackidx(J, idx); return v->type != JS_TUNDEFINED && v->type != JS_TNULL; }
+int js_isdefined(js_State *J, int idx) { return stackidx(J, idx)->t.type != JS_TUNDEFINED; }
+int js_isundefined(js_State *J, int idx) { return stackidx(J, idx)->t.type == JS_TUNDEFINED; }
+int js_isnull(js_State *J, int idx) { return stackidx(J, idx)->t.type == JS_TNULL; }
+int js_isboolean(js_State *J, int idx) { return stackidx(J, idx)->t.type == JS_TBOOLEAN; }
+int js_isnumber(js_State *J, int idx) { return stackidx(J, idx)->t.type == JS_TNUMBER; }
+int js_isstring(js_State *J, int idx) { enum js_Type t = stackidx(J, idx)->t.type; return t == JS_TSHRSTR || t == JS_TLITSTR || t == JS_TMEMSTR; }
+int js_isprimitive(js_State *J, int idx) { return stackidx(J, idx)->t.type != JS_TOBJECT; }
+int js_isobject(js_State *J, int idx) { return stackidx(J, idx)->t.type == JS_TOBJECT; }
+int js_iscoercible(js_State *J, int idx) { js_Value *v = stackidx(J, idx); return v->t.type != JS_TUNDEFINED && v->t.type != JS_TNULL; }
 
 int js_iscallable(js_State *J, int idx)
 {
 	js_Value *v = stackidx(J, idx);
-	if (v->type == JS_TOBJECT)
+	if (v->t.type == JS_TOBJECT)
 		return v->u.object->type == JS_CFUNCTION ||
 			v->u.object->type == JS_CSCRIPT ||
 			v->u.object->type == JS_CCFUNCTION;
@@ -227,19 +227,19 @@ int js_iscallable(js_State *J, int idx)
 int js_isarray(js_State *J, int idx)
 {
 	js_Value *v = stackidx(J, idx);
-	return v->type == JS_TOBJECT && v->u.object->type == JS_CARRAY;
+	return v->t.type == JS_TOBJECT && v->u.object->type == JS_CARRAY;
 }
 
 int js_isregexp(js_State *J, int idx)
 {
 	js_Value *v = stackidx(J, idx);
-	return v->type == JS_TOBJECT && v->u.object->type == JS_CREGEXP;
+	return v->t.type == JS_TOBJECT && v->u.object->type == JS_CREGEXP;
 }
 
 int js_isuserdata(js_State *J, int idx, const char *tag)
 {
 	js_Value *v = stackidx(J, idx);
-	if (v->type == JS_TOBJECT && v->u.object->type == JS_CUSERDATA)
+	if (v->t.type == JS_TOBJECT && v->u.object->type == JS_CUSERDATA)
 		return !strcmp(tag, v->u.object->u.user.tag);
 	return 0;
 }
@@ -247,13 +247,13 @@ int js_isuserdata(js_State *J, int idx, const char *tag)
 int js_iserror(js_State *J, int idx)
 {
 	js_Value *v = stackidx(J, idx);
-	return v->type == JS_TOBJECT && v->u.object->type == JS_CERROR;
+	return v->t.type == JS_TOBJECT && v->u.object->type == JS_CERROR;
 }
 
 const char *js_typeof(js_State *J, int idx)
 {
 	js_Value *v = stackidx(J, idx);
-	switch (v->type) {
+	switch (v->t.type) {
 	default:
 	case JS_TSHRSTR: return "string";
 	case JS_TUNDEFINED: return "undefined";
@@ -272,7 +272,7 @@ const char *js_typeof(js_State *J, int idx)
 int js_type(js_State *J, int idx)
 {
 	js_Value *v = stackidx(J, idx);
-	switch (v->type) {
+	switch (v->t.type) {
 	default:
 	case JS_TSHRSTR: return JS_ISSTRING;
 	case JS_TUNDEFINED: return JS_ISUNDEFINED;
@@ -341,7 +341,7 @@ void js_toprimitive(js_State *J, int idx, int hint)
 js_Regexp *js_toregexp(js_State *J, int idx)
 {
 	js_Value *v = stackidx(J, idx);
-	if (v->type == JS_TOBJECT && v->u.object->type == JS_CREGEXP)
+	if (v->t.type == JS_TOBJECT && v->u.object->type == JS_CREGEXP)
 		return &v->u.object->u.r;
 	js_typeerror(J, "not a regexp");
 }
@@ -349,7 +349,7 @@ js_Regexp *js_toregexp(js_State *J, int idx)
 void *js_touserdata(js_State *J, int idx, const char *tag)
 {
 	js_Value *v = stackidx(J, idx);
-	if (v->type == JS_TOBJECT && v->u.object->type == JS_CUSERDATA)
+	if (v->t.type == JS_TOBJECT && v->u.object->type == JS_CUSERDATA)
 		if (!strcmp(tag, v->u.object->u.user.tag))
 			return v->u.object->u.user.data;
 	js_typeerror(J, "not a %s", tag);
@@ -358,9 +358,9 @@ void *js_touserdata(js_State *J, int idx, const char *tag)
 static js_Object *jsR_tofunction(js_State *J, int idx)
 {
 	js_Value *v = stackidx(J, idx);
-	if (v->type == JS_TUNDEFINED || v->type == JS_TNULL)
+	if (v->t.type == JS_TUNDEFINED || v->t.type == JS_TNULL)
 		return NULL;
-	if (v->type == JS_TOBJECT)
+	if (v->t.type == JS_TOBJECT)
 		if (v->u.object->type == JS_CFUNCTION || v->u.object->type == JS_CCFUNCTION)
 			return v->u.object;
 	js_typeerror(J, "not a function");
@@ -912,7 +912,7 @@ const char *js_ref(js_State *J)
 	js_Value *v = stackidx(J, -1);
 	const char *s;
 	char buf[32];
-	switch (v->type) {
+	switch (v->t.type) {
 	case JS_TUNDEFINED: s = "_Undefined"; break;
 	case JS_TNULL: s = "_Null"; break;
 	case JS_TBOOLEAN:
@@ -1457,7 +1457,7 @@ void js_throw(js_State *J)
 
 static void js_dumpvalue(js_State *J, js_Value v)
 {
-	switch (v.type) {
+	switch (v.t.type) {
 	case JS_TUNDEFINED: printf("undefined"); break;
 	case JS_TNULL: printf("null"); break;
 	case JS_TBOOLEAN: printf(v.u.boolean ? "true" : "false"); break;
@@ -1537,7 +1537,7 @@ void js_trap(js_State *J, int pc)
 static int jsR_isindex(js_State *J, int idx, int *k)
 {
 	js_Value *v = stackidx(J, idx);
-	if (v->type == JS_TNUMBER) {
+	if (v->t.type == JS_TNUMBER) {
 		*k = v->u.number;
 		return *k == v->u.number && *k >= 0;
 	}

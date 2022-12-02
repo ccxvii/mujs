@@ -247,8 +247,8 @@ static int sortcmp(const void *avoid, const void *bvoid)
 	double v;
 	int c;
 
-	int unx = (a->type == JS_TUNDEFINED);
-	int uny = (b->type == JS_TUNDEFINED);
+	int unx = (a->t.type == JS_TUNDEFINED);
+	int uny = (b->t.type == JS_TUNDEFINED);
 	if (unx) return !uny;
 	if (uny) return -1;
 

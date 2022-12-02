@@ -312,7 +312,7 @@ static void O_create_walk(js_State *J, js_Object *obj, js_Property *ref)
 	if (ref->left->level)
 		O_create_walk(J, obj, ref->left);
 	if (!(ref->atts & JS_DONTENUM)) {
-		if (ref->value.type != JS_TOBJECT)
+		if (ref->value.t.type != JS_TOBJECT)
 			js_typeerror(J, "not an object");
 		ToPropertyDescriptor(J, obj, ref->name, ref->value.u.object);
 	}

@@ -64,8 +64,8 @@ void *js_malloc(js_State *J, int size);
 void *js_realloc(js_State *J, void *ptr, int size);
 void js_free(js_State *J, void *ptr);
 
+typedef union js_Value js_Value;
 typedef struct js_Regexp js_Regexp;
-typedef struct js_Value js_Value;
 typedef struct js_Object js_Object;
 typedef struct js_String js_String;
 typedef struct js_Ast js_Ast;
@@ -329,18 +329,20 @@ enum js_Class {
 	purpose as the string zero terminator.
 */
 
-struct js_Value
+union js_Value
 {
+	struct {
+		char pad[15];
+		char type; /* type tag overlaps with final byte of shrstr */
+	} t;
 	union {
+		char shrstr[16];
 		int boolean;
 		double number;
-		char shrstr[8];
 		const char *litstr;
 		js_String *memstr;
 		js_Object *object;
 	} u;
-	char pad[7]; /* extra storage for shrstr */
-	char type; /* type tag and zero terminator for shrstr */
 };
 
 struct js_String

@@ -85,9 +85,9 @@ static void jsG_markproperty(js_State *J, int mark, js_Property *node)
 	if (node->left->level) jsG_markproperty(J, mark, node->left);
 	if (node->right->level) jsG_markproperty(J, mark, node->right);
 
-	if (node->value.type == JS_TMEMSTR && node->value.u.memstr->gcmark != mark)
+	if (node->value.t.type == JS_TMEMSTR && node->value.u.memstr->gcmark != mark)
 		node->value.u.memstr->gcmark = mark;
-	if (node->value.type == JS_TOBJECT && node->value.u.object->gcmark != mark)
+	if (node->value.t.type == JS_TOBJECT && node->value.u.object->gcmark != mark)
 		jsG_markobject(J, mark, node->value.u.object);
 	if (node->getter && node->getter->gcmark != mark)
 		jsG_markobject(J, mark, node->getter);
@@ -106,9 +106,9 @@ static void jsG_scanobject(js_State *J, int mark, js_Object *obj)
 		int i;
 		for (i = 0; i < obj->u.a.flat_length; ++i) {
 			js_Value *v = &obj->u.a.array[i];
-			if (v->type == JS_TMEMSTR && v->u.memstr->gcmark != mark)
+			if (v->t.type == JS_TMEMSTR && v->u.memstr->gcmark != mark)
 				v->u.memstr->gcmark = mark;
-			if (v->type == JS_TOBJECT && v->u.object->gcmark != mark)
+			if (v->t.type == JS_TOBJECT && v->u.object->gcmark != mark)
 				jsG_markobject(J, mark, v->u.object);
 		}
 	}
@@ -128,9 +128,9 @@ static void jsG_markstack(js_State *J, int mark)
 	js_Value *v = J->stack;
 	int n = J->top;
 	while (n--) {
-		if (v->type == JS_TMEMSTR && v->u.memstr->gcmark != mark)
+		if (v->t.type == JS_TMEMSTR && v->u.memstr->gcmark != mark)
 			v->u.memstr->gcmark = mark;
-		if (v->type == JS_TOBJECT && v->u.object->gcmark != mark)
+		if (v->t.type == JS_TOBJECT && v->u.object->gcmark != mark)
 			jsG_markobject(J, mark, v->u.object);
 		++v;
 	}
