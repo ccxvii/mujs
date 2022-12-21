@@ -361,6 +361,7 @@ static int O_keys_walk(js_State *J, js_Property *ref, int i)
 static void O_keys(js_State *J)
 {
 	js_Object *obj;
+	char name[32];
 	int i, k;
 
 	if (!js_isobject(J, 1))
@@ -376,7 +377,16 @@ static void O_keys(js_State *J)
 
 	if (obj->type == JS_CSTRING) {
 		for (k = 0; k < obj->u.s.length; ++k) {
-			js_pushnumber(J, k);
+			js_itoa(name, k);
+			js_pushstring(J, name);
+			js_setindex(J, -2, i++);
+		}
+	}
+
+	if (obj->type == JS_CARRAY && obj->u.a.simple) {
+		for (k = 0; k < obj->u.a.flat_length; ++k) {
+			js_itoa(name, k);
+			js_pushstring(J, name);
 			js_setindex(J, -2, i++);
 		}
 	}
