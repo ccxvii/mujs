@@ -1224,16 +1224,23 @@ static void jsR_callscript(js_State *J, int n, js_Function *F, js_Environment *s
 
 static void jsR_callcfunction(js_State *J, int n, int min, js_CFunction F)
 {
+	int save_top;
 	int i;
 	js_Value v;
 
 	for (i = n; i < min; ++i)
 		js_pushundefined(J);
 
+	save_top = TOP;
 	F(J);
-	v = *stackidx(J, -1);
-	TOP = --BOT; /* clear stack */
-	js_pushvalue(J, v);
+	if (TOP > save_top) {
+		v = *stackidx(J, -1);
+		TOP = --BOT; /* clear stack */
+		js_pushvalue(J, v);
+	} else {
+		TOP = --BOT; /* clear stack */
+		js_pushundefined(J);
+	}
 }
 
 static void jsR_pushtrace(js_State *J, const char *name, const char *file, int line)
