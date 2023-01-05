@@ -1690,6 +1690,9 @@ static void jsR_run(js_State *J, js_Function *F)
 			js_pushboolean(J, b);
 			break;
 
+		case OP_SKIPARRAY:
+			js_setlength(J, -1, js_getlength(J, -1) + 1);
+			break;
 		case OP_INITARRAY:
 			js_setindex(J, -2, js_getlength(J, -2));
 			break;

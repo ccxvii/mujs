@@ -187,7 +187,7 @@ static js_Ast *arrayelement(js_State *J)
 {
 	int line = J->lexline;
 	if (J->lookahead == ',')
-		return EXP0(UNDEF);
+		return EXP0(ELISION);
 	return assignment(J, 0);
 }
 

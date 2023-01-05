@@ -578,7 +578,7 @@ enum js_AstType
 	EXP_REGEXP,
 
 	/* literals */
-	EXP_UNDEF, /* for array elisions */
+	EXP_ELISION, /* for array elisions */
 	EXP_NULL,
 	EXP_TRUE,
 	EXP_FALSE,
@@ -743,6 +743,7 @@ enum js_OpCode
 
 	OP_IN,		/* <name> <obj> -- <exists?> */
 
+	OP_SKIPARRAY,	/* <obj> -- <obj> */
 	OP_INITARRAY,	/* <obj> <val> -- <obj> */
 	OP_INITPROP,	/* <obj> <key> <val> -- <obj> */
 	OP_INITGETTER,	/* <obj> <key> <closure> -- <obj> */

@@ -284,8 +284,12 @@ static void carray(JF, js_Ast *list)
 {
 	while (list) {
 		emitline(J, F, list->a);
-		cexp(J, F, list->a);
-		emit(J, F, OP_INITARRAY);
+		if (list->a->type == EXP_ELISION) {
+			emit(J, F, OP_SKIPARRAY);
+		} else {
+			cexp(J, F, list->a);
+			emit(J, F, OP_INITARRAY);
+		}
 		list = list->b;
 	}
 }
@@ -580,9 +584,7 @@ static void cexp(JF, js_Ast *exp)
 		emitline(J, F, exp);
 		emitnumber(J, F, exp->number);
 		break;
-	case EXP_UNDEF:
-		emitline(J, F, exp);
-		emit(J, F, OP_UNDEF);
+	case EXP_ELISION:
 		break;
 	case EXP_NULL:
 		emitline(J, F, exp);

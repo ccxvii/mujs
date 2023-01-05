@@ -209,7 +209,7 @@ static int prec(enum js_AstType type)
 	case EXP_NUMBER:
 	case EXP_STRING:
 	case EXP_REGEXP:
-	case EXP_UNDEF:
+	case EXP_ELISION:
 	case EXP_NULL:
 	case EXP_TRUE:
 	case EXP_FALSE:
@@ -415,7 +415,7 @@ static void pexpi(int d, int p, js_Ast *exp)
 	case EXP_STRING: pstr(exp->string); break;
 	case EXP_REGEXP: pregexp(exp->string, exp->number); break;
 
-	case EXP_UNDEF: break;
+	case EXP_ELISION: ps("elision"); break;
 	case EXP_NULL: ps("null"); break;
 	case EXP_TRUE: ps("true"); break;
 	case EXP_FALSE: ps("false"); break;
