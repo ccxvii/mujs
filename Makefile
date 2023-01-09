@@ -112,7 +112,7 @@ build/release/mujs.pc:
 	echo >> $@ Libs: -L$(libdir) -lmujs
 	echo >> $@ Libs.private: -lm
 
-install: build/release/mujs build/release/libmujs.a build/release/libmujs.$(SO) build/release/mujs.pc
+install-common: build/release/mujs build/release/mujs-pp build/release/mujs.pc
 	install -d $(DESTDIR)$(incdir)
 	install -d $(DESTDIR)$(libdir)
 	install -d $(DESTDIR)$(libdir)/pkgconfig
@@ -120,11 +120,19 @@ install: build/release/mujs build/release/libmujs.a build/release/libmujs.$(SO) 
 	install -m 644 mujs.h $(DESTDIR)$(incdir)
 	install -m 644 build/release/mujs.pc $(DESTDIR)$(libdir)/pkgconfig
 	install -m 755 build/release/mujs $(DESTDIR)$(bindir)
+	install -m 755 build/release/mujs-pp $(DESTDIR)$(bindir)
+
+install-static: install-common build/release/libmujs.a
 	install -m 644 build/release/libmujs.a $(DESTDIR)$(libdir)
+
+install-shared: install-common build/release/libmujs.$(SO)
 	install -m 755 build/release/libmujs.$(SO) $(DESTDIR)$(libdir)
+
+install: install-static
 
 uninstall:
 	rm -f $(DESTDIR)$(bindir)/mujs
+	rm -f $(DESTDIR)$(bindir)/mujs-pp
 	rm -f $(DESTDIR)$(incdir)/mujs.h
 	rm -f $(DESTDIR)$(libdir)/pkgconfig/mujs.pc
 	rm -f $(DESTDIR)$(libdir)/libmujs.a
