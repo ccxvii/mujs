@@ -205,8 +205,15 @@ double js_stringtofloat(const char *s, char **ep)
 	}
 	if (isflt)
 		n = js_strtod(s, &end);
-	else
-		n = js_strtol(s, &end, 10);
+	else {
+		/* js_strtol doesn't parse the sign */
+		if (*s == '-')
+			n = -js_strtol(s+1, &end, 10);
+		else if (*s == '+')
+			n = js_strtol(s+1, &end, 10);
+		else
+			n = js_strtol(s, &end, 10);
+	}
 	if (end == e) {
 		*ep = (char*)e;
 		return n;
