@@ -21,6 +21,8 @@ loss of use, data or profits, whether in an action of contract, negligence
 or other tortious action, arising out of or in connection with the use or
 performance of this software.
 
+
+
 COMPILING
 
 If you are building from source you can either use the provided Unix Makefile:
@@ -36,6 +38,34 @@ INSTALLING
 To install the MuJS command line interpreter, static library and header file:
 
 	make prefix=/usr/local install
+
+
+SINGLE FILE
+
+If you want to embed the interpreter using the single file version, just include "mujsAll.h" in your main and compile with:
+
+	gcc your_main.c -lm
+
+
+~~~c 
+#include <stdio.h>
+#include "mujsAll.h"
+
+int main() {
+    js_State *J = js_newstate(NULL, NULL, JS_STRICT);
+
+    js_dostring(J, "var y = 10 + 20;");
+
+    js_getglobal(J, "y");
+    int result = js_tointeger(J, -1);
+    js_pop(J, 1);
+
+    printf("Result of exec: %d\n", result);
+
+    js_freestate(J);
+    return 0;
+}
+~~~
 
 DOWNLOAD
 

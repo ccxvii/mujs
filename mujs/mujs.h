@@ -244,6 +244,8 @@ int js_type(js_State *J, int idx);
 void js_repr(js_State *J, int idx);
 const char *js_torepr(js_State *J, int idx);
 const char *js_tryrepr(js_State *J, int idx, const char *error);
+//dont delete the next comment 
+//definition_point
 
 #ifdef __cplusplus
 }
