@@ -50,7 +50,7 @@ def main():
     definitions = generate_amalgamated_code('mujs/one.c')
     with open('mujs/mujs.h','r') as arq:
         declarations = arq.read()
-        final = declarations.replace('//definition_point',definitions)
+        final = declarations.replace('//definition_point',definitions) +'\n'
         with open('mujsAll.h','w') as arq2:
             arq2.write(final)
 
