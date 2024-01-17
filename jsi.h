@@ -78,17 +78,19 @@ typedef struct js_StackTrace js_StackTrace;
 /* Limits */
 
 #ifndef JS_STACKSIZE
-#define JS_STACKSIZE 256	/* value stack size */
+#define JS_STACKSIZE 4096	/* value stack size */
 #endif
 #ifndef JS_ENVLIMIT
-#define JS_ENVLIMIT 128		/* environment stack size */
+#define JS_ENVLIMIT 1024	/* environment stack size */
 #endif
 #ifndef JS_TRYLIMIT
 #define JS_TRYLIMIT 64		/* exception stack size */
 #endif
+
 #ifndef JS_ARRAYLIMIT
 #define JS_ARRAYLIMIT (1<<26)	/* limit arrays to 64M entries (1G of flat array data) */
 #endif
+
 #ifndef JS_GCFACTOR
 /*
  * GC will try to trigger when memory usage is this value times the minimum
@@ -100,9 +102,11 @@ typedef struct js_StackTrace js_StackTrace;
  */
 #define JS_GCFACTOR 5.0		/* memory overhead factor >= 1.0 */
 #endif
+
 #ifndef JS_ASTLIMIT
-#define JS_ASTLIMIT 100		/* max nested expressions */
+#define JS_ASTLIMIT 400		/* max nested expressions */
 #endif
+
 #ifndef JS_STRLIMIT
 #define JS_STRLIMIT (1<<28)	/* max string length */
 #endif
