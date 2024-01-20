@@ -856,6 +856,7 @@ void jsB_initerror(js_State *J);
 void jsB_initmath(js_State *J);
 void jsB_initjson(js_State *J);
 void jsB_initdate(js_State *J);
+void jsB_inittypedarray(js_State *J);
 
 void jsB_propf(js_State *J, const char *name, js_CFunction cfun, int n);
 void jsB_propn(js_State *J, const char *name, double number);

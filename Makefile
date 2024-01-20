@@ -59,6 +59,7 @@ SRCS = \
 	jsrun.c \
 	jsstate.c \
 	jsstring.c \
+	jstypedarray.c \
 	jsvalue.c \
 	regexp.c \
 	utf.c

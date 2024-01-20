@@ -227,6 +227,8 @@ void jsB_init(js_State *J)
 	jsB_initmath(J);
 	jsB_initjson(J);
 
+	jsB_inittypedarray(J);
+
 	/* Initialize the global object */
 	js_pushnumber(J, NAN);
 	js_defglobal(J, "NaN", JS_READONLY | JS_DONTENUM | JS_DONTCONF);

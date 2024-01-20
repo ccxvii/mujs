@@ -20,6 +20,7 @@
 #include "jsrun.c"
 #include "jsstate.c"
 #include "jsstring.c"
+#include "jstypedarray.c"
 #include "jsvalue.c"
 #include "regexp.c"
 #include "utf.c"

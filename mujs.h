@@ -245,6 +245,28 @@ void js_repr(js_State *J, int idx);
 const char *js_torepr(js_State *J, int idx);
 const char *js_tryrepr(js_State *J, int idx, const char *error);
 
+void js_newarraybuffer(js_State *J, const void *p, int n);
+void js_newdataview(js_State *J, const void *p, int n);
+void js_newint8array(js_State *J, const signed char *p, int n);
+void js_newint16array(js_State *J, const signed short *p, int n);
+void js_newint32array(js_State *J, const signed int *p, int n);
+void js_newuint8array(js_State *J, const unsigned char *p, int n);
+void js_newuint16array(js_State *J, const unsigned short *p, int n);
+void js_newuint32array(js_State *J, const unsigned int *p, int n);
+void js_newfloat32array(js_State *J, const float *p, int n);
+void js_newfloat64array(js_State *J, const double *p, int n);
+
+void *js_toarraybuffer(js_State *J, int idx, int *n);
+void *js_todataview(js_State *J, int idx, int *n);
+signed char *js_toint8array(js_State *J, int idx, int *n);
+signed short *js_toint16array(js_State *J, int idx, int *n);
+signed int *js_toint32array(js_State *J, int idx, int *n);
+unsigned char *js_touint8array(js_State *J, int idx, int *n);
+unsigned short *js_touint16array(js_State *J, int idx, int *n);
+unsigned int *js_touint32array(js_State *J, int idx, int *n);
+float *js_tofloat32array(js_State *J, int idx, int *n);
+double *js_tofloat64array(js_State *J, int idx, int *n);
+
 #ifdef __cplusplus
 }
 #endif
