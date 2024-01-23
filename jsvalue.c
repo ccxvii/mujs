@@ -388,7 +388,7 @@ static js_Object *jsV_newstring(js_State *J, const char *v)
 	} else {
 		obj->u.s.string = js_strdup(J, v);
 	}
-	obj->u.s.length = utflen(v);
+	obj->u.s.length = js_utflen(v);
 	return obj;
 }
 

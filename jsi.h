@@ -144,8 +144,8 @@ void js_loadeval(js_State *J, const char *filename, const char *source);
 js_Regexp *js_toregexp(js_State *J, int idx);
 int js_isarrayindex(js_State *J, const char *str, int *idx);
 int js_runeat(js_State *J, const char *s, int i);
+int js_utflen(const char *s);
 int js_utfptrtoidx(const char *s, const char *p);
-const char *js_utfidxtoptr(const char *s, int i);
 
 void js_dup(js_State *J);
 void js_dup2(js_State *J);
