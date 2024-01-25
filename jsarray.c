@@ -453,6 +453,29 @@ static void Ap_indexOf(js_State *J)
 	js_pushnumber(J, -1);
 }
 
+static void Ap_includes(js_State *J)
+{
+	int k, len, from;
+
+	len = js_getlength(J, 0);
+	from = js_isdefined(J, 2) ? js_tointeger(J, 2) : 0;
+	if (from < 0) from = len + from;
+	if (from < 0) from = 0;
+
+	js_copy(J, 1);
+	for (k = from; k < len; ++k) {
+		if (js_hasindex(J, 0, k)) {
+			if (js_strictequal(J)) {
+				js_pushboolean(J, 1);
+				return;
+			}
+			js_pop(J, 1);
+		}
+	}
+
+	js_pushboolean(J, 0);
+}
+
 static void Ap_lastIndexOf(js_State *J)
 {
 	int k, len, from;
@@ -741,6 +764,9 @@ void jsB_initarray(js_State *J)
 		jsB_propf(J, "Array.prototype.filter", Ap_filter, 1);
 		jsB_propf(J, "Array.prototype.reduce", Ap_reduce, 1);
 		jsB_propf(J, "Array.prototype.reduceRight", Ap_reduceRight, 1);
+
+		/* ES7 */
+		jsB_propf(J, "Array.prototype.includes", Ap_includes, 2);
 	}
 	js_newcconstructor(J, jsB_new_Array, jsB_new_Array, "Array", 0); /* 1 */
 	{
