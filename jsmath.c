@@ -8,6 +8,7 @@ typedef unsigned __int64 uint64_t;
 #endif
 
 #include <time.h>
+#include <stdlib.h>
 
 static double jsM_round(double x)
 {
@@ -100,6 +101,19 @@ static void Math_init_random(js_State *J)
 	J->seed %= 0x7fffffff;
 }
 
+static void Math_randint(js_State *J)
+{
+	int min = js_tonumber(J, 1);
+	int max = js_tonumber(J, 2);
+
+	if(min > max)
+	{
+		js_error(J, "max should be bigger than max");
+	}
+	
+	js_pushnumber(J, (rand() % (max - min +1)) + min);
+}
+
 static void Math_round(js_State *J)
 {
 	double x = js_tonumber(J, 1);
@@ -185,6 +199,7 @@ void jsB_initmath(js_State *J)
 		jsB_propf(J, "Math.min", Math_min, 0); /* 2 */
 		jsB_propf(J, "Math.pow", Math_pow, 2);
 		jsB_propf(J, "Math.random", Math_random, 0);
+		jsB_propf(J, "Math.randint", Math_randint, 2);
 		jsB_propf(J, "Math.round", Math_round, 1);
 		jsB_propf(J, "Math.sin", Math_sin, 1);
 		jsB_propf(J, "Math.sqrt", Math_sqrt, 1);
