@@ -101,14 +101,18 @@ static void Math_init_random(js_State *J)
 	J->seed %= 0x7fffffff;
 }
 
-static void Math_randint(js_State *J)
+static void Math_rand(js_State *J)
 {
-	int min = js_tonumber(J, 1);
+	int min = js_isdefined(J, 1) ? js_tonumber(J, 1) : 0;
 	int max = js_tonumber(J, 2);
+	
+	if(!js_isdefined(J, 2) && min > 0) {
+		max = min;
+		min = 0;
+	}
 
-	if(min > max)
-	{
-		js_error(J, "max should be bigger than max");
+	if(min > max) {
+		js_error(J, "max should be bigger than min");
 	}
 	
 	js_pushnumber(J, (rand() % (max - min +1)) + min);
@@ -200,7 +204,7 @@ void jsB_initmath(js_State *J)
 		jsB_propf(J, "Math.min", Math_min, 0); /* 2 */
 		jsB_propf(J, "Math.pow", Math_pow, 2);
 		jsB_propf(J, "Math.random", Math_random, 0);
-		jsB_propf(J, "Math.randint", Math_randint, 2);
+		jsB_propf(J, "Math.rand", Math_rand, 2);
 		jsB_propf(J, "Math.round", Math_round, 1);
 		jsB_propf(J, "Math.sin", Math_sin, 1);
 		jsB_propf(J, "Math.sqrt", Math_sqrt, 1);
