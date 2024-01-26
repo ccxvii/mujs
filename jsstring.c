@@ -312,7 +312,7 @@ static void Sp_substr(js_State *J)
 {
 	const char *str = checkstring(J, 0);
 	const char *ss, *ee;
-	int len = utflen(str);
+	int len = js_utflen(str);
 	int s = js_tointeger(J, 1);
 	int e = js_isdefined(J, 2) ? js_tointeger(J, 2) : (len-1);
 	
