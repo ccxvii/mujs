@@ -226,6 +226,7 @@ void jsB_init(js_State *J)
 	jsB_initerror(J);
 	jsB_initmath(J);
 	jsB_initjson(J);
+	jsB_initfile(J);
 
 	/* Initialize the global object */
 	js_pushnumber(J, NAN);

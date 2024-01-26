@@ -224,6 +224,9 @@ static void reprvalue(js_State *J, js_Buffer **sb)
 		case JS_CMATH:
 			js_puts(J, sb, "Math");
 			break;
+		case JS_CFILE:
+			js_puts(J, sb, "File");
+			break;
 		case JS_CJSON:
 			js_puts(J, sb, "JSON");
 			break;

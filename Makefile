@@ -42,6 +42,7 @@ SRCS = \
 	jsbuiltin.c \
 	jscompile.c \
 	jsdate.c \
+	jsfile.c \
 	jsdtoa.c \
 	jserror.c \
 	jsfunction.c \

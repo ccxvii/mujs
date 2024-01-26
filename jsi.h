@@ -320,6 +320,7 @@ enum js_Class {
 	JS_CREGEXP,
 	JS_CDATE,
 	JS_CMATH,
+	JS_CFILE,
 	JS_CJSON,
 	JS_CARGUMENTS,
 	JS_CITERATOR,
@@ -858,6 +859,7 @@ void jsB_initstring(js_State *J);
 void jsB_initregexp(js_State *J);
 void jsB_initerror(js_State *J);
 void jsB_initmath(js_State *J);
+void jsB_initfile(js_State *J);
 void jsB_initjson(js_State *J);
 void jsB_initdate(js_State *J);
 

@@ -138,96 +138,6 @@ static void jsB_write(js_State *J)
 	js_pushundefined(J);
 }
 
-static void jsB_fexists(js_State *J)
-{
-	const char *filename = js_tostring(J, 1);
-	FILE *f;
-	
-	f = fopen(filename, "r");
-	
-	if(errno != 0)
-	{
-		js_pushboolean(J, 0);
-	}
-	else
-	{
-		fclose(f);
-		js_pushboolean(J, 1);
-	}
-}
-
-static void jsB_fwrite(js_State *J)
-{
-	const char *filename = js_tostring(J, 1);
-	const char *filecont = js_tostring(J, 2);
-	FILE *f;
-	
-	f = fopen(filename, "w");
-	
-	if(errno != 0)
-	{
-		js_error(J, "cannot write file '%s': %s", filename, strerror(errno));
-	}
-	
-	if (f == NULL) {
-		fclose(f);
-		js_error(J, "cannot write file '%s': %s", filename, strerror(errno));
-	}
-	
-	if (fprintf(f, "%s", filecont) < 0) {
-		fclose(f);
-		js_error(J, "cannot write data in file '%s': %s", filename, strerror(errno));
-	}
-	
-	fclose(f);
-}
-
-static void jsB_fread(js_State *J)
-{
-	const char *filename = js_tostring(J, 1);
-	FILE *f;
-	char *s;
-	int n, t;
-
-	f = fopen(filename, "rb");
-	if (!f) {
-		js_error(J, "cannot open file '%s': %s", filename, strerror(errno));
-	}
-
-	if (fseek(f, 0, SEEK_END) < 0) {
-		fclose(f);
-		js_error(J, "cannot seek in file '%s': %s", filename, strerror(errno));
-	}
-
-	n = ftell(f);
-	if (n < 0) {
-		fclose(f);
-		js_error(J, "cannot tell in file '%s': %s", filename, strerror(errno));
-	}
-
-	if (fseek(f, 0, SEEK_SET) < 0) {
-		fclose(f);
-		js_error(J, "cannot seek in file '%s': %s", filename, strerror(errno));
-	}
-
-	s = malloc(n + 1);
-	if (!s) {
-		fclose(f);
-		js_error(J, "out of memory");
-	}
-
-	t = fread(s, 1, n, f);
-	if (t != n) {
-		free(s);
-		fclose(f);
-		js_error(J, "cannot read data from file '%s': %s", filename, strerror(errno));
-	}
-	s[n] = 0;
-
-	js_pushstring(J, s);
-	free(s);
-	fclose(f);
-}
 
 
 static void jsB_readline(js_State *J)
@@ -375,15 +285,6 @@ main(int argc, char **argv)
 
 	js_newcfunction(J, jsB_write, "write", 0);
 	js_setglobal(J, "write");
-
-	js_newcfunction(J, jsB_fexists, "fexists", 1);
-	js_setglobal(J, "fexists");
-	
-	js_newcfunction(J, jsB_fwrite, "fwrite", 2);
-	js_setglobal(J, "fwrite");
-
-	js_newcfunction(J, jsB_fread, "fread", 1);
-	js_setglobal(J, "fread");
 
 	js_newcfunction(J, jsB_readline, "readline", 0);
 	js_setglobal(J, "readline");

@@ -10,6 +10,7 @@
 #include "jsintern.c"
 #include "jslex.c"
 #include "jsmath.c"
+#include "jsfile.c"
 #include "jsnumber.c"
 #include "jsobject.c"
 #include "json.c"
