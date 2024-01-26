@@ -325,8 +325,8 @@ static void Sp_substr(js_State *J)
 		js_rangeerror(J, "invalid string length");
 	}
 	
-	ss = js_utfidxtoptr(str, s);
-	ee = js_utfidxtoptr(ss, e);
+	ss = Sp_substring_imp(str, s);
+	ee = Sp_substring_imp(ss, e);
 	
 	js_pushlstring(J, ss, ee - ss);
 }
