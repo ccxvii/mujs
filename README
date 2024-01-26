@@ -6,8 +6,11 @@ MuJS Plus is a fork of MuJS that adds some functions from ES6, ES7, and custom o
 
 ADDITIONS
 
-Custom function: Math.randint(min, max) 
+Custom function: Math.rand(min, max) 
 		 provides a random integer between min and max, including min and max.
+
+		 Math.rand(max)
+		 provides a random integer between 0 and max, including 0 and max.
 
 Custom function: fexists(filename)
 		 checks if the file exists, returns a boolean: true or false.
