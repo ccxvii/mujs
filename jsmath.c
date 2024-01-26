@@ -173,7 +173,7 @@ static void Math_min(js_State *J)
 
 void jsB_initmath(js_State *J)
 {
-	srand(time(NULL))
+	srand(time(NULL));
 	Math_init_random(J);
 	js_pushobject(J, jsV_newobject(J, JS_CMATH, J->Object_prototype));
 	{
