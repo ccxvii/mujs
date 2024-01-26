@@ -308,6 +308,29 @@ static void Sp_substring(js_State *J)
 		Sp_substring_imp(J, str, e, s - e);
 }
 
+static void Sp_substr(js_State *J)
+{
+	const char *str = checkstring(J, 0);
+	const char *ss, *ee;
+	int len = utflen(str);
+	int s = js_tointeger(J, 1);
+	int e = js_isdefined(J, 2) ? js_tointeger(J, 2) : (len-1);
+	
+	s = s < 0 ? 0 : s;
+	e = e < 0 ? 0 : e;
+	e = e == (len-1) ? (len - s) : e;
+	
+	if((s + e) > len)
+	{
+		js_rangeerror(J, "invalid string length");
+	}
+	
+	ss = js_utfidxtoptr(str, s);
+	ee = js_utfidxtoptr(ss, e);
+	
+	js_pushlstring(J, ss, ee - ss);
+}
+
 static void Sp_toLowerCase(js_State *J)
 {
 	const char *s = checkstring(J, 0);
@@ -473,6 +496,38 @@ static void Sp_search(js_State *J)
 		js_pushnumber(J, js_utfptrtoidx(text, m.sub[0].sp));
 	else
 		js_pushnumber(J, -1);
+}
+
+static void Sp_includes(js_State *J)
+{
+	js_Regexp *re;
+	const char *text;
+	Resub m;
+	int e = js_isdefined(J, 2) ? js_tointeger(J, 2) : -1;
+	int t;
+	int y = 0;
+	
+	text = checkstring(J, 0);
+
+	if (js_isundefined(J, 1))
+		js_newregexp(J, "", 0);
+	else
+		js_newregexp(J, js_tostring(J, 1), 0);
+
+	re = js_toregexp(J, -1);
+
+	if (!js_doregexec(J, re->prog, text, &m, 0)) {
+		t = js_utfptrtoidx(text, m.sub[0].sp);
+		
+		if(e > -1 && e <= t)
+			y = 1;
+			
+		if (e == -1)
+			y = 1;
+			
+	}
+	
+	js_pushboolean(J, y);
 }
 
 static void Sp_replace_regexp(js_State *J)
@@ -789,6 +844,13 @@ void jsB_initstring(js_State *J)
 
 		/* ES5 */
 		jsB_propf(J, "String.prototype.trim", Sp_trim, 0);
+		
+		/* ES6 */
+		jsB_propf(J, "String.prototype.includes", Sp_includes, 2);
+		
+		/* Additional ECMAScript Features incomplete */
+		jsB_propf(J, "String.prototype.substr", Sp_substr, 2);
+		
 	}
 	js_newcconstructor(J, jsB_String, jsB_new_String, "String", 0); /* 1 */
 	{
