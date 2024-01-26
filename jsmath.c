@@ -104,12 +104,12 @@ static void Math_init_random(js_State *J)
 static void Math_rand(js_State *J)
 {
 	int min = js_isdefined(J, 1) ? js_tonumber(J, 1) : 0;
-	int max = js_tonumber(J, 2);
+	int max = js_isdefined(J, 2) ? js_tonumber(J, 2) : 0;
 	
-	if(!js_isdefined(J, 2) && min > 0) {
+	if(max == 0 && min > 0) {
 		max = min;
 		min = 0;
-	}
+	} 
 
 	if(min > max) {
 		js_error(J, "max should be bigger than min");
