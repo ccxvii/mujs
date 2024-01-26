@@ -661,12 +661,14 @@ static void Sp_split_regexp(js_State *J)
 	js_newarray(J);
 	len = 0;
 
+	if (limit == 0)
+		return;
+
 	e = text + strlen(text);
 
 	/* splitting the empty string */
 	if (e == text) {
 		if (js_doregexec(J, re->prog, text, &m, 0)) {
-			if (len == limit) return;
 			js_pushliteral(J, "");
 			js_setindex(J, -2, 0);
 		}
@@ -682,7 +684,7 @@ static void Sp_split_regexp(js_State *J)
 		c = m.sub[0].ep;
 
 		/* empty string at end of last match */
-		if (b == p) {
+		if (b == c && b == p) {
 			++a;
 			continue;
 		}
@@ -713,6 +715,9 @@ static void Sp_split_string(js_State *J)
 	int i, n;
 
 	js_newarray(J);
+
+	if (limit == 0)
+		return;
 
 	n = strlen(sep);
 
