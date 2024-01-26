@@ -259,7 +259,7 @@ static const char *require_js =
 	"if (name in cache) return cache[name];\n"
 	"var exports = {};\n"
 	"cache[name] = exports;\n"
-	"Function('exports', read(name+'.js'))(exports);\n"
+	"Function('exports', fread(name+'.js'))(exports);\n"
 	"return exports;\n"
 	"}\n"
 	"require.cache = Object.create(null);\n"
@@ -416,7 +416,7 @@ main(int argc, char **argv)
 	}
 
 	if (interactive) {
-		printf("Welcome to MuJS %d.%d.%d.\n",
+		printf("Welcome to MuJS Plus %d.%d.%d.\n",
 			JS_VERSION_MAJOR, JS_VERSION_MINOR, JS_VERSION_PATCH);
 		if (isatty(0)) {
 			using_history();
