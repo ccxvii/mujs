@@ -12,14 +12,17 @@ Custom function: Math.rand(min, max)
 		 Math.rand(max)
 		 provides a random integer between 0 and max, including 0 and max.
 
-Custom function: File.exists(filename)
+		 File.exists(filename)
 		 checks if the file exists, returns a boolean: true or false.
 
-Custom function: File.read(filename)
+		 File.read(filename)
 		 reads the file, returns file contents.
 
-Custom function: File.write(filename, content)
+		 File.write(filename, content)
 		 writes the content on the file, if file dont exist creats one
+
+		 File.append(filename, content)
+		 appends the content on the file, if file dont exist creats one
 
 String.prototype.substr
 
