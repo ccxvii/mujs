@@ -311,21 +311,20 @@ static void Sp_substring(js_State *J)
 static void Sp_substr(js_State *J)
 {
 	const char *str = checkstring(J, 0);
-	//const char *ss, *ee;
 	int len = js_utflen(str);
 	int s = js_tointeger(J, 1);
 	int e = js_isdefined(J, 2) ? js_tointeger(J, 2) : (len-1);
 	
-	s = s < 0 ? 0 : s;
-	e = e < 0 ? 0 : e;
-	e = e == (len-1) ? (len - s) : e;
-	
-	if((s + e) > len)
-	{
-		js_rangeerror(J, "invalid string length");
-	}
-	
-	Sp_substring_imp(J, str, s, e);
+	s = s < 0 ? s + len : s;
+	e = e < 0 ? e + len : e;
+
+	s = s < 0 ? 0 : s > len ? len : s;
+	e = e < 0 ? 0 : e > len ? len : e;
+
+	if (s < e)
+		Sp_substring_imp(J, str, s, e);
+	else
+		Sp_substring_imp(J, str, e, s);
 }
 
 static void Sp_toLowerCase(js_State *J)
