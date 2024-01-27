@@ -23,10 +23,15 @@ static void jsB_fexists(js_State *J)
 
 static void jsB_fwrite(js_State *J)
 {
+	if(!js_isdefined(J, 1) || !js_isdefined(J, 2))
+	{
+		js_error(J, "File name and file content are required");
+	}
+	
 	const char *filename = js_tostring(J, 1);
 	const char *filecont = js_tostring(J, 2);
-	FILE *f;
 	
+	FILE *f;
 	f = fopen(filename, "w");
 	
 	if(errno != 0)
@@ -42,6 +47,37 @@ static void jsB_fwrite(js_State *J)
 	if (fprintf(f, "%s", filecont) < 0) {
 		fclose(f);
 		js_error(J, "cannot write data in file '%s': %s", filename, strerror(errno));
+	}
+	
+	fclose(f);
+}
+
+static void jsB_fappend(js_State *J)
+{
+	if(!js_isdefined(J, 1) || !js_isdefined(J, 2))
+	{
+		js_error(J, "File name and file content are required");
+	}
+	
+	const char *filename = js_tostring(J, 1);
+	const char *filecont = js_tostring(J, 2);
+	FILE *f;
+	
+	f = fopen(filename, "a");
+	
+	if(errno != 0)
+	{
+		js_error(J, "cannot append to file '%s': %s", filename, strerror(errno));
+	}
+	
+	if (f == NULL) {
+		fclose(f);
+		js_error(J, "cannot append to file '%s': %s", filename, strerror(errno));
+	}
+	
+	if (fprintf(f, "%s", filecont) < 0) {
+		fclose(f);
+		js_error(J, "cannot append data in file '%s': %s", filename, strerror(errno));
 	}
 	
 	fclose(f);
@@ -100,6 +136,7 @@ void jsB_initfile(js_State *J)
 	{
 		jsB_propf(J, "File.exists", jsB_fexists, 1);
 		jsB_propf(J, "File.write", jsB_fwrite, 2);
+		jsB_propf(J, "File.append", jsB_fappend, 2);
 		jsB_propf(J, "File.read", jsB_fread, 1);
 	}
 	js_defglobal(J, "File", JS_DONTENUM);
