@@ -4,6 +4,8 @@
 
 default: build/debug/mujs build/debug/mujs-pp
 
+SOVERSION = 1
+
 CFLAGS = -std=c99 -pedantic -Wall -Wextra -Wno-unused-parameter
 
 OPTIM = -O3
@@ -84,7 +86,8 @@ build/sanitize/mujs: main.c one.c $(SRCS) $(HDRS)
 
 build/debug/libmujs.$(SO): one.c $(SRCS) $(HDRS)
 	@mkdir -p $(@D)
-	$(CC) $(CFLAGS) -g -fPIC -shared -o $@ one.c -lm
+	$(CC) $(CFLAGS) -g -fPIC -shared -Wl,-soname,libmujs.so.$(SOVERSION) -o $@.$(SOVERSION) one.c -lm
+	ln -sf libmujs.so.$(SOVERSION) $@
 build/debug/libmujs.o: one.c $(SRCS) $(HDRS)
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -g -c -o $@ one.c
@@ -97,7 +100,8 @@ build/debug/mujs-pp: pp.c build/debug/libmujs.o
 
 build/release/libmujs.$(SO): one.c $(SRCS) $(HDRS)
 	@mkdir -p $(@D)
-	$(CC) $(CFLAGS) $(OPTIM) -fPIC -shared -o $@ one.c -lm
+	$(CC) $(CFLAGS) $(OPTIM) -fPIC -shared -Wl,-soname,libmujs.so.$(SOVERSION) -o $@.$(SOVERSION) one.c -lm
+	ln -sf libmujs.so.$(SOVERSION) $@
 build/release/libmujs.o: one.c $(SRCS) $(HDRS)
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) $(OPTIM) -c -o $@ one.c
@@ -131,7 +135,9 @@ install-static: install-common build/release/libmujs.a
 	install -m 644 build/release/libmujs.a $(DESTDIR)$(libdir)
 
 install-shared: install-common build/release/libmujs.$(SO)
-	install -m 755 build/release/libmujs.$(SO) $(DESTDIR)$(libdir)
+	install -m 755 build/release/libmujs.$(SO).$(SOVERSION) $(DESTDIR)$(libdir)
+	cp -af build/release/libmujs.$(SO) $(DESTDIR)$(libdir)
+	chmod 755 $(DESTDIR)$(libdir)
 
 install: install-static
 
@@ -142,6 +148,7 @@ uninstall:
 	rm -f $(DESTDIR)$(libdir)/pkgconfig/mujs.pc
 	rm -f $(DESTDIR)$(libdir)/libmujs.a
 	rm -f $(DESTDIR)$(libdir)/libmujs.$(SO)
+	rm -f $(DESTDIR)$(libdir)/libmujs.$(SO).$(SOVERSION)
 
 tarball:
 	git archive --format=zip --prefix=mujs-$(VERSION)/ HEAD > mujs-$(VERSION).zip
