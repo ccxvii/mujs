@@ -126,7 +126,7 @@ static void O_getOwnPropertyDescriptor(js_State *J)
 	obj = js_toobject(J, 1);
 	ref = jsV_getproperty(J, obj, js_tostring(J, 2));
 	if (!ref) {
-		// TODO: builtin properties (string and array index and length, regexp flags, etc)
+		/* TODO: builtin properties (string and array index and length, regexp flags, etc) */
 		js_pushundefined(J);
 	} else {
 		js_newobject(J);
