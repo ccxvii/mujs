@@ -346,8 +346,6 @@ static void Ap_sort_swap(js_State *J, int idx_a, int idx_b)
 	}
 }
 
-#if JS_HEAPSORT
-
 /* A bottom-up/bouncing heapsort implementation */
 
 static int Ap_sort_leaf(js_State *J, int i, int end)
@@ -390,46 +388,6 @@ static void Ap_sort_heapsort(js_State *J, int n)
 	}
 }
 
-#else
-
-static int Ap_sort_quicksort_partition(js_State *J, int a, int b)
-{
-	int pivot = (a + b) >> 1;
-	while (a <= b) {
-		while (Ap_sort_cmp(J, a, pivot) < 0)
-			++a;
-		while (Ap_sort_cmp(J, b, pivot) > 0)
-			--b;
-		if (a <= b) {
-			Ap_sort_swap(J, a, b);
-			++a;
-			--b;
-		}
-	}
-	return a;
-}
-
-static void Ap_sort_quicksort(js_State *J, int a, int b)
-{
-	int i, j, m;
-
-	/* insertion sort small fragments */
-	if (b - a < 8) {
-		for (i = a+1; i < b; ++i)
-			for (j = i; j > a && Ap_sort_cmp(J, j-1, j) > 0; --j)
-				Ap_sort_swap(J, j-1, j);
-		return;
-	}
-
-	m = Ap_sort_quicksort_partition(J, a, b);
-	if (a < m - 1)
-		Ap_sort_quicksort(J, a, m - 1);
-	if (m < b)
-		Ap_sort_quicksort(J, m, b);
-}
-
-#endif
-
 static void Ap_sort(js_State *J)
 {
 	int len;
@@ -446,12 +404,7 @@ static void Ap_sort(js_State *J)
 	if (len >= INT_MAX)
 		js_rangeerror(J, "array is too large to sort");
 
-
-#if JS_HEAPSORT
 	Ap_sort_heapsort(J, len);
-#else
-	Ap_sort_quicksort(J, 0, len - 1);
-#endif
 
 	js_copy(J, 0);
 }
