@@ -147,12 +147,6 @@ void js_gc(js_State *J, int report)
 	int mark;
 	int i;
 
-	if (J->gcpause) {
-		if (report)
-			js_report(J, "garbage collector is paused");
-		return;
-	}
-
 	mark = J->gcmark = J->gcmark == 1 ? 2 : 1;
 
 	/* Add initial roots. */

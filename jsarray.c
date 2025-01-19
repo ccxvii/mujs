@@ -1,5 +1,9 @@
 #include "jsi.h"
 
+#ifndef JS_HEAPSORT
+#define JS_HEAPSORT 0
+#endif
+
 int js_getlength(js_State *J, int idx)
 {
 	int len;
@@ -233,97 +237,174 @@ static void Ap_slice(js_State *J)
 			js_setindex(J, -2, n);
 }
 
-struct sortslot {
-	js_Value v;
-	js_State *J;
-};
-
-static int sortcmp(const void *avoid, const void *bvoid)
+static int Ap_sort_cmp(js_State *J, int idx_a, int idx_b)
 {
-	const struct sortslot *aslot = avoid, *bslot = bvoid;
-	const js_Value *a = &aslot->v, *b = &bslot->v;
-	js_State *J = aslot->J;
-	const char *sx, *sy;
-	double v;
-	int c;
-
-	int unx = (a->t.type == JS_TUNDEFINED);
-	int uny = (b->t.type == JS_TUNDEFINED);
-	if (unx) return !uny;
-	if (uny) return -1;
-
-	if (js_iscallable(J, 1)) {
-		js_copy(J, 1); /* copy function */
-		js_pushundefined(J);
-		js_pushvalue(J, *a);
-		js_pushvalue(J, *b);
-		js_call(J, 2);
-		v = js_tonumber(J, -1);
-		c = (v == 0) ? 0 : (v < 0) ? -1 : 1;
-		js_pop(J, 1);
+	js_Object *obj = js_tovalue(J, 0)->u.object;
+	if (obj->u.a.simple) {
+		js_Value *val_a = &obj->u.a.array[idx_a];
+		js_Value *val_b = &obj->u.a.array[idx_b];
+		int und_a = val_a->t.type == JS_TUNDEFINED;
+		int und_b = val_b->t.type == JS_TUNDEFINED;
+		if (und_a) return und_b;
+		if (und_b) return -1;
+		if (js_iscallable(J, 1)) {
+			double v;
+			js_copy(J, 1); /* copy function */
+			js_pushundefined(J); /* no 'this' binding */
+			js_pushvalue(J, *val_a);
+			js_pushvalue(J, *val_b);
+			js_call(J, 2);
+			v = js_tonumber(J, -1);
+			js_pop(J, 1);
+			if (isnan(v))
+				return 0;
+			if (v == 0)
+				return 0;
+			return v < 0 ? -1 : 1;
+		} else {
+			const char *str_a, *str_b;
+			int c;
+			js_pushvalue(J, *val_a);
+			js_pushvalue(J, *val_b);
+			str_a = js_tostring(J, -2);
+			str_b = js_tostring(J, -1);
+			c = strcmp(str_a, str_b);
+			js_pop(J, 2);
+			return c;
+		}
 	} else {
-		js_pushvalue(J, *a);
-		js_pushvalue(J, *b);
-		sx = js_tostring(J, -2);
-		sy = js_tostring(J, -1);
-		c = strcmp(sx, sy);
-		js_pop(J, 2);
+		int und_a, und_b;
+		int has_a = js_hasindex(J, 0, idx_a);
+		int has_b = js_hasindex(J, 0, idx_b);
+		if (!has_a && !has_b) {
+			return 0;
+		}
+		if (has_a && !has_b) {
+			js_pop(J, 1);
+			return -1;
+		}
+		if (!has_a && has_b) {
+			js_pop(J, 1);
+			return 1;
+		}
+
+		und_a = js_isundefined(J, -2);
+		und_b = js_isundefined(J, -1);
+		if (und_a) {
+			js_pop(J, 2);
+			return und_b;
+		}
+		if (und_b) {
+			js_pop(J, 2);
+			return -1;
+		}
+
+		if (js_iscallable(J, 1)) {
+			double v;
+			js_copy(J, 1); /* copy function */
+			js_pushundefined(J); /* no 'this' binding */
+			js_copy(J, -4);
+			js_copy(J, -4);
+			js_call(J, 2);
+			v = js_tonumber(J, -1);
+			js_pop(J, 3);
+			if (isnan(v))
+				return 0;
+			if (v == 0)
+				return 0;
+			return v < 0 ? -1 : 1;
+		} else {
+			const char *str_a = js_tostring(J, -2);
+			const char *str_b = js_tostring(J, -1);
+			int c = strcmp(str_a, str_b);
+			js_pop(J, 2);
+			return c;
+		}
 	}
-	return c;
+}
+
+static void Ap_sort_swap(js_State *J, int idx_a, int idx_b)
+{
+	js_Object *obj = js_tovalue(J, 0)->u.object;
+	if (obj->u.a.simple) {
+		js_Value tmp = obj->u.a.array[idx_a];
+		obj->u.a.array[idx_a] = obj->u.a.array[idx_b];
+		obj->u.a.array[idx_b] = tmp;
+	} else {
+		int has_a = js_hasindex(J, 0, idx_a);
+		int has_b = js_hasindex(J, 0, idx_b);
+		if (has_a && has_b) {
+			js_setindex(J, 0, idx_a);
+			js_setindex(J, 0, idx_b);
+		} else if (has_a && !has_b) {
+			js_delindex(J, 0, idx_a);
+			js_setindex(J, 0, idx_b);
+		} else if (!has_a && has_b) {
+			js_delindex(J, 0, idx_b);
+			js_setindex(J, 0, idx_a);
+		}
+	}
+}
+
+/* A bottom-up/bouncing heapsort implementation */
+
+static int Ap_sort_leaf(js_State *J, int i, int end)
+{
+	int j = i;
+	int lc = (j << 1) + 1; /* left child */
+	int rc = (j << 1) + 2; /* right child */
+	while (rc < end) {
+		if (Ap_sort_cmp(J, rc, lc) > 0)
+			j = rc;
+		else
+			j = lc;
+		lc = (j << 1) + 1;
+		rc = (j << 1) + 2;
+	}
+	if (lc < end)
+		j = lc;
+	return j;
+}
+
+static void Ap_sort_sift(js_State *J, int i, int end)
+{
+	int j = Ap_sort_leaf(J, i, end);
+	while (Ap_sort_cmp(J, i, j) > 0)
+		j = (j - 1) >> 1; /* parent */
+	while (j > i) {
+		Ap_sort_swap(J, i, j);
+		j = (j - 1) >> 1; /* parent */
+	}
+}
+
+static void Ap_sort_heapsort(js_State *J, int n)
+{
+	int i;
+	for (i = n / 2 - 1; i >= 0; --i)
+		Ap_sort_sift(J, i, n);
+	for (i = n - 1; i > 0; --i) {
+		Ap_sort_swap(J, 0, i);
+		Ap_sort_sift(J, 0, i);
+	}
 }
 
 static void Ap_sort(js_State *J)
 {
-	struct sortslot * volatile array = NULL;
-	int i, n, len;
+	int len;
 
 	len = js_getlength(J, 0);
-	if (len <= 0) {
+	if (len <= 1) {
 		js_copy(J, 0);
 		return;
 	}
 
-	if (len >= INT_MAX / (int)sizeof(*array))
+	if (!js_iscallable(J, 1) && !js_isundefined(J, 1))
+		js_typeerror(J, "comparison function must be a function or undefined");
+
+	if (len >= INT_MAX)
 		js_rangeerror(J, "array is too large to sort");
 
-	/* Holding objects where the GC cannot see them is illegal, but if we
-	 * don't allow the GC to run we can use qsort() on a temporary array of
-	 * js_Values for fast sorting.
-	 */
-	++J->gcpause;
-
-	if (js_try(J)) {
-		--J->gcpause;
-		js_free(J, array);
-		js_throw(J);
-	}
-
-	array = js_malloc(J, len * sizeof *array);
-
-	n = 0;
-	for (i = 0; i < len; ++i) {
-		if (js_hasindex(J, 0, i)) {
-			array[n].v = *js_tovalue(J, -1);
-			array[n].J = J;
-			js_pop(J, 1);
-			++n;
-		}
-	}
-
-	qsort(array, n, sizeof *array, sortcmp);
-
-	for (i = 0; i < n; ++i) {
-		js_pushvalue(J, array[i].v);
-		js_setindex(J, 0, i);
-	}
-	for (i = len-i; i >= n; --i) {
-		js_delindex(J, 0, i);
-	}
-
-	--J->gcpause;
-
-	js_endtry(J);
-	js_free(J, array);
+	Ap_sort_heapsort(J, len);
 
 	js_copy(J, 0);
 }
@@ -419,7 +500,7 @@ static void Ap_toString(js_State *J)
 	js_getproperty(J, 0, "join");
 	if (!js_iscallable(J, -1)) {
 		js_pop(J, 1);
-		// TODO: call Object.prototype.toString implementation directly
+		/* TODO: call Object.prototype.toString implementation directly */
 		js_getglobal(J, "Object");
 		js_getproperty(J, -1, "prototype");
 		js_rot2pop1(J);
