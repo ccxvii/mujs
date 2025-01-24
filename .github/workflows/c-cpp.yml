@@ -20,4 +20,10 @@ jobs:
     - name: make
       run: make release
 
+    - name: change dir 
+      run: cd build/release/
+
+    - name: run mujs-plus
+      run: ./mujs
+
     - uses: actions/download-artifact@v4.1.8
