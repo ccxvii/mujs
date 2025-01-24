@@ -24,6 +24,6 @@ jobs:
       run: cd build/release/
 
     - name: run mujs-plus
-      run: ./mujs
+      run: ls -R
 
     - uses: actions/download-artifact@v4.1.8
