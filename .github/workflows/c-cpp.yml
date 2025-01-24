@@ -9,12 +9,15 @@ on:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
     - uses: actions/checkout@v3
+    
     - name: install readline 
       run: sudo apt install libreadline-dev
        
     - name: make
       run: make release
+
+    - uses: actions/download-artifact@v4.1.8
