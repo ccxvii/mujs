@@ -25,6 +25,8 @@ typedef int Rune;	/* 32 bits */
 #define isupperrune	jsU_isupperrune
 #define tolowerrune	jsU_tolowerrune
 #define toupperrune	jsU_toupperrune
+#define tolowerrune_full	jsU_tolowerrune_full
+#define toupperrune_full	jsU_toupperrune_full
 
 enum
 {
@@ -44,5 +46,7 @@ int		islowerrune(Rune c);
 int		isupperrune(Rune c);
 Rune		tolowerrune(Rune c);
 Rune		toupperrune(Rune c);
+const Rune*	tolowerrune_full(Rune c);
+const Rune*	toupperrune_full(Rune c);
 
 #endif

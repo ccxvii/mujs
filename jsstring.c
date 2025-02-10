@@ -310,21 +310,46 @@ static void Sp_substring(js_State *J)
 
 static void Sp_toLowerCase(js_State *J)
 {
-	const char *s = checkstring(J, 0);
+	const char *s, *s0 = checkstring(J, 0);
 	char * volatile dst = NULL;
 	char *d;
 	Rune rune;
+	const Rune *full;
+	int n;
+
+	n = 1;
+	for (s = s0; *s;) {
+		s += chartorune(&rune, s);
+		full = tolowerrune_full(rune);
+		if (full) {
+			while (*full) {
+				n += runelen(*full);
+				++full;
+			}
+		} else {
+			rune = tolowerrune(rune);
+			n += runelen(rune);
+		}
+	}
 
 	if (js_try(J)) {
 		js_free(J, dst);
 		js_throw(J);
 	}
 
-	d = dst = js_malloc(J, UTFmax * strlen(s) + 1);
-	while (*s) {
+	d = dst = js_malloc(J, n);
+	for (s = s0; *s;) {
 		s += chartorune(&rune, s);
-		rune = tolowerrune(rune);
-		d += runetochar(d, &rune);
+		full = tolowerrune_full(rune);
+		if (full) {
+			while (*full) {
+				d += runetochar(d, full);
+				++full;
+			}
+		} else {
+			rune = tolowerrune(rune);
+			d += runetochar(d, &rune);
+		}
 	}
 	*d = 0;
 
@@ -335,21 +360,46 @@ static void Sp_toLowerCase(js_State *J)
 
 static void Sp_toUpperCase(js_State *J)
 {
-	const char *s = checkstring(J, 0);
+	const char *s, *s0 = checkstring(J, 0);
 	char * volatile dst = NULL;
 	char *d;
+	const Rune *full;
 	Rune rune;
+	int n;
+
+	n = 1;
+	for (s = s0; *s;) {
+		s += chartorune(&rune, s);
+		full = toupperrune_full(rune);
+		if (full) {
+			while (*full) {
+				n += runelen(*full);
+				++full;
+			}
+		} else {
+			rune = toupperrune(rune);
+			n += runelen(rune);
+		}
+	}
 
 	if (js_try(J)) {
 		js_free(J, dst);
 		js_throw(J);
 	}
 
-	d = dst = js_malloc(J, UTFmax * strlen(s) + 1);
-	while (*s) {
+	d = dst = js_malloc(J, n);
+	for (s = s0; *s;) {
 		s += chartorune(&rune, s);
-		rune = toupperrune(rune);
-		d += runetochar(d, &rune);
+		full = toupperrune_full(rune);
+		if (full) {
+			while (*full) {
+				d += runetochar(d, full);
+				++full;
+			}
+		} else {
+			rune = toupperrune(rune);
+			d += runetochar(d, &rune);
+		}
 	}
 	*d = 0;
 

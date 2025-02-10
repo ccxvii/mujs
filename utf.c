@@ -283,3 +283,23 @@ isalpharune(Rune c)
 		return 1;
 	return 0;
 }
+
+const Rune *
+tolowerrune_full(Rune c)
+{
+	const Rune *p;
+	p = ucd_bsearch(c, ucd_tolower_full, nelem(ucd_tolower_full)/4, 4);
+	if(p && c == p[0])
+		return p + 1;
+	return NULL;
+}
+
+const Rune *
+toupperrune_full(Rune c)
+{
+	const Rune *p;
+	p = ucd_bsearch(c, ucd_toupper_full, nelem(ucd_toupper_full)/5, 5);
+	if(p && c == p[0])
+		return p + 1;
+	return NULL;
+}

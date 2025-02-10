@@ -29,7 +29,7 @@ ifeq ($(shell uname),FreeBSD)
   CFLAGS += -I/usr/local/include -L/usr/local/lib
 endif
 
-HDRS = mujs.h jsi.h regexp.h utf.h astnames.h opnames.h
+HDRS = mujs.h jsi.h regexp.h utf.h astnames.h opnames.h utfdata.h
 
 ifneq ($(HAVE_READLINE),no)
   READLINE_CFLAGS = -DHAVE_READLINE
@@ -73,10 +73,12 @@ opnames.h: jsi.h
 	grep -E '\<OP_' jsi.h | sed 's/^[^A-Z]*OP_/"/;s/,.*/",/' | tr A-Z a-z > $@
 
 UnicodeData.txt:
-	curl -s -o $@ https://www.unicode.org/Public/UCD/latest/ucd/UnicodeData.txt
+	curl -s -o $@ https://www.unicode.org/Public/16.0.0/ucd/UnicodeData.txt
+SpecialCasing.txt:
+	curl -s -o $@ https://www.unicode.org/Public/16.0.0/ucd/SpecialCasing.txt
 
-utfdata.h: genucd.py UnicodeData.txt
-	python3 genucd.py UnicodeData.txt >$@
+utfdata.h: genucd.py UnicodeData.txt SpecialCasing.txt
+	python3 genucd.py UnicodeData.txt SpecialCasing.txt >$@
 
 build/sanitize/mujs: main.c one.c $(SRCS) $(HDRS)
 	@mkdir -p $(@D)
