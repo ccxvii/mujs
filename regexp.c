@@ -147,7 +147,7 @@ static int nextrune(struct cstate *g)
 				g->yychar = '0';
 				return 1;
 			}
-			return 0;
+			return 1;
 		case 'u':
 			if (!g->source[0] || !g->source[1] || !g->source[2] || !g->source[3])
 				die(g, "unterminated escape sequence");
@@ -159,7 +159,7 @@ static int nextrune(struct cstate *g)
 				g->yychar = '0';
 				return 1;
 			}
-			return 0;
+			return 1;
 		case 0:
 			g->yychar = '0';
 			return 1;
