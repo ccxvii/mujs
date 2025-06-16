@@ -112,11 +112,16 @@ build/release/mujs-pp: pp.c build/release/libmujs.o
 
 build/release/mujs.pc:
 	@mkdir -p $(@D)
-	echo > $@ Name: mujs
+	echo > $@ prefix=$(prefix)
+	echo >> $@ exec_prefix=\$${prefix}
+	echo >> $@ libdir=\$${prefix}/lib
+	echo >> $@ includedir=\$${prefix}/include
+	echo >> $@
+	echo >> $@ Name: mujs
 	echo >> $@ Description: MuJS embeddable Javascript interpreter
 	echo >> $@ Version: $(VERSION)
-	echo >> $@ Cflags: -I$(incdir)
-	echo >> $@ Libs: -L$(libdir) -lmujs
+	echo >> $@ Cflags: -I\$${includedir}
+	echo >> $@ Libs: -L\$${libdir} -lmujs
 	echo >> $@ Libs.private: -lm
 
 install-common: build/release/mujs build/release/mujs-pp build/release/mujs.pc
