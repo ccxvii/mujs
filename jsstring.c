@@ -288,8 +288,10 @@ static void Sp_slice(js_State *J)
 
 	if (s < e)
 		Sp_substring_imp(J, str, s, e - s);
-	else
+	else if (s > e)
 		Sp_substring_imp(J, str, e, s - e);
+	else
+		js_pushliteral(J, "");
 }
 
 static void Sp_substring(js_State *J)
@@ -304,8 +306,10 @@ static void Sp_substring(js_State *J)
 
 	if (s < e)
 		Sp_substring_imp(J, str, s, e - s);
-	else
+	else if (s > e)
 		Sp_substring_imp(J, str, e, s - e);
+	else
+		js_pushliteral(J, "");
 }
 
 static void Sp_toLowerCase(js_State *J)
