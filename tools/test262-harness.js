@@ -127,16 +127,16 @@
 		var msg = !neg_str ? err : "[Mismatch @negative " + neg_str + "]" + "\n        " + err;
 
 		info += (result.runtime ? "[run]   " : "[load]  ") + msg;
-		if (err && err.stackTrace && (result.runtime || full_mode)) {
+		if (err && err.stack && (result.runtime || full_mode)) {
 			if (full_mode) {
-				info += err.stackTrace;
+				info += err.stack;
 			} else {
 				// trim the internal loader from the trace
-				var internal = err.stackTrace.indexOf("\n" + load("mujs_blahblah()").err.stackTrace.trim().split("\n")[1]);
+				var internal = err.stack.indexOf("\n" + load("mujs_blahblah()").err.stack.trim().split("\n")[1]);
 				if (internal >= 0)
-					info += err.stackTrace.substring(0, internal);
+					info += err.stack.substring(0, internal);
 				else
-					info += err.stackTrace;
+					info += err.stack;
 			}
 		}
 	} else {

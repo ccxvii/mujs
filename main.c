@@ -225,7 +225,7 @@ static const char *stacktrace_js =
 	"Error.prototype.toString = function() {\n"
 	"var s = this.name;\n"
 	"if ('message' in this) s += ': ' + this.message;\n"
-	"if ('stackTrace' in this) s += this.stackTrace;\n"
+	"if ('stack' in this) s += this.stack;\n"
 	"return s;\n"
 	"};\n"
 ;

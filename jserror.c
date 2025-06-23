@@ -61,7 +61,7 @@ static int jsB_ErrorX(js_State *J, js_Object *prototype)
 		js_defproperty(J, -2, "message", JS_DONTENUM);
 	}
 	if (jsB_stacktrace(J, 1))
-		js_defproperty(J, -2, "stackTrace", JS_DONTENUM);
+		js_defproperty(J, -2, "stack", JS_DONTENUM);
 	return 1;
 }
 
@@ -71,7 +71,7 @@ static void js_newerrorx(js_State *J, const char *message, js_Object *prototype)
 	js_pushstring(J, message);
 	js_setproperty(J, -2, "message");
 	if (jsB_stacktrace(J, 0))
-		js_setproperty(J, -2, "stackTrace");
+		js_setproperty(J, -2, "stack");
 }
 
 #define DERROR(name, Name) \
