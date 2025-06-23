@@ -29,7 +29,7 @@ ifeq ($(shell uname),FreeBSD)
   CFLAGS += -I/usr/local/include -L/usr/local/lib
 endif
 
-HDRS = mujs.h jsi.h regexp.h utf.h astnames.h opnames.h utfdata.h
+HDRS = mujs.h jsi.h regexp.h utf.h astnames.h opnames.h
 
 ifneq ($(HAVE_READLINE),no)
   READLINE_CFLAGS = -DHAVE_READLINE
