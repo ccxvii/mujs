@@ -1,0 +1,253 @@
+diff --git a/main.c b/main.c
+index bbc5f2f..ac3528e 100644
+--- a/main.c
++++ b/main.c
+@@ -1,6 +1,11 @@
+ #include <stdio.h>
+ #include <stdlib.h>
++#include <stdint.h>
+ #include <string.h>
++#include <sys/mman.h>
++#include <sys/stat.h>
++#include <fcntl.h>
++#include <assert.h>
+ #ifdef _MSC_VER
+ #include <io.h>
+ #else
+@@ -10,6 +15,138 @@
+ 
+ #include "mujs.h"
+ 
++#ifdef FUZZILLI
++
++#ifdef  __linux__
++#define S_IREAD __S_IREAD
++#define S_IWRITE __S_IWRITE
++#endif
++
++#define REPRL_CRFD 100
++#define REPRL_CWFD 101
++#define REPRL_DRFD 102
++#define REPRL_DWFD 103
++
++#define SHM_SIZE 0x100000
++#define MAX_EDGES ((SHM_SIZE - 4) * 8)
++
++#define CHECK(cond) if (!(cond)) { fprintf(stderr, "\"" #cond "\" failed\n"); _exit(-1); }
++
++struct shmem_data {
++	uint32_t num_edges;
++	unsigned char edges[];
++};
++
++struct shmem_data* __shmem;
++uint32_t *__edges_start, *__edges_stop;
++
++void __sanitizer_cov_reset_edgeguards()
++{
++	uint64_t N = 0;
++	for (uint32_t *x = __edges_start; x < __edges_stop && N < MAX_EDGES; x++)
++		*x = ++N;
++}
++
++void __sanitizer_cov_trace_pc_guard_init(uint32_t *start, uint32_t *stop)
++{
++	// Avoid duplicate initialization
++	if (start == stop || *start)
++		return;
++
++	if (__edges_start != NULL || __edges_stop != NULL) {
++		fprintf(stderr, "Coverage instrumentation is only supported for a single module\n");
++		_exit(-1);
++	}
++
++	__edges_start = start;
++	__edges_stop = stop;
++
++	// Map the shared memory region
++	const char* shm_key = getenv("SHM_ID");
++	if (!shm_key) {
++		puts("[COV] no shared memory bitmap available, skipping");
++		__shmem = (struct shmem_data*) malloc(SHM_SIZE);
++	} else {
++		int fd = shm_open(shm_key, O_RDWR, S_IREAD | S_IWRITE);
++		if (fd <= -1) {
++			fprintf(stderr, "Failed to open shared memory region: %s\n", strerror(errno));
++			_exit(-1);
++		}
++
++		__shmem = (struct shmem_data*) mmap(0, SHM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
++		if (__shmem == MAP_FAILED) {
++			fprintf(stderr, "Failed to mmap shared memory region\n");
++			_exit(-1);
++		}
++	}
++
++	__sanitizer_cov_reset_edgeguards();
++
++	__shmem->num_edges = stop - start;
++	printf("[COV] edge counters initialized. Shared memory: %s with %u edges\n", shm_key, __shmem->num_edges);
++}
++
++void __sanitizer_cov_trace_pc_guard(uint32_t *guard)
++{
++	// There's a small race condition here: if this function executes in two threads for the same
++	// edge at the same time, the first thread might disable the edge (by setting the guard to zero)
++	// before the second thread fetches the guard value (and thus the index). However, our
++	// instrumentation ignores the first edge (see libcoverage.c) and so the race is unproblematic.
++	uint32_t index = *guard;
++	// If this function is called before coverage instrumentation is properly initialized we want to return early.
++	if (!index) return;
++	__shmem->edges[index / 8] |= 1 << (index % 8);
++	*guard = 0;
++}
++
++static void jsB_fuzzilli(js_State *J)
++{
++	const char* str = js_tostring(J, 1);
++	if (!str) {
++		printf("js_fuzzilli NO CMD\n");
++		return;
++	}
++	if (!strcmp(str, "FUZZILLI_CRASH")) {
++		printf("js_fuzzilli CRASH\n");
++		int arg = js_tointeger(J, 2);
++
++		switch (arg) {
++		case 0:
++			// check crash
++			*((char *) 0) = 0;
++			break;
++		case 1: {
++			// check ASAN
++			char *data = malloc(64);
++			free(data);
++			data[0]++;
++			break;
++		}
++		case 2: {
++			// check assert
++			assert(0);
++			break;
++		}
++		}
++	} else if (!strcmp(str, "FUZZILLI_PRINT")) {
++		// get next argument off the stack to print
++		const char* print_str = js_tostring(J, 2);
++		printf("js_fuzzilli PRINT %s\n", print_str);
++		FILE* fzliout = fdopen(REPRL_DWFD, "w");
++		if (!fzliout) {
++			fprintf(stderr, "Fuzzer output channel not available, printing to stdout instead\n");
++			fzliout = stdout;
++		}
++		if (print_str) {
++			fprintf(fzliout, "%s\n", print_str);
++		}
++		fflush(fzliout);
++	}
++	return;
++}
++
++#endif  // FUZZILLI
++
+ static char *xoptarg; /* Global argument pointer. */
+ static int xoptind = 0; /* Global argv index. */
+ static int xgetopt(int argc, char *argv[], char *optstring)
+@@ -288,6 +425,8 @@ static void usage(void)
+ 	exit(1);
+ }
+ 
++#ifndef FUZZILLI
++
+ int
+ main(int argc, char **argv)
+ {
+@@ -381,3 +520,88 @@ main(int argc, char **argv)
+ 
+ 	return status;
+ }
++
++#else
++
++int
++main(int argc, char **argv)
++{
++	js_State *J;
++	int status = 0;
++
++	char helo[] = "HELO";
++	if ((write(REPRL_CWFD, helo, 4) != 4) || (read(REPRL_CRFD, helo, 4) != 4)) {
++		fprintf(stderr, "Error writing or reading HELO\n");
++		_exit(-1);
++	}
++	if (memcmp(helo, "HELO", 4) != 0) {
++		fprintf(stderr, "Invalid response from parent\n");
++		_exit(-1);
++	}
++
++	while (1) {
++		unsigned action = 0;
++		ssize_t nread = read(REPRL_CRFD, &action, 4);
++		fflush(0);
++		if (nread != 4 || action != 0x63657865) { // 'exec'
++			fprintf(stderr, "Unknown action: %x\n", action);
++			_exit(-1);
++		}
++
++		size_t script_size = 0;
++		read(REPRL_CRFD, &script_size, 8);
++
++		ssize_t remaining = (ssize_t) script_size;
++		char* buffer = (char *) malloc(script_size+1);
++		ssize_t rv = read(REPRL_DRFD, buffer, (size_t) remaining);
++		if (rv <= 0) {
++			fprintf(stderr, "Failed to load script\n");
++			_exit(-1);
++		}
++
++		buffer[script_size] = 0;
++
++		J = js_newstate(NULL, NULL, 0);
++		js_newcfunction(J, jsB_gc, "gc", 0);
++		js_setglobal(J, "gc");
++		js_newcfunction(J, jsB_load, "load", 1);
++		js_setglobal(J, "load");
++		js_newcfunction(J, jsB_compile, "compile", 2);
++		js_setglobal(J, "compile");
++		js_newcfunction(J, jsB_print, "print", 0);
++		js_setglobal(J, "print");
++		js_newcfunction(J, jsB_write, "write", 0);
++		js_setglobal(J, "write");
++		js_newcfunction(J, jsB_read, "read", 1);
++		js_setglobal(J, "read");
++		js_newcfunction(J, jsB_readline, "readline", 0);
++		js_setglobal(J, "readline");
++		js_newcfunction(J, jsB_repr, "repr", 0);
++		js_setglobal(J, "repr");
++		js_newcfunction(J, jsB_quit, "quit", 1);
++		js_setglobal(J, "quit");
++		js_newcfunction(J, jsB_fuzzilli, "fuzzilli", 2);
++		js_setglobal(J, "fuzzilli");
++		js_dostring(J, require_js);
++		js_dostring(J, stacktrace_js);
++
++		int ret_value = js_dostring(J, buffer);
++		if (ret_value != 0) {
++			fprintf(stderr, "Failed to eval_buf reprl\n");
++		}
++		fflush(stdout);
++		fflush(stderr);
++		status = (ret_value & 0xff) << 8;
++		if (write(REPRL_CWFD, &status, 4) != 4) {
++			fprintf(stderr, "Erroring writing return value over REPRL_CWFD\n");
++		}
++
++		js_gc(J, 0);
++		js_freestate(J);
++		__sanitizer_cov_reset_edgeguards();
++	}
++
++	return 0;
++}
++
++#endif  // FUZZILLI
