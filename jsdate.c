@@ -1,10 +1,13 @@
+#if defined(__unix__) || defined(__APPLE__)
+#define _DEFAULT_SOURCE
+#define _POSIX_C_SOURCE 200805L
+#endif
+
 #include "jsi.h"
 
 #include <time.h>
 
-#if defined(__unix__) || defined(__APPLE__)
-#include <sys/time.h>
-#elif defined(_WIN32)
+#if defined(_WIN32)
 #include <sys/timeb.h>
 #endif
 
@@ -13,9 +16,9 @@
 static double Now(void)
 {
 #if defined(__unix__) || defined(__APPLE__)
-	struct timeval tv;
-	gettimeofday(&tv, NULL);
-	return floor(tv.tv_sec * 1000.0 + tv.tv_usec / 1000.0);
+	struct timespec ts;
+	clock_gettime(CLOCK_REALTIME, &ts);
+	return floor(ts.tv_sec * 1000.0 + ts.tv_nsec / 1000000.0);
 #elif defined(_WIN32)
 	struct _timeb tv;
 	_ftime(&tv);
